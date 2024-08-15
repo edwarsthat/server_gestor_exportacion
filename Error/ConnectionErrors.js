@@ -1,0 +1,72 @@
+class ConnectionDBError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Connection DB error"
+        this.status = code
+        this.message = message
+    }
+}
+
+class BadGetwayError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Bad getway error"
+        this.status = code
+        this.message = message
+    }
+}
+
+class PostError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Post data error"
+        this.status = code
+        this.message = message
+    }
+}
+
+class PutError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Put data error"
+        this.status = code
+        this.message = message
+    }
+}
+
+class ConnectRedisError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Error redis connection"
+        this.status = code
+        this.message = message
+    }
+}
+
+class ConnectAWS_Error extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "AWS Error"
+        this.status = code
+        this.message = message
+    }
+}
+
+class PilaAccess_Error extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Error en la pila de sincronizacion"
+        this.status = code
+        this.message = message
+    }
+}
+
+module.exports = {
+    ConnectionDBError,
+    BadGetwayError,
+    PostError,
+    PutError,
+    ConnectRedisError,
+    ConnectAWS_Error,
+    PilaAccess_Error
+}

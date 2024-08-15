@@ -1,0 +1,132 @@
+const express = require('express');
+const { UserRepository } = require("../auth/users");
+const { ProcesoRepository } = require("../api/Proceso");
+const routerProceso = express.Router();
+
+
+//#region PUT
+routerProceso.put("/ingresar_descarte_lavado", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const user = await UserRepository.authenticateToken(token);
+
+        await UserRepository.autentificacionPermisos(user.cargo, req.body.action)
+
+        const data = req.body
+
+        await ProcesoRepository.ingresar_descarte_lavado(data, user.user)
+
+
+        res.send({ status: 200, message: 'Ok' })
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
+routerProceso.put("/ingresar_descarte_encerado", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const user = await UserRepository.authenticateToken(token);
+
+        await UserRepository.autentificacionPermisos(user.cargo, req.body.action)
+
+        const data = req.body
+
+        await ProcesoRepository.ingresar_descarte_encerado(data, user.user)
+
+
+        res.send({ status: 200, message: 'Ok' })
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
+routerProceso.put("/add-fotos-calidad", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const user = await UserRepository.authenticateToken(token);
+
+        await UserRepository.autentificacionPermisos(user.cargo, "ingresar_foto_calidad")
+
+        const data = req.body
+
+        await ProcesoRepository.ingresar_foto_calidad(data, user.user)
+
+        res.json({ status: 200, message: 'Ok' })
+
+    } catch (err) {
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
+//#region GET
+routerProceso.get("/data_historial_descarte_lavado_proceso", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const { user } = await UserRepository.authenticateToken(token);
+
+        const data = await ProcesoRepository.obtener_historial_decarte_lavado_proceso(user.user);
+        res.json({ status: 200, message: 'Ok', data: data });
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
+routerProceso.get("/data_historial_descarte_encerado_proceso", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const { user } = await UserRepository.authenticateToken(token);
+
+        const data = await ProcesoRepository.obtener_historial_decarte_encerado_proceso(user.user);
+        res.json({ data: data, status: 200, message: 'Ok' });
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
+routerProceso.get("/lotes-fotos-calidad", async (req, res) => {
+    try {
+        const response = await ProcesoRepository.obtener_lotes_fotos_calidad();
+        res.json({ data: response, status: 200, message: 'Ok' })
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
+routerProceso.get("/data_historial_fotos_calidad_proceso", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const { user } = await UserRepository.authenticateToken(token);
+        const data = await ProcesoRepository.obtener_historial_fotos_calidad_proceso(user.user);
+        res.json({ data: data, status: 200, message: 'Ok' });
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
+routerProceso.get("/data_obtener_foto_calidad", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        await UserRepository.authenticateToken(token);
+        const archivoURL = req.query.fotoURL;
+        if (!archivoURL) {
+            return res.status(400).send('url archivo es requerido');
+        }
+        const data = await ProcesoRepository.obtener_foto_calidad(archivoURL)
+        res.json({ status: 200, message: 'Ok', data: data });
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
+
+module.exports = {
+    routerProceso
+}

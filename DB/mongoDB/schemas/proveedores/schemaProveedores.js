@@ -1,0 +1,51 @@
+
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
+
+const conn = mongoose.createConnection(process.env.MONGODB_PROCESO);
+
+
+const LimonPrecioSchema = new Schema({
+  1: Number,
+  15: Number,
+  2: Number,
+  descarte: Number,
+  combinado: Number,
+})
+
+const NaranjaPrecioSchema = new Schema({
+  "1": Number,
+  "15": Number,
+  "2": Number,
+  descarte: Number,
+  zumex: Number,
+})
+
+const PrecioSchema = new Schema({
+  Limon: LimonPrecioSchema,
+  Naranja:NaranjaPrecioSchema,
+  fecha: { type: Date, default: Date.now }
+});
+
+
+const PredioSchema = new Schema({
+  PREDIO: { type: String, required: true },
+  ICA: String,
+  "CODIGO INTERNO": { type: String, required: true },
+  GGN: String,
+  "FECHA VENCIMIENTO GGN": String,
+  N: String,
+  L: String,
+  M: String,
+  PROVEEDORES: String,
+  DEPARTAMENTO: String,
+  urlArchivos: [String],
+  activo: { type: Boolean, required: true, default: true },
+  precio: PrecioSchema,
+});
+
+
+
+const Proveedores = conn.model("Proveedor", PredioSchema);
+
+module.exports.Proveedores = Proveedores;
