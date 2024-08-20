@@ -1,4 +1,5 @@
 const express = require('express');
+const yaml = require("js-yaml");
 const { SistemaRepository } = require('../api/Sistema');
 const routerSistema = express.Router();
 
@@ -32,5 +33,25 @@ routerSistema.get("/download_mobilApp/:name", async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 })
+
+routerSistema.get("/check_desktopApp/:name", async (req, res) => {
+    try {
+        let out;
+        const fileContents = await SistemaRepository.isNewVersion();
+        const latest = yaml.load(fileContents);
+        if (req.params.name === latest.version) {
+            out = "false";
+        } else {
+            out = "true";
+        }
+        res.send(out)
+    }
+    catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
+
 
 module.exports = { routerSistema };

@@ -224,8 +224,18 @@ const apiSocket = {
         const response = await SistemaRepository.get_users(user)
         return { status: 200, message: 'Ok', data: response }
     },
-    get_historial_descarte: async () => {
-        const response = await ProcesoRepository.get_historial_descarte()
+    get_historial_descarte: async (req) => {
+        const { data } = req
+        const response = await ProcesoRepository.get_historial_descarte(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
+    obtener_operarios_seleccionadoras: async () => {
+        const response = await SistemaRepository.obtener_operarios_seleccionadoras()
+        return { status: 200, message: 'Ok', data: response }
+    },
+    obtener_volante_calidad: async (req) => {
+        const { data } = req
+        const response = await SistemaRepository.obtener_volante_calidad(data)
         return { status: 200, message: 'Ok', data: response }
     },
     //#region POST
@@ -256,6 +266,12 @@ const apiSocket = {
         const { data, user } = req
         await SistemaRepository.add_user(data.data, user.user)
         return { status: 200, message: 'Ok' }
+    },
+    add_volante_calidad: async (req) => {
+        const { data, user } = req
+        await SistemaRepository.add_volante_calidad(data, user)
+        return { status: 200, message: 'Ok' }
+
     },
 
     //#region PUT

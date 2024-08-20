@@ -30,6 +30,8 @@ const client = connectPostgresDB()
 //#region HTTP
 // Middleware para configurar CORS
 app.use((req, res, next) => {
+    console.log(req.url)
+
     res.header('Access-Control-Allow-Origin', '*'); // Permite solicitudes de cualquier origen
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Métodos permitidos
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization'); // Encabezados permitidos
@@ -54,6 +56,40 @@ app.use("/appTV", routerAppTv)
 app.get("/", (req, res) => {
     res.send('Hello from the root route!');
 });
+
+//se envia el archivo ymal para actualizar la aplicacion de ecritorio
+app.get("/latest.yml", async (req, res) => {
+    try {
+
+        const fileContents = await SistemaRepository.isNewVersion();
+
+        res.setHeader('Content-Type', 'text/yaml');
+        res.send(fileContents);
+    }
+    catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+//Envia los archivos para actualizar la aplicacion de escritorio 
+app.get('/:filename', async (req, res) => {
+    try {
+        let { filename } = req.params;
+        filename = path.basename(filename);
+        console.log(filename)
+        const file = await SistemaRepository.getCelifrutAppFile(filename)
+
+
+        // Enviar el archivo como respuest
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.end(file);
+
+    }
+    catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
 
 app.post('/login', async (req, res) => {
     const user = { user: req.body.user, password: req.body.password }
@@ -81,7 +117,8 @@ app.post('/login2', async (req, res) => {
         const dataUser = await SistemaRepository.login2(user)
         const accesToken = UserRepository.generateAccessToken({
             user: dataUser.usuario,
-            cargo: dataUser.cargo._id
+            cargo: dataUser.cargo._id,
+            _id: dataUser._id
         })
         res.json({
             accesToken: accesToken,
@@ -141,7 +178,8 @@ io.on("connection", socket => {
             const response = await apiSocket[data.data.action](data, sendData);
             const newToken = await UserRepository.generateAccessToken({
                 user: data.user.user,
-                cargo: data.user.cargo
+                cargo: data.user.cargo,
+                _id: data.user._id
             })
             callback({ ...response, token: newToken })
         } catch (err) {

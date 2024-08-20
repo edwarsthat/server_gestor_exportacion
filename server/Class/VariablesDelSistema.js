@@ -1,15 +1,19 @@
 const fs = require('fs');
+const path = require('path');
 const { ProcessError } = require('../../Error/ProcessError');
 const { iniciarRedisDB } = require('../../DB/redis/init');
 const { ConnectRedisError } = require('../../Error/ConnectionErrors');
 const { obtener_datos_lotes_listaEmpaque_cajasSinPallet } = require('../mobile/utils/contenedoresLotes');
-const pathIDs = "C:/Users/SISTEMA/Documents/Servidor/Servidor3.0/inventory/seriales.json";
-const inventarioPath = 'C:/Users/SISTEMA/Documents/Servidor/Servidor3.0/inventory/inventario.json'
-const inventarioDesverdizadoPath = 'C:/Users/SISTEMA/Documents/Servidor/Servidor3.0/inventory/inventarioDesverdizado.json'
-const ordenVaceoPath = 'C:/Users/SISTEMA/Documents/Servidor/Servidor3.0/inventory/OrdenDeVaceo.json'
-const inventarioDescartesPath = 'C:/Users/SISTEMA/Documents/Servidor/Servidor3.0/inventory/inventariodescarte.json'
-const cajasSinPalletPath = 'C:/Users/SISTEMA/Documents/Servidor/Servidor3.0/inventory/cajasSinPallet.json'
-const observacionesCalidadPath = 'C:/Users/SISTEMA/Documents/Servidor/Servidor3.0/constants/observacionesCalidad.json'
+
+const pathIDs = path.join(__dirname, '..', '..', 'inventory', 'seriales.json');
+const inventarioPath = path.join(__dirname, '..', '..', 'inventory', 'inventario.json');
+const inventarioDesverdizadoPath = path.join(__dirname, '..', '..', 'inventory', 'inventarioDesverdizado.json');
+const ordenVaceoPath = path.join(__dirname, '..', '..', 'inventory', 'OrdenDeVaceo.json');
+const inventarioDescartesPath = path.join(__dirname, '..', '..', 'inventory', 'inventariodescarte.json');
+const cajasSinPalletPath = path.join(__dirname, '..', '..', 'inventory', 'cajasSinPallet.json');
+const observacionesCalidadPath = path.join(__dirname, '..', '..', 'inventory', 'observacionesCalidad.json');
+
+
 let inventarioFleg = false; // bandera que indica que el inventario se esta escribiendo
 let inventarioDesFleg = false; // bandera que indica que el inventarioDesverdizado se esta escribiendo
 let ordenVaceoFlag = false; //bandera que indica que la orden de vaceo se esta escribiendo

@@ -47,7 +47,8 @@ class UserRepository {
          * 
          * @param {            
          * user: string,
-         * cargo:d string
+         * cargo: string
+         * _id: string
          * }
          * @return - Access token
          * 

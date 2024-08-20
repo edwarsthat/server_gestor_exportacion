@@ -15,3 +15,6 @@ package-lock.json
 
 #se ignora el inventario
 inventory/
+
+#ignorar los updates
+updates/

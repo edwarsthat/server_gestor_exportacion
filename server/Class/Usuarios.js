@@ -1,3 +1,4 @@
+const { VolanteCalidad } = require("../../DB/mongoDB/schemas/calidad/schemaVolanteCalidad");
 const { Cargo } = require("../../DB/mongoDB/schemas/usuarios/schemaCargos");
 const { recordCargo } = require("../../DB/mongoDB/schemas/usuarios/schemaRecordCargos");
 const { recordUsuario } = require("../../DB/mongoDB/schemas/usuarios/schemaRecordUsuarios");
@@ -196,6 +197,71 @@ class UsuariosRepository {
             throw new PutError(414, `Error al modificar el dato ${id} => ${err.name} `);
         } finally {
             bussyIdsUsuario.delete(id);
+        }
+    }
+    static async add_volante_calidad(data) {
+        /**
+         * Funcion que agrega una fila a volante calidad a la base de datos lote de mongoDB
+         * 
+         * @param {object} data - Recibe un objeto, donde estan los datos del volante de calidad que se va a ingresar, 
+         *                      
+         */
+        try {
+            const lote = new VolanteCalidad(data);
+            const saveLote = await lote.save();
+            return saveLote
+        } catch (err) {
+            throw new PostError(409, `Error agregando lote ${err.message}`);
+        }
+    }
+    static async obtener_volante_calidad(options = {}) {
+        /**
+        * Funcion que obtiene los formularios de volante calidad de la base de datos de MongoDB.
+        *
+        * @param {Object} options - Objeto de configuración para obtener los cargos.
+        * @param {Array<string>} [options.ids=[]] - Array de IDs de los formularios.
+        * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
+        * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
+        * @param {Object} [options.sort={ createdAt: -1 }] - Criterios de ordenación para los resultados.
+        * @param {number} [options.limit=50] - Número máximo de documentos a obtener.
+        * @param {number} [options.skip=0] - Número de documentos a omitir desde el inicio.
+        * @returns {Promise<Array>} - Promesa que resuelve a un array de lotes obtenidos.
+        * @throws {PostError} - Lanza un error si ocurre un problema al obtener los lotes.
+        */
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { fecha: -1 },
+            limit = 50,
+            skip = 0,
+        } = options;
+        try {
+            let volanteCalidadQuery = { ...query };
+
+            if (ids.length > 0) {
+                volanteCalidadQuery._id = { $in: ids };
+            }
+            const volanteCalidad = await VolanteCalidad.find(volanteCalidadQuery)
+                .select(select)
+                .sort(sort)
+                .populate({
+                    path: 'operario',
+                    select: 'nombre apellido usuario', // Especifica los campos a seleccionar del documento relacionado
+                })
+                .populate({
+                    path: 'responsable',
+                    select: 'nombre apellido usuario', // Especifica los campos a seleccionar del documento relacionado
+                })
+                .limit(limit)
+                .skip(skip)
+                .exec();
+
+            return volanteCalidad
+
+        } catch (err) {
+            console.log(err)
+            throw new ConnectionDBError(408, `Error obteniendo volante calidad ${err.message}`);
         }
     }
     static validateBussyUsuarioIds(id) {

@@ -20,29 +20,42 @@ class ProcesoRepository {
     static async obtener_inventario_descartes() {
         const inventario = await VariablesDelSistema.obtener_inventario_descartes();
         const ids = inventario.map(item => item._id);
-
+        // Obtener todos los lotes primero
         const lotes = await LotesRepository.getLotes({
             ids: ids,
-            select: { enf: 1, tipoFruta: 1 }
-        })
-        const resultado = inventario.map(item => {
-            const lote = lotes.find(l => l._id.toString() === item._id);
+            select: { enf: 1, tipoFruta: 1 },
+            limit: ids.length
+        });
+
+        let resultado = [];
+        // Crear un mapa de lotes para una búsqueda más rápida
+        const lotesMap = lotes.reduce((map, lote) => {
+            map[lote._id.toString()] = lote;
+            return map;
+        }, {});
+
+        // Luego, mapear el inventario utilizando los lotes completos
+        for (let i = 0; i < inventario.length; i++) {
+            const lote = lotesMap[inventario[i]._id];
+
             let descarte;
-            if (item.descarteEncerado !== undefined) {
-                descarte = { descarteGeneral: 0, pareja: 0, balin: 0, extra: 0, suelo: 0 }
+            if (inventario[i].descarteEncerado !== undefined) {
+                descarte = { descarteGeneral: 0, pareja: 0, balin: 0, extra: 0, suelo: 0 };
             }
-            if (item.descarteLavado !== undefined) {
-                descarte = { descarteGeneral: 0, pareja: 0, balin: 0 }
+
+            if (inventario[i].descarteLavado !== undefined) {
+                descarte = { descarteGeneral: 0, pareja: 0, balin: 0 };
             }
-            const obj = {
-                ...lote._doc,
-                fecha: item.fecha,
-                descarteEncerado: item.descarteEncerado ? item.descarteEncerado : descarte,
-                descarteLavado: item.descarteLavado ? item.descarteLavado : descarte
-            }
-            return obj
-        })
-        return resultado
+            resultado.push({
+                ...lote?.toJSON(),
+                fecha: inventario[i].fecha,
+                descarteEncerado: inventario[i].descarteEncerado ? inventario[i].descarteEncerado : descarte,
+                descarteLavado: inventario[i].descarteLavado ? inventario[i].descarteLavado : descarte,
+            })
+        }
+
+
+        return resultado;
     }
     static async get_ingresos_lotes(data) {
         const { page } = data;
@@ -364,7 +377,6 @@ class ProcesoRepository {
         });
         const resultado = recordLotes.map(item => {
             const lote = lotes.find(lote => lote._id.toString() === item.documento._id);
-            console.log(lote)
             if (lote) {
                 return { ...item._doc, lote: lote }
             }
@@ -387,8 +399,14 @@ class ProcesoRepository {
             kilosExportacionHoy: kilosExportacionHoy
         }
     }
-    static async get_historial_descarte() {
-        const historial = await DespachoDescartesRepository.get_historial_descarte();
+    static async get_historial_descarte(data) {
+        const { page } = data;
+        const resultsPerPage = 50;
+
+        const historial = await DespachoDescartesRepository.get_historial_descarte({
+            skip: (page - 1) * resultsPerPage,
+            limit: resultsPerPage,
+        });
         return historial;
     }
     // #region PUT 

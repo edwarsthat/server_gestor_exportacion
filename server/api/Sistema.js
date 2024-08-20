@@ -2,6 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 const yaml = require("js-yaml");
+const { startOfDay, parse, endOfDay } = require('date-fns');
+
 const { UsuariosRepository } = require('../Class/Usuarios');
 const bcrypt = require('bcrypt');
 const { UserRepository } = require('../auth/users');
@@ -83,6 +85,51 @@ class SistemaRepository {
         const { action, data, _id, __v } = req
         await UsuariosRepository.modificar_ususario(_id, data, action, user.user, __v);
     }
+    static async obtener_operarios_seleccionadoras() {
+        const usuarios = await UsuariosRepository.get_users({
+            query: { estado: true, cargo: "66bfbd0e281360363ce25dfc" }
+        });
+        // const resultado = usuarios.filter(usuario => usuario.cargo.Rol >)
+        return usuarios
+    }
+    static async add_volante_calidad(req, user) {
+        const { data } = req
+        const volante_calidad = {
+            ...data,
+            responsable: user._id
+        }
+        await UsuariosRepository.add_volante_calidad(volante_calidad)
+    }
+    static async obtener_volante_calidad(data) {
+        const { tipoFruta, fechaInicio, fechaFin } = data;
+        let query = {}
+        if (tipoFruta !== '') {
+            query.tipoFruta = tipoFruta
+        }
+        if (fechaInicio) {
+            const localDate = parse(fechaInicio, 'yyyy-MM-dd', new Date())
+            const inicio = startOfDay(localDate);
+
+            query.fecha = { $gte: inicio };
+        } else {
+            const inicio = new Date(0);
+
+            query.fecha = { $gte: inicio };
+        }
+        if (fechaFin) {
+            const localDate = parse(fechaFin, 'yyyy-MM-dd', new Date());
+            const fin = endOfDay(localDate);
+            query.fecha = { ...query.fecha, $lte: fin };
+        } else {
+            const fin = new Date()
+            query.fecha = { ...query.fecha, $lte: fin };
+        }
+
+        const volanteCalidad = await UsuariosRepository.obtener_volante_calidad({
+            query: query
+        });
+        return volanteCalidad
+    }
     static async login2(data) {
         await UserRepository.validate_userName(data);
         await UserRepository.validate_password(data);
@@ -93,11 +140,20 @@ class SistemaRepository {
         const isValid = await bcrypt.compare(data.password, user[0].password);
         if (!isValid) throw new ValidationUserError(402, "Contraseña incorrecta");
 
-        return { usuario: user[0].usuario, cargo: user[0].cargo }
+        return { usuario: user[0].usuario, cargo: user[0].cargo, _id: user[0]._id }
 
     }
+    static async isNewVersion() {
+        const apkLatest = path.join(__dirname, '..', '..', 'updates', 'desktop', 'latest.yml');
+        const fileContents = fs.readFileSync(apkLatest, 'utf8');
+        return fileContents
+    }
+    static async getCelifrutAppFile(filename) {
+        const filePath = path.join(__dirname, '..', '..', 'updates', 'desktop', filename);
+        const fileContents = fs.readFileSync(filePath);
+        return fileContents
 
-
+    }
 }
 
 module.exports.SistemaRepository = SistemaRepository
