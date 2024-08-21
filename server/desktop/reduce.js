@@ -238,6 +238,21 @@ const apiSocket = {
         const response = await SistemaRepository.obtener_volante_calidad(data)
         return { status: 200, message: 'Ok', data: response }
     },
+    obtener_operarios_higiene: async (req) => {
+        const { data } = req
+        const response = await SistemaRepository.obtener_operarios_higiene(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
+    obtener_formularios_higiene_personal: async (req) => {
+        const { data } = req
+        const response = await SistemaRepository.obtener_formularios_higiene_personal(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
+    obtener_contenedores_programacion: async (req) => {
+        const { data } = req
+        const response = await ProcesoRepository.obtener_contenedores_programacion(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
     //#region POST
     guardarLote: async (data) => {
         await ProcesoRepository.addLote(data)
@@ -272,6 +287,11 @@ const apiSocket = {
         await SistemaRepository.add_volante_calidad(data, user)
         return { status: 200, message: 'Ok' }
 
+    },
+    add_higiene_personal: async (req) => {
+        const { data, user } = req
+        await SistemaRepository.add_higiene_personal(data, user)
+        return { status: 200, message: 'Ok' }
     },
 
     //#region PUT

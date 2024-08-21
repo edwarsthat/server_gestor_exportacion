@@ -187,7 +187,8 @@ io.on("connection", socket => {
             if (![401, 402, 403, 404, 405].includes(err.status)) {
                 const newToken = data.user ? UserRepository.generateAccessToken({
                     user: data.user.user,
-                    cargo: data.user.cargo
+                    cargo: data.user.cargo,
+                    _id: data.user._id
                 }) : null;
                 callback({ ...err, token: newToken });
             } else {

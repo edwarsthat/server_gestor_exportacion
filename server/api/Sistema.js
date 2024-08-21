@@ -92,6 +92,18 @@ class SistemaRepository {
         // const resultado = usuarios.filter(usuario => usuario.cargo.Rol >)
         return usuarios
     }
+    static async obtener_operarios_higiene() {
+        const usuarios = await UsuariosRepository.get_users({
+            query: {
+                estado: true,
+                $or: [
+                    { cargo: "66bfbd0e281360363ce25dfc" },
+                    { cargo: "66c513dcb7dca1eebff39a96" }
+                ]
+            }
+        });
+        return usuarios
+    }
     static async add_volante_calidad(req, user) {
         const { data } = req
         const volante_calidad = {
@@ -99,6 +111,15 @@ class SistemaRepository {
             responsable: user._id
         }
         await UsuariosRepository.add_volante_calidad(volante_calidad)
+    }
+    static async add_higiene_personal(req, user) {
+        const { data } = req
+        const higienePersonal = {
+            ...data,
+            responsable: user._id
+        }
+        console.log(higienePersonal)
+        await UsuariosRepository.add_higiene_personal(higienePersonal)
     }
     static async obtener_volante_calidad(data) {
         const { tipoFruta, fechaInicio, fechaFin } = data;
@@ -126,6 +147,36 @@ class SistemaRepository {
         }
 
         const volanteCalidad = await UsuariosRepository.obtener_volante_calidad({
+            query: query
+        });
+        return volanteCalidad
+    }
+    static async obtener_formularios_higiene_personal(data) {
+        const { tipoFruta, fechaInicio, fechaFin } = data;
+        let query = {}
+        if (tipoFruta !== '') {
+            query.tipoFruta = tipoFruta
+        }
+        if (fechaInicio) {
+            const localDate = parse(fechaInicio, 'yyyy-MM-dd', new Date())
+            const inicio = startOfDay(localDate);
+
+            query.fecha = { $gte: inicio };
+        } else {
+            const inicio = new Date(0);
+
+            query.fecha = { $gte: inicio };
+        }
+        if (fechaFin) {
+            const localDate = parse(fechaFin, 'yyyy-MM-dd', new Date());
+            const fin = endOfDay(localDate);
+            query.fecha = { ...query.fecha, $lte: fin };
+        } else {
+            const fin = new Date()
+            query.fecha = { ...query.fecha, $lte: fin };
+        }
+
+        const volanteCalidad = await UsuariosRepository.obtener_formularios_higiene_personal({
             query: query
         });
         return volanteCalidad

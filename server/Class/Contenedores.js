@@ -499,14 +499,19 @@ class ContenedoresRepository {
         this.validateBussyIds(id)
         try {
 
-            await Contenedores.updateOne({ _id: id }, { 'infoContenedor.cerrado': true });
+            await Contenedores.updateOne(
+                { _id: id },
+                {
+                    'infoContenedor.cerrado': true,
+                    'infoContenedor.fechaFinalizado': new Date(),
+                });
 
             let record = new recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: {
                     contenedor: id,
-                    cerrado: true,
+                    cerrado: true
                 }
             })
             await record.save();

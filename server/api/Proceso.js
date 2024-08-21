@@ -9,6 +9,7 @@ const { LotesRepository } = require("../Class/Lotes");
 const { ProveedoresRepository } = require("../Class/Proveedores");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
 const fs = require("fs");
+const { startOfDay, parse, endOfDay } = require('date-fns');
 
 class ProcesoRepository {
 
@@ -128,12 +129,18 @@ class ProcesoRepository {
         if (fechaInicio || fechaFin) {
             query.fecha = {}
             if (fechaInicio) {
-                query.fecha.$gte = new Date(fechaInicio)
+                const localDate = parse(fechaInicio, 'yyyy-MM-dd', new Date())
+                const inicio = startOfDay(localDate);
+
+                query.fecha.$gte = inicio
             } else {
                 query.fecha.$gte = new Date(0)
             }
             if (fechaFin) {
-                query.fecha.$lt = new Date(fechaFin)
+                const localDate = parse(fechaFin, 'yyyy-MM-dd', new Date());
+                const fin = endOfDay(localDate);
+
+                query.fecha.$lt = fin
             } else {
                 query.fecha.$lt = new Date()
             }
@@ -169,12 +176,16 @@ class ProcesoRepository {
         if (fechaInicio || fechaFin) {
             query.fecha = {}
             if (fechaInicio) {
-                query.fecha.$gte = new Date(fechaInicio)
+                const localDate = parse(fechaInicio, 'yyyy-MM-dd', new Date())
+                const inicio = startOfDay(localDate);
+                query.fecha.$gte = inicio
             } else {
                 query.fecha.$gte = new Date(0)
             }
             if (fechaFin) {
-                query.fecha.$lt = new Date(fechaFin)
+                const localDate = parse(fechaFin, 'yyyy-MM-dd', new Date());
+                const fin = endOfDay(localDate);
+                query.fecha.$lt = new Date(fin)
             } else {
                 query.fecha.$lt = new Date()
             }
@@ -408,6 +419,25 @@ class ProcesoRepository {
             limit: resultsPerPage,
         });
         return historial;
+    }
+    static async obtener_contenedores_programacion(data) {
+        const { fecha } = data;
+        const fehcaActual = new Date(fecha)
+        const year = fehcaActual.getFullYear();
+        const month = fehcaActual.getMonth();
+        const query = {
+            "infoContenedor.fechaInicio": {
+                $gte: new Date(year, month, 1),
+                $lt: new Date(year, month + 1, 1)
+            }
+        }
+        const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            select: { infoContenedor: 1, numeroContenedor: 1 },
+            query: query
+        });
+        console.log(response)
+
+        return response
     }
     // #region PUT 
     static async ingresar_descarte_lavado(req, user) {

@@ -1,3 +1,4 @@
+const { HigienePersonal } = require("../../DB/mongoDB/schemas/calidad/schemaHigienePersonal");
 const { VolanteCalidad } = require("../../DB/mongoDB/schemas/calidad/schemaVolanteCalidad");
 const { Cargo } = require("../../DB/mongoDB/schemas/usuarios/schemaCargos");
 const { recordCargo } = require("../../DB/mongoDB/schemas/usuarios/schemaRecordCargos");
@@ -211,7 +212,23 @@ class UsuariosRepository {
             const saveLote = await lote.save();
             return saveLote
         } catch (err) {
-            throw new PostError(409, `Error agregando lote ${err.message}`);
+            throw new PostError(409, `Error agregando formulario Volante calidad ${err.message}`);
+        }
+    }
+    static async add_higiene_personal(data) {
+        /**
+         * Funcion que agrega una fila a higiene personal  a la base de datos lote de mongoDB
+         * 
+         * @param {object} data - Recibe un objeto, donde estan los datos del formulario 
+         * higiene personal que se va a ingresar, 
+         *                      
+         */
+        try {
+            const formulario = new HigienePersonal(data);
+            const saveFormulario = await formulario.save();
+            return saveFormulario
+        } catch (err) {
+            throw new PostError(409, `Error agregando formulario higiene personal ${err.message}`);
         }
     }
     static async obtener_volante_calidad(options = {}) {
@@ -226,7 +243,7 @@ class UsuariosRepository {
         * @param {number} [options.limit=50] - Número máximo de documentos a obtener.
         * @param {number} [options.skip=0] - Número de documentos a omitir desde el inicio.
         * @returns {Promise<Array>} - Promesa que resuelve a un array de lotes obtenidos.
-        * @throws {PostError} - Lanza un error si ocurre un problema al obtener los lotes.
+        * @throws {PostError} - Lanza un error si ocurre un problema al obtener los formularios.
         */
         const {
             ids = [],
@@ -262,6 +279,56 @@ class UsuariosRepository {
         } catch (err) {
             console.log(err)
             throw new ConnectionDBError(408, `Error obteniendo volante calidad ${err.message}`);
+        }
+    }
+    static async obtener_formularios_higiene_personal(options = {}) {
+        /**
+        * Funcion que obtiene los formularios de higiene personal de la base de datos de MongoDB.
+        *
+        * @param {Object} options - Objeto de configuración para obtener los formularios.
+        * @param {Array<string>} [options.ids=[]] - Array de IDs de los formularios.
+        * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
+        * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
+        * @param {Object} [options.sort={ createdAt: -1 }] - Criterios de ordenación para los resultados.
+        * @param {number} [options.limit=50] - Número máximo de documentos a obtener.
+        * @param {number} [options.skip=0] - Número de documentos a omitir desde el inicio.
+        * @returns {Promise<Array>} - Promesa que resuelve a un array de lotes obtenidos.
+        * @throws {PostError} - Lanza un error si ocurre un problema al obtener los formularios.
+        */
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { fecha: -1 },
+            limit = 50,
+            skip = 0,
+        } = options;
+        try {
+            let higienePersonalQuery = { ...query };
+
+            if (ids.length > 0) {
+                higienePersonalQuery._id = { $in: ids };
+            }
+            const higienePersonal = await HigienePersonal.find(higienePersonalQuery)
+                .select(select)
+                .sort(sort)
+                .populate({
+                    path: 'operario',
+                    select: 'nombre apellido usuario', // Especifica los campos a seleccionar del documento relacionado
+                })
+                .populate({
+                    path: 'responsable',
+                    select: 'nombre apellido usuario', // Especifica los campos a seleccionar del documento relacionado
+                })
+                .limit(limit)
+                .skip(skip)
+                .exec();
+
+            return higienePersonal
+
+        } catch (err) {
+            console.log(err)
+            throw new ConnectionDBError(408, `Error obteniendo formularios higiene personal ${err.message}`);
         }
     }
     static validateBussyUsuarioIds(id) {

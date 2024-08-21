@@ -56,24 +56,24 @@ const infoContenedorSchema = new Schema({
   tipoFruta: String,
   tipoCaja: [String],
   calidad: [String],
-  sombra:String,
-  defecto:String,
-  mancha:String,
+  sombra: String,
+  defecto: String,
+  mancha: String,
   verdeManzana: String,
   cerrado: Boolean,
   observaciones: String,
   desverdizado: Boolean,
   calibres: [String],
   urlInforme: String,
-  cajasTotal:Number,
-  RrtoEstimado:String,
+  cajasTotal: Number,
+  RrtoEstimado: String,
 });
 
 const criteriosSchema = new Schema({
-  cumple:Boolean,
+  cumple: Boolean,
   observaciones: String
 },
-{ _id: false });
+  { _id: false });
 
 const inspeccionMulasSchema = new Schema({
   funcionamiento: criteriosSchema,
@@ -81,7 +81,7 @@ const inspeccionMulasSchema = new Schema({
   talanquera: criteriosSchema,
   dannos: criteriosSchema,
   sellos_puertas: criteriosSchema,
-  materiales:criteriosSchema,
+  materiales: criteriosSchema,
   reparaciones: criteriosSchema,
   limpio: criteriosSchema,
   plagas: criteriosSchema,
@@ -117,22 +117,22 @@ const listaEmpaqueSchema = new Schema({
 });
 
 // Middleware to update `ultimaModificacion` field
-listaEmpaqueSchema.pre("save", function(next) {
+listaEmpaqueSchema.pre("save", function (next) {
   this.infoContenedor.ultimaModificacion = new Date();
   next();
 });
 
-listaEmpaqueSchema.pre("updateOne", function(next) {
+listaEmpaqueSchema.pre("updateOne", function (next) {
   this.set({ "infoContenedor.ultimaModificacion": new Date() });
   next();
 });
 
-listaEmpaqueSchema.pre("findOneAndUpdate", function(next) {
+listaEmpaqueSchema.pre("findOneAndUpdate", function (next) {
   this.set({ "infoContenedor.ultimaModificacion": new Date() });
   next();
 });
 
-listaEmpaqueSchema.pre("findByIdAndUpdate", function(next) {
+listaEmpaqueSchema.pre("findByIdAndUpdate", function (next) {
   this.set({ "infoContenedor.ultimaModificacion": new Date() });
   next();
 });
