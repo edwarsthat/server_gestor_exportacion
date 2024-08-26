@@ -98,6 +98,10 @@ class SistemaRepository {
                 estado: true,
                 $or: [
                     { cargo: "66bfbd0e281360363ce25dfc" },
+                    { cargo: "66bf8a99281360363ce252be" },
+                    { cargo: "66bf8ab6281360363ce252c7" },
+                    { cargo: "66bf8ad5281360363ce252d0" },
+                    { cargo: "66bf8e40281360363ce25353" },
                     { cargo: "66c513dcb7dca1eebff39a96" }
                 ]
             }
@@ -118,7 +122,6 @@ class SistemaRepository {
             ...data,
             responsable: user._id
         }
-        console.log(higienePersonal)
         await UsuariosRepository.add_higiene_personal(higienePersonal)
     }
     static async obtener_volante_calidad(data) {

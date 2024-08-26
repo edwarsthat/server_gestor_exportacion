@@ -1,6 +1,7 @@
 const express = require('express');
 const { UserRepository } = require("../auth/users");
 const { ProcesoRepository } = require("../api/Proceso");
+const { VariablesDelSistema } = require('../Class/VariablesDelSistema');
 const routerProceso = express.Router();
 
 
@@ -110,6 +111,18 @@ routerProceso.get("/data_historial_fotos_calidad_proceso", async (req, res) => {
     }
 })
 
+routerProceso.get("/obtenerEF1", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        await UserRepository.authenticateToken(token);
+        const data = await VariablesDelSistema.generarEF1()
+        res.json({ status: 200, message: 'Ok', data: data });
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
 routerProceso.get("/data_obtener_foto_calidad", async (req, res) => {
     try {
         const token = req.headers['authorization'];
@@ -126,6 +139,25 @@ routerProceso.get("/data_obtener_foto_calidad", async (req, res) => {
     }
 })
 
+
+//#region POST
+routerProceso.post("/guardarLote", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const user = await UserRepository.authenticateToken(token);
+
+        await UserRepository.autentificacionPermisos(user.cargo, "guardarLote")
+
+        const data = req.body
+
+        await ProcesoRepository.addLote({ data: data, user: user.user })
+
+        res.json({ status: 200, message: 'Ok' })
+
+    } catch (err) {
+        res.json({ status: err.status, message: err.message })
+    }
+})
 
 module.exports = {
     routerProceso

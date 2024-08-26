@@ -90,7 +90,7 @@ const inspeccionMulasSchema = new Schema({
   medidas: criteriosSchema
 });
 
-const schemaFormularioInspeccionMulas = new Schema({
+const schemaInfoMula = new Schema({
   placa: String,
   trailer: String,
   conductor: String,
@@ -113,7 +113,7 @@ const listaEmpaqueSchema = new Schema({
   numeroContenedor: Number,
   pallets: [{ type: Map, of: subSchema }],
   infoContenedor: infoContenedorSchema,
-  formularioInspeccionMula: schemaFormularioInspeccionMulas,
+  infoTractoMula: schemaInfoMula,
 });
 
 // Middleware to update `ultimaModificacion` field

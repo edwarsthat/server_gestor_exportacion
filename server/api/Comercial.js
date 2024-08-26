@@ -1,8 +1,17 @@
+const { ClientesRepository } = require("../Class/Clientes");
 const { ProveedoresRepository } = require("../Class/Proveedores");
 
 class ComercialRepository {
     static async get_proveedores() {
         return await ProveedoresRepository.get_proveedores();
+    }
+    static async get_proveedores_proceso() {
+        return await ProveedoresRepository.get_proveedores(
+            { query: { activo: true } }
+        );
+    }
+    static async get_clientes() {
+        return await ClientesRepository.get_clientes();
     }
     static async inactivar_Proveedor(data, user) {
         const { _id, action } = data
@@ -20,7 +29,6 @@ class ComercialRepository {
     }
     static async addProveedor(req, user) {
         const { data } = req
-        console.log(data)
         await ProveedoresRepository.addProveedor(data, user)
     }
     static async modificar_proveedor(req, user) {
@@ -50,6 +58,33 @@ class ComercialRepository {
             info[key2] = precio[keys[i]]
         }
         await ProveedoresRepository.modificar_varios_proveedores({}, { $set: info }, action, user)
+    }
+    static async modificar_estado_cliente(data, user) {
+        const { _id, action } = data
+        const query = [{
+            $set: {
+                activo: { $not: "$activo" }
+            }
+        }]
+        await ClientesRepository.modificar_cliente(
+            _id,
+            query,
+            action,
+            user
+        )
+    }
+    static async modificar_info_cliente(req, user) {
+        const { _id, data, action } = req
+        await ClientesRepository.modificar_cliente(
+            _id,
+            data,
+            action,
+            user
+        )
+    }
+    static async add_cliente(req, user) {
+        const { data } = req
+        await ClientesRepository.add_cliente(data, user)
     }
 }
 

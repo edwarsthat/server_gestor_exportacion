@@ -213,15 +213,6 @@ class ProcesoRepository {
         }).filter(item => item !== null);
         return resultado
     }
-    static async getLotesCalidadInterna() {
-        const query = {
-            'calidad.calidadInterna': { $exists: false },
-            enf: { $regex: '^E', $options: 'i' }
-        }
-        const select = { enf: 1, calidad: 1, tipoFruta: 1 }
-        const lotes = await LotesRepository.getLotes({ query: query, select: select })
-        return lotes
-    }
     static async get_calidad_interna_lote(data) {
         const { page } = data;
         const resultsPerPage = 50;
@@ -432,11 +423,21 @@ class ProcesoRepository {
             }
         }
         const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
-            select: { infoContenedor: 1, numeroContenedor: 1 },
+            select: { infoContenedor: 1, numeroContenedor: 1, __v: 1 },
             query: query
         });
-        console.log(response)
+        return response
+    }
+    static async obtener_contenedores_programacion_mulas() {
+        const haceUnMes = new Date();
+        haceUnMes.setMonth(haceUnMes.getMonth() - 1);
 
+        const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            select: { infoContenedor: 1, numeroContenedor: 1, infoTractoMula: 1 },
+            query: {
+                'infoContenedor.fechaCreacion': { $gte: new Date(haceUnMes) },
+            },
+        });
         return response
     }
     // #region PUT 
@@ -508,6 +509,7 @@ class ProcesoRepository {
                 kilosVaciados: kilosVaciados,
                 __v: 1,
             },
+            fechaProceso: new Date()
         }
         await LotesRepository.modificar_lote(_id, query, action, user, __v);
         const lote = await LotesRepository.getLotes({ ids: [_id] });
@@ -574,21 +576,6 @@ class ProcesoRepository {
             const inventarioData = await VariablesDelSistema.get_item_inventario(_id)
             await UploaAWSRepository.modificar_item_inventario_fruta_sin_procesar(loteSend[0], { inventario: inventarioData })
         }
-    }
-    static async ingresoCalidadInterna(req, user) {
-        const { _id, data, action } = req
-        await LotesRepository.modificar_lote_proceso(_id, data, action, user);
-
-        const esta_en_inventario = await VariablesDelSistema.get_item_inventario(_id)
-
-        if (esta_en_inventario) {
-            await UploaAWSRepository.modificar_item_inventario_fruta_sin_procesar(
-                { _id: _id },
-                { clasificacionCalidad: data.clasificacionCalidad }
-            )
-        }
-
-
     }
     static async despacho_descarte(req, user) {
         const { data } = req;
@@ -681,6 +668,19 @@ class ProcesoRepository {
     }
     static async reiniciarValores_proceso() {
         await VariablesDelSistema.reiniciarValores_proceso();
+    }
+    static async modificar_programacion_contenedor(req, user) {
+        const { _id, __v, infoContenedor, action } = req;
+        await ContenedoresRepository.modificar_contenedor(_id, infoContenedor, user.user, action, __v);
+    }
+    static async add_formulario_programacion_mula(req, user) {
+        const { _id, data, action } = req;
+        await ContenedoresRepository.modificar_contenedor(
+            _id,
+            data,
+            user,
+            action
+        )
     }
     // #region POST
     static async addLote(data) {

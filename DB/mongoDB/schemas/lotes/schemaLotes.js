@@ -54,10 +54,29 @@ const fotosCalidadSchema = new Schema({
   fechaIngreso: { type: Date, default: Date.now }
 }, { _id: false, strict: false });
 
+const inspeccionIngresoSchema = new Schema({
+  maduro: Number,
+  deshidratacion: Number,
+  mancha: Number,
+  defecto: Number,
+  oleocelosis: Number,
+  dañoMecanico: Number,
+  verdeManzana: Number,
+  parejo: Number,
+  exportacion1: Number,
+  exportacion15: Number,
+  exportacion2: Number,
+  fecha: { type: Date, default: Date.now }
+
+}, { _id: false });
+
+
 const calidadSchema = new Schema({
+  inspeccionIngreso: inspeccionIngresoSchema,
   calidadInterna: calidadInternaSchema,
   clasificacionCalidad: clasificacionCalidadSchema,
-  fotosCalidad: fotosCalidadSchema
+  fotosCalidad: fotosCalidadSchema,
+
 }, { _id: false });
 
 const descarteLavadoSchema = new Schema({
@@ -130,6 +149,7 @@ const dataSchema = new Schema({
   enf: { type: String, require: true },
   predio: { type: Schema.Types.ObjectId, ref: Proveedores },
   fechaIngreso: { type: Date, default: Date.now },
+  fechaProceso: { type: Date },
   canastillas: String,
   tipoFruta: String,
   observaciones: String,

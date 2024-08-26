@@ -39,4 +39,18 @@ routerComercial.put("/ingresar_precio_fruta", async (req, res) => {
     }
 })
 
+routerComercial.get("/get_proveedores_proceso", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        await UserRepository.authenticateToken(token);
+
+        const data = await ComercialRepository.get_proveedores_proceso();
+        res.json({ status: 200, message: 'Ok', data: data });
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
+
 module.exports.routerComercial = routerComercial;

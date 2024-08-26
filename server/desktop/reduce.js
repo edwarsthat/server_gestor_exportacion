@@ -1,4 +1,3 @@
-const { ClientesRepository } = require("../Class/Clientes");
 const { ContenedoresRepository } = require("../Class/Contenedores");
 const { LotesRepository } = require("../Class/Lotes");
 const { ProcesoRepository } = require("../api/Proceso");
@@ -23,6 +22,10 @@ const apiSocket = {
     },
     getProveedores: async () => {
         const proveedores = await ComercialRepository.get_proveedores();
+        return { status: 200, message: 'Ok', data: proveedores }
+    },
+    get_proveedores_proceso: async () => {
+        const proveedores = await ComercialRepository.get_proveedores_proceso();
         return { status: 200, message: 'Ok', data: proveedores }
     },
     getInventario: async () => {
@@ -140,12 +143,20 @@ const apiSocket = {
         const inventario = await ProcesoRepository.obtener_inventario_descartes();
         return { status: 200, message: 'Ok', data: inventario }
     },
-    getClientes: async () => {
-        const clientes = await ClientesRepository.getProveedores();
+    get_clientes: async () => {
+        const clientes = await ComercialRepository.get_clientes();
         return { status: 200, message: 'Ok', data: clientes }
     },
-    getLotesCalidadInterna: async () => {
-        const lotes = await ProcesoRepository.getLotesCalidadInterna();
+    getClientes: async () => {
+        const clientes = await ComercialRepository.get_clientes();
+        return { status: 200, message: 'Ok', data: clientes }
+    },
+    get_lotes_inspeccion_ingreso: async () => {
+        const lotes = await CalidadRepository.get_lotes_inspeccion_ingreso();
+        return { status: 200, message: 'Ok', data: lotes }
+    },
+    get_lotes_calidad_interna: async () => {
+        const lotes = await CalidadRepository.get_lotes_calidad_interna();
         return { status: 200, message: 'Ok', data: lotes }
     },
     get_lotes_clasificacion_descarte: async () => {
@@ -253,6 +264,11 @@ const apiSocket = {
         const response = await ProcesoRepository.obtener_contenedores_programacion(data)
         return { status: 200, message: 'Ok', data: response }
     },
+    obtener_contenedores_programacion_mulas: async (req) => {
+        const { data } = req
+        const response = await ProcesoRepository.obtener_contenedores_programacion_mulas(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
     //#region POST
     guardarLote: async (data) => {
         await ProcesoRepository.addLote(data)
@@ -291,6 +307,12 @@ const apiSocket = {
     add_higiene_personal: async (req) => {
         const { data, user } = req
         await SistemaRepository.add_higiene_personal(data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    add_cliente: async (req) => {
+        console.log(req)
+        const { data, user } = req
+        await ComercialRepository.add_cliente(data.data, user)
         return { status: 200, message: 'Ok' }
     },
 
@@ -357,7 +379,7 @@ const apiSocket = {
         return { status: 200, message: 'Ok' }
     },
     ingresoCalidadInterna: async (data) => {
-        await ProcesoRepository.ingresoCalidadInterna(data.data, data.user.suer)
+        await CalidadRepository.ingresoCalidadInterna(data.data, data.user.suer)
         return { status: 200, message: 'Ok' }
     },
     put_lotes_clasificacion_descarte: async (req) => {
@@ -490,7 +512,32 @@ const apiSocket = {
         const { data, user } = req;
         await SistemaRepository.modificar_cargo(data, user);
         return { status: 200, message: 'Ok' }
-    }
+    },
+    modificar_programacion_contenedor: async (req) => {
+        const { data, user } = req;
+        await ProcesoRepository.modificar_programacion_contenedor(data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    put_lotes_inspeccion_ingreso: async (req) => {
+        const user = req.user.user;
+        await CalidadRepository.put_lotes_inspeccion_ingreso(req.data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    modificar_estado_cliente: async (req) => {
+        const user = req.user.user;
+        await ComercialRepository.modificar_estado_cliente(req.data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    modificar_info_cliente: async (req) => {
+        const user = req.user.user;
+        await ComercialRepository.modificar_info_cliente(req.data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    add_formulario_programacion_mula: async (req) => {
+        const user = req.user.user;
+        await ProcesoRepository.add_formulario_programacion_mula(req.data, user)
+        return { status: 200, message: 'Ok' }
+    },
 }
 
 module.exports.apiSocket = apiSocket;

@@ -1,6 +1,6 @@
 const { Contenedores } = require("../../DB/mongoDB/schemas/contenedores/schemaContenedores");
 const { recordContenedores } = require("../../DB/mongoDB/schemas/contenedores/schemaRecordContenedores");
-const { ConnectionDBError } = require("../../Error/ConnectionErrors");
+const { ConnectionDBError, PutError } = require("../../Error/ConnectionErrors");
 const { ProcessError, ItemBussyError } = require("../../Error/ProcessError");
 const { oobtener_datos_lotes_to_listaEmpaque } = require("../mobile/utils/contenedoresLotes");
 let bussyIds = new Set();
@@ -549,6 +549,58 @@ class ContenedoresRepository {
             return oldData;
         } catch (err) {
             throw new ConnectionDBError(408, `Error modificando los datos${err.message}`);
+        } finally {
+            bussyIds.delete(id);
+        }
+    }
+    static async modificar_contenedor(id, query, user, action, __v) {
+        /**
+         * Modifica un contenedor en la base de datos de MongoDB.
+         *
+         * @param {string} id - ID del contenedor a modificar.
+         * @param {Object} query - Objeto con los cambios a aplicar al contendor.
+         * @param {string} action - Descripción de la acción realizada.
+         * @param {string} user - Usuario que realiza la acción.
+         * @returns {Promise<Object>} - Promesa que resuelve al objeto del lote modificado.
+         * @throws {PutError} - Lanza un error si ocurre un problema al modificar el contenedor.
+         */
+        this.validateBussyIds(id)
+        try {
+            let updateQuery = { ...query };
+            let findQuery = { _id: id };
+
+            if (__v !== undefined) {
+                // Si se proporciona __v, incluye la comparación de versiones
+                findQuery.__v = __v;
+                updateQuery.$inc = { __v: 1 };
+            }
+
+            const contenedor = await Contenedores.findOneAndUpdate(
+                findQuery,
+                updateQuery,
+                { new: true }
+            );
+
+            if (!contenedor) {
+                throw new Error('Contenedor no encontrado o versión incorrecta');
+            }
+
+            const contenedor_obj = new Object(contenedor.toObject());
+
+            let record = new recordContenedores({
+                operacionRealizada: action,
+                user: user,
+                documento: { ...query, _id: id }
+            })
+
+            await record.save()
+
+            if (!record) {
+                throw new Error('No se pudo guardar el registro de la operación');
+            }
+            return contenedor_obj;
+        } catch (err) {
+            throw new PutError(414, `Error al modificar el dato ${id} => ${err.name} `);
         } finally {
             bussyIds.delete(id);
         }

@@ -4,6 +4,7 @@ const { ProcessError } = require('../../Error/ProcessError');
 const { iniciarRedisDB } = require('../../DB/redis/init');
 const { ConnectRedisError } = require('../../Error/ConnectionErrors');
 const { obtener_datos_lotes_listaEmpaque_cajasSinPallet } = require('../mobile/utils/contenedoresLotes');
+const { procesoEventEmitter } = require('../../events/eventos');
 
 const pathIDs = path.join(__dirname, '..', '..', 'inventory', 'seriales.json');
 const inventarioPath = path.join(__dirname, '..', '..', 'inventory', 'inventario.json');
@@ -11,7 +12,7 @@ const inventarioDesverdizadoPath = path.join(__dirname, '..', '..', 'inventory',
 const ordenVaceoPath = path.join(__dirname, '..', '..', 'inventory', 'OrdenDeVaceo.json');
 const inventarioDescartesPath = path.join(__dirname, '..', '..', 'inventory', 'inventariodescarte.json');
 const cajasSinPalletPath = path.join(__dirname, '..', '..', 'inventory', 'cajasSinPallet.json');
-const observacionesCalidadPath = path.join(__dirname, '..', '..', 'inventory', 'observacionesCalidad.json');
+const observacionesCalidadPath = path.join(__dirname, '..', '..', 'constants', 'observacionesCalidad.json');
 
 
 let inventarioFleg = false; // bandera que indica que el inventario se esta escribiendo
@@ -522,6 +523,10 @@ class VariablesDelSistema {
       ordenVaceoFlag = true
 
       const ordenVaceo = data;
+
+      procesoEventEmitter.emit("orden_vaceo_update", {
+        ordenVaceo: ordenVaceo
+      });
 
       const newOrdenVaceoJSON = JSON.stringify(ordenVaceo);
       fs.writeFileSync(ordenVaceoPath, newOrdenVaceoJSON);

@@ -23,6 +23,7 @@ const { routerAppTv } = require('./server/routes/appTv');
 const { ProcesoRepository } = require('./server/api/Proceso');
 const { SistemaRepository } = require('./server/api/Sistema');
 const { AccessError } = require('./Error/ValidationErrors');
+const { procesoEventEmitter } = require('./events/eventos');
 
 initMongoDB()
 const client = connectPostgresDB()
@@ -150,6 +151,11 @@ async function sendData(data) {
     io.emit('servidor', data)
 };
 
+procesoEventEmitter.on('orden_vaceo_update', (data) => {
+    io.emit("orden_vaceo_update", data)
+});
+
+
 io.on("connection", socket => {
     console.log("an user has connected");
     let ongoingRequests = {};
@@ -165,11 +171,10 @@ io.on("connection", socket => {
 
             // Mark the request as ongoing
             ongoingRequests[data.data.action] = true;
-
-            const autorizado = await UserRepository.autentificacionPermisos(data.user.cargo, data.data.action, data.user.user);
+            // const autorizado = await UserRepository.autentificacionPermisos(data.user.cargo, data.data.action, data.user.user);
             const autorizado2 = await UserRepository.autentificacionPermisos2(data);
 
-            if (!(autorizado || autorizado2)) {
+            if (!autorizado2) {
                 throw new AccessError(412, `Acceso no autorizado ${data.data.action}`);
             }
 
