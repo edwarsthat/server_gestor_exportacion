@@ -151,9 +151,30 @@ async function sendData(data) {
     io.emit('servidor', data)
 };
 
+// #region events
 procesoEventEmitter.on('orden_vaceo_update', (data) => {
-    io.emit("orden_vaceo_update", data)
+    try {
+        io.emit("orden_vaceo_update", data);
+    } catch (error) {
+        console.error('Error en orden_vaceo_update:', error);
+    }
 });
+
+procesoEventEmitter.on('predio_vaciado', (data) => {
+    console.log(data)
+    try {
+        io.emit("predio_vaciado", data);
+    } catch (error) {
+        console.error('Error en predio_vaciado:', error);
+    }
+})
+procesoEventEmitter.on('listaempaque_update', () => {
+    try {
+        io.emit("listaempaque_update");
+    } catch (error) {
+        console.error('Error en listaempaque_update:', error);
+    }
+})
 
 
 io.on("connection", socket => {

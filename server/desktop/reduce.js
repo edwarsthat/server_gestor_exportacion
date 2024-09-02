@@ -65,12 +65,12 @@ const apiSocket = {
         const resultado = lotesKeys.map(id => {
             const lote = lotes.find(lote => lote._id.toString() === id.toString());
 
-            if (lote.desverdizado && lote.desverdizado.fechaFinalizar) {
+            if (lote && lote.desverdizado && lote.desverdizado.fechaFinalizar) {
                 return {
                     ...lote.toObject(),
                     inventario: InvDes[id]
                 }
-            } else if (lote.desverdizado && !lote.desverdizado.fechaFinalizar) {
+            } else if (lote && lote.desverdizado && !lote.desverdizado.fechaFinalizar) {
                 return null
             } else if (lote) {
                 return {
@@ -106,6 +106,7 @@ const apiSocket = {
 
     },
     getOrdenVaceo: async () => {
+
         const oredenVaceo = await VariablesDelSistema.getOrdenVaceo()
         return { status: 200, message: 'Ok', data: oredenVaceo }
     },
@@ -269,6 +270,18 @@ const apiSocket = {
         const response = await ProcesoRepository.obtener_contenedores_programacion_mulas(data)
         return { status: 200, message: 'Ok', data: response }
     },
+    obtener_contenedores_listaDeEmpaque: async () => {
+        const contenedores = await ProcesoRepository.obtener_contenedores_listaDeEmpaque()
+        return { status: 200, message: 'Ok', data: contenedores }
+    },
+    obtener_predio_listaDeEmpaque: async () => {
+        const response = await VariablesDelSistema.obtener_EF1_listaDeEmpaque();
+        return { status: 200, message: 'Ok', data: response }
+    },
+    obtener_cajas_sin_pallet: async () => {
+        const cajasSinPallet = await VariablesDelSistema.obtener_cajas_sin_pallet();
+        return { status: 200, message: 'Ok', data: cajasSinPallet }
+    },
     //#region POST
     guardarLote: async (data) => {
         await ProcesoRepository.addLote(data)
@@ -323,18 +336,8 @@ const apiSocket = {
         return { status: 200, message: 'Ok' }
     },
     desverdizado: async (data) => {
-        const { _id, inventario, desverdizado, __v, action } = data.data;
         const user = data.user.user;
-        const query = {
-            desverdizado: desverdizado,
-            $inc: {
-                __v: 1
-            },
-        }
-        await LotesRepository.modificar_lote(_id, query, action, user, __v);
-
-        await VariablesDelSistema.ingresarInventarioDesverdizado(_id, inventario)
-        await VariablesDelSistema.modificarInventario(_id, inventario);
+        await ProcesoRepository.desverdizado(data.data, user)
         return { status: 200, message: 'Ok' }
     },
     vaciarLote: async (data, sendData) => {
@@ -536,6 +539,37 @@ const apiSocket = {
     add_formulario_programacion_mula: async (req) => {
         const user = req.user.user;
         await ProcesoRepository.add_formulario_programacion_mula(req.data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    add_settings_pallet: async (req) => {
+        const { data, user } = req;
+        const contenedores = await ProcesoRepository.add_settings_pallet(data, user.user);
+
+        return { status: 200, message: 'Ok', data: contenedores }
+    },
+    actualizar_pallet_contenedor: async (req) => {
+        const { data, user } = req;
+        const contenedores = await ProcesoRepository.actualizar_pallet_contenedor(data, user.user);
+        return { status: 200, message: 'Ok', data: contenedores }
+    },
+    eliminar_item_lista_empaque: async (req) => {
+        const { data, user } = req;
+        const contenedores = await ProcesoRepository.eliminar_item_lista_empaque(data, user.user);
+        return { status: 200, message: 'Ok', data: contenedores }
+    },
+    add_pallet_listaempaque: async (req) => {
+        const { data, user } = req;
+        await ProcesoRepository.add_pallet_listaempaque(data, user.user);
+        return { status: 200, message: 'Ok' }
+    },
+    liberar_pallets_lista_empaque: async (req) => {
+        const { data, user } = req;
+        await ProcesoRepository.liberar_pallets_lista_empaque(data, user.user);
+        return { status: 200, message: 'Ok' }
+    },
+    cerrar_contenedor: async (req) => {
+        const { data, user } = req;
+        await ProcesoRepository.cerrar_contenedor(data, user.user);
         return { status: 200, message: 'Ok' }
     },
 }

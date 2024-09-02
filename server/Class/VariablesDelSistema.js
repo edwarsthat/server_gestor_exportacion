@@ -218,17 +218,18 @@ class VariablesDelSistema {
       throw new ConnectRedisError(419, `Error con la conexion con redis predio descarte: ${err.name}`)
     }
   }
-  static modificar_predio_proceso_listaEmpaque = async (lote, cliente) => {
+  static modificar_predio_proceso_listaEmpaque = async (lote) => {
     /**
    * Función que modifica la información del predio en proceso lista de empaque en Redis.
    *
    * @param {Object} lote - El lote con la información a actualizar.
-   * @param {Object} cliente - El cliente de Redis.
    * @returns {Promise<void>} - Promesa que se resuelve cuando la modificación ha terminado.
    * @throws {ConnectRedisError} - Lanza un error si ocurre un problema con la conexión a Redis.
    */
+    let cliente
     try {
-      console.log(lote)
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
       await cliente.hSet("predioProcesandoListaEmpaque", {
         _id: lote._id.toString(),
         enf: lote.enf,
@@ -239,6 +240,11 @@ class VariablesDelSistema {
 
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis predio lista de empaque: ${err.name}`)
+    } finally {
+      if (cliente) {
+        cliente.quit();
+        console.log('Cerrando la conexión con Redis...');
+      }
     }
   }
   static async generar_codigo_celifrut() {

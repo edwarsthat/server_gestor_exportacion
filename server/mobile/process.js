@@ -138,6 +138,18 @@ routerProceso.get("/data_obtener_foto_calidad", async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 })
+routerProceso.get("/getInventario", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        await UserRepository.authenticateToken(token);
+
+        const data = await ProcesoRepository.getInventario()
+        res.json({ status: 200, message: 'Ok', data: data });
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
 
 
 //#region POST
@@ -158,6 +170,45 @@ routerProceso.post("/guardarLote", async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 })
+
+
+//#region put
+routerProceso.post("/directoNacional", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const user = await UserRepository.authenticateToken(token);
+
+        await UserRepository.autentificacionPermisos(user.cargo, "directoNacional")
+
+        const data = req.body
+
+        await ProcesoRepository.directoNacional(data, user.user)
+
+        res.json({ status: 200, message: 'Ok' })
+
+    } catch (err) {
+        res.json({ status: err.status, message: err.message })
+    }
+})
+routerProceso.post("/desverdizado", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const user = await UserRepository.authenticateToken(token);
+
+        await UserRepository.autentificacionPermisos(user.cargo, "desverdizado")
+
+        const data = req.body
+
+        await ProcesoRepository.desverdizado(data, user.user)
+
+        res.json({ status: 200, message: 'Ok' })
+
+    } catch (err) {
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
+
 
 module.exports = {
     routerProceso

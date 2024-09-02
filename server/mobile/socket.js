@@ -3,16 +3,14 @@ const { LotesRepository } = require("../Class/Lotes");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
 const calidadFile = require('../../constants/calidad.json');
 const { procesoEventEmitter } = require("../../events/eventos");
+const { ProcesoRepository } = require("../api/Proceso");
 class socketMobileRepository {
     static async obtener_predio_listaDeEmpaque() {
         const response = await VariablesDelSistema.obtener_EF1_listaDeEmpaque();
         return { status: 200, message: 'Ok', data: response }
     }
     static async obtener_contenedores_listaDeEmpaque() {
-        const contenedores = await ContenedoresRepository.getContenedores({
-            select: { numeroContenedor: 1, infoContenedor: 1, pallets: 1 },
-            query: { 'infoContenedor.cerrado': false }
-        });
+        const contenedores = await ProcesoRepository.obtener_contenedores_listaDeEmpaque()
         return { status: 200, message: 'Ok', data: contenedores }
     }
     static async add_settings_pallet(data) {
@@ -297,7 +295,6 @@ class socketMobileRepository {
     static async liberar_pallets_lista_empaque(data) {
         const { _id, pallet, item, action } = data.data;
         const user = data.user.user;
-        console.log(item);
         await ContenedoresRepository.liberar_pallet_lista_empaque(_id, pallet, item, action, user);
         const contenedores = await ContenedoresRepository.getContenedores({ query: { 'infoContenedor.cerrado': false } });
         return { status: 200, message: 'Ok', data: contenedores }
