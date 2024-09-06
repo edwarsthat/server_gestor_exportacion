@@ -8,6 +8,7 @@ const { UsuariosRepository } = require('../Class/Usuarios');
 const bcrypt = require('bcrypt');
 const { UserRepository } = require('../auth/users');
 const { ValidationUserError } = require('../../Error/ValidationErrors');
+const { InsumosRepository } = require('../Class/Insumos');
 
 class SistemaRepository {
     static async check_mobile_version() {
@@ -206,7 +207,23 @@ class SistemaRepository {
         const filePath = path.join(__dirname, '..', '..', 'updates', 'desktop', filename);
         const fileContents = fs.readFileSync(filePath);
         return fileContents
-
+    }
+    static async obtener_tipo_insumos() {
+        const insumos = await InsumosRepository.get_insumos()
+        return insumos
+    }
+    static async modificar_tipo_insumo(req, user) {
+        const { data, action } = req
+        await InsumosRepository.modificar_insumo(
+            data._id,
+            data,
+            action,
+            user,
+        )
+    }
+    static async add_tipo_insumo(req, user) {
+        const { data } = req;
+        await InsumosRepository.add_tipo_insumo(data, user)
     }
 }
 

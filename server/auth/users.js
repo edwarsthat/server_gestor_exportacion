@@ -246,6 +246,36 @@ class UserRepository {
             console.log(err)
         }
     }
+    static async autentificacionPermisosHttps(cargo, action) {
+        try {
+
+            let permisoOut = false
+            const permisos = await UsuariosRepository.get_cargos({
+                ids: [cargo]
+            });
+            if (!permisos) {
+                return permisoOut
+            }
+            Object.values(permisos[0]._doc).forEach(seccion => {
+                Object.values(seccion).forEach(tipo => {
+                    Object.values(tipo).forEach(item => {
+                        if (item.permisos) {
+                            Object.values(item.permisos).forEach(permiso => {
+                                if (permiso === action) {
+                                    permisoOut = true
+                                }
+                            })
+                        }
+                    })
+                })
+            })
+            return permisoOut
+        } catch (err) {
+            // console.log(err.message, `Cargo: ${cargo}  User:${user}`)
+            // throw new AccessError(412, `Accesos no autorizado ${action}`);
+            console.log(err)
+        }
+    }
 }
 
 class Validation {

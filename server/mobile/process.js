@@ -2,6 +2,7 @@ const express = require('express');
 const { UserRepository } = require("../auth/users");
 const { ProcesoRepository } = require("../api/Proceso");
 const { VariablesDelSistema } = require('../Class/VariablesDelSistema');
+const { AccessError } = require('../../Error/ValidationErrors');
 const routerProceso = express.Router();
 
 
@@ -66,9 +67,14 @@ routerProceso.put("/add-fotos-calidad", async (req, res) => {
 routerProceso.get("/data_historial_descarte_lavado_proceso", async (req, res) => {
     try {
         const token = req.headers['authorization'];
-        const { user } = await UserRepository.authenticateToken(token);
+        const { user, cargo } = await UserRepository.authenticateToken(token);
 
-        const data = await ProcesoRepository.obtener_historial_decarte_lavado_proceso(user.user);
+        const autorizado2 = await UserRepository.autentificacionPermisosHttps(cargo, "obtener_historial_decarte_lavado_proceso");
+        if (!autorizado2) {
+            throw new AccessError(412, `Acceso no autorizado obtener_historial_decarte_lavado_proceso`);
+        }
+
+        const data = await ProcesoRepository.obtener_historial_decarte_lavado_proceso(user);
         res.json({ status: 200, message: 'Ok', data: data });
     } catch (err) {
         console.log(`Code ${err.status}: ${err.message}`)
@@ -79,8 +85,12 @@ routerProceso.get("/data_historial_descarte_lavado_proceso", async (req, res) =>
 routerProceso.get("/data_historial_descarte_encerado_proceso", async (req, res) => {
     try {
         const token = req.headers['authorization'];
-        const { user } = await UserRepository.authenticateToken(token);
+        const { user, cargo } = await UserRepository.authenticateToken(token);
 
+        const autorizado2 = await UserRepository.autentificacionPermisosHttps(cargo, "obtener_historial_decarte_lavado_proceso");
+        if (!autorizado2) {
+            throw new AccessError(412, `Acceso no autorizado obtener_historial_decarte_encerado_proceso`);
+        }
         const data = await ProcesoRepository.obtener_historial_decarte_encerado_proceso(user.user);
         res.json({ data: data, status: 200, message: 'Ok' });
     } catch (err) {

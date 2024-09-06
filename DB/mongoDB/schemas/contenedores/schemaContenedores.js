@@ -6,6 +6,14 @@ const { Schema } = mongoose;
 
 const conn = mongoose.createConnection(process.env.MONGODB_PROCESO);
 
+const insumosSchema = new Schema({
+  any: {
+    type: Map,
+    of: Number
+  },
+  flagInsumos: { type: Boolean, default: false }
+}, { _id: false, strict: false })
+
 const listaLiberarPalletSchema = new Schema(
   {
     rotulado: Boolean,
@@ -114,6 +122,7 @@ const listaEmpaqueSchema = new Schema({
   pallets: [{ type: Map, of: subSchema }],
   infoContenedor: infoContenedorSchema,
   infoTractoMula: schemaInfoMula,
+  insumosData: insumosSchema
 });
 
 // Middleware to update `ultimaModificacion` field

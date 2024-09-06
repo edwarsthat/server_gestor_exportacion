@@ -495,13 +495,14 @@ class ContenedoresRepository {
             bussyIds.delete(id);
         }
     }
-    static async cerrar_lista_empaque(id, action, user) {
+    static async cerrar_lista_empaque(id, insumos, action, user) {
         this.validateBussyIds(id)
         try {
 
             await Contenedores.updateOne(
                 { _id: id },
                 {
+                    ...insumos,
                     'infoContenedor.cerrado': true,
                     'infoContenedor.fechaFinalizado': new Date(),
                 });

@@ -10,7 +10,9 @@ const { ProveedoresRepository } = require("../Class/Proveedores");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
 const fs = require("fs");
 const { startOfDay, parse, endOfDay } = require('date-fns');
-const calidadFile = require('../../constants/calidad.json')
+const calidadFile = require('../../constants/calidad.json');
+const { insumos_contenedor } = require("../functions/insumos");
+const { InsumosRepository } = require("../Class/Insumos");
 
 class ProcesoRepository {
 
@@ -287,10 +289,10 @@ class ProcesoRepository {
     }
     static async obtener_historial_decarte_lavado_proceso(user) {
         const recordLotes = await RecordLotesRepository.getRecordLotes({
-            user: user,
             query: {
-                operacionRealizada: 'ingresar_descarte_lavado'
-            }
+                operacionRealizada: 'ingresar_descarte_lavado',
+            },
+            user: user
         })
         const lotesIds = recordLotes.map(lote => lote.documento._id);
         const lotes = await LotesRepository.getLotes({
@@ -448,6 +450,17 @@ class ProcesoRepository {
         });
         return contenedores
     }
+    static async obtener_contenedores_to_add_insumos() {
+        const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            select: { numeroContenedor: 1, infoContenedor: 1, insumosData: 1, __v: 1 },
+            query: {
+                'infoContenedor.cerrado': true,
+                "insumosData.flagInsumos": false  // aun no hay Contenedores con ese elemento
+            }
+        });
+        return contenedores
+    }
+
     // #region PUT 
     static async ingresar_descarte_lavado(req, user) {
         const { _id, data, action } = req;
@@ -704,7 +717,7 @@ class ProcesoRepository {
         await VariablesDelSistema.ingresarInventarioDesverdizado(_id, inventario)
         await VariablesDelSistema.modificarInventario(_id, inventario);
     }
-    //lista de empaque
+    //? lista de empaque
     static async add_settings_pallet(req, user) {
         const { _id, pallet, settings, action } = req;
         await ContenedoresRepository.agregar_settings_pallet(_id, pallet, settings, action, user);
@@ -800,11 +813,208 @@ class ProcesoRepository {
         procesoEventEmitter.emit("listaempaque_update");
         return contenedores
     }
+    static async restar_item_lista_empaque(req, user) {
+        const { action, _id, pallet, seleccion, cajas } = req;
+
+        const item = await ContenedoresRepository.restar_item_lista_empaque(_id, pallet, seleccion, cajas, action, user)
+
+        const { lote, calidad, tipoCaja } = item
+        const mult = Number(tipoCaja.split("-")[1])
+        const kilos = cajas * mult;
+        const query = { $inc: {} }
+        query.$inc[calidadFile[calidad]] = -kilos;
+
+        const loteDB = await LotesRepository.modificar_lote_proceso(lote, query, action, user);
+        await LotesRepository.rendimiento(loteDB);
+        await LotesRepository.deshidratacion(loteDB);
+
+        const { kilosProcesadosHoy, kilosExportacionHoy } = await VariablesDelSistema.ingresar_exportacion(-kilos)
+        procesoEventEmitter.emit("proceso_event", {
+            kilosProcesadosHoy: kilosProcesadosHoy,
+            kilosExportacionHoy: kilosExportacionHoy
+        });
+        const contenedores = await ContenedoresRepository.getContenedores({ query: { 'infoContenedor.cerrado': false } });
+        procesoEventEmitter.emit("listaempaque_update");
+
+        return contenedores
+    }
+    static async mover_item_lista_empaque(req, user) {
+        const { contenedor1, contenedor2, cajas, action } = req;
+
+        if (contenedor1.pallet !== -1 && contenedor2.pallet !== -1 && cajas === 0) {
+            await this.mover_item_entre_contenedores(contenedor1, contenedor2, action, user);
+        } else if (contenedor1.pallet === -1 && contenedor2.pallet !== -1 && cajas === 0) {
+            await this.mover_item_cajasSinPallet_contenedor(contenedor1, contenedor2, action, user)
+        } else if (contenedor1.pallet !== -1 && contenedor2._id === -1 && cajas === 0) {
+            await this.mover_item_contenedor_cajasSinPallet(contenedor1, action, user)
+        } else if (contenedor1.pallet !== -1 && contenedor2.pallet !== -1 && cajas !== 0) {
+            await this.restar_mover_contenedor_contenedor(contenedor1, contenedor2, cajas, action, user)
+        } else if (contenedor1.pallet === -1 && contenedor2.pallet !== -1 && cajas !== 0) {
+            await this.restar_mover_item_cajasSinPallet_contenedor(contenedor1, contenedor2, cajas, action, user)
+        } else if (contenedor1.pallet !== -1 && contenedor2._id === -1 && cajas !== 0) {
+            await this.restar_mover_item_contenedor_cajasSinPallet(contenedor1, cajas, action, user)
+        }
+
+        const contenedores = await ContenedoresRepository.getContenedores({ query: { 'infoContenedor.cerrado': false } });
+        const cajasSinPallet = await VariablesDelSistema.obtener_cajas_sin_pallet();
+        procesoEventEmitter.emit("listaempaque_update");
+
+        return { contenedores: contenedores, cajasSinPallet: cajasSinPallet }
+    }
+    static async mover_item_entre_contenedores(contenedor1, contenedor2, action, user) {
+        const seleccionOrdenado = contenedor1.seleccionado.sort((a, b) => b - a);
+        //se eliminan los items de la lista de empaque
+        const items = await ContenedoresRepository.mover_items_lista_empaque(
+            contenedor1._id,
+            contenedor2._id,
+            contenedor1.pallet,
+            contenedor2.pallet,
+            seleccionOrdenado,
+            action,
+            user
+        );
+        const query = {
+            $addToSet: { contenedores: contenedor2._id }
+        }
+        const idsArr = items.map(item => item.lote)
+        const lotesSet = new Set(idsArr);
+        const lotesIds = [...lotesSet];
+        for (let i = 0; i < lotesIds.length; i++) {
+            await LotesRepository.modificar_lote_proceso(lotesIds[i], query, `Se agrega contenedor ${contenedor2._id}`, user)
+        }
+    }
+    static async mover_item_cajasSinPallet_contenedor(contenedor1, contenedor2, action, user) {
+        const seleccionOrdenado = contenedor1.seleccionado.sort((a, b) => b - a);
+        const items = await VariablesDelSistema.eliminar_items_cajas_sin_pallet(seleccionOrdenado);
+
+        await ContenedoresRepository.agregar_items_lista_empaque(contenedor2._id, contenedor2.pallet, items, action, user)
+
+        const query = {
+            $addToSet: { contenedores: contenedor2._id }
+        }
+        const idsArr = items.map(item => item.lote)
+        const lotesSet = new Set(idsArr);
+        const lotesIds = [...lotesSet];
+        for (let i = 0; i < lotesIds.length; i++) {
+            await LotesRepository.modificar_lote_proceso(lotesIds[i], query, `Se agrega contenedor ${contenedor2._id}`, user)
+        }
+
+    }
+    static async mover_item_contenedor_cajasSinPallet(contenedor1, action, user) {
+        const seleccionOrdenado = contenedor1.seleccionado.sort((a, b) => b - a);
+        const items = await ContenedoresRepository.eliminar_items_lista_empaque(
+            contenedor1._id,
+            contenedor1.pallet,
+            seleccionOrdenado,
+            action,
+            user
+        );
+        for (let i = 0; i < items.length; i++) {
+            await VariablesDelSistema.ingresar_item_cajas_sin_pallet(items[i])
+        }
+
+    }
+    static async restar_mover_contenedor_contenedor(contenedor1, contenedor2, cajas, action, user) {
+        const seleccionOrdenado = contenedor1.seleccionado;
+        //se eliminan los items de la lista de empaque
+        const items = await ContenedoresRepository.restar_mover_items_lista_empaque(
+            contenedor1._id,
+            contenedor2._id,
+            contenedor1.pallet,
+            contenedor2.pallet,
+            seleccionOrdenado,
+            cajas,
+            action,
+            user
+        );
+        const query = {
+            $addToSet: { contenedores: contenedor2._id }
+        }
+
+        await LotesRepository.modificar_lote_proceso(items.lote, query, `Se agrega contenedor ${contenedor2._id}`, user)
+
+
+    }
+    static async restar_mover_item_cajasSinPallet_contenedor(contenedor1, contenedor2, cajas, action, user) {
+        const seleccionOrdenado = contenedor1.seleccionado;
+        const item = await VariablesDelSistema.restar_items_cajas_sin_pallet(seleccionOrdenado, cajas);
+
+        await ContenedoresRepository.actualizar_pallet_contenedor(
+            contenedor2._id,
+            contenedor2.pallet,
+            item,
+            action,
+            user);
+        const query = {
+            $addToSet: { contenedores: contenedor2._id }
+        }
+
+        await LotesRepository.modificar_lote_proceso(item.lote, query, `Se agrega contenedor ${contenedor2._id}`, user)
+
+    }
+    static async restar_mover_item_contenedor_cajasSinPallet(contenedor1, cajas, action, user) {
+        const seleccionOrdenado = contenedor1.seleccionado;
+        const item = await ContenedoresRepository.restar_item_lista_empaque(
+            contenedor1._id,
+            contenedor1.pallet,
+            seleccionOrdenado[0],
+            cajas,
+            action,
+            user
+        );
+        item.cajas = cajas
+
+        await VariablesDelSistema.ingresar_item_cajas_sin_pallet(item)
+    }
+    static async agregar_cajas_sin_pallet(req, user) {
+        const { item } = req.data;
+        await VariablesDelSistema.ingresar_item_cajas_sin_pallet(item)
+        //se agrega la exportacion a el lote
+        const kilos = Number(item.tipoCaja.split('-')[1])
+        let kilosTotal = kilos * Number(item.cajas)
+
+        const query = { $inc: {} }
+        query.$inc[calidadFile[item.calidad]] = kilosTotal
+        const lote = await LotesRepository.modificar_lote_proceso(item.lote, query, "Agregar exportacion", user)
+        await LotesRepository.rendimiento(lote);
+        await LotesRepository.deshidratacion(lote);
+
+        const { kilosProcesadosHoy, kilosExportacionHoy } = await VariablesDelSistema.ingresar_exportacion(kilosTotal)
+        procesoEventEmitter.emit("proceso_event", {
+            kilosProcesadosHoy: kilosProcesadosHoy,
+            kilosExportacionHoy: kilosExportacionHoy
+        });
+
+        //envia las cajas sin pallet actualizadas
+        const cajasSinPallet = await VariablesDelSistema.obtener_cajas_sin_pallet();
+        return cajasSinPallet
+    }
     static async cerrar_contenedor(req, user) {
         const { _id, action } = req;
-        await ContenedoresRepository.cerrar_lista_empaque(_id, action, user);
+        const contenedor = await ContenedoresRepository.getContenedores({ ids: [_id] });
+        const lista = await insumos_contenedor(contenedor[0])
+        const listasAlias = Object.keys(lista);
+        const idsInsumos = await InsumosRepository.get_insumos({
+            query: {
+                alias: { $in: listasAlias },
+            }
+        })
+        const listaInsumos = {};
+        idsInsumos.forEach(item => {
+            listaInsumos[`insumosData.${item._id.toString()}`] = lista[item.alias]
+        })
+        await ContenedoresRepository.cerrar_lista_empaque(_id, listaInsumos, action, user);
         procesoEventEmitter.emit("listaempaque_update");
         return { status: 200, message: 'Ok' }
+    }
+    static async add_contenedor_insumos_items(req, user) {
+        const { action, data, _id, __v } = req
+        const query = {
+            insumosData: data
+        }
+        await ContenedoresRepository.modificar_contenedor(
+            _id, query, user, action, __v
+        );
     }
     // #region POST
     static async addLote(data) {

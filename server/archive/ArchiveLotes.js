@@ -26,6 +26,7 @@ class RecordLotesRepository {
             query = {},
             select = {},
             sort = { createdAt: -1 },
+            limit = 50,
             user = '',
         } = options;
         try {
@@ -42,7 +43,7 @@ class RecordLotesRepository {
             const lotes = recordLotes.find(lotesQuery)
                 .select(select)
                 .sort(sort)
-                .populate({ path: 'documento.predio', select: 'PREDIO ICA' })
+                .limit(limit)
                 .exec();
 
             return lotes;
