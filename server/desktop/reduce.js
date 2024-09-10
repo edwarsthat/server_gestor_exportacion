@@ -300,6 +300,16 @@ const apiSocket = {
         const insumos = await ProcesoRepository.obtener_contenedores_to_add_insumos();
         return { status: 200, message: 'Ok', data: insumos }
     },
+    obtener_lotes_fotos_calidad: async () => {
+        const lotes = await ProcesoRepository.obtener_lotes_fotos_calidad();
+        return { status: 200, message: 'Ok', data: lotes }
+    },
+    obtener_contenedores_historial_listas_empaque: async (req) => {
+        const { data } = req;
+        const contenedores = await ProcesoRepository.obtener_contenedores_historial_listas_empaque(data)
+        return { status: 200, message: 'Ok', data: contenedores }
+
+    },
     //#region POST
     guardarLote: async (data) => {
         await ProcesoRepository.addLote(data)
@@ -602,6 +612,11 @@ const apiSocket = {
     add_contenedor_insumos_items: async (req) => {
         const { data, user } = req
         await ProcesoRepository.add_contenedor_insumos_items(data, user.user)
+        return { status: 200, message: 'Ok' }
+    },
+    ingresar_foto_calidad: async (req) => {
+        const { data, user } = req
+        await ProcesoRepository.ingresar_foto_calidad(data, user.user)
         return { status: 200, message: 'Ok' }
     },
 

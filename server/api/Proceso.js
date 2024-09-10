@@ -455,9 +455,28 @@ class ProcesoRepository {
             select: { numeroContenedor: 1, infoContenedor: 1, insumosData: 1, __v: 1 },
             query: {
                 'infoContenedor.cerrado': true,
-                "insumosData.flagInsumos": false  // aun no hay Contenedores con ese elemento
+                insumosData: { $exists: true },
+                $or: [
+                    { 'insumosData.flagInsumos': false }, // Contenedores con flagInsumos en false
+                    { 'insumosData.flagInsumos': { $exists: false } } // O contenedores donde no exista flagInsumos
+                ]
             }
         });
+        return contenedores
+    }
+    static async obtener_contenedores_historial_listas_empaque(req) {
+        const { page } = req
+        const resultsPerPage = 25;
+        const contenedores = await ContenedoresRepository.getContenedores({
+            skip: (page - 1) * resultsPerPage,
+            limit: resultsPerPage,
+            select: {
+                infoContenedor: 1,
+                __v: 1,
+                pallets: 1,
+                numeroContenedor: 1
+            }
+        })
         return contenedores
     }
 
@@ -720,8 +739,20 @@ class ProcesoRepository {
     //? lista de empaque
     static async add_settings_pallet(req, user) {
         const { _id, pallet, settings, action } = req;
-        await ContenedoresRepository.agregar_settings_pallet(_id, pallet, settings, action, user);
+
+        const contenedor = await ContenedoresRepository.agregar_settings_pallet(_id, pallet, settings, action, user);
         const contenedores = await ContenedoresRepository.getContenedores({ query: { 'infoContenedor.cerrado': false } });
+        if (!Object.prototype.hasOwnProperty.call(
+            contenedor.infoContenedor, "fechaInicioReal"
+        )) {
+            await ContenedoresRepository.modificar_contenedor(
+                _id,
+                { "infoContenedor.fechaInicioReal": new Date() },
+                user,
+                "Inicio real del contenedor",
+                contenedor.__v
+            )
+        }
         procesoEventEmitter.emit("listaempaque_update");
         return contenedores
     }

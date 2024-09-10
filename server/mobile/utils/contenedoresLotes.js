@@ -10,7 +10,13 @@ const oobtener_datos_lotes_to_listaEmpaque = async (contenedores) => {
                 for (let n = 0; n < contenedores[i].pallets[j].get("EF1").length; n++) {
                     const lote = lotes.find(item => item._id.toString() === contenedores[i].pallets[j].get("EF1")[n].lote);
                     contenedores[i].pallets[j].get("EF1")[n].lote = typeof lote === "object" ?
-                        { enf: lote._doc.enf, predio: lote._doc.predio.PREDIO, _id: lote._doc._id }
+                        {
+                            enf: lote._doc.enf,
+                            predio: lote._doc.predio.PREDIO,
+                            _id: lote._doc._id,
+                            ICA: lote._doc.predio.ICA,
+                            GGN: lote._doc.predio.GGN
+                        }
                         :
                         contenedores[i].pallets[j].get("EF1")[n].lote;
                 }

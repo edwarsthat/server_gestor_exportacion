@@ -160,6 +160,7 @@ class ContenedoresRepository {
                 }
             })
             await record.save();
+            return contenedor
 
         } catch (err) {
             throw new ConnectionDBError(408, `Error guardando la configuracion del pallet ${err.message}`);

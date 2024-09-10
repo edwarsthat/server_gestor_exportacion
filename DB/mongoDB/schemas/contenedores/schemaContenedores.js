@@ -41,7 +41,8 @@ const EF1Schema = new Schema({
   tipoCaja: String,
   calibre: Number,
   calidad: Number,
-  fecha: Date
+  fecha: Date,
+  tipoFruta: String
 });
 
 const subSchema = new Schema(
@@ -57,6 +58,7 @@ const infoContenedorSchema = new Schema({
   clienteInfo: { type: Schema.Types.ObjectId, ref: Clientes },
   fechaCreacion: Date,
   fechaInicio: Date,
+  fechaInicioReal: Date,
   fechaFinalizado: Date,
   fechaEstimadaCargue: Date,
   fechaSalida: Date,

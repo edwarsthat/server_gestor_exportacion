@@ -6,18 +6,19 @@ const pilaPath = 'C:/Users/SISTEMA/Documents/Servidor/Servidor3.0/aws/pilaSync.j
 
 class UploaAWSRepository {
     static async upload_item_inventario_fruta_sin_procesar(lote, canastillas) {
+        const data = {
+            _id: lote._id,
+            enf: lote.enf,
+            predio: lote.predio,
+            fechaIngreso: lote.fechaIngreso,
+            tipoFruta: lote.tipoFruta,
+            clasificacionCalidad: lote.clasificacionCalidad,
+            observaciones: lote.observaciones,
+            promedio: lote.promedio,
+            inventario: canastillas
+        }
         try {
-            const data = {
-                _id: lote._id,
-                enf: lote.enf,
-                predio: lote.predio,
-                fechaIngreso: lote.fechaIngreso,
-                tipoFruta: lote.tipoFruta,
-                clasificacionCalidad: lote.clasificacionCalidad,
-                observaciones: lote.observaciones,
-                promedio: lote.promedio,
-                inventario: canastillas
-            }
+
             const responseJSON = await fetch("https://7vdbitqlwz4nnzhu5knlpfdaam0emuka.lambda-url.us-east-2.on.aws/", {
                 method: "PUT",
                 headers: {
@@ -43,6 +44,14 @@ class UploaAWSRepository {
             const response = await responseJSON.json();
             console.log(response)
         } catch (err) {
+            await this.guardar_datos_para_sincronisar({
+                _id: lote._id,
+                data: data,
+                action: "upload_item_inventario_fruta_sin_procesar",
+                timeStamp: new Date(),
+                code: 401,
+                errorMessage: "Error conectando con aws"
+            })
             throw new ConnectAWS_Error(401, `Error subiendo el inventario ${err.message}`)
         }
     }

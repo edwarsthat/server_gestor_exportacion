@@ -59,6 +59,8 @@ routerProceso.put("/add-fotos-calidad", async (req, res) => {
         res.json({ status: 200, message: 'Ok' })
 
     } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+
         res.json({ status: err.status, message: err.message })
     }
 })
