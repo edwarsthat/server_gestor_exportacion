@@ -4,7 +4,8 @@ const { connectProcesoDB, connectSistemaDB } = require('./config');
 
 const checkMongoDBRunning = () => {
     return new Promise((resolve) => {
-        mongoose.connect('mongodb://localhost:27017/', { serverSelectionTimeoutMS: 5000 })
+        mongoose.connect(`mongodb://localhost:${process.env.MONGO_PORT}/`,
+            { serverSelectionTimeoutMS: 5000 })
             .then(() => {
                 mongoose.connection.close();
                 resolve(true);

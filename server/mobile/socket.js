@@ -29,7 +29,6 @@ class socketMobileRepository {
         return { status: 200, message: 'Ok', data: contenedores }
     }
     static async restar_item_lista_empaque(req) {
-        console.log(req)
         const { data, user } = req;
         const contenedores = await ProcesoRepository.restar_item_lista_empaque(data, user.user);
         return { status: 200, message: 'Ok', data: contenedores }
@@ -95,7 +94,7 @@ class socketMobileRepository {
     }
     static async cerrar_contenedor(req) {
         const { data, user } = req;
-        const contenedores = await ProcesoRepository.liberar_pallets_lista_empaque(data, user.user);
+        const contenedores = await ProcesoRepository.cerrar_contenedor(data, user.user);
         return { status: 200, message: 'Ok', data: contenedores }
     }
     static async modificar_items_lista_empaque(datos) {

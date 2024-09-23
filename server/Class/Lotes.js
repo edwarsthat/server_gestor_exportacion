@@ -71,7 +71,7 @@ class LotesRepository {
             sort = { fechaIngreso: -1 },
             limit = 50,
             skip = 0,
-            populate = { path: 'predio', select: 'PREDIO ICA' }
+            populate = { path: 'predio', select: 'PREDIO ICA GGN' }
         } = options;
         try {
             let lotesQuery = { ...query };

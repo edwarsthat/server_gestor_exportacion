@@ -23,7 +23,7 @@ const NaranjaPrecioSchema = new Schema({
 
 const PrecioSchema = new Schema({
   Limon: LimonPrecioSchema,
-  Naranja:NaranjaPrecioSchema,
+  Naranja: NaranjaPrecioSchema,
   fecha: { type: Date, default: Date.now }
 });
 
@@ -34,14 +34,16 @@ const PredioSchema = new Schema({
   "CODIGO INTERNO": { type: String, required: true },
   GGN: String,
   "FECHA VENCIMIENTO GGN": String,
-  N: String,
-  L: String,
-  M: String,
+  N: Boolean,
+  L: Boolean,
+  M: Boolean,
   PROVEEDORES: String,
   DEPARTAMENTO: String,
   urlArchivos: [String],
   activo: { type: Boolean, required: true, default: true },
   precio: PrecioSchema,
+  SISPAP: { type: Boolean, default: false },
+  alt: { type: Schema.Types.ObjectId, ref: 'Proveedor' }
 });
 
 

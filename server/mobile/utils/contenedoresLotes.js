@@ -15,7 +15,8 @@ const oobtener_datos_lotes_to_listaEmpaque = async (contenedores) => {
                             predio: lote._doc.predio.PREDIO,
                             _id: lote._doc._id,
                             ICA: lote._doc.predio.ICA,
-                            GGN: lote._doc.predio.GGN
+                            GGN: lote._doc.predio.GGN,
+                            predioID: lote._doc.predio._id
                         }
                         :
                         contenedores[i].pallets[j].get("EF1")[n].lote;

@@ -33,80 +33,15 @@ const apiSocket = {
         return { data: resultado, status: 200, message: 'Ok' }
     },
     getInventario_orden_vaceo: async () => {
-        //se obtiene los datos del inventario
-        const inventario = await VariablesDelSistema.getInventario();
-        const inventarioKeys = Object.keys(inventario)
-
-        // se obtiene el inventario de desverdizado 
-        const InvDes = await VariablesDelSistema.getInventarioDesverdizado();
-        const InvDesKeys = Object.keys(InvDes);
-
-        const arrLotesKeys = inventarioKeys.concat(InvDesKeys);
-        const setLotesKeys = new Set(arrLotesKeys);
-        const lotesKeys = [...setLotesKeys];
-
-        const lotes = await LotesRepository.getLotes({
-            ids: lotesKeys,
-            select: {
-                __v: 1,
-                clasificacionCalidad: 1,
-                nombrePredio: 1,
-                fechaIngreso: 1,
-                observaciones: 1,
-                tipoFruta: 1,
-                promedio: 1,
-                enf: 1,
-                kilosVaciados: 1,
-                directoNacional: 1,
-                desverdizado: 1,
-            }
-        });
-
-        const resultado = lotesKeys.map(id => {
-            const lote = lotes.find(lote => lote._id.toString() === id.toString());
-
-            if (lote && lote.desverdizado && lote.desverdizado.fechaFinalizar) {
-                return {
-                    ...lote.toObject(),
-                    inventario: InvDes[id]
-                }
-            } else if (lote && lote.desverdizado && !lote.desverdizado.fechaFinalizar) {
-                return null
-            } else if (lote) {
-                return {
-                    ...lote.toObject(),
-                    inventario: inventario[id]
-                }
-            }
-            return null
-        }).filter(item => item !== null);
-
+        const resultado = await ProcesoRepository.getInventario_orden_vaceo();
         return { data: resultado, status: 200, message: 'Ok' }
     },
     getInventarioDesverdizado: async () => {
-        const InvDes = await VariablesDelSistema.getInventarioDesverdizado();
-        const InvDesKeys = Object.keys(InvDes);
-        const lotes = await LotesRepository.getLotes({
-            ids: InvDesKeys,
-            select: { promedio: 1, enf: 1, desverdizado: 1, kilosVaciados: 1, __v: 1 },
-            sort: { "desverdizado.fechaIngreso": -1 }
-        });
-        //se agrega las canastillas en inventario
-        const resultado = InvDesKeys.map(id => {
-            const lote = lotes.find(lote => lote._id.toString() === id.toString());
-            if (lote) {
-                return {
-                    ...lote.toObject(),
-                    inventarioDesverdizado: InvDes[id]
-                }
-            }
-            return null
-        }).filter(item => item !== null);
-        return { data: resultado, status: 200, message: 'Ok' }
+        const response = await ProcesoRepository.getInventarioDesverdizado()
+        return { data: response, status: 200, message: 'Ok' }
 
     },
     getOrdenVaceo: async () => {
-
         const oredenVaceo = await VariablesDelSistema.getOrdenVaceo()
         return { status: 200, message: 'Ok', data: oredenVaceo }
     },
@@ -150,6 +85,10 @@ const apiSocket = {
     },
     getClientes: async () => {
         const clientes = await ComercialRepository.get_clientes();
+        return { status: 200, message: 'Ok', data: clientes }
+    },
+    obtener_clientes_historial_contenedores: async () => {
+        const clientes = await ComercialRepository.obtener_clientes_historial_contenedores();
         return { status: 200, message: 'Ok', data: clientes }
     },
     get_lotes_inspeccion_ingreso: async () => {
@@ -309,6 +248,11 @@ const apiSocket = {
         const contenedores = await ProcesoRepository.obtener_contenedores_historial_listas_empaque(data)
         return { status: 200, message: 'Ok', data: contenedores }
 
+    },
+    obtener_contenedores_historial_buscar: async (req) => {
+        const { data } = req;
+        const contenedores = await ProcesoRepository.obtener_contenedores_historial_buscar(data)
+        return { status: 200, message: 'Ok', data: contenedores }
     },
     //#region POST
     guardarLote: async (data) => {

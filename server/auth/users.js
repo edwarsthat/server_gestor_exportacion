@@ -3,20 +3,20 @@ const { ValidationUserError, ValidationTokenError, AccessError } = require('../.
 const { UsuariosRepository } = require('../Class/Usuarios');
 
 class UserRepository {
-    static async login(user, client) {
-        /**
-         * Funcion donde se valida el inicio de sesion
-         * 
-         * @param {{user:string, password:string}} user - Un objeto que contiene la informacion de inicio de sesion
-         * @param {conexion mongoDB} client -La conexion con la base de datos mongo
-         */
+    // static async login(user, client) {
+    //     /**
+    //      * Funcion donde se valida el inicio de sesion
+    //      * 
+    //      * @param {{user:string, password:string}} user - Un objeto que contiene la informacion de inicio de sesion
+    //      * @param {conexion mongoDB} client -La conexion con la base de datos mongo
+    //      */
 
-        Validation.userName(user);
-        Validation.password(user);
-        const userInfo = await Validation.check_user_exist(user, client);
-        Validation.check_password(user.password, userInfo.contrasenna);
-        return userInfo
-    }
+    //     Validation.userName(user);
+    //     Validation.password(user);
+    //     const userInfo = await Validation.check_user_exist(user, client);
+    //     Validation.check_password(user.password, userInfo.contrasenna);
+    //     return userInfo
+    // }
     static async validate_password(user) {
         /**
        * Valida los valores de la contraseña sean validos
@@ -278,91 +278,91 @@ class UserRepository {
     }
 }
 
-class Validation {
-    static userName(user) {
-        /**
-         * Valida los valores de usuario son validos
-         * 
-         * @param {{user:string, password:string}} user - Un objeto que contiene la informacion de inicio de sesion
-         * @throws {TypeError} - Retorna un error de tipo si no cumple con alguna de las condiciones
-         * @return {void}
-         * 
-         */
+// class Validation {
+//     static userName(user) {
+//         /**
+//          * Valida los valores de usuario son validos
+//          * 
+//          * @param {{user:string, password:string}} user - Un objeto que contiene la informacion de inicio de sesion
+//          * @throws {TypeError} - Retorna un error de tipo si no cumple con alguna de las condiciones
+//          * @return {void}
+//          * 
+//          */
 
-        if (typeof user.user !== "string") throw new ValidationUserError(401, "El usuario debe ser texto")
-        if (user.user < 3) throw new ValidationUserError(401, "El usuario debe tener mas de 3 letras")
-    }
+//         if (typeof user.user !== "string") throw new ValidationUserError(401, "El usuario debe ser texto")
+//         if (user.user < 3) throw new ValidationUserError(401, "El usuario debe tener mas de 3 letras")
+//     }
 
-    static password(user) {
-        /**
-       * Valida los valores de la contraseña sean validos
-       * 
-       * @param {{user:string, password:string}} useer - Un objeto que contiene la informacion de inicio de sesion
-       * @throws {TypeError} - Retorna un error de tipo si no cumple con alguna de las condiciones
-       * @return {void}
-       */
-        if (typeof user.password !== "string") throw new ValidationUserError(402, "El password debe ser texto")
-        if (user.password < 3) throw new ValidationUserError(402, "La constraseña debe tener mas de 3 caracteres de largo")
-    }
+//     static password(user) {
+//         /**
+//        * Valida los valores de la contraseña sean validos
+//        * 
+//        * @param {{user:string, password:string}} useer - Un objeto que contiene la informacion de inicio de sesion
+//        * @throws {TypeError} - Retorna un error de tipo si no cumple con alguna de las condiciones
+//        * @return {void}
+//        */
+//         if (typeof user.password !== "string") throw new ValidationUserError(402, "El password debe ser texto")
+//         if (user.password < 3) throw new ValidationUserError(402, "La constraseña debe tener mas de 3 caracteres de largo")
+//     }
 
-    static async check_user_exist(obj, client) {
-        /**
-         * 
-         * Busca si existe en usuario, en caso de existir devuelve los datos
-         * 
-         * @param {{user:string, password:string}} obj - El  objeto con la informacion de inicio de sesion
-         * @param {object} client - Es la conexion con la base de datos postgresDB
-         * @throws {
-         *  "name": "ValidationError",
-         *  "status": 401,
-         *  "message": "Error usuario no encontrado"
-        * }- Error 401 si el usuario no existe 
-         * @return {
-         *   usuario_id:number,
-         *   usuario:string,
-         *   contrasenna: string,
-         *   cargo: string,
-         *   cargo_id: number,
-         *   permisos: string[]
-         *   }
-         */
+//     static async check_user_exist(obj, client) {
+//         /**
+//          * 
+//          * Busca si existe en usuario, en caso de existir devuelve los datos
+//          * 
+//          * @param {{user:string, password:string}} obj - El  objeto con la informacion de inicio de sesion
+//          * @param {object} client - Es la conexion con la base de datos postgresDB
+//          * @throws {
+//          *  "name": "ValidationError",
+//          *  "status": 401,
+//          *  "message": "Error usuario no encontrado"
+//         * }- Error 401 si el usuario no existe 
+//          * @return {
+//          *   usuario_id:number,
+//          *   usuario:string,
+//          *   contrasenna: string,
+//          *   cargo: string,
+//          *   cargo_id: number,
+//          *   permisos: string[]
+//          *   }
+//          */
 
-        const { user, } = obj;
-        const query = `
-            SELECT u.usuario_id, u.usuario, u.contrasenna, u.cargo_id, array_agg(p.nombre) as permisos, c.nombre as cargo
-            FROM "usuarios" u
-            LEFT JOIN unnest(u.permisos_id) as pid ON true
-            LEFT JOIN "permisos" p ON p.permiso_id = pid
-            LEFT JOIN "cargos" c ON c.cargo_id = u.cargo_id
-            WHERE u.usuario = $1
-            GROUP BY u.usuario_id, u.usuario, u.contrasenna, u.cargo_id, c.nombre;
-        `;
-        const values = [user];
+//         const { user, } = obj;
+//         const query = `
+//             SELECT u.usuario_id, u.usuario, u.contrasenna, u.cargo_id, array_agg(p.nombre) as permisos, c.nombre as cargo
+//             FROM "usuarios" u
+//             LEFT JOIN unnest(u.permisos_id) as pid ON true
+//             LEFT JOIN "permisos" p ON p.permiso_id = pid
+//             LEFT JOIN "cargos" c ON c.cargo_id = u.cargo_id
+//             WHERE u.usuario = $1
+//             GROUP BY u.usuario_id, u.usuario, u.contrasenna, u.cargo_id, c.nombre;
+//         `;
+//         const values = [user];
 
-        const result = await client.query(query, values);
+//         const result = await client.query(query, values);
 
-        if (result.rows.length === 0) {
-            throw new ValidationUserError(401, "Error usuario no encontrado");
-        }
-        return result.rows[0];
-    }
+//         if (result.rows.length === 0) {
+//             throw new ValidationUserError(401, "Error usuario no encontrado");
+//         }
+//         return result.rows[0];
+//     }
 
-    static check_password(passwordIn, password) {
-        /***
-         * Compara las contraseñas
-         * @param {string} passwordIn - La contraseña que ingreso el usuario
-         * @param {string} password - La contraseña del usuario
-         * @throws - 402 la contraseña que se ingreso no es la misma
-         * @return {boolean} - Retorna true si la contraseña es iguak o false si no es igual
-         */
-        if (passwordIn !== password) {
-            throw new ValidationUserError(402, "Contraseña incorrecta")
-        }
-        return true
-    }
+//     static check_password(passwordIn, password) {
+//         /***
+//          * Compara las contraseñas
+//          * @param {string} passwordIn - La contraseña que ingreso el usuario
+//          * @param {string} password - La contraseña del usuario
+//          * @throws - 402 la contraseña que se ingreso no es la misma
+//          * @return {boolean} - Retorna true si la contraseña es iguak o false si no es igual
+//          */
+//         if (passwordIn !== password) {
+//             throw new ValidationUserError(402, "Contraseña incorrecta")
+//         }
+//         return true
+//     }
 
 
-}
+// }
 
 
 module.exports.UserRepository = UserRepository

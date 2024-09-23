@@ -13,6 +13,12 @@ class ComercialRepository {
     static async get_clientes() {
         return await ClientesRepository.get_clientes();
     }
+    static async obtener_clientes_historial_contenedores() {
+        return await ClientesRepository.get_clientes({
+            query: { activo: true },
+            select: { CLIENTE: 1 }
+        });
+    }
     static async inactivar_Proveedor(data, user) {
         const { _id, action } = data
         const query = [{

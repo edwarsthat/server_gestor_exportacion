@@ -124,6 +124,77 @@ class ProcesoRepository {
         }).filter(item => item !== null);
         return resultado
     }
+    static async getInventario_orden_vaceo() {
+        //se obtiene los datos del inventario
+        const inventario = await VariablesDelSistema.getInventario();
+        const inventarioKeys = Object.keys(inventario)
+
+        // se obtiene el inventario de desverdizado 
+        const InvDes = await VariablesDelSistema.getInventarioDesverdizado();
+        const InvDesKeys = Object.keys(InvDes);
+
+        const arrLotesKeys = inventarioKeys.concat(InvDesKeys);
+        const setLotesKeys = new Set(arrLotesKeys);
+        const lotesKeys = [...setLotesKeys];
+
+        const lotes = await LotesRepository.getLotes({
+            ids: lotesKeys,
+            select: {
+                __v: 1,
+                clasificacionCalidad: 1,
+                nombrePredio: 1,
+                fechaIngreso: 1,
+                observaciones: 1,
+                tipoFruta: 1,
+                promedio: 1,
+                enf: 1,
+                kilosVaciados: 1,
+                directoNacional: 1,
+                desverdizado: 1,
+            }
+        });
+
+        const resultado = lotesKeys.map(id => {
+            const lote = lotes.find(lote => lote._id.toString() === id.toString());
+
+            if (lote && lote.desverdizado && lote.desverdizado.fechaFinalizar) {
+                return {
+                    ...lote.toObject(),
+                    inventario: InvDes[id]
+                }
+            } else if (lote && lote.desverdizado && !lote.desverdizado.fechaFinalizar) {
+                return null
+            } else if (lote) {
+                return {
+                    ...lote.toObject(),
+                    inventario: inventario[id]
+                }
+            }
+            return null
+        }).filter(item => item !== null);
+        return resultado
+    }
+    static async getInventarioDesverdizado() {
+        const InvDes = await VariablesDelSistema.getInventarioDesverdizado();
+        const InvDesKeys = Object.keys(InvDes);
+        const lotes = await LotesRepository.getLotes({
+            ids: InvDesKeys,
+            select: { promedio: 1, enf: 1, desverdizado: 1, kilosVaciados: 1, __v: 1 },
+            sort: { "desverdizado.fechaIngreso": -1 }
+        });
+        //se agrega las canastillas en inventario
+        const resultado = InvDesKeys.map(id => {
+            const lote = lotes.find(lote => lote._id.toString() === id.toString());
+            if (lote) {
+                return {
+                    ...lote.toObject(),
+                    inventarioDesverdizado: InvDes[id]
+                }
+            }
+            return null
+        }).filter(item => item !== null);
+        return resultado
+    }
     static async obtenerHistorialLotes(data) {
         const { fechaInicio, fechaFin } = data
         const query = {
@@ -475,9 +546,54 @@ class ProcesoRepository {
                 __v: 1,
                 pallets: 1,
                 numeroContenedor: 1
+            },
+            query: {
+                "infoContenedor.fechaFinalizado": { $ne: null }
             }
         })
         return contenedores
+    }
+    static async obtener_contenedores_historial_buscar(req) {
+        const { contenedores, fechaInicio, fechaFin, clientes, tipoFruta } = req
+        const query = {}
+
+        //por numero de contenedores
+        if (contenedores.length > 0) {
+            query.numeroContenedor = { $in: contenedores }
+        }
+        //por clientes
+        if (clientes.length > 0) {
+            query["infoContenedor.clienteInfo"] = { $in: clientes }
+        }
+        //por tipo de fruta
+        if (tipoFruta !== '') {
+            query["infoContenedor.tipoFruta"] = tipoFruta
+        }
+        //por fecha
+        if (fechaInicio || fechaFin) {
+            query['infoContenedor.fechaCreacion'] = {}
+            if (fechaInicio) {
+                const localDate = parse(fechaInicio, 'yyyy-MM-dd', new Date())
+                const inicio = startOfDay(localDate);
+
+                query['infoContenedor.fechaCreacion'].$gte = inicio
+            } else {
+                query['infoContenedor.fechaCreacion'].$gte = new Date(0)
+            }
+            if (fechaFin) {
+                const localDate = parse(fechaFin, 'yyyy-MM-dd', new Date());
+                const fin = endOfDay(localDate);
+
+                query['infoContenedor.fechaCreacion'].$lt = fin
+            } else {
+                query['infoContenedor.fechaCreacion'].$lt = new Date()
+            }
+        }
+        console.log(query)
+        const cont = await ContenedoresRepository.getContenedores({
+            query: query
+        });
+        return cont
     }
 
     // #region PUT 
@@ -757,6 +873,7 @@ class ProcesoRepository {
         return contenedores
     }
     static async actualizar_pallet_contenedor(req, user) {
+
         const { _id, pallet, item, action } = req;
         let kilosExportacion = 0;
         // se agrega el item a la lista de empaque
@@ -998,7 +1115,8 @@ class ProcesoRepository {
         await VariablesDelSistema.ingresar_item_cajas_sin_pallet(item)
     }
     static async agregar_cajas_sin_pallet(req, user) {
-        const { item } = req.data;
+
+        const { item } = req;
         await VariablesDelSistema.ingresar_item_cajas_sin_pallet(item)
         //se agrega la exportacion a el lote
         const kilos = Number(item.tipoCaja.split('-')[1])

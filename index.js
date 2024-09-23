@@ -8,7 +8,6 @@ const io = new Server(server);
 const cron = require("node-cron");
 const path = require('path')
 
-const { connectPostgresDB } = require('./DB/postgresDB/init')
 const { initMongoDB } = require('./DB/mongoDB/config/init');
 const { apiSocket } = require('./server/desktop/reduce');
 const { UserRepository } = require('./server/auth/users');
@@ -24,9 +23,9 @@ const { ProcesoRepository } = require('./server/api/Proceso');
 const { SistemaRepository } = require('./server/api/Sistema');
 const { AccessError } = require('./Error/ValidationErrors');
 const { procesoEventEmitter } = require('./events/eventos');
+const { HandleErrors } = require('./Error/recordErrors');
 
 initMongoDB()
-const client = connectPostgresDB()
 
 //#region HTTP
 // Middleware para configurar CORS
@@ -92,25 +91,6 @@ app.get('/:filename', async (req, res) => {
     }
 })
 
-app.post('/login', async (req, res) => {
-    const user = { user: req.body.user, password: req.body.password }
-    try {
-        const dataUser = await UserRepository.login(user, client)
-        const accesToken = UserRepository.generateAccessToken({
-            user: dataUser.usuario,
-            cargo: dataUser.cargo
-        })
-        res.json({
-            accesToken: accesToken,
-            status: 200,
-            message: 'Ok',
-            permisos: dataUser.permisos
-        })
-    } catch (err) {
-        res.json(err)
-
-    }
-});
 
 app.post('/login2', async (req, res) => {
     const user = { user: req.body.user, password: req.body.password }
@@ -130,6 +110,7 @@ app.post('/login2', async (req, res) => {
             cargo: dataUser.cargo.Cargo
         })
     } catch (err) {
+        await HandleErrors.addError(err, req.body.user)
         res.json(err)
 
     }
@@ -210,6 +191,8 @@ io.on("connection", socket => {
             callback({ ...response, token: newToken })
         } catch (err) {
             console.log("Error socket: ", err);
+            await HandleErrors.addError(err)
+
             if (![401, 402, 403, 404, 405].includes(err.status)) {
                 const newToken = data.user ? UserRepository.generateAccessToken({
                     user: data.user.user,
@@ -233,7 +216,6 @@ io.on("connection", socket => {
             if (ongoingRequests[data.data.action]) {
                 return;
             }
-
             const user = await UserRepository.authenticateToken(data.token)
             data = { ...data, user: user }
 
@@ -247,9 +229,10 @@ io.on("connection", socket => {
 
             callback(response)
         } catch (err) {
-            console.log("Error socket: ", err);
+            await HandleErrors.addError(err)
+            console.log("Error socket mobile: ", err);
             if (![401, 402, 403, 404, 405].includes(err.status)) {
-                const newToken = data.user ? await UserRepository.generateAccessToken({
+                const newToken = data.user ? UserRepository.generateAccessToken({
                     user: data.user.user,
                     cargo: data.user.cargo
                 }) : null;

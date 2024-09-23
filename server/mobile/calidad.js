@@ -1,6 +1,7 @@
 const express = require('express');
 const { UserRepository } = require('../auth/users');
 const { CalidadRepository } = require('../api/Calidad');
+const { HandleErrors } = require('../../Error/recordErrors');
 const routerCalidad = express.Router();
 
 routerCalidad.get("/", (req, res) => {
@@ -17,6 +18,7 @@ routerCalidad.get("/get_lotes_clasificacion_descarte", async (req, res) => {
         const data = await CalidadRepository.get_lotes_clasificacion_descarte();
         res.json({ status: 200, message: 'Ok', data: data });
     } catch (err) {
+        await HandleErrors.addError(err)
         console.log(`Code ${err.status}: ${err.message}`)
         res.json({ status: err.status, message: err.message })
     }

@@ -150,6 +150,7 @@ routerProceso.get("/data_obtener_foto_calidad", async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 })
+
 routerProceso.get("/getInventario", async (req, res) => {
     try {
         const token = req.headers['authorization'];
@@ -157,6 +158,42 @@ routerProceso.get("/getInventario", async (req, res) => {
 
         const data = await ProcesoRepository.getInventario()
         res.json({ status: 200, message: 'Ok', data: data });
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+routerProceso.get("/getInventarioDesverdizado", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        await UserRepository.authenticateToken(token);
+
+        const data = await ProcesoRepository.getInventarioDesverdizado()
+        res.json({ status: 200, message: 'Ok', data: data });
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+routerProceso.get("/getInventario_orden_vaceo", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        await UserRepository.authenticateToken(token);
+
+        const data = await ProcesoRepository.getInventario_orden_vaceo()
+        res.json({ status: 200, message: 'Ok', data: data });
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+routerProceso.get("/getOrdenVaceo", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        await UserRepository.authenticateToken(token);
+
+        const oredenVaceo = await VariablesDelSistema.getOrdenVaceo()
+        res.json({ status: 200, message: 'Ok', data: oredenVaceo });
     } catch (err) {
         console.log(`Code ${err.status}: ${err.message}`)
         res.json({ status: err.status, message: err.message })

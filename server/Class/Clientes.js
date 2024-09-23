@@ -6,16 +6,38 @@ const { ItemBussyError } = require("../../Error/ProcessError");
 let bussyIds = new Set();
 
 class ClientesRepository {
-    static async get_clientes() {
+    static async get_clientes(options = {}) {
+        /**
+        * Función que obtiene clientes de la base de datos de MongoDB.
+        *
+        * @param {Object} [options={}] - Objeto de configuración para obtener los clientes.
+        * @param {Array<string>} [options.ids=[]] - Array de IDs de los clientes a obtener.
+        * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
+        * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
+        * @param {Object} [options.populate={}] - Campos de autoreferencia del ICA alternativo
+        * @returns {Promise<Array>} - Promesa que resuelve a un array de clientes obtenidos.
+        * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al obtener los clientes.
+        */
         try {
-            const clientes = await Clientes.find();
-            if (clientes === null) {
-                throw new ConnectionDBError(407, "Error en la busqueda de proveedores");
-            } else {
-                return clientes
+            const {
+                ids = [],
+                query = {},
+                select = {}
+            } = options;
+            let Query = { ...query };
+
+            if (ids.length > 0) {
+                Query._id = { $in: ids };
             }
+
+            const clientes = await Clientes.find(Query)
+                .select(select)
+                .exec();
+
+            return clientes
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo cliente ${err.message}`);
+            throw new ConnectionDBError(408, `Error obteniendo el cliente ${err.message}`);
+
         }
     }
     static async modificar_cliente(id, query, action, user) {

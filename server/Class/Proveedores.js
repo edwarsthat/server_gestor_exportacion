@@ -27,6 +27,7 @@ class ProveedoresRepository {
         * @param {Array<string>} [options.ids=[]] - Array de IDs de los proveedores a obtener.
         * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
         * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
+        * @param {Object} [options.populate={}] - Campos de autoreferencia del ICA alternativo
         * @returns {Promise<Array>} - Promesa que resuelve a un array de proveedores obtenidos.
         * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al obtener los proveedores.
         */
@@ -35,6 +36,7 @@ class ProveedoresRepository {
                 ids = [],
                 query = {},
                 select = {},
+                populate = { path: 'alt', select: 'ICA' },
             } = options;
             let Query = { ...query };
 
@@ -44,6 +46,7 @@ class ProveedoresRepository {
 
             const proveedores = await Proveedores.find(Query)
                 .select(select)
+                .populate(populate)
                 .exec();
 
             return proveedores
