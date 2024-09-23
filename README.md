@@ -46,9 +46,9 @@ Instala Redis versión 7.4 o superior. (Los pasos específicos no fueron proporc
 Ejecuta el script `InicializarInventario` que se encuentra en la carpeta `scripts`. Esto creará los archivos JSON necesarios.
 
 **Nota importante**: Algunos archivos necesitan ser modificados manualmente:
-- Cajas sin pallet
-- inventariodescarte
-- ordenVaceo
+- Cajas sin pallet: `[]`
+- inventariodescarte: `[]`
+- ordenVaceo: `[]`
 - Dentro de seriales, agregar: `{"idCelifrut":38,"enf":1241}`
 
 ### 5. Configurar el archivo .env
@@ -57,12 +57,13 @@ Crea un archivo `.env` en la raíz del proyecto con el siguiente contenido:
 
 ```
 # HOST
-HOST = "192.168.0.172"
+HOST = "La direccion ip"
 
 # Celifrut app port
-PORT = 3010
+PORT = "El puerto del servidor"
+MONGO_PORT = "EL puerto donde esta el servicio de mongo"
 
-# direccion mongoDB proceso
+# direccion mongoDB se debe cambiar el puerto por el puerto de mongo
 MONGODB_PROCESO = "mongodb://localhost:27017/proceso"
 MONGODB_SISTEMA = "mongodb://localhost:27017/sistema"
 
@@ -73,7 +74,7 @@ REFRESH_TOKEN = e57d4ca7be0fb32467ca36ff851978fe5e64d9c1aea3154783bb08ec8dd56f44
 # salt
 SALT_ROUNDS = 10
 
-# Salt AES_SECRET = (Dejar en blanco o agregar el valor correspondiente)
+# Salt AES_SECRET = 0ae245e2d7a589914b9725e714a2a8fb9149096f173dc0e9cddd7530a6cfa6ad
 ```
 
 ### 6. Modificar la configuración de MongoDB
