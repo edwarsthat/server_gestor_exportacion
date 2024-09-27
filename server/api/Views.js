@@ -27,12 +27,12 @@ class ViewsRepository {
         if (fechaInicio || fechaFin) {
             query.fechaIngreso = {}
             if (fechaInicio) {
-                query.fechaIngreso.$gte = new Date(fechaInicio)
+                query.fechaIngreso.$gte = new Date(fechaInicio).setHours(0, 0, 0)
             } else {
                 query.fechaIngreso.$gte = new Date(0)
             }
             if (fechaFin) {
-                query.fechaIngreso.$lt = new Date(fechaFin)
+                query.fechaIngreso.$lt = new Date(fechaFin).setHours(23, 59, 59)
             } else {
                 query.fechaIngreso.$lt = new Date()
             }

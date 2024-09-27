@@ -5,6 +5,7 @@ const { iniciarRedisDB } = require('../../DB/redis/init');
 const { ConnectRedisError } = require('../../Error/ConnectionErrors');
 const { obtener_datos_lotes_listaEmpaque_cajasSinPallet } = require('../mobile/utils/contenedoresLotes');
 const { procesoEventEmitter } = require('../../events/eventos');
+const { TurnoDatarepository } = require('./TurnoData');
 
 const pathIDs = path.join(__dirname, '..', '..', 'inventory', 'seriales.json');
 const inventarioPath = path.join(__dirname, '..', '..', 'inventory', 'inventario.json');
@@ -939,10 +940,13 @@ class VariablesDelSistema {
     try {
       const clientePromise = iniciarRedisDB();
       cliente = await clientePromise;
-      let kilosProcesados = await cliente.get("kilosProcesadosHoy");
-      if (kilosProcesados === undefined) kilosProcesados = 0;
+      let kilosProcesadosLimon = await cliente.get("kilosProcesadosHoyLimon");
+      if (kilosProcesadosLimon === undefined) kilosProcesadosLimon = 0;
 
-      return kilosProcesados;
+      let kilosProcesadosNaranja = await cliente.get("kilosProcesadosHoyNaranja");
+      if (kilosProcesadosNaranja === undefined) kilosProcesadosNaranja = 0;
+
+      return { kilosProcesadosNaranja, kilosProcesadosLimon };
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis obteniendo kilosProcesados: ${err.name}`)
 
@@ -958,10 +962,13 @@ class VariablesDelSistema {
     try {
       const clientePromise = iniciarRedisDB();
       cliente = await clientePromise;
-      let kilosExportacion = await cliente.get("kilosExportacionHoy");
-      if (kilosExportacion === undefined) kilosExportacion = 0;
+      let kilosExportacionNaranja = await cliente.get("kilosExportacionHoyNaranja");
+      if (kilosExportacionNaranja === undefined) kilosExportacionNaranja = 0;
 
-      return kilosExportacion;
+      let kilosExportacionLimon = await cliente.get("kilosExportacionHoyLimon");
+      if (kilosExportacionLimon === undefined) kilosExportacionLimon = 0;
+
+      return { kilosExportacionNaranja, kilosExportacionLimon };
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis obteniendo kilosProcesados: ${err.name}`)
 
@@ -972,62 +979,29 @@ class VariablesDelSistema {
       }
     }
   }
-  static async set_hora_inicio_proceso() {
-    let cliente
-    try {
-      const hoy = new Date();
-      const zonaHoraria = 'America/Bogota';
 
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
-
-      const fechaInicioRedis = await cliente.get('fechaInicioProceso');
-
-      if (!fechaInicioRedis) {
-        // Si no hay fecha en Redis, establecer la fecha actual
-        await cliente.set('fechaInicioProceso', hoy.toISOString());
-        return hoy;
-      }
-
-      // Convertir las fechas a la zona horaria especificada y establecer la hora a las 00:00:00
-      const fechaRedis = new Date(fechaInicioRedis);
-      const fechaRedisLocal = new Date(fechaRedis.toLocaleString('en-US', { timeZone: zonaHoraria }));
-      fechaRedisLocal.setHours(0, 0, 0, 0);
-
-      const fechaAhoraLocal = new Date(hoy.toLocaleString('en-US', { timeZone: zonaHoraria }));
-      fechaAhoraLocal.setHours(0, 0, 0, 0);
-      // Comparar las fechas
-      if (fechaRedisLocal.getDay() !== fechaAhoraLocal.getDay()) {
-        // Si la fecha en Redis es anterior, actualizar con la fecha actual
-        await cliente.set('fechaInicioProceso', hoy.toISOString());
-        return hoy;
-      } else {
-        // Si la fecha en Redis es del mismo día o posterior, no cambiar
-        return fechaInicioRedis;
-      }
-
-    } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis obteniendo kilosProcesados: ${err.name}`)
-
-    } finally {
-      if (cliente) {
-        cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
-      }
-    }
-  }
-  static async ingresar_kilos_procesados(kilos) {
+  static async ingresar_kilos_procesados(kilos, tipoFruta) {
     let cliente
     try {
       const clientePromise = iniciarRedisDB();
       cliente = await clientePromise;
-      let kilosProcesados = await cliente.get("kilosProcesadosHoy");
+      let kilosProcesados;
+      if (tipoFruta === 'Limon') {
+        kilosProcesados = await cliente.get("kilosProcesadosHoyLimon");
+      } else if (tipoFruta === 'Naranja') {
+        kilosProcesados = await cliente.get("kilosProcesadosHoyNaranja");
+      }
       if (kilosProcesados === undefined || isNaN(kilosProcesados)) kilosProcesados = 0;
+
 
       kilosProcesados = kilos + Number(kilosProcesados);
 
-      await cliente.set("kilosProcesadosHoy", kilosProcesados);
 
+      if (tipoFruta === 'Limon') {
+        await cliente.set("kilosProcesadosHoyLimon", kilosProcesados);
+      } else if (tipoFruta === 'Naranja') {
+        await cliente.set("kilosProcesadosHoyNaranja", kilosProcesados);
+      }
       return kilosProcesados;
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis sumando kilosProcesados: ${err.name}`)
@@ -1039,7 +1013,7 @@ class VariablesDelSistema {
       }
     }
   }
-  static async ingresar_exportacion(kilos) {
+  static async ingresar_exportacion(kilos, tipoFruta) {
     /**
    * Función que ingresa y actualiza los kilos de exportación en el sistema.
    *
@@ -1052,17 +1026,35 @@ class VariablesDelSistema {
     try {
       const clientePromise = iniciarRedisDB();
       cliente = await clientePromise;
-      let kilosProcesadosHoy = await cliente.get("kilosProcesadosHoy");
-      if (kilosProcesadosHoy === undefined || isNaN(kilosProcesadosHoy)) kilosProcesadosHoy = 0;
+      let kilosProcesadosHoy
+      let kilosExportacionHoy
 
-      let kilosExportacionHoy = await cliente.get("kilosExportacionHoy");
+      if (tipoFruta === 'Limon') {
+        kilosExportacionHoy = await cliente.get("kilosExportacionHoyLimon");
+        kilosProcesadosHoy = await cliente.get("kilosProcesadosHoyLimon");
+      } else if (tipoFruta === 'Naranja') {
+        kilosExportacionHoy = await cliente.get("kilosExportacionHoyNaranja");
+        kilosProcesadosHoy = await cliente.get("kilosProcesadosHoyNaranja");
+      }
+
+      if (kilosProcesadosHoy === undefined || isNaN(kilosProcesadosHoy)) kilosProcesadosHoy = 0;
       if (kilosExportacionHoy === undefined || isNaN(kilosExportacionHoy)) kilosExportacionHoy = 0;
+
 
       const new_kilos = Number(kilosProcesadosHoy) + kilos;
       const kilosExportacion = Number(kilosExportacionHoy) + kilos;
 
-      await cliente.set("kilosProcesadosHoy", new_kilos);
-      await cliente.set("kilosExportacionHoy", kilosExportacion);
+
+
+
+      if (tipoFruta === 'Limon') {
+
+        await cliente.set("kilosProcesadosHoyLimon", new_kilos);
+        await cliente.set("kilosExportacionHoyLimon", kilosExportacion);
+      } else if (tipoFruta === 'Naranja') {
+        await cliente.set("kilosProcesadosHoyNaranja", new_kilos);
+        await cliente.set("kilosExportacionHoyNaranja", kilosExportacion);
+      }
 
       return { kilosProcesadosHoy: new_kilos, kilosExportacionHoy: kilosExportacion }
     } catch (err) {
@@ -1094,6 +1086,260 @@ class VariablesDelSistema {
       }
     }
   }
+  static async obtener_fecha_inicio_proceso() {
+    let cliente
+
+    try {
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
+      const status = await cliente.get("statusProceso");
+      if (status === 'off') {
+        await cliente.set("tiempoTrabajadoHoy", "0");
+        await cliente.set("tiempoPausaHoy", "0");
+      }
+      const fecha = await cliente.get("fechaInicioProceso");
+      const tiempotrabajado = await cliente.get("tiempoTrabajadoHoy");
+      const tiempoPausaHoy = await cliente.get("tiempoPausaHoy");
+      return { fechaInicio: fecha, tiempoTrabajado: tiempotrabajado, tiempoPausaHoy: tiempoPausaHoy }
+    } catch (err) {
+      throw new ConnectRedisError(419, `Error con la conexion con redis sumar exportacion: ${err.name}`)
+
+    } finally {
+      if (cliente) {
+        cliente.quit();
+        console.log('Cerrando la conexión con Redis...');
+      }
+    }
+  }
+  static async obtener_status_proceso() {
+    let cliente;
+
+    try {
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
+      const status = await cliente.get("statusProceso");
+
+      // Cambiamos la validación a null
+      if (status === null) {
+        await cliente.set("statusProceso", "off");
+        return false;
+      }
+
+      // Redis almacena los valores como strings, por lo que puede ser necesario hacer una conversión
+      return status;
+    } catch (err) {
+      throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
+    } finally {
+      if (cliente) {
+        await cliente.quit();
+        console.log('Cerrando la conexión con Redis...');
+      }
+    }
+  }
+  static async get_status_pausa_proceso() {
+    let cliente;
+
+    try {
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
+      const status = await cliente.get("isProcesoStopped");
+
+      // Cambiamos la validación a null
+      if (status === null) {
+        await cliente.set("isProcesoStopped", "false");
+        return false;
+      }
+      // Redis almacena los valores como strings, por lo que puede ser necesario hacer una conversión
+      return status === 'true';
+    } catch (err) {
+      throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
+    } finally {
+      if (cliente) {
+        await cliente.quit();
+        console.log('Cerrando la conexión con Redis...');
+      }
+    }
+  }
+  static async set_hora_inicio_proceso() {
+    let cliente
+    try {
+      const hoy = new Date();
+
+      const clientePromise = iniciarRedisDB();
+
+      //se crea el turno
+      cliente = await clientePromise;
+      //se guardan las banderas del proceso en redis
+      await cliente.set('fechaInicioProceso', hoy.toISOString());
+      await cliente.set('statusProceso', "on")
+      await TurnoDatarepository.add_turno();
+      return hoy;
+
+    } catch (err) {
+      throw new ConnectRedisError(419, `Error con la conexion con redis obteniendo kilosProcesados: ${err.name}`)
+
+    } finally {
+      if (cliente) {
+        await cliente.quit();
+        console.log('Cerrando la conexión con Redis...');
+      }
+    }
+  }
+  static async set_hora_pausa_proceso() {
+
+    let cliente;
+    let fechaInicioString;
+
+    try {
+      //se inicia redis
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
+
+      // se obtiene el elmeento de mongo
+      const query = {
+        horaFin: { $exists: false }
+      };
+      const turno = await TurnoDatarepository.find_turno({ query: query });
+      if (!turno || turno.length === 0) {
+        throw new Error("No se encontró el elemento");
+      }
+
+      //se obtiene el tiempo trabajado en segundos
+      const lenPausas = turno[0].pausaProceso.length;
+      if (lenPausas === 0) {
+        fechaInicioString = turno[0].horaInicio //si es la primera pausa
+      } else {
+        fechaInicioString = turno[0].pausaProceso[lenPausas - 1].finalPausa //fin de la ultima pausa
+      }
+
+      const fechaInicio = new Date(fechaInicioString)
+      const segundosTrabajado = Math.floor((new Date().getTime() - fechaInicio.getTime()) / 1000)
+      const totalsegundos = segundosTrabajado + turno[0].tiempoTrabajado;
+
+      const change = {
+        $addToSet: {
+          "pausaProceso": {
+            pausaInicio: new Date()
+          }
+        },
+        $inc: {
+          tiempoTrabajado: segundosTrabajado
+        }
+      };
+
+      await TurnoDatarepository.modificar_turno(turno[0]._id.toString(), change);
+
+      await cliente.set("statusProceso", 'pause');
+      await cliente.set("tiempoTrabajadoHoy", String(totalsegundos))
+
+    } catch (err) {
+      throw new ConnectRedisError(419, `Error con la conexión con status proceso: ${err.name}`);
+    } finally {
+      if (cliente) {
+        await cliente.quit();
+        console.log('Cerrando la conexión con Redis...');
+      }
+    }
+  }
+  static async set_hora_reanudar_proceso() {
+
+    let cliente;
+
+    try {
+      //se inicia redis
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
+      //se busca en mongo el turno
+      const query = {
+        horaFin: { $exists: false }
+      };
+      const turno = await TurnoDatarepository.find_turno({ query: query });
+      if (!turno || turno.length === 0) {
+        throw new Error("No se encontró el elemento");
+      }
+      //se obtiene el tiempo total de pausas en segundos
+      const lenPausas = turno[0].pausaProceso.length - 1;
+      const fechaInicioPausa = turno[0].pausaProceso[lenPausas].pausaInicio;
+      const segundosPausa = Math.floor((new Date().getTime() - fechaInicioPausa.getTime()) / 1000)
+      const totalsegundos = segundosPausa + turno[0].tiempoPausa;
+
+
+      //nuevo array de pausas
+      const arrayPausas = [...turno[0].pausaProceso]
+      arrayPausas[lenPausas].finalPausa = new Date()
+
+
+      const change = {
+        $set: { pausaProceso: arrayPausas },
+        $inc: {
+          tiempoPausa: segundosPausa
+        }
+      };
+
+      await TurnoDatarepository.modificar_turno(turno[0]._id.toString(), change);
+
+      console.log(totalsegundos)
+      await cliente.set("tiempoPausaHoy", String(totalsegundos))
+      await cliente.set("statusProceso", 'on');
+
+      return;
+    } catch (err) {
+      throw new ConnectRedisError(419, `Error con la conexión con status proceso: ${err.name}`);
+    } finally {
+      if (cliente) {
+        await cliente.quit();
+        console.log('Cerrando la conexión con Redis...');
+      }
+    }
+  }
+  static async set_hora_fin_proceso() {
+
+    let cliente;
+
+    try {
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
+
+
+      const query = {
+        horaFin: { $exists: false }
+      }
+      const turno = await TurnoDatarepository.find_turno({ query: query });
+      if (!turno) {
+        throw new Error("No se encontro elemento")
+      }
+
+      //se obtiene el tiempo total de pausas en segundos
+      const lenPausas = turno[0].pausaProceso.length - 1;
+      const fechaInicio = turno[0].pausaProceso[lenPausas].finalPausa;
+      const segundosPausa = Math.floor((new Date().getTime() - fechaInicio.getTime()) / 1000)
+      const totalsegundos = segundosPausa + turno[0].tiempoTrabajado;
+
+
+      const change = {
+        horaFin: new Date(),
+        $inc: {
+          tiempoTrabajado: totalsegundos
+        }
+      }
+      await TurnoDatarepository.modificar_turno(turno[0]._id.toString(), change)
+
+      await cliente.set("statusProceso", "off");
+      await cliente.del("fechaInicioProceso");
+      await cliente.set("tiempoTrabajadoHoy", String(totalsegundos))
+
+
+      return
+    } catch (err) {
+      throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
+    } finally {
+      if (cliente) {
+        await cliente.quit();
+        console.log('Cerrando la conexión con Redis...');
+      }
+    }
+  }
+
 
   //#region Constantes
   static async obtener_observaciones_calidad() {

@@ -129,7 +129,7 @@ class ProcesoRepository {
         const inventario = await VariablesDelSistema.getInventario();
         const inventarioKeys = Object.keys(inventario)
 
-        // se obtiene el inventario de desverdizado 
+        // se obtiene el inventario de desverdizado
         const InvDes = await VariablesDelSistema.getInventarioDesverdizado();
         const InvDesKeys = Object.keys(InvDes);
 
@@ -200,21 +200,16 @@ class ProcesoRepository {
         const query = {
             operacionRealizada: 'vaciarLote'
         }
+
         if (fechaInicio || fechaFin) {
             query.fecha = {}
             if (fechaInicio) {
-                const localDate = parse(fechaInicio, 'yyyy-MM-dd', new Date())
-                const inicio = startOfDay(localDate);
-
-                query.fecha.$gte = inicio
+                query.fecha.$gte = new Date(fechaInicio).setHours(0, 0, 0)
             } else {
                 query.fecha.$gte = new Date(0)
             }
             if (fechaFin) {
-                const localDate = parse(fechaFin, 'yyyy-MM-dd', new Date());
-                const fin = endOfDay(localDate);
-
-                query.fecha.$lt = fin
+                query.fecha.$lt = new Date(fechaFin).setHours(23, 59, 59)
             } else {
                 query.fecha.$lt = new Date()
             }
@@ -243,6 +238,7 @@ class ProcesoRepository {
         return resultado
     }
     static async obtenerHistorialLotesDirectoNacional(data) {
+        console.log(data)
         const { fechaInicio, fechaFin } = data
         const query = {
             operacionRealizada: 'directoNacional'
@@ -250,21 +246,18 @@ class ProcesoRepository {
         if (fechaInicio || fechaFin) {
             query.fecha = {}
             if (fechaInicio) {
-                const localDate = parse(fechaInicio, 'yyyy-MM-dd', new Date())
-                const inicio = startOfDay(localDate);
-                query.fecha.$gte = inicio
+                query.fecha.$gte = new Date(fechaInicio).setHours(0, 0, 0)
             } else {
                 query.fecha.$gte = new Date(0)
             }
             if (fechaFin) {
-                const localDate = parse(fechaFin, 'yyyy-MM-dd', new Date());
-                const fin = endOfDay(localDate);
-                query.fecha.$lt = new Date(fin)
+                query.fecha.$lt = new Date(fechaFin).setHours(23, 59, 59)
             } else {
                 query.fecha.$lt = new Date()
             }
         }
         const recordLotes = await RecordLotesRepository.getVaciadoRecord({ query: query })
+        console.log(recordLotes)
         const lotesIds = recordLotes.map(lote => lote.documento._id);
         const lotes = await LotesRepository.getLotes({
             ids: lotesIds,
@@ -595,8 +588,20 @@ class ProcesoRepository {
         });
         return cont
     }
+    static async obtener_fecha_inicio_proceso() {
+        const fecha = VariablesDelSistema.obtener_fecha_inicio_proceso()
+        return fecha
+    }
+    static async obtener_status_proceso() {
+        const status = await VariablesDelSistema.obtener_status_proceso()
+        return status
+    }
+    static async get_status_pausa_proceso() {
+        const status = VariablesDelSistema.get_status_pausa_proceso()
+        return status
+    }
 
-    // #region PUT 
+    // #region PUT
     static async ingresar_descarte_lavado(req, user) {
         const { _id, data, action } = req;
         const keys = Object.keys(data);
@@ -612,7 +617,7 @@ class ProcesoRepository {
         await LotesRepository.deshidratacion(lote);
 
         await VariablesDelSistema.modificar_inventario_descarte(_id, data, "descarteLavado", lote);
-        const kilosProcesados = await VariablesDelSistema.ingresar_kilos_procesados(kilos);
+        const kilosProcesados = await VariablesDelSistema.ingresar_kilos_procesados(kilos, lote.tipoFruta);
         procesoEventEmitter.emit("proceso_event", {
             kilosProcesadosHoy: kilosProcesados
         });
@@ -634,7 +639,7 @@ class ProcesoRepository {
         await LotesRepository.deshidratacion(lote);
 
         await VariablesDelSistema.modificar_inventario_descarte(_id, data, "descarteEncerado", lote);
-        const kilosProcesados = await VariablesDelSistema.ingresar_kilos_procesados(kilos);
+        const kilosProcesados = await VariablesDelSistema.ingresar_kilos_procesados(kilos, lote.tipoFruta);
         procesoEventEmitter.emit("proceso_event", {
             kilosProcesadosHoy: kilosProcesados
         });
@@ -852,6 +857,24 @@ class ProcesoRepository {
         await VariablesDelSistema.ingresarInventarioDesverdizado(_id, inventario)
         await VariablesDelSistema.modificarInventario(_id, inventario);
     }
+    static async set_hora_fin_proceso() {
+        await VariablesDelSistema.set_hora_fin_proceso();
+        procesoEventEmitter.emit("status_proceso", {
+            status: "off"
+        });
+    }
+    static async set_hora_pausa_proceso() {
+        await VariablesDelSistema.set_hora_pausa_proceso();
+        procesoEventEmitter.emit("status_proceso", {
+            status: "pause"
+        });
+    }
+    static async set_hora_reanudar_proceso() {
+        await VariablesDelSistema.set_hora_reanudar_proceso();
+        procesoEventEmitter.emit("status_proceso", {
+            status: "on"
+        });
+    }
     //? lista de empaque
     static async add_settings_pallet(req, user) {
         const { _id, pallet, settings, action } = req;
@@ -879,7 +902,7 @@ class ProcesoRepository {
         // se agrega el item a la lista de empaque
         await ContenedoresRepository.actualizar_pallet_contenedor(_id, pallet, item, action, user);
         //se agrega la exportacion a el lote
-        const kilos = Number(item.tipoCaja.split('-')[1])
+        const kilos = Number(item.tipoCaja.split('-')[1].replace(",", "."))
         const query = {
             $addToSet: { contenedores: _id },
             $inc: {}
@@ -889,7 +912,8 @@ class ProcesoRepository {
         const lote = await LotesRepository.modificar_lote_proceso(item.lote, query, "Agregar exportacion", user)
         await LotesRepository.rendimiento(lote);
         await LotesRepository.deshidratacion(lote);
-        const { kilosProcesadosHoy, kilosExportacionHoy } = await VariablesDelSistema.ingresar_exportacion(kilosExportacion)
+        const { kilosProcesadosHoy, kilosExportacionHoy } =
+            await VariablesDelSistema.ingresar_exportacion(kilosExportacion, lote.tipoFruta)
         procesoEventEmitter.emit("proceso_event", {
             kilosProcesadosHoy: kilosProcesadosHoy,
             kilosExportacionHoy: kilosExportacionHoy
@@ -900,7 +924,7 @@ class ProcesoRepository {
     }
     static async eliminar_item_lista_empaque(req, user) {
         const { _id, pallet, seleccion, action } = req;
-        let kilosTotal = 0;
+        let kilosTotal = { Limon: 0, Naranja: 0 };
         //se ordenan los items seleccionados
         const seleccionOrdenado = seleccion.sort((a, b) => b - a);
         //se eliminan los items de la lista de empaque
@@ -910,21 +934,31 @@ class ProcesoRepository {
         for (let i = 0; i < items.length; i++) {
             const { lote, calidad, tipoCaja, cajas } = items[i]
 
-            const mult = Number(tipoCaja.split("-")[1])
+            const mult = Number(tipoCaja.split("-")[1].replace(",", "."))
             const kilos = cajas * mult;
-            kilosTotal += kilos
             const query = { $inc: {} }
             query.$inc[calidadFile[calidad]] = -kilos;
 
             const loteDB = await LotesRepository.modificar_lote_proceso(lote, query, action, user);
             await LotesRepository.rendimiento(loteDB);
             await LotesRepository.deshidratacion(loteDB);
+            kilosTotal[loteDB.tipoFruta] += kilos;
+
         }
         //se modifica la cantidad de kilos exportacion
-        const { kilosProcesadosHoy, kilosExportacionHoy } = await VariablesDelSistema.ingresar_exportacion(-kilosTotal)
+        let kilosProcesadosHoyTotal
+        let kilosExportacionHoyTotal
+
+        Object.entries(kilosTotal).forEach(async ([key, value]) => {
+            const { kilosProcesadosHoy, kilosExportacionHoy } =
+                await VariablesDelSistema.ingresar_exportacion(-value, key);
+            kilosProcesadosHoyTotal = kilosProcesadosHoy
+            kilosExportacionHoyTotal = kilosExportacionHoy
+        })
+
         procesoEventEmitter.emit("proceso_event", {
-            kilosProcesadosHoy: kilosProcesadosHoy,
-            kilosExportacionHoy: kilosExportacionHoy
+            kilosProcesadosHoy: kilosProcesadosHoyTotal,
+            kilosExportacionHoy: kilosExportacionHoyTotal
         });
         const contenedores = await ContenedoresRepository.getContenedores({ query: { 'infoContenedor.cerrado': false } });
         procesoEventEmitter.emit("listaempaque_update");
@@ -967,7 +1001,7 @@ class ProcesoRepository {
         const item = await ContenedoresRepository.restar_item_lista_empaque(_id, pallet, seleccion, cajas, action, user)
 
         const { lote, calidad, tipoCaja } = item
-        const mult = Number(tipoCaja.split("-")[1])
+        const mult = Number(tipoCaja.split("-")[1].replace(",", "."))
         const kilos = cajas * mult;
         const query = { $inc: {} }
         query.$inc[calidadFile[calidad]] = -kilos;
@@ -976,7 +1010,8 @@ class ProcesoRepository {
         await LotesRepository.rendimiento(loteDB);
         await LotesRepository.deshidratacion(loteDB);
 
-        const { kilosProcesadosHoy, kilosExportacionHoy } = await VariablesDelSistema.ingresar_exportacion(-kilos)
+        const { kilosProcesadosHoy, kilosExportacionHoy } =
+            await VariablesDelSistema.ingresar_exportacion(-kilos, loteDB.tipoFruta)
         procesoEventEmitter.emit("proceso_event", {
             kilosProcesadosHoy: kilosProcesadosHoy,
             kilosExportacionHoy: kilosExportacionHoy
@@ -1119,7 +1154,7 @@ class ProcesoRepository {
         const { item } = req;
         await VariablesDelSistema.ingresar_item_cajas_sin_pallet(item)
         //se agrega la exportacion a el lote
-        const kilos = Number(item.tipoCaja.split('-')[1])
+        const kilos = Number(item.tipoCaja.split('-')[1].replace(",", "."))
         let kilosTotal = kilos * Number(item.cajas)
 
         const query = { $inc: {} }
@@ -1128,7 +1163,8 @@ class ProcesoRepository {
         await LotesRepository.rendimiento(lote);
         await LotesRepository.deshidratacion(lote);
 
-        const { kilosProcesadosHoy, kilosExportacionHoy } = await VariablesDelSistema.ingresar_exportacion(kilosTotal)
+        const { kilosProcesadosHoy, kilosExportacionHoy } =
+            await VariablesDelSistema.ingresar_exportacion(kilosTotal, lote.tipoFruta);
         procesoEventEmitter.emit("proceso_event", {
             kilosProcesadosHoy: kilosProcesadosHoy,
             kilosExportacionHoy: kilosExportacionHoy
@@ -1171,11 +1207,20 @@ class ProcesoRepository {
         const lote = await LotesRepository.addLote(data, enf);
         await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(data.data.data.canastillas));
         await VariablesDelSistema.incrementarEF1();
+
+        procesoEventEmitter.emit("nuevo_predio", {
+            predio: lote
+        });
+
         const loteWeb = await LotesRepository.getLotes({ ids: [lote._id] })
         await UploaAWSRepository.upload_item_inventario_fruta_sin_procesar(loteWeb[0], data.data.data.canastillas)
+
     }
     static async set_hora_inicio_proceso() {
         const date = await VariablesDelSistema.set_hora_inicio_proceso();
+        procesoEventEmitter.emit("status_proceso", {
+            status: true
+        });
         return date
     }
 }

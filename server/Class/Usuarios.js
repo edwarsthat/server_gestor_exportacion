@@ -170,7 +170,7 @@ class UsuariosRepository {
             throw new PostError(409, `Error agregando usuario ${err.message}`);
         }
     }
-    static async modificar_ususario(id, query, action, user, __v = 0) {
+    static async modificar_usuario(id, query, action, user, __v) {
         /**
          * Modifica un usuario en la base de datos de MongoDB.
          *
@@ -178,28 +178,40 @@ class UsuariosRepository {
          * @param {Object} query - Objeto con los cambios a aplicar al usuario.
          * @param {string} action - Descripción de la acción realizada.
          * @param {string} user - Usuario que realiza la acción.
+         * @param {number} [__v] - Versión del documento a modificar (opcional).
          * @returns {Promise<Object>} - Promesa que resuelve al objeto del usuario modificado.
          * @throws {PutError} - Lanza un error si ocurre un problema al modificar el usuario.
          */
-        this.validateBussyUsuarioIds(id)
+        this.validateBussyUsuarioIds(id);
+
         try {
+            const filter = { _id: id };
 
-            const usuario = await Usuarios.findOneAndUpdate({ _id: id, __v: __v }, query, { new: true });
-            const usuario_obj = new Object(usuario.toObject());
+            // Solo agregar __v al filtro si fue proporcionado
+            if (__v !== undefined) {
+                filter.__v = __v;
+            }
 
-            let record = new recordUsuario({
-                operacionRealizada: action,
-                user: user,
-                documento: { ...query, _id: id }
-            })
-            await record.save()
+            const usuario = await Usuarios.findOneAndUpdate(filter, query, { new: true });
+            const usuario_obj = usuario ? usuario.toObject() : null;
+
+            if (usuario_obj) {
+                const record = new recordUsuario({
+                    operacionRealizada: action,
+                    user: user,
+                    documento: { ...query, _id: id }
+                });
+                await record.save();
+            }
+
             return usuario_obj;
         } catch (err) {
-            throw new PutError(414, `Error al modificar el dato ${id} => ${err.name} `);
+            throw new PutError(414, `Error al modificar el dato ${id} => ${err.name}`);
         } finally {
             bussyIdsUsuario.delete(id);
         }
     }
+
     static async add_volante_calidad(data) {
         /**
          * Funcion que agrega una fila a volante calidad a la base de datos lote de mongoDB

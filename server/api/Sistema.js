@@ -225,6 +225,26 @@ class SistemaRepository {
         const { data } = req;
         await InsumosRepository.add_tipo_insumo(data, user)
     }
+    static async obtener_info_mi_cuenta(user) {
+        const { _id } = user
+        const usuario = await UsuariosRepository.get_users({
+            ids: [_id]
+        })
+        delete usuario.password
+        return usuario[0]
+    }
+    static async modificar_mi_password(req, user) {
+        console.log(req)
+        const { data, action } = req
+        const { _id } = user
+        const hashedPassword = await bcrypt.hash(data, 10);
+        const query = {
+            password: hashedPassword
+        }
+        await UsuariosRepository.modificar_usuario(_id, query, action, user);
+
+
+    }
 }
 
 module.exports.SistemaRepository = SistemaRepository

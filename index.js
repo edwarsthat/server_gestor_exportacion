@@ -140,7 +140,6 @@ procesoEventEmitter.on('orden_vaceo_update', (data) => {
         console.error('Error en orden_vaceo_update:', error);
     }
 });
-
 procesoEventEmitter.on('predio_vaciado', (data) => {
     console.log(data)
     try {
@@ -154,6 +153,27 @@ procesoEventEmitter.on('listaempaque_update', () => {
         io.emit("listaempaque_update");
     } catch (error) {
         console.error('Error en listaempaque_update:', error);
+    }
+})
+procesoEventEmitter.on('status_proceso', (data) => {
+    try {
+        io.emit("status_proceso", data);
+    } catch (error) {
+        console.error('Error en status_proceso:', error);
+    }
+})
+procesoEventEmitter.on('proceso_event', (data) => {
+    try {
+        io.emit("proceso_event", data);
+    } catch (error) {
+        console.error('Error en proceso_event:', error);
+    }
+});
+procesoEventEmitter.on('nuevo_predio', (data) => {
+    try {
+        io.emit("nuevo_predio", data);
+    } catch (error) {
+        console.error('Error en nuevo_predio:', error);
     }
 })
 

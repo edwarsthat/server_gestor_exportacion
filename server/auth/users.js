@@ -220,6 +220,16 @@ class UserRepository {
             const { action } = data;
             const { cargo } = user;
             let permisoOut = false
+            const permisos_generales = [
+                "obtener_status_proceso",
+                "obtener_info_mi_cuenta",
+                "modificar_mi_password"
+            ]
+
+            if (permisos_generales.includes(action)) {
+                return true
+            }
+
             const permisos = await UsuariosRepository.get_cargos({
                 ids: [cargo]
             });
@@ -250,6 +260,16 @@ class UserRepository {
         try {
 
             let permisoOut = false
+            const permisos_generales = [
+                "obtener_status_proceso",
+                "obtener_info_mi_cuenta",
+                "modificar_mi_password"
+            ]
+
+            if (permisos_generales.includes(action)) {
+                return true
+            }
+
             const permisos = await UsuariosRepository.get_cargos({
                 ids: [cargo]
             });

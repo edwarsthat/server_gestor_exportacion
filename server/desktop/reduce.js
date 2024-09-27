@@ -254,6 +254,33 @@ const apiSocket = {
         const contenedores = await ProcesoRepository.obtener_contenedores_historial_buscar(data)
         return { status: 200, message: 'Ok', data: contenedores }
     },
+    obtener_fecha_inicio_proceso: async () => {
+        const fecha = await ProcesoRepository.obtener_fecha_inicio_proceso();
+        return { status: 200, message: 'Ok', data: fecha }
+    },
+    obtener_status_proceso: async () => {
+        const status = await ProcesoRepository.obtener_status_proceso()
+        return { status: 200, message: 'Ok', data: status }
+    },
+    get_status_pausa_proceso: async () => {
+        const status = await ProcesoRepository.get_status_pausa_proceso();
+        return { status: 200, message: 'Ok', data: status }
+    },
+    get_data_proceso: async () => {
+        const data = await ProcesoRepository.get_data_proceso();
+        return { status: 200, message: 'Ok', data: data }
+    },
+    obtener_info_mi_cuenta: async (req) => {
+        const { user } = req
+        const usuario = await SistemaRepository.obtener_info_mi_cuenta(user)
+        return { status: 200, message: 'Ok', data: usuario }
+
+    },
+    obtener_tipos_formularios_calidad: async () => {
+        const data = await CalidadRepository.obtener_tipos_formularios_calidad();
+        return { status: 200, message: 'Ok', data: data }
+
+    },
     //#region POST
     guardarLote: async (data) => {
         await ProcesoRepository.addLote(data)
@@ -303,6 +330,11 @@ const apiSocket = {
         const { data, user } = req
         await SistemaRepository.add_tipo_insumo(data, user.user)
         return { status: 200, message: 'Ok' }
+    },
+    set_hora_inicio_proceso: async () => {
+        await ProcesoRepository.set_hora_inicio_proceso();
+        return { status: 200, message: 'Ok' }
+
     },
 
     //#region PUT
@@ -563,7 +595,26 @@ const apiSocket = {
         await ProcesoRepository.ingresar_foto_calidad(data, user.user)
         return { status: 200, message: 'Ok' }
     },
+    set_hora_fin_proceso: async () => {
+        await ProcesoRepository.set_hora_fin_proceso();
+        return { status: 200, message: 'Ok' }
 
+    },
+    set_hora_pausa_proceso: async () => {
+        await ProcesoRepository.set_hora_pausa_proceso();
+        return { status: 200, message: 'Ok' }
+
+    },
+    set_hora_reanudar_proceso: async () => {
+        await ProcesoRepository.set_hora_reanudar_proceso();
+        return { status: 200, message: 'Ok' }
+
+    },
+    modificar_mi_password: async (req) => {
+        const { data, user } = req
+        await SistemaRepository.modificar_mi_password(data, user)
+        return { status: 200, message: 'Ok' }
+    }
 }
 
 module.exports.apiSocket = apiSocket;

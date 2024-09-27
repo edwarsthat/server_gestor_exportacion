@@ -1,0 +1,24 @@
+
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
+
+const conn = mongoose.createConnection(process.env.MONGODB_PROCESO);
+
+const dataStopSchema = new Schema({
+    inicioPausa: Date,
+    finalPausa: Date
+}, { _id: false, strict: false });
+
+const TurnoDataSchema = new Schema({
+    horaInicio: { type: Date, default: Date.now },
+    tiempoTrabajado: { type: Number, default: 0 },
+    tiempoPausa: { type: Number, default: 0 },
+    horaFin: Date,
+    pausaProceso: [dataStopSchema],
+
+});
+
+
+const TurnoData = conn.model("turno", TurnoDataSchema);
+
+module.exports.TurnoData = TurnoData;
