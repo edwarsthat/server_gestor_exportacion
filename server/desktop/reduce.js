@@ -279,7 +279,10 @@ const apiSocket = {
     obtener_tipos_formularios_calidad: async () => {
         const data = await CalidadRepository.obtener_tipos_formularios_calidad();
         return { status: 200, message: 'Ok', data: data }
-
+    },
+    get_formularios_calidad_creados: async () => {
+        const data = await CalidadRepository.get_formularios_calidad_creados();
+        return { status: 200, message: 'Ok', data: data }
     },
     //#region POST
     guardarLote: async (data) => {
@@ -336,7 +339,11 @@ const apiSocket = {
         return { status: 200, message: 'Ok' }
 
     },
-
+    crear_formulario_calidad: async (req) => {
+        const { data, user } = req
+        await CalidadRepository.crear_formulario_calidad(data, user._id)
+        return { status: 200, message: 'Ok' }
+    },
     //#region PUT
     directoNacional: async (data) => {
         const user = data.user.user;
@@ -613,6 +620,11 @@ const apiSocket = {
     modificar_mi_password: async (req) => {
         const { data, user } = req
         await SistemaRepository.modificar_mi_password(data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    add_item_formulario_calidad: async (req) => {
+        const { data, user } = req
+        await CalidadRepository.add_item_formulario_calidad(data, user._id);
         return { status: 200, message: 'Ok' }
     }
 }

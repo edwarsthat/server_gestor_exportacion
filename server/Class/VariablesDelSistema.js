@@ -265,6 +265,53 @@ class VariablesDelSistema {
       throw new ProcessError(406, `Error creando el codigo celifrut: ${err.message}`)
     }
   }
+  static async generar_codigo_informe_calidad() {
+    /**
+ * Se genera el codigo calidad del sistema, el codigo se genera sienfo CA- los primero caracteres
+ * Luego los segundo dos son los ultimos dos digitos del año
+ * Luego los siguientes dos digitos son el mes del año
+ * por ultimo el consecutivo que esta guardado en un archivo json dentro de inventory
+ * 
+ * @throws - Devuelve un error si hay algun error abriendo y guardadndo el archivo
+ * @return {string} enf - El string con el codigo EF1-
+ */
+    try {
+
+      const idsJSON = fs.readFileSync(pathIDs);
+      const ids = JSON.parse(idsJSON);
+
+      let fecha = new Date();
+      let year = fecha.getFullYear().toString().slice(-2);
+      let month = String(fecha.getMonth() + 1).padStart(2, "0");
+      let calidad;
+      if (ids.calidad < 10) {
+        calidad = "CA-" + year + month + "0" + ids.calidad;
+      } else {
+        calidad = "CA-" + year + month + ids.calidad;
+      }
+      return calidad;
+    } catch (e) {
+      throw new ProcessError(406, `Error creando el codigo calidad: ${e.message}`)
+    }
+  }
+  static async incrementar_codigo_informes_calidad() {
+    /**
+     * Funcion que aumenta en 1 el serial del codigo calidad que esta almacenado en el archivo json
+     *  en inventario  seriales.json
+     * 
+     * @throws - Devuelve un error si hay algun error abriendo y guardadndo el archivo
+     * @return {void} - no devuelve nada
+     */
+    try {
+      const idsJSON = fs.readFileSync(pathIDs);
+      const ids = JSON.parse(idsJSON);
+      ids.calidad += 1;
+      const newidsJSON = JSON.stringify(ids);
+      fs.writeFileSync(pathIDs, newidsJSON);
+    } catch (err) {
+      throw new ProcessError(411, `Error incrementando el EF1 ${err.message}`)
+    }
+  }
 
   // #region inventario
   static async ingresarInventario(_id, canastillas) {
@@ -979,7 +1026,6 @@ class VariablesDelSistema {
       }
     }
   }
-
   static async ingresar_kilos_procesados(kilos, tipoFruta) {
     let cliente
     try {

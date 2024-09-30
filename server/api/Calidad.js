@@ -1,5 +1,6 @@
 const { UploaAWSRepository } = require("../../aws/lambda/upload");
 const { ProcessError } = require("../../Error/ProcessError");
+const { FormulariosCalidadRepository } = require("../Class/FormulariosCalidad");
 const { LotesRepository } = require("../Class/Lotes");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
 const fs = require('fs')
@@ -72,6 +73,18 @@ class CalidadRepository {
             throw new ProcessError(410, `Error Obteniendo tipo formularios calidad  ${err.message}`)
         }
     }
+    static async get_formularios_calidad_creados() {
+
+        const limpieza_diaria = await FormulariosCalidadRepository.get_formularios_calidad_creados()
+        const limpieza_mensual = await FormulariosCalidadRepository.get_formularios_calidad_limpieza_mensual_creados()
+        const control_plagas = await FormulariosCalidadRepository.get_formularios_calidad_control_plagas_creados()
+
+        return [
+            ...limpieza_diaria,
+            ...limpieza_mensual,
+            ...control_plagas
+        ];
+    }
     // #region PUT
     static async put_lotes_inspeccion_ingreso(req, user) {
         const { action, data, _id } = req;
@@ -107,6 +120,57 @@ class CalidadRepository {
                 { clasificacionCalidad: data.clasificacionCalidad }
             )
         }
+    }
+    static async add_item_formulario_calidad(req, user) {
+        const { tipoFormulario, _id, area, item, cumple, observaciones } = req
+        const query = {
+            [`${area}.${item}.status`]: cumple,
+            [`${area}.${item}.observaciones`]: observaciones,
+            [`${area}.${item}.responsable`]: user,
+        }
+
+        if (tipoFormulario === "Limpieza diaría") {
+            await FormulariosCalidadRepository.modificar_limpieza_diaria(_id, query)
+            return
+        } else if (tipoFormulario === "Limpieza mensual") {
+            await FormulariosCalidadRepository.modificar_limpieza_mensual(_id, query)
+            return
+        } else if (tipoFormulario === "Control de plagas") {
+            console.log("si entra a aqui")
+            await FormulariosCalidadRepository.modificar_control_plagas(_id, query)
+            return
+        }
+    }
+
+    //#region POST
+    static async crear_formulario_calidad(req, user) {
+        const { data } = req;
+        const { tipoSeleccionado, fechaInicio, fechaFin } = data;
+        const codigo = await VariablesDelSistema.generar_codigo_informe_calidad()
+
+        switch (tipoSeleccionado) {
+            case 'limpieza_diaria':
+                await FormulariosCalidadRepository.crear_formulario_limpieza_diaria(
+                    codigo, fechaInicio, fechaFin, user
+                )
+                break;
+            case 'limpieza_mensual':
+                await FormulariosCalidadRepository.crear_formulario_limpieza_mensual(
+                    codigo, fechaInicio, fechaFin, user
+                )
+                break;
+            case 'control_plagas':
+                await FormulariosCalidadRepository.crear_formulario_control_plagas(
+                    codigo, fechaInicio, fechaFin, user
+                )
+                break;
+            default:
+                throw new Error("Error en el switch de creacion de formulario calidad")
+        }
+
+
+
+        await VariablesDelSistema.incrementar_codigo_informes_calidad()
     }
 }
 
