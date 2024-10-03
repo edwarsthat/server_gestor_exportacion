@@ -600,6 +600,31 @@ class ProcesoRepository {
         const status = VariablesDelSistema.get_status_pausa_proceso()
         return status
     }
+    static async get_contenedores_programacion_mula() {
+        const haceUnMes = new Date();
+        haceUnMes.setMonth(haceUnMes.getMonth() - 1);
+        const inicioDeMes = new Date(haceUnMes.getFullYear(), haceUnMes.getMonth(), 1);
+        const finDeMes = new Date(haceUnMes.getFullYear(), haceUnMes.getMonth() + 1, 0, 23, 59, 59, 999);
+
+        const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            query: {
+                $and: [
+                    {
+                        'infoContenedor.fechaCreacion': {
+                            $gte: inicioDeMes,
+                            $lte: finDeMes
+                        }
+                    },
+                    { infoTractoMula: { $exists: true } },
+                    { "infoTractoMula.criterios": { $exists: false } }
+                ],
+            },
+            select: { numeroContenedor: 1, infoContenedor: 1, __v: 1, infoTractoMula: 1 },
+            sort: { 'infoContenedor.fechaCreacion': -1 },
+        });
+
+        return response;
+    }
 
     // #region PUT
     static async ingresar_descarte_lavado(req, user) {
@@ -1196,6 +1221,15 @@ class ProcesoRepository {
         const { action, data, _id, __v } = req
         const query = {
             insumosData: data
+        }
+        await ContenedoresRepository.modificar_contenedor(
+            _id, query, user, action, __v
+        );
+    }
+    static async add_inspeccion_mula_contenedor(req, user) {
+        const { _id, __v, data, action } = req;
+        const query = {
+            "infoTractoMula.criterios": data
         }
         await ContenedoresRepository.modificar_contenedor(
             _id, query, user, action, __v

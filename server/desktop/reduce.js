@@ -284,6 +284,37 @@ const apiSocket = {
         const data = await CalidadRepository.get_formularios_calidad_creados();
         return { status: 200, message: 'Ok', data: data }
     },
+    get_contenedores_programacion_mula: async () => {
+        const data = await ProcesoRepository.get_contenedores_programacion_mula();
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_view_formularios_limpieza_diaria: async (req) => {
+        const { data } = req
+        const formularios = await CalidadRepository.get_view_formularios_limpieza_diaria(data);
+        return { status: 200, message: 'Ok', data: formularios }
+    },
+    count_documents_formularios_calidad_limpieza_diaria: async () => {
+        const count = await CalidadRepository.count_documents_formularios_calidad_limpieza_diaria();
+        return { status: 200, message: 'Ok', data: count }
+    },
+    get_view_formularios_limpieza_mensual: async (req) => {
+        const { data } = req
+        const formularios = await CalidadRepository.get_view_formularios_limpieza_mensual(data);
+        return { status: 200, message: 'Ok', data: formularios }
+    },
+    count_documents_formularios_calidad_limpieza_mensual: async () => {
+        const count = await CalidadRepository.count_documents_formularios_calidad_limpieza_mensual();
+        return { status: 200, message: 'Ok', data: count }
+    },
+    get_view_formularios_control_plagas: async (req) => {
+        const { data } = req
+        const formularios = await CalidadRepository.get_view_formularios_control_plagas(data);
+        return { status: 200, message: 'Ok', data: formularios }
+    },
+    count_documents_formularios_calidad_control_plagas: async () => {
+        const count = await CalidadRepository.count_documents_formularios_calidad_control_plagas();
+        return { status: 200, message: 'Ok', data: count }
+    },
     //#region POST
     guardarLote: async (data) => {
         await ProcesoRepository.addLote(data)
@@ -625,6 +656,11 @@ const apiSocket = {
     add_item_formulario_calidad: async (req) => {
         const { data, user } = req
         await CalidadRepository.add_item_formulario_calidad(data, user._id);
+        return { status: 200, message: 'Ok' }
+    },
+    add_inspeccion_mula_contenedor: async (req) => {
+        const { data, user } = req
+        await ProcesoRepository.add_inspeccion_mula_contenedor(data, user.user)
         return { status: 200, message: 'Ok' }
     }
 }

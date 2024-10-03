@@ -24,6 +24,8 @@ const { SistemaRepository } = require('./server/api/Sistema');
 const { AccessError } = require('./Error/ValidationErrors');
 const { procesoEventEmitter } = require('./events/eventos');
 const { HandleErrors } = require('./Error/recordErrors');
+const { VariablesDelSistema } = require('./server/Class/VariablesDelSistema');
+const { FormulariosCalidadRepository } = require('./server/Class/FormulariosCalidad');
 
 initMongoDB()
 
@@ -275,5 +277,15 @@ server.listen(3011, () => {
 //reiniciar valores del sistema
 cron.schedule("55 4 * * *", async () => {
     await ProcesoRepository.reiniciarValores_proceso()
+});
+
+cron.schedule("0 4 * * *", async () => {
+    const inicio = new Date().setHours(0, 0, 0, 0);
+    const fin = new Date().setHours(23, 59, 59, 59);
+    const codigo = await VariablesDelSistema.generar_codigo_informe_calidad()
+
+    await FormulariosCalidadRepository.crear_formulario_limpieza_diaria(
+        codigo, inicio, fin
+    )
 });
 

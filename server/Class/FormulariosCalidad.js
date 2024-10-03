@@ -8,12 +8,11 @@ let bussyIds = new Set();
 
 
 class FormulariosCalidadRepository {
-    static async crear_formulario_limpieza_diaria(ID, fechaInicio, fechaFin, user) {
+    static async crear_formulario_limpieza_diaria(ID, fechaInicio, fechaFin) {
         const formulario = new LimpiezaDiaria({
             ID: ID,
             fechaInicio: new Date(fechaInicio).setHours(0, 0, 0, 0),
             fechaFin: new Date(fechaFin).setHours(23, 59, 59, 59),
-            responsable: user
         })
         await formulario.save();
     }
@@ -35,72 +34,115 @@ class FormulariosCalidadRepository {
         })
         await formulario.save();
     }
-    static async get_formularios_calidad_creados() {
-        /**
-       * Funcion que obtiene informes de calidad que no se han diligenciado de la base de datos de MongoDB.
-       *
-       * @returns {Promise<Array>} - Promesa que resuelve a un array de lotes obtenidos.
-       * @throws {PostError} - Lanza un error si ocurre un problema al obtener los lotes.
-       */
-        try {
-            const now = new Date()
-            const limpieza_diaria = await LimpiezaDiaria.find({
-                $and: [
-                    { fechaInicio: { $lte: now } },
-                    { fechaFin: { $gt: now } }
-                ]
-            });
 
-            return limpieza_diaria
+    //obtener formularios de calidad
+    static async get_formularios_calidad_limpieza_diaria(options = {}) {
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { fechaIngreso: -1 },
+            limit = 50,
+            skip = 0
+        } = options;
+        try {
+            let newQuery = { ...query };
+
+            if (ids.length > 0) {
+                newQuery._id = { $in: ids };
+            }
+            const formularios = await LimpiezaDiaria.find(newQuery)
+                .select(select)
+                .sort(sort)
+                .limit(limit)
+                .skip(skip)
+                .exec();
+            return formularios
 
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo formulario limpieza diaria ${err.message}`);
+            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
         }
     }
-    static async get_formularios_calidad_limpieza_mensual_creados() {
-        /**
-       * Funcion que obtiene informes de calidad que no se han diligenciado de la base de datos de MongoDB.
-       *
-       * @returns {Promise<Array>} - Promesa que resuelve a un array de lotes obtenidos.
-       * @throws {PostError} - Lanza un error si ocurre un problema al obtener los lotes.
-       */
+    static async count_documents_formularios_calidad_limpieza_diaria() {
         try {
-            const now = new Date()
-            const limpieza_mensual = await LimpiezaMensual.find({
-                $and: [
-                    { fechaInicio: { $lte: now } },
-                    { fechaFin: { $gt: now } }
-                ]
-            });
+            const count = await LimpiezaDiaria.countDocuments();
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
+        }
+    }
+    static async get_formularios_calidad_limpieza_mensual(options = {}) {
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { fechaIngreso: -1 },
+            limit = 50,
+            skip = 0
+        } = options;
+        try {
+            let newQuery = { ...query };
 
-            return limpieza_mensual
+            if (ids.length > 0) {
+                newQuery._id = { $in: ids };
+            }
+            const formularios = await LimpiezaMensual.find(newQuery)
+                .select(select)
+                .sort(sort)
+                .limit(limit)
+                .skip(skip)
+                .exec();
+            return formularios
 
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo formulario limpieza mensual ${err.message}`);
+            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
         }
     }
-    static async get_formularios_calidad_control_plagas_creados() {
-        /**
-       * Funcion que obtiene informes de calidad que no se han diligenciado de la base de datos de MongoDB.
-       *
-       * @returns {Promise<Array>} - Promesa que resuelve a un array de lotes obtenidos.
-       * @throws {PostError} - Lanza un error si ocurre un problema al obtener los lotes.
-       */
+    static async count_documents_formularios_calidad_limpieza_mensual() {
         try {
-            const now = new Date()
-            const control_plagas = await ControlPlagas.find({
-                $and: [
-                    { fechaInicio: { $lte: now } },
-                    { fechaFin: { $gt: now } }
-                ]
-            });
+            const count = await LimpiezaMensual.countDocuments();
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
+        }
+    }
+    static async get_formularios_calidad_control_plagas(options = {}) {
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { fechaIngreso: -1 },
+            limit = 50,
+            skip = 0
+        } = options;
+        try {
+            let newQuery = { ...query };
 
-            return control_plagas
+            if (ids.length > 0) {
+                newQuery._id = { $in: ids };
+            }
+            const formularios = await ControlPlagas.find(newQuery)
+                .select(select)
+                .sort(sort)
+                .limit(limit)
+                .skip(skip)
+                .exec();
+            return formularios
 
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo formulario limpieza mensual ${err.message}`);
+            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
         }
     }
+    static async count_documents_formularios_calidad_control_plagas() {
+        try {
+            const count = await ControlPlagas.countDocuments();
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
+        }
+    }
+
+    //
     static async modificar_limpieza_diaria(id, query) {
         /**
          * Modifica un formulario de calidad de limpieza diaria en la base de datos de MongoDB desde las aplicaciones

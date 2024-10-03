@@ -74,16 +74,84 @@ class CalidadRepository {
         }
     }
     static async get_formularios_calidad_creados() {
+        const now = new Date()
 
-        const limpieza_diaria = await FormulariosCalidadRepository.get_formularios_calidad_creados()
-        const limpieza_mensual = await FormulariosCalidadRepository.get_formularios_calidad_limpieza_mensual_creados()
-        const control_plagas = await FormulariosCalidadRepository.get_formularios_calidad_control_plagas_creados()
+        const limpieza_diaria = await FormulariosCalidadRepository.get_formularios_calidad_limpieza_diaria({
+            query: {
+                $and: [
+                    { fechaInicio: { $lte: now } },
+                    { fechaFin: { $gt: now } }
+                ]
+            }
+        })
+        const limpieza_mensual = await FormulariosCalidadRepository.get_formularios_calidad_limpieza_mensual({
+            query: {
+                $and: [
+                    { fechaInicio: { $lte: now } },
+                    { fechaFin: { $gt: now } }
+                ]
+            }
+        })
+
+        const control_plagas = await FormulariosCalidadRepository.get_formularios_calidad_control_plagas({
+            query: {
+                $and: [
+                    { fechaInicio: { $lte: now } },
+                    { fechaFin: { $gt: now } }
+                ]
+            }
+        })
 
         return [
             ...limpieza_diaria,
             ...limpieza_mensual,
             ...control_plagas
         ];
+    }
+    static async get_view_formularios_limpieza_diaria(req) {
+        const { page } = req
+        const resultsPerPage = 30;
+        const limpieza_diaria = await FormulariosCalidadRepository.get_formularios_calidad_limpieza_diaria({
+            skip: (page - 1) * resultsPerPage,
+            limit: resultsPerPage,
+            sort: { createdAt: -1 }
+        })
+        return limpieza_diaria
+
+    }
+    static async count_documents_formularios_calidad_limpieza_diaria() {
+        const count = await FormulariosCalidadRepository.count_documents_formularios_calidad_limpieza_diaria()
+        return count
+    }
+    static async get_view_formularios_limpieza_mensual(req) {
+        const { page } = req
+        const resultsPerPage = 30;
+        const limpieza_diaria = await FormulariosCalidadRepository.get_formularios_calidad_limpieza_mensual({
+            skip: (page - 1) * resultsPerPage,
+            limit: resultsPerPage,
+            sort: { createdAt: -1 }
+        })
+        return limpieza_diaria
+
+    }
+    static async count_documents_formularios_calidad_limpieza_mensual() {
+        const count = await FormulariosCalidadRepository.count_documents_formularios_calidad_limpieza_mensual()
+        return count
+    }
+    static async get_view_formularios_control_plagas(req) {
+        const { page } = req
+        const resultsPerPage = 30;
+        const limpieza_diaria = await FormulariosCalidadRepository.get_formularios_calidad_control_plagas({
+            skip: (page - 1) * resultsPerPage,
+            limit: resultsPerPage,
+            sort: { createdAt: -1 }
+        })
+        return limpieza_diaria
+
+    }
+    static async count_documents_formularios_calidad_control_plagas() {
+        const count = await FormulariosCalidadRepository.count_documents_formularios_calidad_control_plagas()
+        return count
     }
     // #region PUT
     static async put_lotes_inspeccion_ingreso(req, user) {
@@ -122,12 +190,21 @@ class CalidadRepository {
         }
     }
     static async add_item_formulario_calidad(req, user) {
-        const { tipoFormulario, _id, area, item, cumple, observaciones } = req
-        const query = {
-            [`${area}.${item}.status`]: cumple,
-            [`${area}.${item}.observaciones`]: observaciones,
-            [`${area}.${item}.responsable`]: user,
-        }
+        // const { tipoFormulario, _id, area, item, cumple, observaciones } = req
+        const { tipoFormulario, _id, area, data } = req
+        // const query = {
+        //     [`${area}.${item}.status`]: cumple,
+        //     [`${area}.${item}.observaciones`]: observaciones,
+        //     [`${area}.${item}.responsable`]: user,
+        // }
+        let query = {}
+        Object.keys(data).forEach(item => {
+
+            query[`${area}.${item}.status`] = data[item].status
+            query[`${area}.${item}.observaciones`] = data[item].observaciones
+            query[`${area}.${item}.responsable`] = user
+
+        })
 
         if (tipoFormulario === "Limpieza diaría") {
             await FormulariosCalidadRepository.modificar_limpieza_diaria(_id, query)
@@ -136,7 +213,6 @@ class CalidadRepository {
             await FormulariosCalidadRepository.modificar_limpieza_mensual(_id, query)
             return
         } else if (tipoFormulario === "Control de plagas") {
-            console.log("si entra a aqui")
             await FormulariosCalidadRepository.modificar_control_plagas(_id, query)
             return
         }
@@ -151,7 +227,7 @@ class CalidadRepository {
         switch (tipoSeleccionado) {
             case 'limpieza_diaria':
                 await FormulariosCalidadRepository.crear_formulario_limpieza_diaria(
-                    codigo, fechaInicio, fechaFin, user
+                    codigo, fechaInicio, fechaFin
                 )
                 break;
             case 'limpieza_mensual':

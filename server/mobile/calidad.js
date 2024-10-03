@@ -58,5 +58,19 @@ routerCalidad.put("/put_lotes_clasificacion_descarte", async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 });
+routerCalidad.put("/add_item_formulario_calidad", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const user = await UserRepository.authenticateToken(token);
+
+        await UserRepository.autentificacionPermisos(user.cargo, req.body.action, user.user)
+        await CalidadRepository.add_item_formulario_calidad(req.body, user._id)
+
+        res.send({ status: 200, message: 'Ok' })
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+});
 
 module.exports.routerCalidad = routerCalidad;

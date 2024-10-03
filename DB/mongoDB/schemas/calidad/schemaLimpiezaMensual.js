@@ -8,7 +8,7 @@ const elementoSchema = new Schema({
     status: Boolean,
     observaciones: String,
     responsable: { type: Schema.Types.ObjectId, ref: Usuarios },
-    createdAt: { type: Date, default: Date.now() },
+    createdAt: { type: Date, default: Date.now },
 }, { _id: false })
 
 const recepcionSchema = new Schema({

@@ -7,7 +7,7 @@ const conn = mongoose.createConnection(process.env.MONGODB_PROCESO);
 const elementoSchema = new Schema({
     status: Boolean,
     observaciones: String,
-    createdAt: { type: Date, default: Date.now() },
+    createdAt: { type: Date, default: Date.now },
     responsable: { type: Schema.Types.ObjectId, ref: Usuarios },
 }, { _id: false })
 
@@ -83,7 +83,6 @@ const comunesSchema = new Schema({
 
 const LimpiezaDiariaSchema = new Schema({
     createdAt: { type: Date, default: Date.now() },
-    responsable: { type: Schema.Types.ObjectId, ref: Usuarios },
     fechaFin: Date,
     fechaInicio: Date,
     ID: { type: String, require: true },
