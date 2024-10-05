@@ -101,21 +101,19 @@ const inspeccionMulasSchema = new Schema({
 });
 
 const schemaInfoMula = new Schema({
+  numeroPrecinto: String,
+  empresaTransportadora: String,
   placa: String,
   trailer: String,
+  nombreSia: String,
+  temperatura: String,
+  naviera: String,
+  puerto: String,
   conductor: String,
   cedula: String,
-  celular: String,
-  color: String,
+  telefono: String,
   modelo: String,
   marca: String,
-  prof: String,
-  puerto: String,
-  naviera: String,
-  agenciaAduanas: String,
-  empresaTransporte: String,
-  cumpleRequisitos: Boolean,
-  responsable: String,
   criterios: inspeccionMulasSchema,
 });
 

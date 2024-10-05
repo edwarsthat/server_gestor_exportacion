@@ -4,7 +4,7 @@ const oobtener_datos_lotes_to_listaEmpaque = async (contenedores) => {
     try {
         const ids = contenedores.map(contenedor => contenedor._id);
         const query = { contenedores: { $in: ids } }
-        const lotes = await LotesRepository.getLotes({ query: query })
+        const lotes = await LotesRepository.getLotes({ query: query, limit: 400 })
         for (let i = 0; i < contenedores.length; i++) {
             for (let j = 0; j < contenedores[i].pallets.length; j++) {
                 for (let n = 0; n < contenedores[i].pallets[j].get("EF1").length; n++) {

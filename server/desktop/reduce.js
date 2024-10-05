@@ -662,6 +662,11 @@ const apiSocket = {
         const { data, user } = req
         await ProcesoRepository.add_inspeccion_mula_contenedor(data, user.user)
         return { status: 200, message: 'Ok' }
+    },
+    finalizar_informe_proveedor: async (req) => {
+        const { data, user } = req
+        await ProcesoRepository.finalizar_informe_proveedor(data, user)
+        return { status: 200, message: 'Ok' }
     }
 }
 

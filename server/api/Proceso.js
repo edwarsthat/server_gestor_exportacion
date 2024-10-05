@@ -335,7 +335,10 @@ class ProcesoRepository {
                 descarteEncerado: 1,
                 descarteLavado: 1,
                 frutaNacional: 1,
-                fechaIngreso: 1
+                fechaIngreso: 1,
+                precio: 1,
+                aprobacionComercial: 1,
+                exportacionDetallada: 1
             },
             limit: resultsPerPage,
             populate: { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' }
@@ -899,6 +902,65 @@ class ProcesoRepository {
         procesoEventEmitter.emit("status_proceso", {
             status: "on"
         });
+    }
+    static async finalizar_informe_proveedor(req, userInfo) {
+        const { _id, precio, action, contenedores } = req
+        const { cargo, user } = userInfo
+        if (!["66b29b1736733668246c9559"]
+            .includes(cargo)) { throw new Error("Acceso no autorizado") }
+
+        const exportacion = {}
+        const contenedoresData = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            ids: contenedores,
+        })
+        const numeroCont = contenedoresData.length;
+        for (let nCont = 0; nCont < numeroCont; nCont++) {
+            const contActual = contenedoresData[nCont].toObject();
+            const numeroPallets = contActual.pallets.length;
+
+            // return
+            for (let nPallets = 0; nPallets < numeroPallets; nPallets++) {
+                const palletActual = contActual.pallets[nPallets].get('EF1')
+                const numeroItems = palletActual.length
+                if (numeroItems <= 0) continue
+                // console.log(palletActual[0])
+                // console.log(numeroItems)
+                // return
+                for (let nItems = 0; nItems < numeroItems; nItems++) {
+                    const itemActual = palletActual[nItems]
+                    if (itemActual.lote === _id) {
+                        if (!Object.prototype.hasOwnProperty.call(exportacion, contActual._id)) {
+                            exportacion[contActual._id] = {}
+                        }
+                        if (!Object.prototype.hasOwnProperty.call(exportacion[contActual._id], itemActual.calidad)) {
+                            exportacion[contActual._id][itemActual.calidad] = 0
+                        }
+                        const mult = Number(itemActual.tipoCaja.split('-')[1].replace(",", "."))
+                        const kilos = mult * itemActual.cajas
+
+                        exportacion[contActual._id][itemActual.calidad] += kilos
+
+                    }
+                }
+            }
+        }
+
+        const query = {
+            precio: precio,
+            aprobacionComercial: true
+        }
+
+        Object.keys(exportacion).forEach(cont => {
+
+            Object.keys(exportacion[cont]).forEach(calidad => {
+                query[`exportacionDetallada.any.${cont}.${calidad}`] = exportacion[cont][calidad]
+
+            })
+        })
+
+        await LotesRepository.modificar_lote_proceso(_id, query, action, user)
+
+
     }
     //? lista de empaque
     static async add_settings_pallet(req, user) {
