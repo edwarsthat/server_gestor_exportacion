@@ -1,6 +1,7 @@
 {
     "1":"calidad1",
     "1.5": "calidad15",
+    "1,5": "calidad15",
     "2": "calidad2",
     "Combinado":"calidad2",
     "Zumo":"calidad2"
