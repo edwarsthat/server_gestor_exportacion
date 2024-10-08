@@ -675,12 +675,23 @@ class ProcesoRepository {
         });
     }
     static async ingresar_foto_calidad(req, user) {
-        const { foto, fotoName, _id } = req
-        const fotosPath = path.join(__dirname, "..", "..", "fotos_frutas");
-        console.log(fotosPath)
+        const { foto, fotoName, _id } = req;
 
+        // Construir el nombre del archivo
+        const fileName = `${_id}_${fotoName}.png`;
+
+        // Construir la ruta completa del archivo
+        const fotoPath = path.join(
+            __dirname,
+            "..",
+            "..",
+            "fotos_frutas",
+            fileName
+        );
+
+        // Eliminar el encabezado de datos URI si está presente
         const base64Data = foto.replace(/^data:image\/\w+;base64,/, "");
-        const fotoPath = fotosPath + _id + "_" + fotoName + ".png";
+
         fs.writeFileSync(fotoPath, base64Data, { encoding: "base64" }, err => {
             if (err) {
                 throw new ProcessError(422, `Error guardando fotos ${err.message}`)
