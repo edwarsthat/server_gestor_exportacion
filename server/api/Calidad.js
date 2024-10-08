@@ -1,4 +1,3 @@
-const { UploaAWSRepository } = require("../../aws/lambda/upload");
 const { ProcessError } = require("../../Error/ProcessError");
 const { FormulariosCalidadRepository } = require("../Class/FormulariosCalidad");
 const { LotesRepository } = require("../Class/Lotes");
@@ -179,15 +178,6 @@ class CalidadRepository {
     static async ingresoCalidadInterna(req, user) {
         const { _id, data, action } = req
         await LotesRepository.modificar_lote_proceso(_id, data, action, user);
-
-        const esta_en_inventario = await VariablesDelSistema.get_item_inventario(_id)
-
-        if (esta_en_inventario) {
-            await UploaAWSRepository.modificar_item_inventario_fruta_sin_procesar(
-                { _id: _id },
-                { clasificacionCalidad: data.clasificacionCalidad }
-            )
-        }
     }
     static async add_item_formulario_calidad(req, user) {
         // const { tipoFormulario, _id, area, item, cumple, observaciones } = req

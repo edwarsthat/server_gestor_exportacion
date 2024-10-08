@@ -1,4 +1,3 @@
-const { UploaAWSRepository } = require("../../aws/lambda/upload");
 const { iniciarRedisDB } = require("../../DB/redis/init");
 const { ProcessError } = require("../../Error/ProcessError");
 const { procesoEventEmitter } = require("../../events/eventos");
@@ -705,7 +704,7 @@ class ProcesoRepository {
         }
         await LotesRepository.modificar_lote_proceso(_id, query, "Agregar foto calidad", user);
     }
-    static async vaciarLote(data, user, sendData) {
+    static async vaciarLote(data, user) {
         const { _id, kilosVaciados, inventario, __v, action } = data;
         const query = {
             $inc: {
@@ -725,10 +724,6 @@ class ProcesoRepository {
         await VariablesDelSistema.procesarEF1(lote[0], inventario);
         await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString())
 
-        //se sube los datos a la nube
-        await UploaAWSRepository.eliminar_item_inventario_fruta_sin_procesar(lote[0])
-        //envia el evento al cliente
-        await sendData(lote)
         procesoEventEmitter.emit("proceso_event", {
             predio: lote
         });
@@ -757,8 +752,6 @@ class ProcesoRepository {
         //se modifica el registro
         await RecordLotesRepository.modificarRecord(_idRecord, queryRecord, __vHistorial);
 
-        const lote = await LotesRepository.getLotes({ ids: [_id] })
-        await UploaAWSRepository.upload_item_inventario_fruta_sin_procesar(lote[0], inventario)
     }
     static async directoNacional(data, user) {
         const { _id, infoSalidaDirectoNacional, directoNacional, inventario, __v, action } = data;
@@ -771,17 +764,9 @@ class ProcesoRepository {
         };
         const lote = await LotesRepository.modificar_lote(_id, query, action, user, __v);
 
-        const isDelete = await VariablesDelSistema.modificarInventario(_id, inventario);
+        await VariablesDelSistema.modificarInventario(_id, inventario);
         await LotesRepository.deshidratacion(lote);
 
-        // proceso para enviar a la nube
-        const loteSend = await LotesRepository.getLotes({ ids: [_id] });
-        if (isDelete) {
-            await UploaAWSRepository.eliminar_item_inventario_fruta_sin_procesar(loteSend[0])
-        } else {
-            const inventarioData = await VariablesDelSistema.get_item_inventario(_id)
-            await UploaAWSRepository.modificar_item_inventario_fruta_sin_procesar(loteSend[0], { inventario: inventarioData })
-        }
     }
     static async despacho_descarte(req, user) {
         const { data } = req;
@@ -1324,9 +1309,6 @@ class ProcesoRepository {
         procesoEventEmitter.emit("nuevo_predio", {
             predio: lote
         });
-
-        const loteWeb = await LotesRepository.getLotes({ ids: [lote._id] })
-        await UploaAWSRepository.upload_item_inventario_fruta_sin_procesar(loteWeb[0], data.data.data.canastillas)
 
     }
     static async set_hora_inicio_proceso() {
