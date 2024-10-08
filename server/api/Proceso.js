@@ -676,7 +676,7 @@ class ProcesoRepository {
     }
     static async ingresar_foto_calidad(req, user) {
         const { foto, fotoName, _id } = req
-        const fotosPath = path.join(__dirname, "fotos_frutas");
+        const fotosPath = path.join(__dirname, "..", "..", "fotos_frutas");
         console.log(fotosPath)
 
         const base64Data = foto.replace(/^data:image\/\w+;base64,/, "");
