@@ -33,6 +33,7 @@ const cargoSchema = new Schema({
     Proceso: seccionSchema,
     Comercial: seccionSchema,
     "Gestión de cuentas": seccionSchema,
+    Transporte: seccionSchema,
     Rol: Number,
 
 });
