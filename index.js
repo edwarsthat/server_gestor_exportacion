@@ -287,5 +287,7 @@ cron.schedule("0 4 * * *", async () => {
     await FormulariosCalidadRepository.crear_formulario_limpieza_diaria(
         codigo, inicio, fin
     )
+    await VariablesDelSistema.incrementar_codigo_informes_calidad();
+
 });
 

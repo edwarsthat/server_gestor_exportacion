@@ -1267,15 +1267,16 @@ class ProcesoRepository {
         const { _id, action } = req;
         const contenedor = await ContenedoresRepository.getContenedores({ ids: [_id] });
         const lista = await insumos_contenedor(contenedor[0])
+        console.log(lista)
         const listasAlias = Object.keys(lista);
         const idsInsumos = await InsumosRepository.get_insumos({
             query: {
-                alias: { $in: listasAlias },
+                codigo: { $in: listasAlias },
             }
         })
         const listaInsumos = {};
         idsInsumos.forEach(item => {
-            listaInsumos[`insumosData.${item._id.toString()}`] = lista[item.alias]
+            listaInsumos[`insumosData.${item._id.toString()}`] = lista[item.codigo]
         })
         await ContenedoresRepository.cerrar_lista_empaque(_id, listaInsumos, action, user);
         procesoEventEmitter.emit("listaempaque_update");
