@@ -82,7 +82,7 @@ const comunesSchema = new Schema({
 }, { _id: false })
 
 const LimpiezaDiariaSchema = new Schema({
-    createdAt: { type: Date, default: Date.now() },
+    createdAt: { type: Date, default: () => new Date() },
     fechaFin: Date,
     fechaInicio: Date,
     ID: { type: String, require: true },
@@ -96,6 +96,25 @@ const LimpiezaDiariaSchema = new Schema({
     insumos: insumosSchema,
     servicios: servicioSchema,
     comunes: comunesSchema
+});
+
+// Middleware pre-save para asegurar que las fechas se guarden en UTC
+LimpiezaDiariaSchema.pre('save', function (next) {
+    // Convertir fechaInicio a UTC, manteniendo las 0 horas locales
+    if (this.fechaInicio) {
+        const fechaInicioLocal = new Date(this.fechaInicio);
+        fechaInicioLocal.setHours(0, 0, 0, 0); // Establecer a medianoche local
+        this.fechaInicio = new Date(fechaInicioLocal.toUTCString());
+    }
+
+    // Convertir fechaFin a UTC, manteniendo las 23:59:59.999 locales
+    if (this.fechaFin) {
+        const fechaFinLocal = new Date(this.fechaFin);
+        fechaFinLocal.setHours(23, 59, 59, 999); // Establecer al final del día local
+        this.fechaFin = new Date(fechaFinLocal.toUTCString());
+    }
+
+    next();
 });
 
 const LimpiezaDiaria = conn.model("limpiezaDiaria", LimpiezaDiariaSchema);

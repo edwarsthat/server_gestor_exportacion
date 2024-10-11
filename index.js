@@ -279,7 +279,7 @@ cron.schedule("55 4 * * *", async () => {
     await ProcesoRepository.reiniciarValores_proceso()
 });
 
-cron.schedule("0 4 * * *", async () => {
+cron.schedule("7 9 * * *", async () => {
     const inicio = new Date().setHours(0, 0, 0, 0);
     const fin = new Date().setHours(23, 59, 59, 59);
     const codigo = await VariablesDelSistema.generar_codigo_informe_calidad()

@@ -24,17 +24,23 @@ class ViewsRepository {
         if (tipoFruta) query.tipoFruta = tipoFruta;
         if (predio) query.predio = predio;
         if (enf) query.enf = enf;
+
         if (fechaInicio || fechaFin) {
             query.fechaIngreso = {}
             if (fechaInicio) {
-                query.fechaIngreso.$gte = new Date(fechaInicio).setHours(0, 0, 0)
+                const fechaInicioUTC = new Date(fechaInicio);
+                fechaInicioUTC.setHours(fechaInicioUTC.getHours() + 5);
+                query.fechaIngreso.$gte = fechaInicioUTC;
             } else {
-                query.fechaIngreso.$gte = new Date(0)
+                query.fechaIngreso.$gte = new Date(0);
             }
             if (fechaFin) {
-                query.fechaIngreso.$lt = new Date(fechaFin).setHours(23, 59, 59)
+                const fechaFinUTC = new Date(fechaFin)
+                fechaFinUTC.setDate(fechaFinUTC.getDate() + 1);
+                fechaFinUTC.setHours(fechaFinUTC.getHours() + 5);
+                query.fechaIngreso.$lt = fechaFinUTC;
             } else {
-                query.fechaIngreso.$lt = new Date()
+                query.fechaIngreso.$lt = new Date();
             }
         }
         if (rendimientoMin || rendimientoMax) {

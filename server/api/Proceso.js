@@ -201,18 +201,22 @@ class ProcesoRepository {
         const query = {
             operacionRealizada: 'vaciarLote'
         }
-
         if (fechaInicio || fechaFin) {
             query.fecha = {}
             if (fechaInicio) {
-                query.fecha.$gte = new Date(fechaInicio).setHours(0, 0, 0)
+                const fechaInicioUTC = new Date(fechaInicio);
+                fechaInicioUTC.setHours(fechaInicioUTC.getHours() + 5);
+                query.fecha.$gte = fechaInicioUTC;
             } else {
-                query.fecha.$gte = new Date(0)
+                query.fecha.$gte = new Date(0);
             }
             if (fechaFin) {
-                query.fecha.$lt = new Date(fechaFin).setHours(23, 59, 59)
+                const fechaFinUTC = new Date(fechaFin)
+                fechaFinUTC.setDate(fechaFinUTC.getDate() + 1);
+                fechaFinUTC.setHours(fechaFinUTC.getHours() + 5);
+                query.fecha.$lt = fechaFinUTC;
             } else {
-                query.fecha.$lt = new Date()
+                query.fecha.$lt = new Date();
             }
         }
         const recordLotes = await RecordLotesRepository.getVaciadoRecord({ query: query })
@@ -239,7 +243,6 @@ class ProcesoRepository {
         return resultado
     }
     static async obtenerHistorialLotesDirectoNacional(data) {
-        console.log(data)
         const { fechaInicio, fechaFin } = data
         const query = {
             operacionRealizada: 'directoNacional'
@@ -247,19 +250,24 @@ class ProcesoRepository {
         if (fechaInicio || fechaFin) {
             query.fecha = {}
             if (fechaInicio) {
-                query.fecha.$gte = new Date(fechaInicio).setHours(0, 0, 0)
+                const fechaInicioUTC = new Date(fechaInicio);
+                fechaInicioUTC.setHours(fechaInicioUTC.getHours() + 5);
+                query.fecha.$gte = fechaInicioUTC;
             } else {
-                query.fecha.$gte = new Date(0)
+                query.fecha.$gte = new Date(0);
             }
             if (fechaFin) {
-                query.fecha.$lt = new Date(fechaFin).setHours(23, 59, 59)
+                const fechaFinUTC = new Date(fechaFin)
+                fechaFinUTC.setDate(fechaFinUTC.getDate() + 1);
+                fechaFinUTC.setHours(fechaFinUTC.getHours() + 5);
+                query.fecha.$lt = fechaFinUTC;
             } else {
-                query.fecha.$lt = new Date()
+                query.fecha.$lt = new Date();
             }
         }
-        const recordLotes = await RecordLotesRepository.getVaciadoRecord({ query: query })
-        console.log(recordLotes)
+        const recordLotes = await RecordLotesRepository.getRecordLotes({ query: query })
         const lotesIds = recordLotes.map(lote => lote.documento._id);
+
         const lotes = await LotesRepository.getLotes({
             ids: lotesIds,
             select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1 }
@@ -959,7 +967,6 @@ class ProcesoRepository {
             })
         })
 
-        console.log(query)
         await LotesRepository.modificar_lote_proceso(_id, query, action, user)
 
 
@@ -1267,7 +1274,6 @@ class ProcesoRepository {
         const { _id, action } = req;
         const contenedor = await ContenedoresRepository.getContenedores({ ids: [_id] });
         const lista = await insumos_contenedor(contenedor[0])
-        console.log(lista)
         const listasAlias = Object.keys(lista);
         const idsInsumos = await InsumosRepository.get_insumos({
             query: {

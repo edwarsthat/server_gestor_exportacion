@@ -168,7 +168,7 @@ const dataSchema = new Schema({
   directoNacional: { type: Number, default: 0 },
   enf: { type: String, require: true },
   exportacionDetallada: exportacionDetalladaSchema,
-  fechaIngreso: { type: Date, default: Date.now },
+  fechaIngreso: { type: Date, default: () => new Date() },
   fechaProceso: { type: Date },
   frutaNacional: { type: Number, default: 0 },
   historialDescarte: mongoose.Types.ObjectId,

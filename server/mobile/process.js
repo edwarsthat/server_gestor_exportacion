@@ -89,7 +89,7 @@ routerProceso.get("/data_historial_descarte_encerado_proceso", async (req, res) 
         const token = req.headers['authorization'];
         const { user, cargo } = await UserRepository.authenticateToken(token);
 
-        const autorizado2 = await UserRepository.autentificacionPermisosHttps(cargo, "obtener_historial_decarte_lavado_proceso");
+        const autorizado2 = await UserRepository.autentificacionPermisosHttps(cargo, "obtener_historial_decarte_encerado_proceso");
         if (!autorizado2) {
             throw new AccessError(412, `Acceso no autorizado obtener_historial_decarte_encerado_proceso`);
         }

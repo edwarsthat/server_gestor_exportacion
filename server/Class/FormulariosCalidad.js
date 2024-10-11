@@ -11,8 +11,8 @@ class FormulariosCalidadRepository {
     static async crear_formulario_limpieza_diaria(ID, fechaInicio, fechaFin) {
         const formulario = new LimpiezaDiaria({
             ID: ID,
-            fechaInicio: new Date(fechaInicio).setHours(0, 0, 0, 0),
-            fechaFin: new Date(fechaFin).setHours(23, 59, 59, 59),
+            fechaInicio: new Date(fechaInicio),
+            fechaFin: new Date(fechaFin),
         })
         await formulario.save();
     }
