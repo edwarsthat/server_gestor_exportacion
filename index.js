@@ -74,7 +74,8 @@ app.get("/latest.yml", async (req, res) => {
     }
 })
 //Envia los archivos para actualizar la aplicacion de escritorio 
-app.get('/:filename', async (req, res) => {
+const pathFile = path.join(__dirname, '..', '..', 'public', 'appTv')
+app.get(pathFile + '/:filename', async (req, res) => {
     try {
         let { filename } = req.params;
         filename = path.basename(filename);
