@@ -18,7 +18,7 @@ const { routerVariablesdelSistema } = require('./server/mobile/variablesDelSiste
 const { routerProceso } = require('./server/mobile/process');
 const { routerCalidad } = require('./server/mobile/calidad');
 const { routerComercial } = require('./server/mobile/comercial');
-const { routerAppTv } = require('./server/routes/appTv');
+const { routerAppTv } = require('./server/routes/appTV');
 const { ProcesoRepository } = require('./server/api/Proceso');
 const { SistemaRepository } = require('./server/api/Sistema');
 const { AccessError } = require('./Error/ValidationErrors');
@@ -47,7 +47,7 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 // Aumentar el límite de tamaño del cuerpo de la solicitud de manera global
 
-
+console.log(path.join(__dirname, 'public'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use("/variablesDeProceso", routerVariablesdelSistema);
 app.use("/proceso", routerProceso);
