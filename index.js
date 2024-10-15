@@ -78,9 +78,8 @@ app.get('/:filename', async (req, res) => {
     try {
         let { filename } = req.params;
         filename = path.basename(filename);
-        console.log(`./public/${filename}`)
         const file =
-            await SistemaRepository.getCelifrutAppFile(`./public/${filename}`)
+            await SistemaRepository.getCelifrutAppFile(filename)
 
 
         // Enviar el archivo como respuest
