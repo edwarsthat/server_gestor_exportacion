@@ -47,6 +47,7 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 // Aumentar el límite de tamaño del cuerpo de la solicitud de manera global
 
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use("/variablesDeProceso", routerVariablesdelSistema);
 app.use("/proceso", routerProceso);
@@ -75,6 +76,7 @@ app.get("/latest.yml", async (req, res) => {
 //Envia los archivos para actualizar la aplicacion de escritorio 
 app.get('/:filename', async (req, res) => {
     try {
+
         let { filename } = req.params;
         filename = path.basename(filename);
         const file =
