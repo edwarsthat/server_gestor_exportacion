@@ -74,13 +74,13 @@ app.get("/latest.yml", async (req, res) => {
     }
 })
 //Envia los archivos para actualizar la aplicacion de escritorio 
-const pathFile = path.join(__dirname, '..', '..', 'public', 'appTv')
-app.get(pathFile + '/:filename', async (req, res) => {
+app.get('/:filename', async (req, res) => {
     try {
         let { filename } = req.params;
         filename = path.basename(filename);
-        console.log(filename)
-        const file = await SistemaRepository.getCelifrutAppFile(filename)
+        console.log(`./public/${filename}`)
+        const file =
+            await SistemaRepository.getCelifrutAppFile(`./public/${filename}`)
 
 
         // Enviar el archivo como respuest
