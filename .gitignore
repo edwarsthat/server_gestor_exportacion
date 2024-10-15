@@ -15,3 +15,6 @@ inventory/
 
 #ignora los update
 updates/
+
+#ignora las fotos
+fotos_frutas/
