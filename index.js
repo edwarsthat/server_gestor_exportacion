@@ -268,8 +268,8 @@ io.on("connection", socket => {
     })
 });
 
-server.listen(3011, () => {
-    console.log('listening on *:3011');
+server.listen(process.env.PORT, () => {
+    console.log('listening on *:3010');
 });
 
 // #region Acciones programadas
