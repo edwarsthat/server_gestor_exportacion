@@ -268,7 +268,7 @@ io.on("connection", socket => {
     })
 });
 
-server.listen(process.env.PORT, () => {
+server.listen(3011, () => {
     console.log('listening on *:3010');
 });
 
