@@ -47,7 +47,6 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 // Aumentar el límite de tamaño del cuerpo de la solicitud de manera global
 
-console.log(path.join(__dirname, 'public'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use("/variablesDeProceso", routerVariablesdelSistema);
 app.use("/proceso", routerProceso);
