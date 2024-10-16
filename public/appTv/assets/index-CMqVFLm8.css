@@ -31,11 +31,11 @@ body {
 
 @font-face {
     font-family: DS-Digital;
-    src: url(/appTV/assets/DS-DIGI-dG6DdXEc.TTF) format("truetype")
+    src: url(/appTv/assets/DS-DIGI-dG6DdXEc.TTF) format("truetype")
 }
 
 .televisor-container {
-    background-image: url(/appTV/assets/img1-BVKzVInW.jpg);
+    background-image: url(/appTv/assets/img1-BVKzVInW.jpg);
     background-size: contain;
     background-position: center;
     height: 100vh;
