@@ -1102,7 +1102,6 @@ class VariablesDelSistema {
         await cliente.set("kilosExportacionHoyNaranja", kilosExportacion);
       }
 
-      return { kilosProcesadosHoy: new_kilos, kilosExportacionHoy: kilosExportacion }
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis sumar exportacion: ${err.name}`)
 

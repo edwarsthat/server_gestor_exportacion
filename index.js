@@ -76,7 +76,6 @@ app.get("/latest.yml", async (req, res) => {
 //Envia los archivos para actualizar la aplicacion de escritorio 
 app.get('/:filename', async (req, res) => {
     try {
-        console.log("entra a /:filename")
         let { filename } = req.params;
         filename = path.basename(filename);
         const file =
@@ -249,7 +248,6 @@ io.on("connection", socket => {
             if (!Object.prototype.hasOwnProperty.call(socketMobileRepository, data.data.action))
                 throw new BadGetwayError(501, `Error badGetWay ${data.data.action} no existe`)
             const response = await socketMobileRepository[data.data.action](data);
-
             callback(response)
         } catch (err) {
             await HandleErrors.addError(err)
@@ -259,6 +257,9 @@ io.on("connection", socket => {
                     user: data.user.user,
                     cargo: data.user.cargo
                 }) : null;
+                if (!err.status) {
+                    callback({ message: err.message, status: 401, token: newToken });
+                }
                 callback({ ...err, token: newToken });
             } else {
                 callback(err);

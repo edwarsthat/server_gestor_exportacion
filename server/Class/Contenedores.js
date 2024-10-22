@@ -4,7 +4,24 @@ const { ConnectionDBError, PutError } = require("../../Error/ConnectionErrors");
 const { ProcessError, ItemBussyError } = require("../../Error/ProcessError");
 const { oobtener_datos_lotes_to_listaEmpaque } = require("../mobile/utils/contenedoresLotes");
 let bussyIds = new Set();
+let lockedItems = new Map();
+
 class ContenedoresRepository {
+
+    static lockItem(_id, elemento, pallet = -1) {
+        const key = `${_id}:${elemento}:${pallet}`
+        if (lockedItems.has(key)) {
+            throw new ItemBussyError(413, 'El elemento ya está bloqueado');
+        }
+        lockedItems.set(key, Date.now());
+        console.log(lockedItems)
+    }
+    static unlockItem(_id, elemento, pallet = 0) {
+        const key = `${_id}:${elemento}:${pallet}`
+        lockedItems.delete(key);
+    }
+
+
     static async crearContenedor(data) {
         /**
          * Función que crea un nuevo contenedor en la base de datos de MongoDB.
@@ -139,15 +156,18 @@ class ContenedoresRepository {
          * @returns {Promise<void>} - Promesa que se resuelve cuando la operación se completa.
          * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al actualizar el pallet.
          */
-        this.validateBussyIds(id)
         try {
+            this.lockItem(id, "pallets", pallet)
+
             const contenedor = await Contenedores.findById({ _id: id });
             if (!contenedor) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null")
 
             contenedor.pallets[pallet].get("settings").tipoCaja = settings.tipoCaja;
             contenedor.pallets[pallet].get("settings").calidad = settings.calidad;
             contenedor.pallets[pallet].get("settings").calibre = settings.calibre;
-            await Contenedores.updateOne({ _id: id }, { $set: { pallets: contenedor.pallets } });
+            await Contenedores.updateOne({ _id: id }, {
+                $set: { [`pallets.${pallet}`]: contenedor.pallets[pallet] }
+            });
 
 
             let record = new recordContenedores({
@@ -165,7 +185,7 @@ class ContenedoresRepository {
         } catch (err) {
             throw new ConnectionDBError(408, `Error guardando la configuracion del pallet ${err.message}`);
         } finally {
-            bussyIds.delete(id);
+            this.unlockItem(id, "pallets", pallet)
         }
     }
     static async actualizar_pallet_contenedor(id, pallet, item, action, user) {
@@ -180,8 +200,9 @@ class ContenedoresRepository {
          * @returns {Promise<Object>} - Promesa que resuelve al contenedor actualizado.
          * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al actualizar el pallet.
          */
-        this.validateBussyIds(id)
         try {
+            this.lockItem(id, "pallets", pallet)
+
             const contenedor = await Contenedores.findById({ _id: id });
             if (!contenedor) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null")
 
@@ -203,7 +224,40 @@ class ContenedoresRepository {
         } catch (err) {
             throw new ConnectionDBError(408, `Error guardando el item en el pallet ${err.message}`);
         } finally {
-            bussyIds.delete(id);
+            this.unlockItem(id, "pallets", pallet)
+        }
+    }
+    static async actualizar_pallet_item_contenedor(id, pallet, item, newPallet, action, user) {
+
+        try {
+            this.lockItem(id, "pallets", pallet)
+            await Contenedores.updateOne(
+                { _id: id },
+                {
+                    $set: {
+                        [`pallets.${pallet}`]: newPallet
+                    }
+                });
+
+            //se guarda el record
+            let record = new recordContenedores({
+                operacionRealizada: action,
+                user: user,
+                documento: {
+                    contenedor: id,
+                    pallet: pallet,
+                    item: {
+                        lote: item.lote,
+                        cajas: item.cajas
+                    }
+                }
+            })
+            await record.save();
+
+        } catch (err) {
+            throw new ConnectionDBError(408, `Error modificando el item en el pallet ${err.message}`);
+        } finally {
+            this.unlockItem(id, "pallets", pallet)
         }
     }
     static async eliminar_items_lista_empaque(id, pallet, seleccion, action, user) {
@@ -218,7 +272,7 @@ class ContenedoresRepository {
          * @returns {Promise<Array>} - Promesa que resuelve a un array con los items eliminados.
          * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al eliminar los items del pallet.
          */
-        this.validateBussyIds(id)
+        this.lockItem(id, "pallets", pallet)
         try {
             const len = seleccion.length;
             let cajas = [];
@@ -226,7 +280,11 @@ class ContenedoresRepository {
             for (let i = 0; i < len; i++) {
                 cajas.push(contenedor.pallets[pallet].get("EF1").splice(seleccion[i], 1)[0]);
             }
-            await Contenedores.updateOne({ _id: id }, { $set: { pallets: contenedor.pallets } });
+            await Contenedores.updateOne({ _id: id },
+                {
+                    $set:
+                        { [`pallets.${pallet}`]: contenedor.pallets[pallet] }
+                });
 
             let record = new recordContenedores({
                 operacionRealizada: action,
@@ -244,7 +302,7 @@ class ContenedoresRepository {
         } catch (err) {
             throw new ConnectionDBError(408, `Error eliminando el item en el pallet ${err.message}`);
         } finally {
-            bussyIds.delete(id);
+            this.unlockItem(id, "pallets", pallet)
         }
     }
     static async restar_item_lista_empaque(id, pallet, seleccion, cajas, action, user) {
@@ -260,8 +318,9 @@ class ContenedoresRepository {
          * @returns {Promise<void>} - Promesa que se resuelve cuando la operación se completa.
          * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al restar las cajas del item en el pallet.
          */
-        this.validateBussyIds(id)
         try {
+            this.lockItem(id, "pallets", pallet)
+
             let item;
 
             const contenedor = await Contenedores.findById({ _id: id });
@@ -273,7 +332,9 @@ class ContenedoresRepository {
             if (contenedor.pallets[pallet].get("EF1")[seleccion].cajas === 0) {
                 contenedor.pallets[pallet].get("EF1").splice(seleccion, 1)[0];
             }
-            await Contenedores.updateOne({ _id: id }, { $set: { pallets: contenedor.pallets } });
+            await Contenedores.updateOne(
+                { _id: id }, { $set: { [`pallets.${pallet}`]: contenedor.pallets[pallet] } }
+            );
 
 
             let record = new recordContenedores({
@@ -291,7 +352,7 @@ class ContenedoresRepository {
         } catch (err) {
             throw new ConnectionDBError(408, `Error restando el item en el pallet ${err.message}`);
         } finally {
-            bussyIds.delete(id);
+            this.unlockItem(id, "pallets", pallet)
         }
     }
     static async mover_items_lista_empaque(id1, id2, pallet1, pallet2, seleccion, action, user) {
@@ -310,27 +371,46 @@ class ContenedoresRepository {
          */
 
         if (id1 === id2) {
-            this.validateBussyIds(id1)
+            this.lockItem(id1, "pallets", pallet1)
         } else {
-            this.validateBussyIds(id1)
-            this.validateBussyIds(id2)
+            this.lockItem(id1, "pallets", pallet1)
+            this.lockItem(id2, "pallets", pallet2)
         }
+        const pilaFunciones = [];
+
         try {
             const len = seleccion.length;
             let cajas = [];
 
+            //se obtienen los items y se borran
             const contenedor = await Contenedores.findById({ _id: id1 });
             for (let i = 0; i < len; i++) {
                 cajas.push(contenedor.pallets[pallet1].get("EF1").splice(seleccion[i], 1)[0]);
             }
-            await Contenedores.updateOne({ _id: id1 }, { $set: { pallets: contenedor.pallets } });
+            await Contenedores.updateOne({ _id: id1 }, { $set: { [`pallets.${pallet1}`]: contenedor.pallets[pallet1] } });
 
+            pilaFunciones.push({
+                funcion: "borrar_item_pallet",
+                datos: cajas
+            })
 
             const contenedor2 = await Contenedores.findById({ _id: id2 });
             for (let i = 0; i < len; i++) {
-                contenedor2.pallets[pallet2].get("EF1").push(cajas[i]);
+                const index = contenedor2
+                    .pallets[pallet2].get("EF1").findIndex(item => (
+                        item.lote === cajas[i].lote &&
+                        item.tipoCaja === cajas[i].tipoCaja &&
+                        item.calibre === cajas[i].calibre &&
+                        item.calidad === cajas[i].calidad &&
+                        item.tipoFruta === cajas[i].tipoFruta
+                    ))
+                if (index === -1) {
+                    contenedor2.pallets[pallet2].get("EF1").push(cajas[i]);
+                } else {
+                    contenedor2.pallets[pallet2].get("EF1")[index].cajas += cajas[i].cajas
+                }
             }
-            await Contenedores.updateOne({ _id: id2 }, { $set: { pallets: contenedor2.pallets } });
+            await Contenedores.updateOne({ _id: id2 }, { $set: { [`pallets.${pallet2}`]: contenedor2.pallets[pallet2] } });
 
             let record = new recordContenedores({
                 operacionRealizada: action,
@@ -348,14 +428,31 @@ class ContenedoresRepository {
             return cajas
 
         } catch (err) {
+            //regresa los itemas al contenedor 1 si hay problema ingresandolos al contenedor 2
+            for (const value of Object.values(pilaFunciones)) {
+                if (value.funcion === "borrar_item_pallet") {
+                    const { datos } = value
+                    const contenedor = await Contenedores.findById({ _id: id1 });
+
+                    for (const item of datos) {
+                        contenedor.pallets[pallet1].get("EF1").push(item);
+                    }
+                    await Contenedores.updateOne(
+                        { _id: id1 },
+                        { $set: { [`pallets.${pallet1}`]: contenedor.pallets[pallet1] } }
+                    );
+
+                }
+            }
             throw new ConnectionDBError(408, `Error mmoviendo el item entre contenedores ${err.message}`);
         } finally {
 
             if (id1 === id2) {
-                bussyIds.delete(id1);
+                this.unlockItem(id1, "pallets", pallet1)
             } else {
-                bussyIds.delete(id1);
-                bussyIds.delete(id2);
+                this.unlockItem(id1, "pallets", pallet1)
+                this.unlockItem(id2, "pallets", pallet2)
+
             }
         }
     }
@@ -411,31 +508,57 @@ class ContenedoresRepository {
          * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al restar o mover las cajas entre los pallets.
          */
         if (id1 === id2) {
-            this.validateBussyIds(id1)
+            this.lockItem(id1, "pallets", pallet1)
         } else {
-            this.validateBussyIds(id1)
-            this.validateBussyIds(id2)
+            this.lockItem(id1, "pallets", pallet1)
+            this.lockItem(id2, "pallets", pallet2)
         }
+        const pilaFunciones = [];
+
         try {
+            let itemRecord = [];
             let item;
             //se restan las cajas en el item
             const contenedor = await Contenedores.findById({ _id: id1 });
             if (!contenedor) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null")
 
+            itemRecord.push(contenedor.pallets[pallet1].get("EF1")[seleccion])
             contenedor.pallets[pallet1].get("EF1")[seleccion].cajas -= cajas;
             item = contenedor.pallets[pallet1].get("EF1")[seleccion];
+
             if (contenedor.pallets[pallet1].get("EF1")[seleccion].cajas === 0) {
                 contenedor.pallets[pallet1].get("EF1").splice(seleccion, 1)[0];
             }
-            await Contenedores.updateOne({ _id: id1 }, { $set: { pallets: contenedor.pallets } });
 
+            await Contenedores.updateOne(
+                { _id: id1 },
+                { $set: { [`pallets.${pallet1}`]: contenedor.pallets[pallet1] } }
+            );
+
+            pilaFunciones.push({
+                funcion: "borrar_item_pallet",
+                datos: {
+                    item: itemRecord,
+                    cajas: cajas
+                }
+            })
             //se añade el item al contenedor
             const contenedor2 = await Contenedores.findById({ _id: id2 });
             if (!contenedor2) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null")
 
             item.cajas = cajas;
-            contenedor2.pallets[pallet2].get("EF1").push(item);
-            await Contenedores.updateOne({ _id: id2 }, { $set: { pallets: contenedor2.pallets } });
+
+            const index = contenedor2.pallets[pallet2].get("EF1").findIndex(lote => lote.lote === item.lote)
+
+            if (index === -1) {
+                contenedor2.pallets[pallet2].get("EF1").push(item);
+                await Contenedores.updateOne({ _id: id2 }, { $set: { pallets: contenedor2.pallets } });
+            } else {
+                contenedor2.pallets[pallet2].get("EF1")[index].cajas += cajas;
+                await Contenedores.updateOne({ _id: id2 }, { $set: { pallets: contenedor2.pallets } });
+
+            }
+
 
             let record = new recordContenedores({
                 operacionRealizada: action,
@@ -453,20 +576,51 @@ class ContenedoresRepository {
 
             return item
         } catch (err) {
+            //regresa los itemas al contenedor 1 si hay problema ingresandolos al contenedor 2
+            for (const value of Object.values(pilaFunciones)) {
+                if (value.funcion === "borrar_item_pallet") {
+                    const { item, cajas } = value.datos
+                    let newPallet;
+                    const contenedor = await Contenedores.findById({ _id: id1 });
+
+                    const index = contenedor.pallets[pallet1].get("EF1").findIndex(
+                        lote => lote.lote === item[0].lote
+                    )
+                    if (index === -1) {
+                        newPallet = contenedor.pallets[pallet1];
+                        item[0].cajas = cajas
+                        newPallet.get("EF1").push(item[0])
+                    } else {
+                        newPallet = contenedor.pallets[pallet1];
+                        newPallet.get("EF1")[index].cajas += cajas;
+                    }
+
+                    await Contenedores.updateOne(
+                        { _id: id1 },
+                        {
+                            $set: {
+                                [`pallets.${pallet1}`]: newPallet
+                            }
+                        });
+
+                }
+            }
             throw new ConnectionDBError(408, `Error mmoviendo y restando el item entre contenedores ${err.message}`);
         } finally {
 
             if (id1 === id2) {
-                bussyIds.delete(id1);
+                this.unlockItem(id1, "pallets", pallet1)
             } else {
-                bussyIds.delete(id1);
-                bussyIds.delete(id2);
+                this.unlockItem(id1, "pallets", pallet1)
+                this.unlockItem(id2, "pallets", pallet2)
+
             }
         }
     }
     static async liberar_pallet_lista_empaque(id, pallet, item, action, user) {
-        this.validateBussyIds(id)
         try {
+            this.lockItem(id, "pallets", pallet)
+
             const contenedor = await Contenedores.findById({ _id: id });
             if (!contenedor) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null");
 
@@ -476,7 +630,11 @@ class ContenedoresRepository {
             contenedor.pallets[pallet].get("listaLiberarPallet").estadoCajas = item.estadoCajas;
             contenedor.pallets[pallet].get("listaLiberarPallet").estiba = item.estiba;
 
-            await Contenedores.updateOne({ _id: id }, { $set: { pallets: contenedor.pallets } });
+            await Contenedores.updateOne(
+                { _id: id },
+                {
+                    $set: { [`pallets.${pallet}`]: contenedor.pallets[pallet] }
+                });
 
 
             let record = new recordContenedores({
@@ -493,7 +651,7 @@ class ContenedoresRepository {
         } catch (err) {
             throw new ConnectionDBError(408, `Error guardando la liberacion del pallet ${err.message}`);
         } finally {
-            bussyIds.delete(id);
+            this.unlockItem(id, "pallets", pallet)
         }
     }
     static async cerrar_lista_empaque(id, insumos, action, user) {
@@ -524,7 +682,8 @@ class ContenedoresRepository {
         }
     }
     static async modificar_items_pallet(id, pallet, seleccion, data, action, user) {
-        this.validateBussyIds(id)
+        this.lockItem(id, "pallets", pallet)
+
         try {
             const contenedor = await Contenedores.findById({ _id: id });
             if (!contenedor) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null");
@@ -533,9 +692,14 @@ class ContenedoresRepository {
             for (let i = 0; i < seleccion.length; i++) {
                 contenedor.pallets[pallet].get("EF1")[seleccion[i]].calidad = data.calidad;
                 contenedor.pallets[pallet].get("EF1")[seleccion[i]].calibre = data.calibre;
+                contenedor.pallets[pallet].get("EF1")[seleccion[i]].tipoCaja = data.tipoCaja;
             }
 
-            await Contenedores.updateOne({ _id: id }, { $set: { pallets: contenedor.pallets } });
+            await Contenedores.updateOne(
+                { _id: id },
+                { $set: { [`pallets.${pallet}`]: contenedor.pallets[pallet] } }
+            );
+
             let record = new recordContenedores({
                 operacionRealizada: action,
                 user: user,
@@ -552,7 +716,7 @@ class ContenedoresRepository {
         } catch (err) {
             throw new ConnectionDBError(408, `Error modificando los datos${err.message}`);
         } finally {
-            bussyIds.delete(id);
+            this.unlockItem(id, "pallets", pallet)
         }
     }
     static async modificar_contenedor(id, query, user, action, __v) {
@@ -566,8 +730,9 @@ class ContenedoresRepository {
          * @returns {Promise<Object>} - Promesa que resuelve al objeto del lote modificado.
          * @throws {PutError} - Lanza un error si ocurre un problema al modificar el contenedor.
          */
-        this.validateBussyIds(id)
         try {
+            this.lockItem(id, "Contenedor", "general")
+
             let updateQuery = { ...query };
             let findQuery = { _id: id };
 
@@ -604,7 +769,7 @@ class ContenedoresRepository {
         } catch (err) {
             throw new PutError(414, `Error al modificar el dato ${id} => ${err.name} `);
         } finally {
-            bussyIds.delete(id);
+            this.unlockItem(id, "Contenedor", "general")
         }
     }
     static validateBussyIds(id) {

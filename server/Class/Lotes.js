@@ -156,7 +156,6 @@ class LotesRepository {
          * @returns {Promise<Object>} - Promesa que resuelve al objeto del lote modificado.
          * @throws {PutError} - Lanza un error si ocurre un problema al modificar el lote.
          */
-        this.validateBussyIds(id)
         try {
             const lote = await Lotes.findOneAndUpdate({ _id: id, }, query, { new: true });
 
@@ -166,8 +165,6 @@ class LotesRepository {
             return lote_obj;
         } catch (err) {
             throw new PutError(414, `Error al modificar el dato  ${err.name}`);
-        } finally {
-            bussyIds.delete(id);
         }
     }
     static async rendimiento(data) {
