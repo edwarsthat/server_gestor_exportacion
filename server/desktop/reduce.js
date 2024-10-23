@@ -48,7 +48,6 @@ const apiSocket = {
     obtenerHistorialLotes: async (data) => {
         const response = await ProcesoRepository.obtenerHistorialLotes(data.data)
         return { data: response, status: 200, message: 'Ok' }
-
     },
     obtenerHistorialLotesDirectoNacional: async (data) => {
         const reponse = await ProcesoRepository.obtenerHistorialLotesDirectoNacional(data.data)

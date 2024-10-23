@@ -832,6 +832,19 @@ class ProcesoRepository {
         const codigo = await VariablesDelSistema.generar_codigo_celifrut()
         const enf_lote = { ...lote, enf: codigo }
         const newLote = await LotesRepository.crear_lote(enf_lote, user, lotes);
+
+        const query = {
+            $inc: {
+                kilosVaciados: newLote.kilos,
+                __v: 1,
+            },
+            fechaProceso: new Date()
+        }
+
+        console.log(newLote)
+
+        await LotesRepository.modificar_lote(newLote._id.toString(), query, "vaciarLote", user, newLote.__v);
+
         await VariablesDelSistema.incrementar_codigo_celifrut();
 
 
@@ -854,6 +867,14 @@ class ProcesoRepository {
                 )
             }
             await VariablesDelSistema.reprocesar_predio_celifrut(newLote, newLote.kilos)
+
+            procesoEventEmitter.emit("proceso_event", {
+                predio: [newLote]
+            });
+            procesoEventEmitter.emit("predio_vaciado", {
+                predio: [newLote]
+            });
+
         }
     }
     static async modificar_predio_proceso_descarte(req,) {
