@@ -740,7 +740,7 @@ class VariablesDelSistema {
       const inventario = JSON.parse(inventarioJSON);
 
       const index = inventario.findIndex(item => item._id === _id)
-      const descartes = ['descarteGeneral', 'pareja', 'balin', 'extra', 'suelo']
+      const descartes = ['descarteGeneral', 'pareja', 'balin', 'extra', 'suelo', 'frutaNacional']
       if (index !== -1) {
 
         if (!Object.prototype.hasOwnProperty.call(inventario[index], tipoDescarte)) {
@@ -816,7 +816,8 @@ class VariablesDelSistema {
         const items = Object.keys(kilos[descartes[descarteIndex]]);
         //se recorre el item de cada tipo de descarte
         for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-          let item = kilos[descartes[descarteIndex]][items[itemIndex]];
+          let item = Number(kilos[descartes[descarteIndex]][items[itemIndex]]);
+
           //se recorre el inventario de descarte
           if (item === 0) {
             continue;
@@ -833,7 +834,8 @@ class VariablesDelSistema {
                     pareja: 0,
                     balin: 0,
                     extra: 0,
-                    suelo: 0
+                    suelo: 0,
+                    frutaNacional: 0
                   },
                   descarteLavado: {
                     descarteGeneral: 0,
@@ -874,11 +876,12 @@ class VariablesDelSistema {
           Object.values(inventario[i].descarteEncerado).reduce((acu, item) => acu += item, 0) : 0;
 
         const total = totalDescarteLavado + totalDescarteEncerado;
-        if (total < 0.5) {
+        if (total < 1) {
           inventario.splice(i, 1);
 
         }
       }
+
 
       //se guarda el nuevo inventario
       const newInventarioJSON = JSON.stringify(inventario);
