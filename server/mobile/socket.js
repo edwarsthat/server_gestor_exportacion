@@ -9,7 +9,7 @@ class socketMobileRepository {
         const fechaInicio = new Date(Date.UTC(
             ahora.getFullYear(),
             ahora.getMonth(),
-            ahora.getDate() - 2, // Restar dos días
+            ahora.getDate() - 1, // Restar dos días
             0, 0, 0, 0 // 00:00 en Colombia es 05:00 en UTC
         ));
 
