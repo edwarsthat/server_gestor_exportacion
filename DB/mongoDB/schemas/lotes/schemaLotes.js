@@ -177,6 +177,7 @@ const dataSchema = new Schema({
   kilos: Number,
   kilosReprocesados: { type: Number, default: 0 },
   kilosVaciados: { type: Number, default: 0 },
+  kilosGGN: { type: Number, default: 0 },
   numeroPrecintos: Number,
   numeroRemision: String,
   observaciones: String,

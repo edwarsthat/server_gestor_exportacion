@@ -9,17 +9,12 @@ class socketMobileRepository {
         const fechaInicio = new Date(Date.UTC(
             ahora.getFullYear(),
             ahora.getMonth(),
-            ahora.getDate(),
-            5, 0, 0, 0 // 00:00 en Colombia es 05:00 en UTC
+            ahora.getDate() - 2, // Restar dos días
+            0, 0, 0, 0 // 00:00 en Colombia es 05:00 en UTC
         ));
 
         // Crear fechaFin (final del día en Colombia, pero en UTC)
-        const fechaFin = new Date(Date.UTC(
-            ahora.getFullYear(),
-            ahora.getMonth(),
-            ahora.getDate(),
-            29, 0, 0, -1 // 23:59:59.999 en Colombia es 04:59:59.999 del día siguiente en UTC
-        ));
+        const fechaFin = new Date();
 
         const data = {
             fechaInicio,

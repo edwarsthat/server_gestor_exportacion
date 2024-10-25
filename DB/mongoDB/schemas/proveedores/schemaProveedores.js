@@ -27,13 +27,18 @@ const PrecioSchema = new Schema({
   fecha: { type: Date, default: Date.now }
 });
 
+const GGNSchema = new Schema({
+  code: String,
+  fechaVencimiento: Date,
+  paises: [String]
+})
+
 
 const PredioSchema = new Schema({
   PREDIO: { type: String, required: true },
   ICA: String,
   "CODIGO INTERNO": { type: String, required: true },
-  GGN: String,
-  "FECHA VENCIMIENTO GGN": String,
+  GGN: GGNSchema,
   N: Boolean,
   L: Boolean,
   M: Boolean,

@@ -841,10 +841,8 @@ class ProcesoRepository {
             fechaProceso: new Date()
         }
 
-        console.log(newLote)
 
         await LotesRepository.modificar_lote(newLote._id.toString(), query, "vaciarLote", user, newLote.__v);
-
         await VariablesDelSistema.incrementar_codigo_celifrut();
 
 
@@ -1024,6 +1022,7 @@ class ProcesoRepository {
             //se ajustan los kilos de exportacion para el lote
             let kilosExportacion = 0;
             let index;
+            console.log(contenedor)
             const kilos = Number(item.tipoCaja.split('-')[1].replace(",", "."))
             const query = {
                 $addToSet: { contenedores: _id },
@@ -1056,6 +1055,8 @@ class ProcesoRepository {
                 }
             })
 
+
+
             //se agrega la exportacion al lote
             const lote = await LotesRepository
                 .modificar_lote_proceso(item.lote, query, "Agregar exportacion", user)
@@ -1069,6 +1070,23 @@ class ProcesoRepository {
 
             await LotesRepository.rendimiento(lote);
             await LotesRepository.deshidratacion(lote);
+
+            const predio = await ProveedoresRepository.get_proveedores({
+                ids: [lote.predio],
+                select: { GGN: 1 }
+            })
+
+            if (predio.GGN) {
+                if (predio.GGN.paises) {
+                    if (predio.GGN.paises.includes(contenedor.infoContenedor.clienteInfo.PAIS_DESTINO)) {
+                        const query = {
+                            $inc: {}
+                        }
+                        kilosExportacion = kilos * Number(item.cajas)
+                        query.$inc.kilosGGN = kilosExportacion
+                    }
+                }
+            }
 
             // se agrega la exportacion a las variables del sistema
 
