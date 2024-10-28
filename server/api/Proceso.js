@@ -13,6 +13,7 @@ const calidadFile = require('../../constants/calidad.json');
 const { insumos_contenedor } = require("../functions/insumos");
 const { InsumosRepository } = require("../Class/Insumos");
 const path = require('path');
+const { have_lote_GGN_export } = require("../controllers/validations");
 
 class ProcesoRepository {
 
@@ -1018,11 +1019,16 @@ class ProcesoRepository {
         const pilaFunciones = [];
         try {
             const { _id, pallet, item, action } = req;
-            const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({ ids: [_id] });
+            const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                ids: [_id],
+                populate: {
+                    path: 'infoContenedor.clienteInfo',
+                    select: 'CLIENTE PAIS_DESTINO',
+                }
+            });
             //se ajustan los kilos de exportacion para el lote
             let kilosExportacion = 0;
             let index;
-            console.log(contenedor)
             const kilos = Number(item.tipoCaja.split('-')[1].replace(",", "."))
             const query = {
                 $addToSet: { contenedores: _id },
@@ -1071,23 +1077,6 @@ class ProcesoRepository {
             await LotesRepository.rendimiento(lote);
             await LotesRepository.deshidratacion(lote);
 
-            const predio = await ProveedoresRepository.get_proveedores({
-                ids: [lote.predio],
-                select: { GGN: 1 }
-            })
-
-            if (predio.GGN) {
-                if (predio.GGN.paises) {
-                    if (predio.GGN.paises.includes(contenedor.infoContenedor.clienteInfo.PAIS_DESTINO)) {
-                        const query = {
-                            $inc: {}
-                        }
-                        kilosExportacion = kilos * Number(item.cajas)
-                        query.$inc.kilosGGN = kilosExportacion
-                    }
-                }
-            }
-
             // se agrega la exportacion a las variables del sistema
 
             await VariablesDelSistema.ingresar_exportacion(kilosExportacion, lote.tipoFruta)
@@ -1098,6 +1087,26 @@ class ProcesoRepository {
                     kilosExportacion: -kilosExportacion
                 }
             })
+
+            // s 3eingresan los kilos GGN en el predio si el destino esta permitido como GGN
+            const predio = await ProveedoresRepository.get_proveedores({
+                ids: [lote.predio],
+                select: { GGN: 1, PREDIO: 1 }
+            })
+
+            const have_ggn = have_lote_GGN_export(predio[0], contenedor[0])
+            if (have_ggn) {
+                const query = {
+                    $inc: {}
+                }
+                kilosExportacion = kilos * Number(item.cajas)
+                query.$inc.kilosGGN = kilosExportacion
+
+                //se agrega la exportacion al lote
+                await LotesRepository
+                    .modificar_lote_proceso(item.lote, query, "Agregar exportacion GGN", user)
+            }
+
 
             // se envia el evento de que se actualizo la lista de empaque
             procesoEventEmitter.emit("proceso_event", {});
@@ -1156,6 +1165,14 @@ class ProcesoRepository {
         try {
             const { _id, pallet, seleccion, data, action } = req;
 
+            const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                ids: [_id],
+                select: { infoContenedor: 1 },
+                populate: {
+                    path: 'infoContenedor.clienteInfo',
+                    select: 'CLIENTE PAIS_DESTINO',
+                }
+            })
             const oldData = await ContenedoresRepository
                 .modificar_items_pallet(_id, pallet, seleccion, data, action, user);
 
@@ -1205,7 +1222,6 @@ class ProcesoRepository {
 
             if (oldData[0].tipoCaja !== data.tipoCaja) {
                 const kilosnuevos = Number(data.tipoCaja.split('-')[1].replace(",", "."))
-                console.log("kilos nuevos => ", kilosnuevos)
 
                 const query = {
                     $inc: {}
@@ -1217,23 +1233,62 @@ class ProcesoRepository {
                     query.$inc[calidadFile[data.calidad]] =
                         (kilosnuevos * Number(oldData[i].cajas)) - (kilosviejos * Number(oldData[i].cajas))
 
-                    await LotesRepository.modificar_lote_proceso(
+                    const lote = await LotesRepository.modificar_lote_proceso(
                         oldData[i].lote,
                         query,
-                        "Cambiar tipo de exportacion",
+                        "Cambiar kilos de exportacion",
                         user
                     )
+
+                    pilaFunciones.push({
+                        funcion: "Cambiar cajas de exportacion",
+                        datos: {
+                            query: query,
+                            id: oldData[i].lote
+                        }
+                    })
+
+                    const predio = await ProveedoresRepository.get_proveedores({
+                        ids: [lote.predio], select: { GGN: 1 }
+                    })
+
+
+                    if (have_lote_GGN_export(predio[0], contenedor[0])) {
+                        const queryGGN = {
+                            $inc: {}
+                        }
+
+                        queryGGN.$inc.kilosGGN = query.$inc[calidadFile[data.calidad]]
+
+
+                        //se agrega la exportacion al lote
+                        await LotesRepository.modificar_lote_proceso(
+                            oldData[i].lote,
+                            queryGGN,
+                            "Cambiar kilos GGN",
+                            user
+                        )
+
+                        pilaFunciones.push({
+                            funcion: "Cambiar cajas de exportacion GGN",
+                            datos: {
+                                query: queryGGN,
+                                id: oldData[i].lote
+                            }
+                        })
+
+                    }
 
                 }
 
             }
 
-
             procesoEventEmitter.emit("proceso_event", {});
             procesoEventEmitter.emit("listaempaque_update");
 
         } catch (err) {
-            for (const value of Object.values(pilaFunciones)) {
+            for (let i = pilaFunciones.length - 1; i >= 0; i--) {
+                const value = pilaFunciones[i];
                 if (value.funcion === "modificar_items_pallet") {
                     const { _id, pallet, seleccion, oldData } = value.datos
                     await ContenedoresRepository
@@ -1241,11 +1296,32 @@ class ProcesoRepository {
 
                 } else if (value.funcion === "Cambiar tipo de exportacion") {
                     const { query, id } = value.datos;
-                    console.log(query)
-                    console.log(id)
+                    for (const calidad of Object.keys(query.$inc)) {
+                        query.$inc[calidad] = query.$inc[calidad] * -1
+                    }
+
+                    await LotesRepository.modificar_lote_proceso(
+                        id,
+                        query,
+                        "rectificando fallo",
+                        user
+                    )
+                } else if (value.funcion === "Cambiar cajas de exportacion") {
+                    const { query, id } = value.datos;
                     for (const calidad of Object.keys(query.$inc)) {
                         query.$inc[calidad] = - query.$inc[calidad]
                     }
+                    await LotesRepository.modificar_lote_proceso(
+                        id,
+                        query,
+                        "rectificando fallo",
+                        user
+                    )
+                } else if (value.funcion === "Cambiar cajas de exportacion GGN") {
+                    const { query, id } = value.datos;
+
+                    query.$inc.kilosGGN = query.$inc.kilosGGN * -1
+
                     await LotesRepository.modificar_lote_proceso(
                         id,
                         query,
@@ -1270,6 +1346,15 @@ class ProcesoRepository {
             //se ordenan los items seleccionados
             const seleccionOrdenado = seleccion.sort((a, b) => b - a);
             //se eliminan los items de la lista de empaque
+            const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                ids: [_id],
+                select: { infoContenedor: 1 },
+                populate: {
+                    path: 'infoContenedor.clienteInfo',
+                    select: 'CLIENTE PAIS_DESTINO',
+                }
+            })
+
             const items = await ContenedoresRepository
                 .eliminar_items_lista_empaque(_id, pallet, seleccionOrdenado, action, user)
             pilaFunciones.push({
@@ -1306,6 +1391,29 @@ class ProcesoRepository {
                         query: query
                     }
                 })
+
+                const predio = await ProveedoresRepository.get_proveedores({
+                    ids: [loteDB.predio], select: { GGN: 1 }
+                })
+
+                if (have_lote_GGN_export(predio[0], contenedor[0])) {
+                    const query = {
+                        $inc: {}
+                    }
+                    query.$inc.kilosGGN = -kilos
+
+                    //se agrega la exportacion GGN al lote
+                    await LotesRepository
+                        .modificar_lote_proceso(loteDB._id, query, "Agregar exportacion GGN", user)
+
+                    pilaFunciones.push({
+                        funcion: "Cambiar kilos GGN",
+                        datos: {
+                            id: loteDB._id,
+                            query: query
+                        }
+                    })
+                }
             }
 
             //se modifica la cantidad de kilos exportacion
@@ -1324,23 +1432,23 @@ class ProcesoRepository {
 
         } catch (err) {
             // se devuelven los elementos que se cambiaron
-            pilaFunciones.forEach(async funcion => {
-                console.log(funcion.funcion)
-                if (funcion.funcion === "eliminar_items_lista_empaque") {
-                    const { _id, pallet, items } = funcion.datos;
+            for (let i = pilaFunciones.length - 1; i >= 0; i--) {
+                const value = pilaFunciones[i];
+                if (value.funcion === "eliminar_items_lista_empaque") {
+                    const { _id, pallet, items } = value.datos;
                     for (const item of items) {
                         await ContenedoresRepository
                             .actualizar_pallet_contenedor(_id, pallet, item, "corregir eliminar_items_lista_empaque", user);
                     }
-                } else if (funcion.funcion === 'modificar_lote_proceso') {
-                    const { lote, query } = funcion.datos
+                } else if (value.funcion === 'modificar_lote_proceso') {
+                    const { lote, query } = value.datos
                     const loteDB = await LotesRepository
                         .modificar_lote_proceso(lote, query, "revertir modificar_lote_proceso", user);
                     await LotesRepository.rendimiento(loteDB);
                     await LotesRepository.deshidratacion(loteDB);
-                } else if (funcion.funcion === "ingresar_exportacion_variales") {
+                } else if (value.funcion === "ingresar_exportacion_variales") {
 
-                    const { datos } = funcion
+                    const { datos } = value
 
                     for (const [key, value] of Object.entries(datos)) {
                         await VariablesDelSistema.ingresar_exportacion(value, key);
@@ -1348,8 +1456,18 @@ class ProcesoRepository {
 
                     procesoEventEmitter.emit("proceso_event", {});
                     procesoEventEmitter.emit("listaempaque_update");
+
+                } else if (value.funcion === "Cambiar kilos GGN") {
+                    const { query, id } = value.datos;
+                    query.$inc.kilosGGN = query.$inc.kilosGGN * -1
+                    await LotesRepository.modificar_lote_proceso(
+                        id,
+                        query,
+                        "rectificando fallo",
+                        user
+                    )
                 }
-            })
+            }
             throw new Error(`Code ${err.code}: ${err.message}`);
 
         }
@@ -1389,6 +1507,15 @@ class ProcesoRepository {
         try {
             const { action, _id, pallet, seleccion, cajas } = req;
 
+            const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                ids: [_id],
+                select: { infoContenedor: 1 },
+                populate: {
+                    path: 'infoContenedor.clienteInfo',
+                    select: 'CLIENTE PAIS_DESTINO',
+                }
+            })
+
             const item = await ContenedoresRepository
                 .restar_item_lista_empaque(_id, pallet, seleccion, cajas, action, user)
 
@@ -1407,6 +1534,38 @@ class ProcesoRepository {
             const loteDB = await LotesRepository.modificar_lote_proceso(lote, query, action, user);
             await LotesRepository.rendimiento(loteDB);
             await LotesRepository.deshidratacion(loteDB);
+
+            query.$inc[calidadFile[calidad]] = kilos;
+            pilaFunciones.push({
+                funcion: "modificar_lote_proceso",
+                datos: {
+                    lote: loteDB._id,
+                    query: query
+                }
+            })
+
+            const predio = await ProveedoresRepository.get_proveedores({
+                ids: [loteDB.predio], select: { GGN: 1 }
+            })
+
+            if (have_lote_GGN_export(predio[0], contenedor[0])) {
+                const query = {
+                    $inc: {}
+                }
+                query.$inc.kilosGGN = -kilos
+
+                //se agrega la exportacion GGN al lote
+                await LotesRepository
+                    .modificar_lote_proceso(loteDB._id, query, "restar exportacion GGN", user)
+
+                pilaFunciones.push({
+                    funcion: "Cambiar kilos GGN",
+                    datos: {
+                        id: loteDB._id,
+                        query: query
+                    }
+                })
+            }
 
             query.$inc[calidadFile[calidad]] = kilos;
             pilaFunciones.push({
@@ -1432,7 +1591,8 @@ class ProcesoRepository {
 
 
         } catch (err) {
-            for (const value of Object.values(pilaFunciones)) {
+            for (let i = pilaFunciones.length - 1; i >= 0; i--) {
+                const value = pilaFunciones[i];
                 let index
                 if (value.funcion === "restar_item_lista_empaque") {
                     const { _id, pallet, cajas, item } = value.datos;
@@ -1470,11 +1630,21 @@ class ProcesoRepository {
 
                     await VariablesDelSistema.ingresar_exportacion(kilosExportacion, tipoFruta)
 
-                    procesoEventEmitter.emit("proceso_event", {});
-                    procesoEventEmitter.emit("listaempaque_update");
+                } else if (value.funcion === "Cambiar kilos GGN") {
+                    const { query, id } = value.datos;
+                    query.$inc.kilosGGN = query.$inc.kilosGGN * -1
+                    await LotesRepository.modificar_lote_proceso(
+                        id,
+                        query,
+                        "rectificando fallo",
+                        user
+                    )
                 }
 
             }
+            procesoEventEmitter.emit("proceso_event", {});
+            procesoEventEmitter.emit("listaempaque_update");
+
             throw new Error(`Code ${err.code}: ${err.message}`);
 
         }
@@ -1681,14 +1851,34 @@ class ProcesoRepository {
     }
     // #region POST
     static async addLote(data) {
-        const enf = await VariablesDelSistema.generarEF1()
-        const lote = await LotesRepository.addLote(data, enf);
-        await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(data.data.data.canastillas));
-        await VariablesDelSistema.incrementarEF1();
+        const pilaFunciones = [];
 
-        procesoEventEmitter.emit("nuevo_predio", {
-            predio: lote
-        });
+        try {
+            const enf = await VariablesDelSistema.generarEF1()
+            const lote = await LotesRepository.addLote(data, enf);
+
+            pilaFunciones.push({
+                funcion: "addLote",
+                datos: {
+                    lote: lote._id,
+                }
+            })
+
+            await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(data.data.data.canastillas));
+            await VariablesDelSistema.incrementarEF1();
+
+            procesoEventEmitter.emit("nuevo_predio", {
+                predio: lote
+            });
+        } catch (err) {
+            for (const value of Object.values(pilaFunciones)) {
+                if (value.funcion === "addLote") {
+                    // const { lote } = value.datos
+                }
+            }
+            throw new Error(`Code ${err.code}: ${err.message}`);
+
+        }
 
     }
     static async set_hora_inicio_proceso() {

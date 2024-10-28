@@ -116,7 +116,7 @@ class ContenedoresRepository {
             skip = 0,
             populate = {
                 path: 'infoContenedor.clienteInfo',
-                select: 'CLIENTE',
+                select: 'CLIENTE PAIS_DESTINO',
             },
         } = options;
         try {
@@ -712,7 +712,7 @@ class ContenedoresRepository {
                 }
             })
             await record.save();
-            return oldData;
+            return oldData.filter((_, index) => seleccion.includes(index));
         } catch (err) {
             throw new ConnectionDBError(408, `Error modificando los datos${err.message}`);
         } finally {

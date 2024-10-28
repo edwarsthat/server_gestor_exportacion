@@ -267,6 +267,20 @@ class LotesRepository {
             throw new ProcessError(416, `Error obteniendo la imagen ${err.message}`);
         }
     }
+    static async eliminar_lote(id, user, action) {
+        try {
+            const lote = await Lotes.deleteOne({ id: id })
+            let record = new recordLotes({
+                operacionRealizada: action,
+                user: user,
+                documento: lote
+            })
+            await record.save();
+        } catch (err) {
+            throw new ProcessError(416, `Error eliminando lote ${err.message}`);
+
+        }
+    }
     static descarteTotal(descarte) {
         /**
          * Funcion que suma los descartes 
