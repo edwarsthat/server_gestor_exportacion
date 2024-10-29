@@ -1,4 +1,5 @@
 const { ClientesRepository } = require("../Class/Clientes");
+const { LotesRepository } = require("../Class/Lotes");
 const { ProveedoresRepository } = require("../Class/Proveedores");
 
 class ComercialRepository {
@@ -91,6 +92,18 @@ class ComercialRepository {
     static async add_cliente(req, user) {
         const { data } = req
         await ClientesRepository.add_cliente(data, user)
+    }
+    static async lote_caso_favorita(req, user) {
+        try {
+            const { query, _id, action } = req
+
+            await LotesRepository.modificar_lote_proceso(
+                _id, query, action, user
+            )
+        } catch (err) {
+            throw new Error(`Code ${err.code}: ${err.message}`);
+
+        }
     }
 }
 

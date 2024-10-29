@@ -9,6 +9,7 @@ const { ComercialRepository } = require("../api/Comercial");
 const { ViewsRepository } = require("../api/Views");
 const { ModificarRepository } = require("../api/ModificarData");
 const { SistemaRepository } = require("../api/Sistema");
+const { ContabilidadRepository } = require("../api/Contabilidad");
 
 const apiSocket = {
     //#region GET
@@ -313,6 +314,11 @@ const apiSocket = {
     count_documents_formularios_calidad_control_plagas: async () => {
         const count = await CalidadRepository.count_documents_formularios_calidad_control_plagas();
         return { status: 200, message: 'Ok', data: count }
+    },
+    obtener_lotes_contabilidad_informes_calidad: async (req) => {
+        const { data } = req
+        const response = await ContabilidadRepository.obtener_lotes_contabilidad_informes_calidad(data);
+        return { status: 200, message: 'Ok', data: response }
     },
     //#region POST
     guardarLote: async (data) => {
@@ -666,6 +672,12 @@ const apiSocket = {
         const { data, user } = req
         await ProcesoRepository.finalizar_informe_proveedor(data, user)
         return { status: 200, message: 'Ok' }
+    },
+    lote_caso_favorita: async (req) => {
+        const { data, user } = req
+        await ComercialRepository.lote_caso_favorita(data, user.user)
+        return { status: 200, message: 'Ok' }
+
     }
 }
 
