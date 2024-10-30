@@ -7,13 +7,16 @@ const { DespachoDescartesRepository } = require("../Class/DespachoDescarte");
 const { LotesRepository } = require("../Class/Lotes");
 const { ProveedoresRepository } = require("../Class/Proveedores");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
-const fs = require("fs");
 const { startOfDay, parse, endOfDay } = require('date-fns');
 const calidadFile = require('../../constants/calidad.json');
 const { insumos_contenedor } = require("../functions/insumos");
 const { InsumosRepository } = require("../Class/Insumos");
+
 const path = require('path');
+const fs = require("fs");
+
 const { have_lote_GGN_export } = require("../controllers/validations");
+// const { exec } = require("child_process");
 
 class ProcesoRepository {
 
@@ -96,6 +99,20 @@ class ProcesoRepository {
         return result;
     }
     static async getInventario() {
+        // console.log(__dirname)
+
+        // const path_to_rust = path.join(
+        //     __dirname,
+        //     '..', '..',
+        //     'db_adapter',
+        //     'target',
+        //     'release',
+        //     'db_adapter'
+        // )
+
+        // exec(`start ${path_to_rust}`)
+
+
         const inventario = await VariablesDelSistema.getInventario();
         const inventarioKeys = Object.keys(inventario)
         const lotes = await LotesRepository.getLotes({
@@ -812,16 +829,20 @@ class ProcesoRepository {
 
     }
     static async reprocesar_predio(data, user) {
-        const { _id, query, inventario, action } = data;
+        const { _id, query, inventario } = data;
         const { descarteLavado, descarteEncerado } = inventario;
-        const kilosDescarteLavado = descarteLavado === undefined ? 0 : Object.values(descarteLavado).reduce((acu, item) => acu -= item, 0)
-        const kilosDescarteEncerado = descarteEncerado === undefined ? 0 : Object.values(descarteEncerado).reduce((acu, item) => acu -= item, 0)
+        const kilosDescarteLavado =
+            descarteLavado === undefined ? 0 :
+                Object.values(descarteLavado).reduce((acu, item) => acu -= item, 0)
+        const kilosDescarteEncerado =
+            descarteEncerado === undefined ? 0 :
+                Object.values(descarteEncerado).reduce((acu, item) => acu -= item, 0)
 
         const kilosTotal = kilosDescarteLavado + kilosDescarteEncerado;
         await LotesRepository.modificar_lote_proceso(
             _id,
             { ...query, $inc: { kilosReprocesados: kilosTotal } },
-            action,
+            "vaciarLote",
             user);
         const lote = await LotesRepository.getLotes({ ids: [_id] });
         if (descarteLavado)
@@ -1854,8 +1875,10 @@ class ProcesoRepository {
     // #region POST
     static async addLote(data) {
         const pilaFunciones = [];
-
+        console.time("Duración de miFuncion");
         try {
+
+
             const enf = await VariablesDelSistema.generarEF1()
             const lote = await LotesRepository.addLote(data, enf);
 
@@ -1880,6 +1903,8 @@ class ProcesoRepository {
             }
             throw new Error(`Code ${err.code}: ${err.message}`);
 
+        } finally {
+            console.timeEnd("Duración de miFuncion");
         }
 
     }
