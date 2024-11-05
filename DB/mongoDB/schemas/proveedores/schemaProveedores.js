@@ -51,7 +51,13 @@ const PredioSchema = new Schema({
   alt: { type: Schema.Types.ObjectId, ref: 'Proveedor' }
 });
 
-
+// Middleware pre-save para establecer alt = _id en la creación inicial
+PredioSchema.pre('save', function (next) {
+  if (this.isNew && !this.alt) {
+    this.alt = this._id;
+  }
+  next();
+});
 
 const Proveedores = conn.model("Proveedor", PredioSchema);
 

@@ -16,7 +16,8 @@ const path = require('path');
 const fs = require("fs");
 
 const { have_lote_GGN_export } = require("../controllers/validations");
-// const { exec } = require("child_process");
+// const { getRustConnectionProceso } = require("../../DB/controllers/proceso");
+
 
 class ProcesoRepository {
 
@@ -99,22 +100,32 @@ class ProcesoRepository {
         return result;
     }
     static async getInventario() {
-        // console.log(__dirname)
 
-        // const path_to_rust = path.join(
-        //     __dirname,
-        //     '..', '..',
-        //     'db_adapter',
-        //     'target',
-        //     'release',
-        //     'db_adapter'
-        // )
-
-        // exec(`start ${path_to_rust}`)
-
+        // const rustConnectionProceso = getRustConnectionProceso()
 
         const inventario = await VariablesDelSistema.getInventario();
         const inventarioKeys = Object.keys(inventario)
+        // const query = {
+        //     action: "get_lotes",
+        //     collection: "lotes",
+        //     data: {
+        //         ids: inventarioKeys,
+        //         select: {
+        //             __v: 1,
+        //             clasificacionCalidad: 1,
+        //             nombrePredio: 1,
+        //             fechaIngreso: 1,
+        //             observaciones: 1,
+        //             tipoFruta: 1,
+        //             promedio: 1,
+        //             enf: 1,
+        //             kilosVaciados: 1
+        //         }
+        //     }
+        // }
+        // const response = await rustConnectionProceso.sendMessage(query)
+        // console.log(response)
+
         const lotes = await LotesRepository.getLotes({
             ids: inventarioKeys,
             select: {
@@ -511,21 +522,32 @@ class ProcesoRepository {
     }
     static async obtener_contenedores_programacion(data) {
         const { fecha } = data;
-        const fehcaActual = new Date(fecha)
-        const year = fehcaActual.getFullYear();
-        const month = fehcaActual.getMonth();
+        const fechaActual = new Date(fecha);
+        const year = fechaActual.getFullYear();
+        const month = fechaActual.getMonth();
+
+        // Aseguramos UTC desde el primer al último día de noviembre.
+        const startDate = new Date(Date.UTC(year, month, 1)); // 2024-11-01T00:00:00.000Z
+        const endDate = new Date(Date.UTC(year, month + 1, 1)); // 2024-12-01T00:00:00.000Z
+
+        console.log("Start Date (UTC):", startDate.toISOString());
+        console.log("End Date (UTC):", endDate.toISOString());
+
+
         const query = {
             "infoContenedor.fechaInicio": {
-                $gte: new Date(year, month, 1),
-                $lt: new Date(year, month + 1, 1)
+                $gte: startDate,
+                $lt: endDate
             }
-        }
+        };
+
         const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
             select: { infoContenedor: 1, numeroContenedor: 1, __v: 1 },
             query: query
         });
-        return response
+        return response;
     }
+
     static async obtener_contenedores_programacion_mulas() {
         const haceUnMes = new Date();
         haceUnMes.setMonth(haceUnMes.getMonth() - 1);
@@ -1065,7 +1087,11 @@ class ProcesoRepository {
                 await ContenedoresRepository.actualizar_pallet_contenedor(_id, pallet, item, action, user);
 
             } else {
-                index = contenedor[0].pallets[pallet].get("EF1").findIndex(data => data.lote === item.lote)
+                index = contenedor[0].pallets[pallet].get("EF1").findIndex(data =>
+                    data.lote === item.lote &&
+                    data.calidad === item.calidad &&
+                    data.calibre === item.calibre
+                )
                 if (index === -1) {
                     await ContenedoresRepository.actualizar_pallet_contenedor(_id, pallet, item, action, user);
                 } else {
@@ -1628,7 +1654,11 @@ class ProcesoRepository {
                         );
 
                     } else {
-                        index = contenedor[0].pallets[pallet].get("EF1").findIndex(data => data.lote === item.lote)
+                        index = contenedor[0].pallets[pallet].get("EF1").findIndex(data =>
+                            data.lote === item.lote &&
+                            data.calidad === item.calidad &&
+                            data.calibre === item.calibre
+                        )
                         if (index === -1) {
                             await ContenedoresRepository.actualizar_pallet_contenedor(
                                 _id, pallet, item, "restituir restar_item_lista_empaque", user
@@ -1741,7 +1771,9 @@ class ProcesoRepository {
                                 .get_Contenedores_sin_lotes({ ids: [id2] });
 
                             const index = contenedor[0].pallets[pallet2].get("EF1").findIndex(
-                                lote => lote.lote === item.lote
+                                lote => lote.lote === item.lote &&
+                                    lote.calidad === item.calidad &&
+                                    lote.calibre === item.calibre
                             )
 
                             if (index !== -1) {
@@ -1761,9 +1793,6 @@ class ProcesoRepository {
         const pilaFunciones = [];
 
         try {
-            console.log(contenedor1)
-            console.log(contenedor2)
-            console.log(cajas)
             const seleccion = contenedor1.seleccionado;
             //se eliminan los items de la lista de empaque
             const items = await ContenedoresRepository.restar_mover_items_lista_empaque(
@@ -1804,7 +1833,11 @@ class ProcesoRepository {
                         const contenedor1 = await ContenedoresRepository.get_Contenedores_sin_lotes({ ids: [id1] });
 
                         const index = contenedor1[0].pallets[pallet1].get("EF1").findIndex(
-                            lote => lote.lote === item.lote
+                            lote => lote.lote === item.lote &&
+                                lote.calidad === item.calidad &&
+                                lote.calibre === item.calibre &&
+                                lote.tipoCaja === item.tipocaja
+
                         )
                         if (index === -1) {
                             await ContenedoresRepository.actualizar_pallet_contenedor(id1, pallet1, item, "corregir fallo", user);
@@ -1819,7 +1852,10 @@ class ProcesoRepository {
                         const contenedor2 = await ContenedoresRepository.get_Contenedores_sin_lotes({ ids: [id2] });
 
                         const index2 = contenedor2[0].pallets[pallet2].get("EF1").findIndex(
-                            lote => lote.lote === item.lote
+                            lote => lote.lote === item.lote &&
+                                lote.calidad === item.calidad &&
+                                lote.calibre === item.calibre &&
+                                lote.tipoCaja === item.tipocaja
                         )
                         if (index2 !== -1) {
                             await ContenedoresRepository.restar_item_lista_empaque(

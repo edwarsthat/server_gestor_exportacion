@@ -535,6 +535,7 @@ class ContenedoresRepository {
                 { $set: { [`pallets.${pallet1}`]: contenedor.pallets[pallet1] } }
             );
 
+            console.log(itemRecord)
             pilaFunciones.push({
                 funcion: "borrar_item_pallet",
                 datos: {
@@ -548,7 +549,12 @@ class ContenedoresRepository {
 
             item.cajas = cajas;
 
-            const index = contenedor2.pallets[pallet2].get("EF1").findIndex(lote => lote.lote === item.lote)
+            const index = contenedor2.pallets[pallet2].get("EF1").findIndex(lote =>
+                lote.lote === item.lote &&
+                lote.calibre === item.calibre &&
+                lote.calidad === item.calidad &&
+                lote.tipoCaja === item.tipoCaja
+            )
 
             if (index === -1) {
                 contenedor2.pallets[pallet2].get("EF1").push(item);
@@ -584,7 +590,10 @@ class ContenedoresRepository {
                     const contenedor = await Contenedores.findById({ _id: id1 });
 
                     const index = contenedor.pallets[pallet1].get("EF1").findIndex(
-                        lote => lote.lote === item[0].lote
+                        lote => lote.lote === item[0].lote &&
+                            lote.calibre === item[0].calibre &&
+                            lote.calidad === item[0].calidad &&
+                            lote.tipoCaja === item[0].tipoCaja
                     )
                     if (index === -1) {
                         newPallet = contenedor.pallets[pallet1];

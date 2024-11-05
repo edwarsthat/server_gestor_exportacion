@@ -85,6 +85,7 @@ class ProveedoresRepository {
     }
     static async addProveedor(data, user) {
         try {
+            delete data.alt
             const proveedor = new Proveedores(data);
             const saveProveedor = await proveedor.save();
             let record = new recordProveedor({ operacionRealizada: 'crear proveedor', user: user, documento: saveProveedor })

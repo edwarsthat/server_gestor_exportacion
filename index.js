@@ -26,9 +26,11 @@ const { procesoEventEmitter } = require('./events/eventos');
 const { HandleErrors } = require('./Error/recordErrors');
 const { VariablesDelSistema } = require('./server/Class/VariablesDelSistema');
 const { FormulariosCalidadRepository } = require('./server/Class/FormulariosCalidad');
+// const { initRustProceso } = require('./DB/controllers/proceso');
+
 
 initMongoDB()
-
+// initRustProceso()
 //#region HTTP
 // Middleware para configurar CORS
 app.use((req, res, next) => {
@@ -92,7 +94,6 @@ app.get('/:filename', async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 })
-
 
 app.post('/login2', async (req, res) => {
     const user = { user: req.body.user, password: req.body.password }

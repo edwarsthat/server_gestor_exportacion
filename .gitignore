@@ -19,5 +19,3 @@ updates/
 #ignora las fotos
 fotos_frutas/
 
-#ignora db_adapter mientras tanto
-db_adapter/
