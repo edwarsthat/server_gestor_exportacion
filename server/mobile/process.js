@@ -12,7 +12,7 @@ routerProceso.put("/ingresar_descarte_lavado", async (req, res) => {
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
 
-        await UserRepository.autentificacionPermisos(user.cargo, req.body.action)
+        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
 
         const data = req.body
 
@@ -32,7 +32,7 @@ routerProceso.put("/ingresar_descarte_encerado", async (req, res) => {
         console.log(token)
 
         const user = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisos(user.cargo, req.body.action)
+        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
 
         const data = req.body
 
