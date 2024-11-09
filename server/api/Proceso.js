@@ -16,7 +16,7 @@ const path = require('path');
 const fs = require("fs");
 
 const { have_lote_GGN_export } = require("../controllers/validations");
-// const { getRustConnectionProceso } = require("../../DB/controllers/proceso");
+const { getRustConnectionProceso } = require("../../DB/controllers/proceso");
 
 
 class ProcesoRepository {
@@ -101,10 +101,27 @@ class ProcesoRepository {
     }
     static async getInventario() {
 
+        //Rust
+
+        // console.time("Duración de miFuncion");
+
         // const rustConnectionProceso = getRustConnectionProceso()
 
-        const inventario = await VariablesDelSistema.getInventario();
-        const inventarioKeys = Object.keys(inventario)
+        // const inventoryRequest = {
+        //     action: "get_inventario",
+        //     collection: "variables_del_sistema",
+        //     data: {}
+        // }
+        // const inventarioJSON = await rustConnectionProceso.sendMessage(inventoryRequest)
+        // console.timeEnd("Duración de miFuncion");
+
+
+        // const inventario = JSON.parse(inventarioJSON)
+        // const inventarioKeys = Object.keys(inventario.InventarioFrutaSinProcesar)
+
+
+
+
         // const query = {
         //     action: "get_lotes",
         //     collection: "lotes",
@@ -119,12 +136,45 @@ class ProcesoRepository {
         //             tipoFruta: 1,
         //             promedio: 1,
         //             enf: 1,
-        //             kilosVaciados: 1
+        //             kilosVaciados: 1,
+        //             predio: 1
         //         }
         //     }
         // }
+
+
         // const response = await rustConnectionProceso.sendMessage(query)
-        // console.log(response)
+        // const lotes = await JSON.parse(response)
+
+        // const resultado = inventarioKeys.map(id => {
+        //     const lote = lotes.Lotes.find(lote => lote._id.$oid === id.toString());
+        //     // console.log(lote.fechaIngreso['$date']['$numberLong'])
+
+        //     const timestamp = parseInt(
+        //         lote.fechaIngreso['$date']['$numberLong'], 10
+        //     );
+
+        //     const fecha = new Date(timestamp);
+        //     const fechaFormateada = fecha.toISOString();
+
+        //     if (lote) {
+        //         return {
+        //             ...lote,
+        //             _id: lote._id.$oid,
+        //             predio: lote.predio[0],
+        //             fechaIngreso: fechaFormateada,
+        //             inventario: inventario.InventarioFrutaSinProcesar[id]
+        //         }
+        //     }
+        //     return null
+        // }).filter(item => item !== null);
+
+
+        //JS SERVER
+
+        const inventario = await VariablesDelSistema.getInventario();
+        const inventarioKeys = Object.keys(inventario)
+
 
         const lotes = await LotesRepository.getLotes({
             ids: inventarioKeys,
@@ -140,9 +190,10 @@ class ProcesoRepository {
                 kilosVaciados: 1
             }
         });
-        //se agrega las canastillas en inventario
+        // se agrega las canastillas en inventario
         const resultado = inventarioKeys.map(id => {
             const lote = lotes.find(lote => lote._id.toString() === id.toString());
+
             if (lote) {
                 return {
                     ...lote.toObject(),
@@ -151,6 +202,10 @@ class ProcesoRepository {
             }
             return null
         }).filter(item => item !== null);
+
+
+
+
         return resultado
     }
     static async getInventario_orden_vaceo() {

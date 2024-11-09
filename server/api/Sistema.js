@@ -58,11 +58,26 @@ class SistemaRepository {
         const { _id } = req
         await UsuariosRepository.eliminar_cargo(_id, user.user)
     }
-    static async get_users(user) {
+    static async get_users(req, user) {
         const cargo = await UsuariosRepository.get_cargos({
             ids: [user.cargo]
         })
-        const usuarios = await UsuariosRepository.get_users();
+        const { page, cargoFilter } = req
+        const resultsPerPage = 50;
+
+        const query = {
+            skip: (page - 1) * resultsPerPage,
+            limit: resultsPerPage,
+            sort: { createdAt: -1 }
+        }
+
+        if (cargoFilter !== '') {
+            query.query = {
+                cargo: cargoFilter
+            }
+        }
+
+        const usuarios = await UsuariosRepository.get_users(query);
         const resultado = usuarios.filter(usuario => usuario.cargo.Rol > cargo[0].Rol)
         return resultado
     }
@@ -84,7 +99,7 @@ class SistemaRepository {
     }
     static async modificar_usuario(req, user) {
         const { action, data, _id, __v } = req
-        await UsuariosRepository.modificar_ususario(_id, data, action, user.user, __v);
+        await UsuariosRepository.modificar_usuario(_id, data, action, user.user, __v);
     }
     static async obtener_operarios_seleccionadoras() {
         const usuarios = await UsuariosRepository.get_users({
@@ -244,6 +259,10 @@ class SistemaRepository {
         await UsuariosRepository.modificar_usuario(_id, query, action, user);
 
 
+    }
+    static async obtener_cantidad_usuarios() {
+        const cantidad = await UsuariosRepository.obtener_cantidad_usuarios()
+        return cantidad
     }
 }
 

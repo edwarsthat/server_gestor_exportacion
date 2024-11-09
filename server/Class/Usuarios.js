@@ -211,7 +211,6 @@ class UsuariosRepository {
             bussyIdsUsuario.delete(id);
         }
     }
-
     static async add_volante_calidad(data) {
         /**
          * Funcion que agrega una fila a volante calidad a la base de datos lote de mongoDB
@@ -341,6 +340,14 @@ class UsuariosRepository {
         } catch (err) {
             console.log(err)
             throw new ConnectionDBError(408, `Error obteniendo formularios higiene personal ${err.message}`);
+        }
+    }
+    static async obtener_cantidad_usuarios() {
+        try {
+            const count = await Usuarios.countDocuments();
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
         }
     }
     static validateBussyUsuarioIds(id) {

@@ -171,8 +171,8 @@ const apiSocket = {
         return { status: 200, message: 'Ok', data: response }
     },
     get_users: async (req) => {
-        const { user } = req
-        const response = await SistemaRepository.get_users(user)
+        const { data, user } = req
+        const response = await SistemaRepository.get_users(data, user)
         return { status: 200, message: 'Ok', data: response }
     },
     get_historial_descarte: async (req) => {
@@ -318,6 +318,10 @@ const apiSocket = {
     obtener_lotes_contabilidad_informes_calidad: async (req) => {
         const { data } = req
         const response = await ContabilidadRepository.obtener_lotes_contabilidad_informes_calidad(data);
+        return { status: 200, message: 'Ok', data: response }
+    },
+    obtener_cantidad_usuarios: async () => {
+        const response = await SistemaRepository.obtener_cantidad_usuarios()
         return { status: 200, message: 'Ok', data: response }
     },
     //#region POST

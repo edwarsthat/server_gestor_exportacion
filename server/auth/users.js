@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { ValidationUserError, ValidationTokenError, AccessError } = require('../../Error/ValidationErrors');
+const { ValidationUserError, ValidationTokenError } = require('../../Error/ValidationErrors');
 const { UsuariosRepository } = require('../Class/Usuarios');
 const permisos_generales = [
     "obtener_status_proceso",
@@ -7,7 +7,8 @@ const permisos_generales = [
     "modificar_mi_password",
     "count_documents_formularios_calidad_limpieza_diaria",
     "count_documents_formularios_calidad_limpieza_mensual",
-    "count_documents_formularios_calidad_control_plagas"
+    "count_documents_formularios_calidad_control_plagas",
+    "obtener_cantidad_usuarios"
 ]
 
 class UserRepository {
@@ -95,120 +96,120 @@ class UserRepository {
         }
 
     }
-    static async autentificacionPermisos(cargo, action, user = '') {
-        /**
-         * Funcion que verifica si un cargo tiene permisos para realizar una acción específica.
-         *
-         * @param {string} cargo - El cargo del usuario que solicita realizar la acción.
-         * @param {string} action - La acción que se desea realizar.
-         * @returns {Promise<boolean>} - Promesa que resuelve a true si el cargo tiene permiso para la acción.
-         * @throws {AccessError} - Lanza un error si el cargo no tiene permiso o si la acción no está definida.
-         */
-        try {
-            const permisos = {
-                //#region get
+    // static async autentificacionPermisos(cargo, action, user = '') {
+    //     /**
+    //      * Funcion que verifica si un cargo tiene permisos para realizar una acción específica.
+    //      *
+    //      * @param {string} cargo - El cargo del usuario que solicita realizar la acción.
+    //      * @param {string} action - La acción que se desea realizar.
+    //      * @returns {Promise<boolean>} - Promesa que resuelve a true si el cargo tiene permiso para la acción.
+    //      * @throws {AccessError} - Lanza un error si el cargo no tiene permiso o si la acción no está definida.
+    //      */
+    //     try {
+    //         const permisos = {
+    //             //#region get
 
-                //inventarios
-                obtenerEF1: ['recepcion', 'admin'],
-                getProveedores: ['recepcion', 'admin'],
-                getInventario: ['recepcion', 'admin', 'contabilidad'],
-                getInventarioDesverdizado: ['recepcion', 'admin', 'contabilidad'],
-                getInventario_orden_vaceo: ['admin', 'recepcion'],
-                getOrdenVaceo: ['recepcion', 'admin'],
-                obtenerHistorialLotes: ['recepcion', 'admin', 'contabilidad'],
-                obtenerHistorialLotesDirectoNacional: ['recepcion', 'admin', 'contabilidad'],
-                obtener_inventario_descartes: ['recepcion', 'admin', 'contabilidad'],
-                getClientes: ['admin'],
-                get_ingresos_lotes: ['admin', 'recepcion', 'contabilidad'],
-                obtener_contenedores_lotes: ['admin'],
-                //calidad
-                getLotesCalidadInterna: ['admin', 'inspector'],
-                getLotesClasificacionCalidad: ['admin', 'inspector'],
-                get_descarte_reproceso: ['admin', 'inspector'],
-                get_lotes_informe_calidad: ['admin', 'inspector'],
-                get_lotes_clasificacion_descarte: ['admin', 'inspector'],
-                get_historial_calidad_interna: ['admin'],
-                get_historial_clasificacion_descarte: ['admin'],
-                obtener_observaciones_calidad: ['admin'],
-                obtener_imagen_lote_calidad: ['admin'],
-                //proceso
-                get_predio_Proceso_Descarte: ['admin'],
-                //views
-                view_lotes: ['admin', 'contabilidad'],
-                getInfoIndicadoresProceso: ['admin'],
-                //comercial 
-                obtener_precio_proveedores: ['admin'],
-                get_cargos: ['admin'],
-                get_users: ['admin'],
+    //             //inventarios
+    //             obtenerEF1: ['recepcion', 'admin'],
+    //             getProveedores: ['recepcion', 'admin'],
+    //             getInventario: ['recepcion', 'admin', 'contabilidad'],
+    //             getInventarioDesverdizado: ['recepcion', 'admin', 'contabilidad'],
+    //             getInventario_orden_vaceo: ['admin', 'recepcion'],
+    //             getOrdenVaceo: ['recepcion', 'admin'],
+    //             obtenerHistorialLotes: ['recepcion', 'admin', 'contabilidad'],
+    //             obtenerHistorialLotesDirectoNacional: ['recepcion', 'admin', 'contabilidad'],
+    //             obtener_inventario_descartes: ['recepcion', 'admin', 'contabilidad'],
+    //             getClientes: ['admin'],
+    //             get_ingresos_lotes: ['admin', 'recepcion', 'contabilidad'],
+    //             obtener_contenedores_lotes: ['admin'],
+    //             //calidad
+    //             getLotesCalidadInterna: ['admin', 'inspector'],
+    //             getLotesClasificacionCalidad: ['admin', 'inspector'],
+    //             get_descarte_reproceso: ['admin', 'inspector'],
+    //             get_lotes_informe_calidad: ['admin', 'inspector'],
+    //             get_lotes_clasificacion_descarte: ['admin', 'inspector'],
+    //             get_historial_calidad_interna: ['admin'],
+    //             get_historial_clasificacion_descarte: ['admin'],
+    //             obtener_observaciones_calidad: ['admin'],
+    //             obtener_imagen_lote_calidad: ['admin'],
+    //             //proceso
+    //             get_predio_Proceso_Descarte: ['admin'],
+    //             //views
+    //             view_lotes: ['admin', 'contabilidad'],
+    //             getInfoIndicadoresProceso: ['admin'],
+    //             //comercial 
+    //             obtener_precio_proveedores: ['admin'],
+    //             get_cargos: ['admin'],
+    //             get_users: ['admin'],
 
-                //!
-                //#region post
-                guardarLote: ['recepcion', 'admin'],
-                guardarDescarteHistorial: ['admin', 'recepcion'],
-                crearContenedor: ['admin'],
+    //             //!
+    //             //#region post
+    //             guardarLote: ['recepcion', 'admin'],
+    //             guardarDescarteHistorial: ['admin', 'recepcion'],
+    //             crearContenedor: ['admin'],
 
-                //#region Put
-                directoNacional: ['recepcion', 'admin'],
-                desverdizado: ['recepcion', 'admin'],
-                addOrdenDeVaceo: ['admin'],
-                vaciarLote: ['recepcion', 'admin'],
-                modificarHistorialFrutaProcesada: ['admin', 'recepcion'],
-                ingresar_descarte_lavado: ['admin', 'aux_descarte_lavado'],
-                ingresar_descarte_encerado: ['admin', 'aux_descarte_encerado'],
-                ingresoCalidadInterna: ['admin', 'inspector'],
-                put_lotes_clasificacion_descarte: ['admin', 'inspector'],
-                ingresar_foto_calidad: ['admin', 'inspector'],
-                reprocesar_predio: ['admin'],
-                reprocesar_celifrut: ['admin'],
-                ingresar_precio_fruta: ['admin'],
-                set_parametros_desverdizado: ['admin', 'recepcion'],
-                set_finalizar_desverdizado: ['admin', 'recepcion'],
-                modificarHistorial_directoNacional: ['admin'],
-                despacho_descarte: ['admin', 'recepcion'],
-                //modificar datos
-                modificar_ingreso_lote: ['admin'],
-                modificar_calidad_interna_lote: ['admin'],
-                modificar_clasificacion_descarte_lote: ['admin'],
-                modificar_predio_proceso_descarte: ['admin'],
-                modificar_predio_proceso_listaEmpaque: ['admin'],
+    //             //#region Put
+    //             directoNacional: ['recepcion', 'admin'],
+    //             desverdizado: ['recepcion', 'admin'],
+    //             addOrdenDeVaceo: ['admin'],
+    //             vaciarLote: ['recepcion', 'admin'],
+    //             modificarHistorialFrutaProcesada: ['admin', 'recepcion'],
+    //             ingresar_descarte_lavado: ['admin', 'aux_descarte_lavado'],
+    //             ingresar_descarte_encerado: ['admin', 'aux_descarte_encerado'],
+    //             ingresoCalidadInterna: ['admin', 'inspector'],
+    //             put_lotes_clasificacion_descarte: ['admin', 'inspector'],
+    //             ingresar_foto_calidad: ['admin', 'inspector'],
+    //             reprocesar_predio: ['admin'],
+    //             reprocesar_celifrut: ['admin'],
+    //             ingresar_precio_fruta: ['admin'],
+    //             set_parametros_desverdizado: ['admin', 'recepcion'],
+    //             set_finalizar_desverdizado: ['admin', 'recepcion'],
+    //             modificarHistorial_directoNacional: ['admin'],
+    //             despacho_descarte: ['admin', 'recepcion'],
+    //             //modificar datos
+    //             modificar_ingreso_lote: ['admin'],
+    //             modificar_calidad_interna_lote: ['admin'],
+    //             modificar_clasificacion_descarte_lote: ['admin'],
+    //             modificar_predio_proceso_descarte: ['admin'],
+    //             modificar_predio_proceso_listaEmpaque: ['admin'],
 
-                //#region lista de empaque
-                obtener_predio_listaDeEmpaque: ['admin', "aux_lista_empaque", 'inspector'],
-                obtener_contenedores_listaDeEmpaque: ['admin', "aux_lista_empaque", 'inspector'],
-                add_settings_pallet: ['admin', 'aux_lista_empaque'],
-                actualizar_pallet_contenedor: ['admin', 'aux_lista_empaque'],
-                eliminar_item_lista_empaque: ['admin', 'aux_lista_empaque'],
-                restar_item_lista_empaque: ['admin', 'aux_lista_empaque'],
-                mover_item_lista_empaque: ['admin', 'aux_lista_empaque'],
-                agregar_cajas_sin_pallet: ['admin', 'aux_lista_empaque'],
-                obtener_cajas_sin_pallet: ['admin', 'aux_lista_empaque', 'inspector'],
-                eliminar_item_cajas_sin_pallet: ['admin', 'aux_lista_empaque'],
-                liberar_pallets_lista_empaque: ['admin', 'inspector'],
-                cerrar_contenedor: ['admin', 'inspector', 'aux_lista_empaque'],
-                modificar_items_lista_empaque: ['admin', 'aux_lista_empaque'],
+    //             //#region lista de empaque
+    //             obtener_predio_listaDeEmpaque: ['admin', "aux_lista_empaque", 'inspector'],
+    //             obtener_contenedores_listaDeEmpaque: ['admin', "aux_lista_empaque", 'inspector'],
+    //             add_settings_pallet: ['admin', 'aux_lista_empaque'],
+    //             actualizar_pallet_contenedor: ['admin', 'aux_lista_empaque'],
+    //             eliminar_item_lista_empaque: ['admin', 'aux_lista_empaque'],
+    //             restar_item_lista_empaque: ['admin', 'aux_lista_empaque'],
+    //             mover_item_lista_empaque: ['admin', 'aux_lista_empaque'],
+    //             agregar_cajas_sin_pallet: ['admin', 'aux_lista_empaque'],
+    //             obtener_cajas_sin_pallet: ['admin', 'aux_lista_empaque', 'inspector'],
+    //             eliminar_item_cajas_sin_pallet: ['admin', 'aux_lista_empaque'],
+    //             liberar_pallets_lista_empaque: ['admin', 'inspector'],
+    //             cerrar_contenedor: ['admin', 'inspector', 'aux_lista_empaque'],
+    //             modificar_items_lista_empaque: ['admin', 'aux_lista_empaque'],
 
-                // #region Comercial
-                inactivar_Proveesdor: ['admin'],
-                addProveedor: ['admin'],
-                modificar_proveedor: ['admin'],
-                //cuentas
-                add_cargo: ['admin'],
-                add_user: ['admin'],
+    //             // #region Comercial
+    //             inactivar_Proveesdor: ['admin'],
+    //             addProveedor: ['admin'],
+    //             modificar_proveedor: ['admin'],
+    //             //cuentas
+    //             add_cargo: ['admin'],
+    //             add_user: ['admin'],
 
-            }
-            if (Object.prototype.hasOwnProperty.call(permisos, action)) {
-                if (permisos[action].includes(cargo)) {
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-            return false;
-        } catch (err) {
-            console.log(err.message, `Cargo: ${cargo}  User:${user}`)
-            throw new AccessError(412, `Accesos no autorizado ${action}`);
-        }
-    }
+    //         }
+    //         if (Object.prototype.hasOwnProperty.call(permisos, action)) {
+    //             if (permisos[action].includes(cargo)) {
+    //                 return true;
+    //             } else {
+    //                 return false;
+    //             }
+    //         }
+    //         return false;
+    //     } catch (err) {
+    //         console.log(err.message, `Cargo: ${cargo}  User:${user}`)
+    //         throw new AccessError(412, `Accesos no autorizado ${action}`);
+    //     }
+    // }
     static async autentificacionPermisos2(req) {
         try {
             const { data, user } = req;
