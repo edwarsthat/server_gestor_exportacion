@@ -16,7 +16,7 @@ const path = require('path');
 const fs = require("fs");
 
 const { have_lote_GGN_export } = require("../controllers/validations");
-const { getRustConnectionProceso } = require("../../DB/controllers/proceso");
+// const { getRustConnectionProceso } = require("../../DB/controllers/proceso");
 
 
 class ProcesoRepository {

@@ -244,7 +244,7 @@ io.on("connection", socket => {
 
             // Mark the request as ongoing
             ongoingRequests[data.data.action] = true;
-            await UserRepository.autentificacionPermisos(data.user.cargo, data.data.action);
+            await UserRepository.autentificacionPermisosHttps(data.user.cargo, data.data.action);
 
             if (!Object.prototype.hasOwnProperty.call(socketMobileRepository, data.data.action))
                 throw new BadGetwayError(501, `Error badGetWay ${data.data.action} no existe`)

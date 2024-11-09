@@ -208,7 +208,7 @@ routerProceso.post("/guardarLote", async (req, res) => {
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
 
-        await UserRepository.autentificacionPermisos(user.cargo, "guardarLote")
+        await UserRepository.autentificacionPermisosHttps(user.cargo, "guardarLote")
 
         const data = req.body
 
@@ -228,7 +228,7 @@ routerProceso.post("/directoNacional", async (req, res) => {
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
 
-        await UserRepository.autentificacionPermisos(user.cargo, "directoNacional")
+        await UserRepository.autentificacionPermisosHttps(user.cargo, "directoNacional")
 
         const data = req.body
 
@@ -245,7 +245,7 @@ routerProceso.post("/desverdizado", async (req, res) => {
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
 
-        await UserRepository.autentificacionPermisos(user.cargo, "desverdizado")
+        await UserRepository.autentificacionPermisosHttps(user.cargo, "desverdizado")
 
         const data = req.body
 
