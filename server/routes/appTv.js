@@ -18,6 +18,15 @@ routerAppTv.get("/get_data_proceso", async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 });
+routerAppTv.get("/obtener_hora_inicio", async (req, res) => {
+    try {
+        console.log(req.method)
+        const response = await ProcesoRepository.obtener_fecha_inicio_proceso()
+        res.json({ status: 200, message: 'Ok', data: response })
+    } catch (err) {
+        res.json({ status: err.status, message: err.message })
+    }
+});
 
 routerAppTv.get("/set_inicio", async (req, res) => {
     try {
