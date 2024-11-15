@@ -14,11 +14,12 @@ const LimonPrecioSchema = new Schema({
 })
 
 const NaranjaPrecioSchema = new Schema({
-  "1": Number,
-  "15": Number,
-  "2": Number,
-  descarte: Number,
-  zumex: Number,
+  "1": { type: Number, default: 0 },
+  "15": { type: Number, default: 0 },
+  "2": { type: Number, default: 0 },
+  frutaNacional: { type: Number, default: 0 },
+  descarte: { type: Number, default: 0 },
+  zumex: { type: Number, default: 0 },
 })
 
 const PrecioSchema = new Schema({

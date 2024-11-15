@@ -14,7 +14,7 @@ const { ContabilidadRepository } = require("../api/Contabilidad");
 const apiSocket = {
     //#region GET
     obtenerEF1: async () => {
-        const enf = await VariablesDelSistema.generarEF1();
+        const enf = await ProcesoRepository.get_ef1()
         return { status: 200, message: 'Ok', response: enf }
     },
     get_predio_Proceso_Descarte: async () => {
@@ -323,6 +323,15 @@ const apiSocket = {
     obtener_cantidad_usuarios: async () => {
         const response = await SistemaRepository.obtener_cantidad_usuarios()
         return { status: 200, message: 'Ok', data: response }
+    },
+    obtener_cantidad_contenedores: async () => {
+        const response = await ProcesoRepository.obtener_cantidad_contenedores()
+        return { status: 200, message: 'Ok', data: response }
+    },
+    obtener_predio_procesando: async () => {
+        const data = await ProcesoRepository.obtener_predio_procesando()
+        return { status: 200, message: 'Ok', data: data }
+
     },
     //#region POST
     guardarLote: async (data) => {

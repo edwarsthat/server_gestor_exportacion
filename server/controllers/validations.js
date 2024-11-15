@@ -11,6 +11,20 @@ function have_lote_GGN_export(predio, contenedor) {
     return true;
 }
 
+async function is_finish_lote(lote) {
+
+    if (lote.calidad) {
+        if (!lote.calidad.calidadInterna) return false
+        if (!lote.calidad.clasificacionCalidad) return false
+        if (!lote.calidad.fotosCalidad) return false
+        if (lote.deshidratacion <= -1 && lote.deshidratacion >= 2.5) return false
+
+        return true
+    }
+    return false
+}
+
 module.exports = {
-    have_lote_GGN_export
+    have_lote_GGN_export,
+    is_finish_lote
 }

@@ -11,6 +11,7 @@ routerAppTv.get("/", (req, res) => {
 
 routerAppTv.get("/get_data_proceso", async (req, res) => {
     try {
+        console.log(req.method)
         const response = await ProcesoRepository.get_data_proceso()
         res.json({ status: 200, message: 'Ok', data: response })
     } catch (err) {

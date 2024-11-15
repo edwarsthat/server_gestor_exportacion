@@ -15,13 +15,36 @@ const { InsumosRepository } = require("../Class/Insumos");
 const path = require('path');
 const fs = require("fs");
 
-const { have_lote_GGN_export } = require("../controllers/validations");
+const { have_lote_GGN_export, is_finish_lote } = require("../controllers/validations");
 // const { getRustConnectionProceso } = require("../../DB/controllers/proceso");
 
 
 class ProcesoRepository {
 
     // #region GET
+    static async get_ef1() {
+        //rust
+        // console.time("Duración de miFuncion");
+
+        // const rustConnectionProceso = getRustConnectionProceso()
+        // const enf_request = {
+        //     action: "generar_ef1",
+        //     collection: "variables_del_sistema",
+        //     data: {}
+        // }
+        // const enf_json = await rustConnectionProceso.sendMessage(enf_request)
+        // const response = JSON.parse(enf_json)
+        // const enf = response.VariablesDelSistema.enf
+        // console.log(enf)
+        // console.timeEnd("Duración de miFuncion");
+        // return enf
+
+        //JS
+        console.time("Duración de miFuncion");
+        const enf = await VariablesDelSistema.generarEF1();
+        console.timeEnd("Duración de miFuncion");
+        return enf
+    }
     static async get_predio_Proceso_Descarte() {
         const data = await VariablesDelSistema.obtenerEF1Descartes();
         return data
@@ -103,7 +126,7 @@ class ProcesoRepository {
 
         //Rust
 
-        // console.time("Duración de miFuncion");
+        // console.time("Duración de miFuncion getInventario");
 
         // const rustConnectionProceso = getRustConnectionProceso()
 
@@ -113,11 +136,10 @@ class ProcesoRepository {
         //     data: {}
         // }
         // const inventarioJSON = await rustConnectionProceso.sendMessage(inventoryRequest)
-        // console.timeEnd("Duración de miFuncion");
 
 
         // const inventario = JSON.parse(inventarioJSON)
-        // const inventarioKeys = Object.keys(inventario.InventarioFrutaSinProcesar)
+        // const inventarioKeys = Object.keys(inventario.VariablesDelSistema)
 
 
 
@@ -163,12 +185,13 @@ class ProcesoRepository {
         //             _id: lote._id.$oid,
         //             predio: lote.predio[0],
         //             fechaIngreso: fechaFormateada,
-        //             inventario: inventario.InventarioFrutaSinProcesar[id]
+        //             inventario: inventario.VariablesDelSistema[id]
         //         }
         //     }
         //     return null
         // }).filter(item => item !== null);
 
+        // console.timeEnd("Duración de miFuncion getInventario");
 
         //JS SERVER
 
@@ -602,7 +625,6 @@ class ProcesoRepository {
         });
         return response;
     }
-
     static async obtener_contenedores_programacion_mulas() {
         const haceUnMes = new Date();
         haceUnMes.setMonth(haceUnMes.getMonth() - 1);
@@ -733,6 +755,14 @@ class ProcesoRepository {
 
         return response;
     }
+    static async obtener_cantidad_contenedores() {
+        const cantidad = await ContenedoresRepository.obtener_cantidad_contenedores()
+        return cantidad
+    }
+    static async obtener_predio_procesando() {
+        const predio = await VariablesDelSistema.obtener_predio_procesando()
+        return predio
+    }
 
     // #region PUT
     static async ingresar_descarte_lavado(req, user) {
@@ -748,6 +778,19 @@ class ProcesoRepository {
 
         const lote = await LotesRepository.modificar_lote_proceso(_id, query, action, user);
         await LotesRepository.deshidratacion(lote);
+        const is_finish = await is_finish_lote(lote);
+        console.log(is_finish)
+        if (is_finish) {
+            const query_fecha = {
+                fecha_finalizado_proceso: new Date()
+            }
+            await LotesRepository.modificar_lote_proceso(
+                lote._id,
+                query_fecha,
+                "lote_finalizado",
+                user
+            );
+        }
 
         await VariablesDelSistema.modificar_inventario_descarte(_id, data, "descarteLavado", lote);
         const kilosProcesados = await VariablesDelSistema.ingresar_kilos_procesados(kilos, lote.tipoFruta);
@@ -990,6 +1033,7 @@ class ProcesoRepository {
     }
     static async reiniciarValores_proceso() {
         await VariablesDelSistema.reiniciarValores_proceso();
+        procesoEventEmitter.emit("proceso_event", {});
     }
     static async modificar_programacion_contenedor(req, user) {
         const { _id, __v, infoContenedor, action } = req;
@@ -1966,10 +2010,36 @@ class ProcesoRepository {
     // #region POST
     static async addLote(data) {
         const pilaFunciones = [];
-        console.time("Duración de miFuncion");
         try {
 
+            // console.time("Duración de miFuncion");
 
+            // const rustConnectionProceso = getRustConnectionProceso()
+            // const enf_request = {
+            //     action: "generar_ef1",
+            //     collection: "variables_del_sistema",
+            //     data: {}
+            // }
+            // const enf_json = await rustConnectionProceso.sendMessage(enf_request)
+            // const enf = JSON.parse(enf_json)
+
+            // console.timeEnd("Duración de miFuncion");
+
+
+            // const lote = await LotesRepository.addLote(data, enf);
+            // pilaFunciones.push({
+            //     funcion: "addLote",
+            //     datos: {
+            //         lote: lote._id,
+            //     }
+            // })
+            // await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(data.data.data.canastillas));
+            // await VariablesDelSistema.incrementarEF1();
+            // procesoEventEmitter.emit("nuevo_predio", {
+            //     predio: lote
+            // });
+
+            //JS
             const enf = await VariablesDelSistema.generarEF1()
             const lote = await LotesRepository.addLote(data, enf);
 

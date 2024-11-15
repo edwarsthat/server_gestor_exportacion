@@ -51,7 +51,7 @@ routerProceso.put("/add-fotos-calidad", async (req, res) => {
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
 
-        await UserRepository.autentificacionPermisos(user.cargo, "ingresar_foto_calidad")
+        await UserRepository.autentificacionPermisosHttps(user.cargo, "ingresar_foto_calidad")
 
         const data = req.body
 
@@ -156,7 +156,6 @@ routerProceso.get("/getInventario", async (req, res) => {
     try {
         const token = req.headers['authorization'];
         await UserRepository.authenticateToken(token);
-
         const data = await ProcesoRepository.getInventario()
         res.json({ status: 200, message: 'Ok', data: data });
     } catch (err) {

@@ -985,6 +985,7 @@ class VariablesDelSistema {
   }
 
   // #region Datos del proceso
+
   static async get_kilos_procesados_hoy() {
     let cliente
     try {
@@ -1121,9 +1122,17 @@ class VariablesDelSistema {
     try {
       const clientePromise = iniciarRedisDB();
       cliente = await clientePromise;
-      await cliente.set("kilosProcesadosHoy", 0);
-      await cliente.set("kilosExportacionHoy", 0);
+      const status = await cliente.get("statusProceso")
+      if (status === 'on' || status === 'pause') {
+        await this.set_hora_fin_proceso()
+      }
+      await cliente.set("kilosProcesadosHoyLimon", 0);
+      await cliente.set("kilosProcesadosHoyNaranja", 0);
+      await cliente.set("kilosExportacionHoyLimon", 0);
+      await cliente.set("kilosExportacionHoyNaranja", 0);
       await cliente.set("fechaInicioProceso", '');
+      await cliente.set("statusProceso", 'off');
+
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis sumar exportacion: ${err.name}`)
 
@@ -1251,7 +1260,7 @@ class VariablesDelSistema {
       if (!turno || turno.length === 0) {
         throw new Error("No se encontró el elemento");
       }
-
+      console.log(turno)
       //se obtiene el tiempo trabajado en segundos
       const lenPausas = turno[0].pausaProceso.length;
       if (lenPausas === 0) {

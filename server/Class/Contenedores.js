@@ -781,6 +781,14 @@ class ContenedoresRepository {
             this.unlockItem(id, "Contenedor", "general")
         }
     }
+    static async obtener_cantidad_contenedores() {
+        try {
+            const count = await Contenedores.countDocuments();
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(408, `Error obteniendo cantidad contenedores ${err.message}`);
+        }
+    }
     static validateBussyIds(id) {
         /**
          * Funcion que añade el id del elemento que se este m0odificando para que no se creen errores de doble escritura

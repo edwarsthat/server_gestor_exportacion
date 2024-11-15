@@ -191,7 +191,6 @@ io.on("connection", socket => {
                 return;
             }
             const user = await UserRepository.authenticateToken(data.token)
-
             data = { ...data, user: user }
 
             // Mark the request as ongoing
@@ -206,7 +205,7 @@ io.on("connection", socket => {
             if (!Object.prototype.hasOwnProperty.call(apiSocket, data.data.action))
                 throw new BadGetwayError(501, `Error badGetWay ${data.data.action} no existe`)
             const response = await apiSocket[data.data.action](data, sendData);
-            const newToken = await UserRepository.generateAccessToken({
+            const newToken = UserRepository.generateAccessToken({
                 user: data.user.user,
                 cargo: data.user.cargo,
                 _id: data.user._id
@@ -244,7 +243,11 @@ io.on("connection", socket => {
 
             // Mark the request as ongoing
             ongoingRequests[data.data.action] = true;
-            await UserRepository.autentificacionPermisosHttps(data.user.cargo, data.data.action);
+            const autorizado2 = await UserRepository.autentificacionPermisos2(data);
+
+            if (!autorizado2) {
+                throw new AccessError(412, `Acceso no autorizado ${data.data.action}`);
+            }
 
             if (!Object.prototype.hasOwnProperty.call(socketMobileRepository, data.data.action))
                 throw new BadGetwayError(501, `Error badGetWay ${data.data.action} no existe`)
@@ -278,7 +281,7 @@ server.listen(3011, () => {
 // #region Acciones programadas
 
 //reiniciar valores del sistema
-cron.schedule("55 4 * * *", async () => {
+cron.schedule("54 11 * * *", async () => {
     await ProcesoRepository.reiniciarValores_proceso()
 });
 

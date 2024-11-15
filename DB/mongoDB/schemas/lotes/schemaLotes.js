@@ -144,10 +144,11 @@ const precioLoteSchema = new Schema({
   "1": Number,
   "15": Number,
   "2": Number,
+  frutaNacional: Number,
   descarte: Number,
   zumex: Number,
   combinado: Number,
-})
+}, { _id: false })
 
 
 
@@ -170,6 +171,7 @@ const dataSchema = new Schema({
   exportacionDetallada: exportacionDetalladaSchema,
   fechaIngreso: { type: Date, default: () => new Date() },
   fechaProceso: { type: Date },
+  fecha_finalizado_proceso: { type: Date },
   frutaNacional: { type: Number, default: 0 },
   flag_is_favorita: { type: Boolean, default: false },
   historialDescarte: mongoose.Types.ObjectId,
