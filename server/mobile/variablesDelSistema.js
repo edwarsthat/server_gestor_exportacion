@@ -9,7 +9,7 @@ routerVariablesdelSistema.get("/", (req, res) => {
 
 routerVariablesdelSistema.get("/predioProcesoDescarte", async (req, res) => {
     try {
-        const response = await ProcesoRepository.get_predio_Proceso_Descarte()
+        const response = await ProcesoRepository.get_predio_Proceso_Descarte(req.body)
         res.send({ response: response, status: 200, message: "Ok" })
     } catch (err) {
         res.json({ status: err.status, message: err.message })

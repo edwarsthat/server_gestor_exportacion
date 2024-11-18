@@ -6,7 +6,8 @@ const conn = mongoose.createConnection(process.env.MONGODB_PROCESO);
 
 const dataStopSchema = new Schema({
     inicioPausa: Date,
-    finalPausa: Date
+    finalPausa: Date,
+    Observacion: String,
 }, { _id: false, strict: false });
 
 const TurnoDataSchema = new Schema({

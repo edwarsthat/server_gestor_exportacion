@@ -26,6 +26,7 @@ const { procesoEventEmitter } = require('./events/eventos');
 const { HandleErrors } = require('./Error/recordErrors');
 const { VariablesDelSistema } = require('./server/Class/VariablesDelSistema');
 const { FormulariosCalidadRepository } = require('./server/Class/FormulariosCalidad');
+const { sp32 } = require('./server/mobile/sp32');
 // const { initRustProceso } = require('./DB/controllers/proceso');
 
 
@@ -47,6 +48,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '10mb' }));
+app.use(express.text());
 // Aumentar el límite de tamaño del cuerpo de la solicitud de manera global
 
 
@@ -57,6 +59,7 @@ app.use("/comercial", routerComercial);
 app.use("/calidad", routerCalidad)
 app.use("/sistema", routerSistema)
 app.use("/appTV", routerAppTv)
+app.use("/sp32", sp32)
 app.get("/", (req, res) => {
     res.send('Hello from the root route!');
 });
@@ -122,6 +125,8 @@ app.post('/login2', async (req, res) => {
 app.listen(process.env.PORT, process.env.HOST, () => {
     console.log(`El servidor está escuchando en el puerto ${process.env.PORT} y la dirección IP ${process.env.HOST}.`);
 });
+
+
 
 
 //#region  Socket
@@ -281,7 +286,7 @@ server.listen(3011, () => {
 // #region Acciones programadas
 
 //reiniciar valores del sistema
-cron.schedule("54 11 * * *", async () => {
+cron.schedule("00 4 * * *", async () => {
     await ProcesoRepository.reiniciarValores_proceso()
 });
 

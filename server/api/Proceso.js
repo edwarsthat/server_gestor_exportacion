@@ -1062,6 +1062,11 @@ class ProcesoRepository {
         await VariablesDelSistema.modificarInventario(_id, inventario);
     }
     static async set_hora_fin_proceso() {
+        const status_proceso = await VariablesDelSistema.obtener_status_proceso()
+
+        if (status_proceso === 'pause') {
+            await VariablesDelSistema.set_hora_reanudar_proceso();
+        }
         await VariablesDelSistema.set_hora_fin_proceso();
         procesoEventEmitter.emit("status_proceso", {
             status: "off"
@@ -1077,6 +1082,31 @@ class ProcesoRepository {
         await VariablesDelSistema.set_hora_reanudar_proceso();
         procesoEventEmitter.emit("status_proceso", {
             status: "on"
+        });
+    }
+    static async sp32_funcionamiento_maquina(data) {
+        let estado_maquina = false
+        const status_proceso = await VariablesDelSistema.obtener_status_proceso()
+        if (Number(data) >= 500) {
+            estado_maquina = true
+        }
+        //al inicio maquina apagada, status off
+        if (estado_maquina && status_proceso === 'off') {
+            await VariablesDelSistema.set_hora_inicio_proceso();
+
+            //se prende la maquina , continua el proceso
+        } else if (estado_maquina && status_proceso === 'pause') {
+            //se reanuda el proces cuando se prende la maquina
+            await VariablesDelSistema.set_hora_reanudar_proceso();
+            //se pausa la maquina
+        } else if (!estado_maquina && status_proceso === 'on') {
+            await VariablesDelSistema.set_hora_pausa_proceso()
+        }
+
+        const new_status_proceso = await VariablesDelSistema.obtener_status_proceso()
+
+        procesoEventEmitter.emit("status_proceso", {
+            status: new_status_proceso
         });
     }
     static async finalizar_informe_proveedor(req, userInfo) {
@@ -1140,6 +1170,7 @@ class ProcesoRepository {
 
 
     }
+
     //? lista de empaque
     static async add_settings_pallet(req, user) {
         const { _id, pallet, settings, action } = req;
