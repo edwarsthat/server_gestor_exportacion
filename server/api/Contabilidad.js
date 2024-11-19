@@ -30,7 +30,8 @@ class ContabilidadRepository {
                 aprobacionComercial: 1,
                 exportacionDetallada: 1,
                 observaciones: 1,
-                flag_is_favorita: 1
+                flag_is_favorita: 1,
+                flag_balin_free: 1
 
             },
             limit: resultsPerPage,
