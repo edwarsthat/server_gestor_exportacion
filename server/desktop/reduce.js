@@ -691,6 +691,11 @@ const apiSocket = {
         await ComercialRepository.lote_caso_favorita(data, user.user)
         return { status: 200, message: 'Ok' }
 
+    },
+    lote_no_pagar_balin: async (req) => {
+        const { data, user } = req
+        await ComercialRepository.lote_no_pagar_balin(data, user.user)
+        return { status: 200, message: 'Ok' }
     }
 }
 

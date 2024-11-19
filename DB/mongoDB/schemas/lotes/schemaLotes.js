@@ -174,6 +174,7 @@ const dataSchema = new Schema({
   fecha_finalizado_proceso: { type: Date },
   frutaNacional: { type: Number, default: 0 },
   flag_is_favorita: { type: Boolean, default: false },
+  flag_balin_free: { type: Boolean, default: false },
   historialDescarte: mongoose.Types.ObjectId,
   informeEnviado: { type: Boolean, default: false },
   infoSalidaDirectoNacional: salidaDirectoNacionalSchema,

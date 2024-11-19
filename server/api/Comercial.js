@@ -95,7 +95,25 @@ class ComercialRepository {
     }
     static async lote_caso_favorita(req, user) {
         try {
-            const { query, _id, action } = req
+            const { _id, query, action } = req
+
+
+            await LotesRepository.modificar_lote_proceso(
+                _id, query, action, user
+            )
+        } catch (err) {
+            throw new Error(`Code ${err.code}: ${err.message}`);
+
+        }
+    }
+    static async lote_no_pagar_balin(req, user) {
+        try {
+            const { _id, action } = req
+
+            const lote = await LotesRepository.getLotes({ ids: [_id] })
+
+            const query = { flag_balin_free: !lote[0].flag_balin_free };
+            console.log(query)
 
             await LotesRepository.modificar_lote_proceso(
                 _id, query, action, user
