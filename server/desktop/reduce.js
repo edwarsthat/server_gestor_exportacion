@@ -10,12 +10,13 @@ const { ViewsRepository } = require("../api/Views");
 const { ModificarRepository } = require("../api/ModificarData");
 const { SistemaRepository } = require("../api/Sistema");
 const { ContabilidadRepository } = require("../api/Contabilidad");
+const { TransporteRepository } = require("../api/Transporte");
 
 const apiSocket = {
     //#region GET
     obtenerEF1: async () => {
         const enf = await ProcesoRepository.get_ef1()
-        return { status: 200, message: 'Ok', response: enf }
+        return { status: 200, message: 'Ok', data: enf }
     },
     get_predio_Proceso_Descarte: async () => {
         const response = await ProcesoRepository.get_predio_Proceso_Descarte()
@@ -204,11 +205,6 @@ const apiSocket = {
         const response = await ProcesoRepository.obtener_contenedores_programacion(data)
         return { status: 200, message: 'Ok', data: response }
     },
-    obtener_contenedores_programacion_mulas: async (req) => {
-        const { data } = req
-        const response = await ProcesoRepository.obtener_contenedores_programacion_mulas(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
     obtener_contenedores_listaDeEmpaque: async () => {
         const contenedores = await ProcesoRepository.obtener_contenedores_listaDeEmpaque()
         return { status: 200, message: 'Ok', data: contenedores }
@@ -240,7 +236,7 @@ const apiSocket = {
         return { status: 200, message: 'Ok', data: insumos }
     },
     obtener_lotes_fotos_calidad: async () => {
-        const lotes = await ProcesoRepository.obtener_lotes_fotos_calidad();
+        const lotes = await CalidadRepository.obtener_lotes_fotos_calidad();
         return { status: 200, message: 'Ok', data: lotes }
     },
     obtener_contenedores_historial_listas_empaque: async (req) => {
@@ -284,8 +280,8 @@ const apiSocket = {
         const data = await CalidadRepository.get_formularios_calidad_creados();
         return { status: 200, message: 'Ok', data: data }
     },
-    get_contenedores_programacion_mula: async () => {
-        const data = await ProcesoRepository.get_contenedores_programacion_mula();
+    get_transporte_formulario_contenedores: async () => {
+        const data = await TransporteRepository.get_transporte_formulario_contenedores();
         return { status: 200, message: 'Ok', data: data }
     },
     get_view_formularios_limpieza_diaria: async (req) => {
@@ -293,32 +289,48 @@ const apiSocket = {
         const formularios = await CalidadRepository.get_view_formularios_limpieza_diaria(data);
         return { status: 200, message: 'Ok', data: formularios }
     },
-    count_documents_formularios_calidad_limpieza_diaria: async () => {
-        const count = await CalidadRepository.count_documents_formularios_calidad_limpieza_diaria();
-        return { status: 200, message: 'Ok', data: count }
-    },
     get_view_formularios_limpieza_mensual: async (req) => {
         const { data } = req
         const formularios = await CalidadRepository.get_view_formularios_limpieza_mensual(data);
         return { status: 200, message: 'Ok', data: formularios }
-    },
-    count_documents_formularios_calidad_limpieza_mensual: async () => {
-        const count = await CalidadRepository.count_documents_formularios_calidad_limpieza_mensual();
-        return { status: 200, message: 'Ok', data: count }
     },
     get_view_formularios_control_plagas: async (req) => {
         const { data } = req
         const formularios = await CalidadRepository.get_view_formularios_control_plagas(data);
         return { status: 200, message: 'Ok', data: formularios }
     },
-    count_documents_formularios_calidad_control_plagas: async () => {
-        const count = await CalidadRepository.count_documents_formularios_calidad_control_plagas();
-        return { status: 200, message: 'Ok', data: count }
-    },
     obtener_lotes_contabilidad_informes_calidad: async (req) => {
         const { data } = req
         const response = await ContabilidadRepository.obtener_lotes_contabilidad_informes_calidad(data);
         return { status: 200, message: 'Ok', data: response }
+    },
+    obtener_predio_procesando: async () => {
+        const data = await ProcesoRepository.obtener_predio_procesando()
+        return { status: 200, message: 'Ok', data: data }
+
+    },
+    get_record_lote_recepcion_pendiente: async (req) => {
+        const { data } = req;
+        const response = await ProcesoRepository.get_record_lote_recepcion_pendiente(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
+    get_record_lote_ingreso_inventario: async (req) => {
+        const { data } = req;
+        const response = await ProcesoRepository.get_record_lote_ingreso_inventario(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
+    //! obtener numero de datos para paginar las tablas
+    count_documents_formularios_calidad_control_plagas: async () => {
+        const count = await CalidadRepository.count_documents_formularios_calidad_control_plagas();
+        return { status: 200, message: 'Ok', data: count }
+    },
+    count_documents_formularios_calidad_limpieza_mensual: async () => {
+        const count = await CalidadRepository.count_documents_formularios_calidad_limpieza_mensual();
+        return { status: 200, message: 'Ok', data: count }
+    },
+    count_documents_formularios_calidad_limpieza_diaria: async () => {
+        const count = await CalidadRepository.count_documents_formularios_calidad_limpieza_diaria();
+        return { status: 200, message: 'Ok', data: count }
     },
     obtener_cantidad_usuarios: async () => {
         const response = await SistemaRepository.obtener_cantidad_usuarios()
@@ -328,14 +340,76 @@ const apiSocket = {
         const response = await ProcesoRepository.obtener_cantidad_contenedores()
         return { status: 200, message: 'Ok', data: response }
     },
-    obtener_predio_procesando: async () => {
-        const data = await ProcesoRepository.obtener_predio_procesando()
-        return { status: 200, message: 'Ok', data: data }
-
+    obtener_cantidad_historial_espera_descargue: async () => {
+        const response = await ProcesoRepository.obtener_cantidad_historial_espera_descargue()
+        return { status: 200, message: 'Ok', data: response }
     },
+    obtener_cantidad_historial_ingreso_inventario: async () => {
+        const response = await ProcesoRepository.obtener_cantidad_historial_ingreso_inventario()
+        return { status: 200, message: 'Ok', data: response }
+    },
+    get_transporte_registros_exportacion_numeroElementos: async () => {
+        const data = await TransporteRepository.get_transporte_registros_exportacion_numeroElementos()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_transporte_registros_programacion_mula_numeroElementos: async () => {
+        const data = await TransporteRepository.get_transporte_registros_programacion_mula_numeroElementos()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_transporte_registros_inspeccionMula_numeroElementos: async () => {
+        const data = await TransporteRepository.get_transporte_registros_inspeccionMula_numeroElementos()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_transporte_documentos_programacionMulas_numeroElementos: async () => {
+        const data = await TransporteRepository.get_transporte_documentos_programacionMulas_numeroElementos()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    //!constantes del sistema, formularios y otras cosas
+    get_info_formulario_inspeccion_fruta: async () => {
+        const formulario = await CalidadRepository.get_info_formulario_inspeccion_fruta()
+        return { status: 200, message: 'Ok', data: formulario }
+    },
+
+    //! transporte
+    get_transporte_exportacion_contenedores: async () => {
+        const data = await TransporteRepository.get_transporte_exportacion_contenedores()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_transporte_registro_exportacion: async () => {
+        const data = await TransporteRepository.get_transporte_registro_exportacion()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_transporte_mula_contenedores: async () => {
+        const data = await TransporteRepository.get_transporte_mula_contenedores()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_transporte_registro_programacion_mula: async () => {
+        const data = await TransporteRepository.get_transporte_registro_programacion_mula()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_transporte_registro_formularios_inspeccion: async () => {
+        const data = await TransporteRepository.get_transporte_registro_formularios_inspeccion()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_transporte_documentos_programacionMula_contenedores: async () => {
+        const data = await TransporteRepository.get_transporte_documentos_programacionMula_contenedores()
+        return { status: 200, message: 'Ok', data: data }
+    },
+
     //#region POST
     guardarLote: async (data) => {
         await ProcesoRepository.addLote(data)
+        return { status: 200, message: 'Ok' }
+    },
+    lote_recepcion_pendiente: async (req) => {
+        const { user, data } = req
+        await ProcesoRepository.lote_recepcion_pendiente(data, user.user)
+        return { status: 200, message: 'Ok' }
+    },
+    send_lote_to_inventario: async (req) => {
+        const { user, data } = req
+
+        await ProcesoRepository.send_lote_to_inventario(data, user.user)
         return { status: 200, message: 'Ok' }
     },
     guardarDescarteHistorial: async (data) => {
@@ -391,6 +465,32 @@ const apiSocket = {
     crear_formulario_calidad: async (req) => {
         const { data, user } = req
         await CalidadRepository.crear_formulario_calidad(data, user._id)
+        return { status: 200, message: 'Ok' }
+    },
+    //! transporte
+    post_transporte_programacion_exportacion: async (req) => {
+        const { data, user } = req
+        await TransporteRepository.post_transporte_programacion_exportacion(data, user.user)
+        return { status: 200, message: 'Ok' }
+    },
+    post_transporte_programacion_exportacion_modificar: async (req) => {
+        const { data, user } = req
+        await TransporteRepository.post_transporte_programacion_exportacion_modificar(data, user.user)
+        return { status: 200, message: 'Ok' }
+    },
+    post_transporte_programacion_mula: async (req) => {
+        const { data, user } = req
+        await TransporteRepository.post_transporte_programacion_mula(data, user.user)
+        return { status: 200, message: 'Ok' }
+    },
+    post_transporte_programacion_mula_modificar: async (req) => {
+        const { data, user } = req
+        await TransporteRepository.post_transporte_programacion_mula_modificar(data, user.user)
+        return { status: 200, message: 'Ok' }
+    },
+    post_transporte_registros_inspeccionMula_modificar: async (req) => {
+        const { data, user } = req
+        await TransporteRepository.post_transporte_registros_inspeccionMula_modificar(data, user.user)
         return { status: 200, message: 'Ok' }
     },
     //#region PUT
@@ -600,11 +700,6 @@ const apiSocket = {
         await ComercialRepository.modificar_info_cliente(data, user.user)
         return { status: 200, message: 'Ok' }
     },
-    add_formulario_programacion_mula: async (req) => {
-        const user = req.user.user;
-        await ProcesoRepository.add_formulario_programacion_mula(req.data, user)
-        return { status: 200, message: 'Ok' }
-    },
     add_settings_pallet: async (req) => {
         const { data, user } = req;
         const contenedores = await ProcesoRepository.add_settings_pallet(data, user.user);
@@ -676,9 +771,9 @@ const apiSocket = {
         await CalidadRepository.add_item_formulario_calidad(data, user._id);
         return { status: 200, message: 'Ok' }
     },
-    add_inspeccion_mula_contenedor: async (req) => {
+    post_transporte_formulario_inspeccion_mula: async (req) => {
         const { data, user } = req
-        await ProcesoRepository.add_inspeccion_mula_contenedor(data, user.user)
+        await TransporteRepository.post_transporte_formulario_inspeccion_mula(data, user)
         return { status: 200, message: 'Ok' }
     },
     finalizar_informe_proveedor: async (req) => {
@@ -695,6 +790,26 @@ const apiSocket = {
     lote_no_pagar_balin: async (req) => {
         const { data, user } = req
         await ComercialRepository.lote_no_pagar_balin(data, user.user)
+        return { status: 200, message: 'Ok' }
+    },
+    modificar_historial_fechas_en_patio: async (req) => {
+        const { data, user } = req
+        await ProcesoRepository.modificar_historial_fechas_en_patio(data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    modificar_historial_lote_ingreso_inventario: async (req) => {
+        const { data, user } = req
+        await ProcesoRepository.modificar_historial_lote_ingreso_inventario(data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    lotes_derogar_lote: async (req) => {
+        const { data, user } = req
+        await CalidadRepository.lotes_derogar_lote(data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    lotes_devolver_lote: async (req) => {
+        const { data, user } = req
+        await CalidadRepository.lotes_devolver_lote(data, user)
         return { status: 200, message: 'Ok' }
     }
 }

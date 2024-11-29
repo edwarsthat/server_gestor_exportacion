@@ -92,11 +92,20 @@ class RecordLotesRepository {
     static async modificarRecord(id, query, __v = 0) {
         this.validateBussyIds(id)
         try {
-            await recordLotes.findOneAndUpdate({ _id: id, __v: __v }, query, { new: true });
+            const record = await recordLotes.findOneAndUpdate({ _id: id, __v: __v }, query, { new: true });
+            return record
         } catch (err) {
             throw new PutError(414, `Error al modificar el registro  ${err.essage}`);
         } finally {
             bussyIds.delete(id);
+        }
+    }
+    static async obtener_cantidad_recordLote(filtro = {}) {
+        try {
+            const count = await recordLotes.countDocuments(filtro);
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(408, `Error obteniendo cantidad contenedores ${err.message}`);
         }
     }
     static validateBussyIds(id) {

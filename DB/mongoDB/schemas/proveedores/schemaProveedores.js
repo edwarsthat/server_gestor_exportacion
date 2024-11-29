@@ -6,11 +6,12 @@ const conn = mongoose.createConnection(process.env.MONGODB_PROCESO);
 
 
 const LimonPrecioSchema = new Schema({
-  1: Number,
-  15: Number,
-  2: Number,
-  descarte: Number,
-  combinado: Number,
+  "1": { type: Number, default: 0 },
+  "15": { type: Number, default: 0 },
+  "2": { type: Number, default: 0 },
+  frutaNacional: { type: Number, default: 0 },
+  descarte: { type: Number, default: 0 },
+  combinado: { type: Number, default: 0 },
 })
 
 const NaranjaPrecioSchema = new Schema({

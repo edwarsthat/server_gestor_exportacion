@@ -27,7 +27,7 @@ routerComercial.put("/ingresar_precio_fruta", async (req, res) => {
         const token = req.headers['authorization'];
 
         const { user, cargo } = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisos(cargo, 'ingresar_precio_fruta')
+        await UserRepository.autentificacionPermisosHttps(cargo, 'ingresar_precio_fruta')
 
         await ComercialRepository.ingresar_precio_fruta(req.body, user)
 

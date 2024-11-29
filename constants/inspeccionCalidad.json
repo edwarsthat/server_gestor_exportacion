@@ -1,0 +1,14 @@
+{
+    "maduro": {"name":"Maduración", "porcentage": 0.15},
+    "verde_manzana": {"name":"Verde manzana", "porcentage":0.15},
+    "defecto": {"name":"Defecto", "porcentage":0.25},
+    "deshidratacion": {"name":"Deshidratación", "porcentage":0.05},
+    "oleocelosis": {"name":"Oleocelosis y daño mecanico", "porcentage":0.2},
+    "acaro": {"name":"Acaro", "porcentage":0.2},
+    "diametro_inferior": {"name":"Diametro inferior al requerido", "porcentage":0.2},
+    "sobre_maduro": {"name":"Sobre maduración", "porcentage":0.1},
+    "diametro": {"name":"Diametro", "porcentage":0.2},
+    "exportacion1": {"name":"Exportación 1", "porcentage":0},
+    "exportacion15": {"name":"Exportación 1.5", "porcentage":0},
+    "exportacion2": {"name":"Exportación 2", "porcentage":0}
+}

@@ -55,20 +55,13 @@ const fotosCalidadSchema = new Schema({
 }, { _id: false, strict: false });
 
 const inspeccionIngresoSchema = new Schema({
-  maduro: Number,
-  deshidratacion: Number,
-  mancha: Number,
-  defecto: Number,
-  oleocelosis: Number,
-  dañoMecanico: Number,
-  verdeManzana: Number,
-  parejo: Number,
-  exportacion1: Number,
-  exportacion15: Number,
-  exportacion2: Number,
+  any: {
+    type: Map,
+    of: String
+  },
   fecha: { type: Date, default: Date.now }
 
-}, { _id: false });
+}, { _id: false, strict: false });
 
 
 const calidadSchema = new Schema({
@@ -160,6 +153,7 @@ const dataSchema = new Schema({
   calidad15: { type: Number, default: 0 },
   calidad2: { type: Number, default: 0 },
   canastillas: String,
+  canastillas_estimadas: Number,
   clasificacionCalidad: { type: String, default: "N/A" },
   contenedores: [String],
   descarteEncerado: descarteEnceradoSchema,
@@ -167,9 +161,14 @@ const dataSchema = new Schema({
   deshidratacion: { type: Number, default: 100 },
   desverdizado: desverdizadoSchema,
   directoNacional: { type: Number, default: 0 },
-  enf: { type: String, require: true },
+  enf: { type: String },
   exportacionDetallada: exportacionDetalladaSchema,
-  fechaIngreso: { type: Date, default: () => new Date() },
+  fecha_creacion: { type: Date, default: () => new Date() },
+  fecha_estimada_llegada: { type: Date },
+  fechaIngreso: { type: Date },
+  fecha_ingreso_patio: { type: Date },
+  fecha_salida_patio: { type: Date },
+  fecha_ingreso_inventario: { type: Date },
   fechaProceso: { type: Date },
   fecha_finalizado_proceso: { type: Date },
   frutaNacional: { type: Number, default: 0 },
@@ -178,12 +177,14 @@ const dataSchema = new Schema({
   historialDescarte: mongoose.Types.ObjectId,
   informeEnviado: { type: Boolean, default: false },
   infoSalidaDirectoNacional: salidaDirectoNacionalSchema,
+  kilos_estimados: Number,
   kilos: Number,
   kilosReprocesados: { type: Number, default: 0 },
   kilosVaciados: { type: Number, default: 0 },
   kilosGGN: { type: Number, default: 0 },
   numeroPrecintos: Number,
   numeroRemision: String,
+  not_pass: Boolean,
   observaciones: String,
   placa: String,
   precio: precioLoteSchema,

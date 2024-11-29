@@ -9,7 +9,7 @@ const fs = require('fs')
 let bussyIds = new Set();
 
 class LotesRepository {
-    static async addLote(data, enf) {
+    static async addLote(data, user) {
         /**
          * Funcion que agrega un lote a la base de datos lote de mongoDB
          * 
@@ -17,11 +17,11 @@ class LotesRepository {
          *                        ademas del tipo de accion, y tipo de accion que se esta haciendo, el usuario y el cargo
          */
 
-        data.data.data.enf = enf;
+
         try {
-            const lote = new Lotes(data.data.data);
+            const lote = new Lotes(data);
             const saveLote = await lote.save();
-            let record = new recordLotes({ operacionRealizada: 'crearLote', user: data.user.user, documento: saveLote })
+            let record = new recordLotes({ operacionRealizada: 'crearLote', user: user, documento: saveLote })
             await record.save();
             return saveLote
         } catch (err) {
@@ -68,7 +68,7 @@ class LotesRepository {
             ids = [],
             query = {},
             select = {},
-            sort = { fechaIngreso: -1 },
+            sort = { fecha_creacion: -1, },
             limit = 50,
             skip = 0,
             populate = { path: 'predio', select: 'PREDIO ICA GGN' }

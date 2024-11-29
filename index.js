@@ -170,6 +170,14 @@ procesoEventEmitter.on('status_proceso', (data) => {
         console.error('Error en status_proceso:', error);
     }
 })
+procesoEventEmitter.on('inventario_fruta_sin_procesar', (data) => {
+    try {
+        console.log("desde el emit a el cliente")
+        io.emit("inventario_fruta_sin_procesar", data);
+    } catch (error) {
+        console.error('Error en inventario_fruta_sin_procesar:', error);
+    }
+});
 procesoEventEmitter.on('proceso_event', (data) => {
     try {
         io.emit("proceso_event", data);

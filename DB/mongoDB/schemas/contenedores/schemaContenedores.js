@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { Clientes } = require("../clientes/schemaClientes");
 const { Lotes } = require("../lotes/schemaLotes");
+const { Usuarios } = require("../usuarios/schemaUsuarios");
 
 const { Schema } = mongoose;
 
@@ -97,32 +98,41 @@ const inspeccionMulasSchema = new Schema({
   plagas: criteriosSchema,
   olores: criteriosSchema,
   insumos: criteriosSchema,
-  medidas: criteriosSchema
-});
+  medidas: criteriosSchema,
+  fecha: { type: Date, default: () => new Date() },
+  usuario: { type: Schema.Types.ObjectId, ref: Usuarios },
+}, { _id: false });
 
 const schemaInfoMula = new Schema({
-  numeroPrecinto: String,
-  empresaTransportadora: String,
+  transportadora: String,
   placa: String,
   trailer: String,
-  nombreSia: String,
-  temperatura: String,
-  naviera: String,
-  puerto: String,
   conductor: String,
   cedula: String,
-  telefono: String,
-  modelo: String,
+  celular: String,
+  temperatura: String,
+  precinto: String,
+  datalogger_id: String,
   marca: String,
-  criterios: inspeccionMulasSchema,
-});
+  fecha: { type: Date, default: () => new Date() },
+}, { _id: false });
+
+const schemaInfoExportacion = new Schema({
+  puerto: String,
+  naviera: String,
+  agencia: String,
+  expt: String,
+  fecha: { type: Date, default: () => new Date() },
+}, { _id: false })
 
 const listaEmpaqueSchema = new Schema({
   numeroContenedor: Number,
   pallets: [{ type: Map, of: subSchema }],
   infoContenedor: infoContenedorSchema,
   infoTractoMula: schemaInfoMula,
-  insumosData: insumosSchema
+  infoExportacion: schemaInfoExportacion,
+  insumosData: insumosSchema,
+  inspeccion_mula: inspeccionMulasSchema
 });
 
 // Middleware to update `ultimaModificacion` field

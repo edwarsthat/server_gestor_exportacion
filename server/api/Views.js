@@ -3,6 +3,7 @@ const { LotesRepository } = require("../Class/Lotes")
 
 class ViewsRepository {
     static async view_lotes(req) {
+        console.log(req)
         const {
             tipoFruta,
             predio,
@@ -16,31 +17,37 @@ class ViewsRepository {
             busqueda,
             umbralMin,
             umbralMax,
-            criterio
+            criterio,
+            ordenarPor
         } = req;
         const query = {}
+        let sort
+        if (ordenarPor === 'fecha_creacion') {
+            sort = { [`${ordenarPor}`]: -1, fechaIngreso: -1 };
+        } else {
+            sort = { [`${ordenarPor}`]: -1 };
+        }
 
-        let sort = { fechaIngreso: -1 };
         if (tipoFruta) query.tipoFruta = tipoFruta;
         if (predio) query.predio = predio;
         if (enf) query.enf = enf;
 
         if (fechaInicio || fechaFin) {
-            query.fechaIngreso = {}
+            query[`${ordenarPor}`] = {}
             if (fechaInicio) {
                 const fechaInicioUTC = new Date(fechaInicio);
                 fechaInicioUTC.setHours(fechaInicioUTC.getHours() + 5);
-                query.fechaIngreso.$gte = fechaInicioUTC;
+                query[ordenarPor].$gte = fechaInicioUTC;
             } else {
-                query.fechaIngreso.$gte = new Date(0);
+                query[ordenarPor].$gte = new Date(0);
             }
             if (fechaFin) {
                 const fechaFinUTC = new Date(fechaFin)
                 fechaFinUTC.setDate(fechaFinUTC.getDate() + 1);
                 fechaFinUTC.setHours(fechaFinUTC.getHours() + 5);
-                query.fechaIngreso.$lt = fechaFinUTC;
+                query[ordenarPor].$lt = fechaFinUTC;
             } else {
-                query.fechaIngreso.$lt = new Date();
+                query[ordenarPor].$lt = new Date();
             }
         }
         if (rendimientoMin || rendimientoMax) {
@@ -77,6 +84,7 @@ class ViewsRepository {
                 query[`calidad.calidadInterna.${criterio}`].$lt = 999999999
             }
         }
+
         const lotes = await LotesRepository.getLotes({
             query: query,
             limit: todosLosDatos ? 99999999999 : cantidad,
@@ -92,7 +100,7 @@ class ViewsRepository {
             const contenedoresSet = new Set(contenedoresArr)
             const cont = [...contenedoresSet]
 
-            const contenedores = await ContenedoresRepository.getContenedores({
+            const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 ids: cont,
                 select: { numeroContenedor: 1 }
             });

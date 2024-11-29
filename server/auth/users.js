@@ -9,7 +9,14 @@ const permisos_generales = [
     "count_documents_formularios_calidad_limpieza_mensual",
     "count_documents_formularios_calidad_control_plagas",
     "obtener_cantidad_usuarios",
-    "obtener_cantidad_contenedores"
+    "obtener_cantidad_contenedores",
+    "obtener_cantidad_historial_espera_descargue",
+    "obtener_cantidad_historial_ingreso_inventario",
+    "get_info_formulario_inspeccion_fruta",
+    "get_transporte_registros_programacion_mula_numeroElementos",
+    "get_transporte_registros_exportacion_numeroElementos",
+    "get_transporte_registros_inspeccionMula_numeroElementos",
+    "get_transporte_documentos_programacionMulas_numeroElementos"
 ]
 
 class UserRepository {

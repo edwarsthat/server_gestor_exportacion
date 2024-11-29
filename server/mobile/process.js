@@ -3,6 +3,7 @@ const { UserRepository } = require("../auth/users");
 const { ProcesoRepository } = require("../api/Proceso");
 const { VariablesDelSistema } = require('../Class/VariablesDelSistema');
 const { AccessError } = require('../../Error/ValidationErrors');
+const { CalidadRepository } = require('../api/Calidad');
 const routerProceso = express.Router();
 
 
@@ -104,7 +105,7 @@ routerProceso.get("/data_historial_descarte_encerado_proceso", async (req, res) 
 
 routerProceso.get("/lotes-fotos-calidad", async (req, res) => {
     try {
-        const response = await ProcesoRepository.obtener_lotes_fotos_calidad();
+        const response = await CalidadRepository.obtener_lotes_fotos_calidad();
         res.json({ data: response, status: 200, message: 'Ok' })
     } catch (err) {
         console.log(`Code ${err.status}: ${err.message}`)

@@ -89,7 +89,7 @@ class ContenedoresRepository {
             return contenedores
 
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo contenedores ${err.message}`);
+            throw new ConnectionDBError(520, `Error obteniendo contenedores ${options} --- ${err.message}`);
         }
     }
     static async getContenedores(options = {}) {
@@ -776,17 +776,18 @@ class ContenedoresRepository {
             }
             return contenedor_obj;
         } catch (err) {
-            throw new PutError(414, `Error al modificar el dato ${id} => ${err.name} `);
+            console.error(err)
+            throw new PutError(524, `Error al modificar el contenedor ${id} -- query ${query} `);
         } finally {
             this.unlockItem(id, "Contenedor", "general")
         }
     }
-    static async obtener_cantidad_contenedores() {
+    static async obtener_cantidad_contenedores(filtro = {}) {
         try {
-            const count = await Contenedores.countDocuments();
+            const count = await Contenedores.countDocuments(filtro);
             return count;
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo cantidad contenedores ${err.message}`);
+            throw new ConnectionDBError(520, `Error obteniendo cantidad contenedores ${filtro} --- ${err.message}`);
         }
     }
     static validateBussyIds(id) {

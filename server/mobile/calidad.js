@@ -9,12 +9,11 @@ routerCalidad.get("/", (req, res) => {
     console.log(req)
     res.send("Calidad")
 });
-
 routerCalidad.get("/get_lotes_clasificacion_descarte", async (req, res) => {
     try {
         const token = req.headers['authorization'];
         const { cargo, user } = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisos(cargo, 'get_lotes_clasificacion_descarte', user)
+        await UserRepository.autentificacionPermisosHttps(cargo, 'get_lotes_clasificacion_descarte', user)
 
         const data = await CalidadRepository.get_lotes_clasificacion_descarte();
         res.json({ status: 200, message: 'Ok', data: data });
@@ -24,7 +23,6 @@ routerCalidad.get("/get_lotes_clasificacion_descarte", async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 });
-
 routerCalidad.get("/get_formularios_calidad_creados", async (req, res) => {
     try {
         const token = req.headers['authorization'];
@@ -48,7 +46,7 @@ routerCalidad.put("/put_lotes_clasificacion_descarte", async (req, res) => {
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
 
-        await UserRepository.autentificacionPermisos(user.cargo, req.body.action, user.user)
+        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action, user.user)
 
         await CalidadRepository.put_lotes_clasificacion_descarte(req.body, user.user)
 
@@ -63,7 +61,7 @@ routerCalidad.put("/add_item_formulario_calidad", async (req, res) => {
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
 
-        await UserRepository.autentificacionPermisos(user.cargo, req.body.action, user.user)
+        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action, user.user)
         await CalidadRepository.add_item_formulario_calidad(req.body, user._id)
 
         res.send({ status: 200, message: 'Ok' })
