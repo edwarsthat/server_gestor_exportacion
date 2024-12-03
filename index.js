@@ -27,11 +27,11 @@ const { HandleErrors } = require('./Error/recordErrors');
 const { VariablesDelSistema } = require('./server/Class/VariablesDelSistema');
 const { FormulariosCalidadRepository } = require('./server/Class/FormulariosCalidad');
 const { sp32 } = require('./server/mobile/sp32');
-// const { initRustProceso } = require('./DB/controllers/proceso');
+const { initRustProceso } = require('./DB/controllers/proceso');
 
 
 initMongoDB()
-// initRustProceso()
+initRustProceso()
 //#region HTTP
 // Middleware para configurar CORS
 app.use((req, res, next) => {
@@ -185,6 +185,13 @@ procesoEventEmitter.on('proceso_event', (data) => {
         console.error('Error en proceso_event:', error);
     }
 });
+procesoEventEmitter.on('server_event', (data) => {
+    try {
+        io.emit("server_event", data);
+    } catch (error) {
+        console.error('Error en nuevo_predio:', error);
+    }
+})
 procesoEventEmitter.on('nuevo_predio', (data) => {
     try {
         io.emit("nuevo_predio", data);

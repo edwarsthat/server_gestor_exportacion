@@ -21,7 +21,10 @@ class CalidadRepository {
         const query = {
             'calidad.clasificacionCalidad': { $exists: false },
             enf: { $regex: '^E', $options: 'i' },
-            fecha_ingreso_inventario: { $gte: new Date(haceUnMes) },
+            $or: [
+                { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
+                { fechaIngreso: { $gte: new Date(haceUnMes) } }
+            ]
 
         }
         const select = { enf: 1, calidad: 1, tipoFruta: 1, __v: 1 }
@@ -34,7 +37,10 @@ class CalidadRepository {
         const query = {
             'calidad.calidadInterna': { $exists: false },
             enf: { $regex: '^E', $options: 'i' },
-            fecha_ingreso_inventario: { $gte: new Date(haceUnMes) },
+            $or: [
+                { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
+                { fechaIngreso: { $gte: new Date(haceUnMes) } }
+            ]
         }
         const select = { enf: 1, calidad: 1, tipoFruta: 1, __v: 1 }
         const lotes = await LotesRepository.getLotes({ query: query, select: select })
@@ -46,7 +52,10 @@ class CalidadRepository {
         const query = {
             'calidad.inspeccionIngreso': { $exists: false },
             enf: { $regex: '^E', $options: 'i' },
-            fecha_ingreso_inventario: { $gte: new Date(haceUnMes) },
+            $or: [
+                { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
+                { fechaIngreso: { $gte: new Date(haceUnMes) } }
+            ]
         }
         const select = { enf: 1, calidad: 1, tipoFruta: 1, __v: 1 }
         const lotes = await LotesRepository.getLotes({ query: query, select: select })
@@ -68,8 +77,11 @@ class CalidadRepository {
                         ]
                     },
                     { enf: { $regex: '^E', $options: 'i' } },
-                    { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
                 ],
+                $or: [
+                    { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
+                    { fechaIngreso: { $gte: new Date(haceUnMes) } }
+                ]
             },
             select: { enf: 1 }
         });

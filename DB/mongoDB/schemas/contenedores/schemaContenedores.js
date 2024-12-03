@@ -105,6 +105,7 @@ const inspeccionMulasSchema = new Schema({
 
 const schemaInfoMula = new Schema({
   transportadora: String,
+  nit: String,
   placa: String,
   trailer: String,
   conductor: String,

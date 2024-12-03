@@ -259,6 +259,10 @@ class TransporteRepository {
                     infoExportacion: 1,
                     pallets: 1
                 },
+                populate: {
+                    path: 'infoContenedor.clienteInfo',
+                    select: 'CLIENTE DIRECCIÓN',
+                },
                 sort: { 'infoContenedor.fechaCreacion': -1 },
             });
 

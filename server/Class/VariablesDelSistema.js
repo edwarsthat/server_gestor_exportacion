@@ -341,33 +341,6 @@ class VariablesDelSistema {
       inventarioFleg = false
     }
   }
-  static async ingresarInventarioDesverdizado(_id, canastillas) {
-    /**
-     * Funcion que guarda el numero de canastillas que van a ingresar al inventario desverdizado
-     * el inventario esta en un documento json en inventory
-     * 
-     * @param {string} _id - Es el id correspondiente al lote
-     * @param {number} canastillas - Es el numero de canastillas que se le va a asignar al id
-     * @throws debe devolver un error si hay algun problema abriendo y escribiendo el archivo de inventario
-     * @return {void} 
-     */
-    try {
-      if (inventarioDesFleg) throw new ProcessError(413, "Error el archivo se esta escribiendo")
-
-      inventarioDesFleg = true
-      const inventarioJSON = fs.readFileSync(inventarioDesverdizadoPath);
-      const inventario = JSON.parse(inventarioJSON);
-
-      inventario[_id] = canastillas;
-
-      const newInventarioJSON = JSON.stringify(inventario);
-      fs.writeFileSync(inventarioDesverdizadoPath, newInventarioJSON);
-    } catch (err) {
-      throw new ProcessError(410, `Error Guardando datos en el inventario desverdizado ${err.essage}`)
-    } finally {
-      inventarioDesFleg = false
-    }
-  }
   static async getInventario() {
     /**
      * Funcion que envia el inventario que esta en el archivo inventario.json
@@ -420,30 +393,6 @@ class VariablesDelSistema {
       inventarioFleg = false
     }
   }
-  static async getInventarioDesverdizado() {
-    /**
-     * Funcion que envia el inventario desverdizado que esta en el archivo inventarioDesverdizado.json
-     * 
-     * @throws envia error 413 si el archivo se esta escribiendo en esos momentos
-     * @throws - envia error 410 si hay algun error abriendo el archivo
-     * 
-     * @return {object} - Envia un objeto donde las keys son el _id del lote y el valor es la cantidad
-     *                    de canastillas en el inventario
-     */
-    try {
-      if (inventarioDesFleg) throw new ProcessError(413, "Error el archivo se esta escribiendo")
-
-      const inventarioJSON = fs.readFileSync(inventarioDesverdizadoPath);
-      const inventario = JSON.parse(inventarioJSON);
-
-      return inventario;
-
-    } catch (err) {
-      throw new ProcessError(410, `Error Obteniendo datos del inventario desverdizado ${err.name}`)
-    } finally {
-      inventarioDesFleg = false
-    }
-  }
   static async modificarInventario(_id, canastillas) {
     /**
      * 
@@ -479,6 +428,58 @@ class VariablesDelSistema {
       throw new ProcessError(418, `Error modificando datos del inventario json ${err.name}`)
     } finally {
       inventarioFleg = false
+    }
+  }
+
+  static async ingresarInventarioDesverdizado(_id, canastillas) {
+    /**
+     * Funcion que guarda el numero de canastillas que van a ingresar al inventario desverdizado
+     * el inventario esta en un documento json en inventory
+     * 
+     * @param {string} _id - Es el id correspondiente al lote
+     * @param {number} canastillas - Es el numero de canastillas que se le va a asignar al id
+     * @throws debe devolver un error si hay algun problema abriendo y escribiendo el archivo de inventario
+     * @return {void} 
+     */
+    try {
+      if (inventarioDesFleg) throw new ProcessError(413, "Error el archivo se esta escribiendo")
+
+      inventarioDesFleg = true
+      const inventarioJSON = fs.readFileSync(inventarioDesverdizadoPath);
+      const inventario = JSON.parse(inventarioJSON);
+
+      inventario[_id] = canastillas;
+
+      const newInventarioJSON = JSON.stringify(inventario);
+      fs.writeFileSync(inventarioDesverdizadoPath, newInventarioJSON);
+    } catch (err) {
+      throw new ProcessError(410, `Error Guardando datos en el inventario desverdizado ${err.essage}`)
+    } finally {
+      inventarioDesFleg = false
+    }
+  }
+  static async getInventarioDesverdizado() {
+    /**
+     * Funcion que envia el inventario desverdizado que esta en el archivo inventarioDesverdizado.json
+     * 
+     * @throws envia error 413 si el archivo se esta escribiendo en esos momentos
+     * @throws - envia error 410 si hay algun error abriendo el archivo
+     * 
+     * @return {object} - Envia un objeto donde las keys son el _id del lote y el valor es la cantidad
+     *                    de canastillas en el inventario
+     */
+    try {
+      if (inventarioDesFleg) throw new ProcessError(413, "Error el archivo se esta escribiendo")
+
+      const inventarioJSON = fs.readFileSync(inventarioDesverdizadoPath);
+      const inventario = JSON.parse(inventarioJSON);
+
+      return inventario;
+
+    } catch (err) {
+      throw new ProcessError(410, `Error Obteniendo datos del inventario desverdizado ${err.name}`)
+    } finally {
+      inventarioDesFleg = false
     }
   }
   static async modificarInventario_desverdizado(_id, canastillas) {

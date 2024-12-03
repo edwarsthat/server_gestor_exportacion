@@ -192,8 +192,6 @@ const dataSchema = new Schema({
   promedio: Number,
   rendimiento: { type: Number, default: 0 },
   tipoFruta: String,
-  urlBascula: String,
-  urlInformeCalidad: String
 
 }, { versionKey: '__v' });
 
