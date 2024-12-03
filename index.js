@@ -27,11 +27,11 @@ const { HandleErrors } = require('./Error/recordErrors');
 const { VariablesDelSistema } = require('./server/Class/VariablesDelSistema');
 const { FormulariosCalidadRepository } = require('./server/Class/FormulariosCalidad');
 const { sp32 } = require('./server/mobile/sp32');
-const { initRustProceso } = require('./DB/controllers/proceso');
+// const { initRustProceso } = require('./DB/controllers/proceso');
 
 
 initMongoDB()
-initRustProceso()
+// initRustProceso()
 //#region HTTP
 // Middleware para configurar CORS
 app.use((req, res, next) => {

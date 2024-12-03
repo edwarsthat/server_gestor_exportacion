@@ -16,7 +16,7 @@ const path = require('path');
 const fs = require("fs");
 
 const { have_lote_GGN_export, is_finish_lote } = require("../controllers/validations");
-const { getRustConnectionProceso } = require("../../DB/controllers/proceso");
+// const { getRustConnectionProceso } = require("../../DB/controllers/proceso");
 
 
 class ProcesoRepository {
@@ -130,90 +130,21 @@ class ProcesoRepository {
 
         //Rust
 
-        console.time("Duración de miFuncion getInventario");
+        // console.time("Duración de miFuncion getInventario");
 
-        const rustConnectionProceso = getRustConnectionProceso()
+        // const rustConnectionProceso = getRustConnectionProceso()
 
-        const inventoryRequest = {
-            action: "get_inventario",
-            collection: "variables_del_sistema",
-            data: {}
-        }
-        const inventarioJSON = await rustConnectionProceso.sendMessage(inventoryRequest)
-
-
-        const inventario = JSON.parse(inventarioJSON)
-        console.log(inventario)
-        const inventarioKeys = Object.keys(inventario.VariablesDelSistema)
+        // const inventoryRequest = {
+        //     action: "get_inventario",
+        //     collection: "variables_del_sistema",
+        //     data: {}
+        // }
+        // const inventarioJSON = await rustConnectionProceso.sendMessage(inventoryRequest)
 
 
-        const lotes = await LotesRepository.getLotes({
-            ids: inventarioKeys,
-            select: {
-                __v: 1,
-                clasificacionCalidad: 1,
-                nombrePredio: 1,
-                fecha_ingreso_patio: 1,
-                fecha_salida_patio: 1,
-                fecha_ingreso_inventario: 1,
-                fecha_creacion: 1,
-                fecha_estimada_llegada: 1,
-                observaciones: 1,
-                tipoFruta: 1,
-                promedio: 1,
-                enf: 1,
-                kilosVaciados: 1,
-                not_pass: 1
-            }
-        });
-
-        // se agrega las canastillas en inventario
-        const resultado = inventarioKeys.map(id => {
-            const lote = lotes.find(lote => lote._id.toString() === id.toString());
-
-            if (lote) {
-                return {
-                    ...lote.toObject(),
-                    inventario: inventario.VariablesDelSistema[id]
-                }
-            }
-            return null
-        }).filter(item => item !== null);
-
-        const query_lotes_camino = {
-            fecha_ingreso_inventario: { $exists: false },
-            fechaIngreso: { $exists: false },
-        }
-
-        const lotes_camino = await LotesRepository.getLotes({
-            query: query_lotes_camino,
-            select: {
-                fecha_ingreso_patio: 1,
-                fecha_salida_patio: 1,
-                fecha_ingreso_inventario: 1,
-                fecha_creacion: 1,
-                fecha_estimada_llegada: 1,
-                __v: 1,
-                clasificacionCalidad: 1,
-                nombrePredio: 1,
-                observaciones: 1,
-                tipoFruta: 1,
-                kilosVaciados: 1,
-                kilos_estimados: 1,
-                canastillas_estimadas: 1
-            }
-        })
-
-        console.timeEnd("Duración de miFuncion getInventario");
-
-
-        return [...resultado, ...lotes_camino]
-
-
-        //JS SERVER
-
-        // const inventario = await VariablesDelSistema.getInventario();
-        // const inventarioKeys = Object.keys(inventario)
+        // const inventario = JSON.parse(inventarioJSON)
+        // console.log(inventario)
+        // const inventarioKeys = Object.keys(inventario.VariablesDelSistema)
 
 
         // const lotes = await LotesRepository.getLotes({
@@ -243,7 +174,7 @@ class ProcesoRepository {
         //     if (lote) {
         //         return {
         //             ...lote.toObject(),
-        //             inventario: inventario[id]
+        //             inventario: inventario.VariablesDelSistema[id]
         //         }
         //     }
         //     return null
@@ -273,80 +204,82 @@ class ProcesoRepository {
         //     }
         // })
 
+        // console.timeEnd("Duración de miFuncion getInventario");
+
+
         // return [...resultado, ...lotes_camino]
+
+
+        //JS SERVER
+
+        const inventario = await VariablesDelSistema.getInventario();
+        const inventarioKeys = Object.keys(inventario)
+
+
+        const lotes = await LotesRepository.getLotes({
+            ids: inventarioKeys,
+            select: {
+                __v: 1,
+                clasificacionCalidad: 1,
+                nombrePredio: 1,
+                fecha_ingreso_patio: 1,
+                fecha_salida_patio: 1,
+                fecha_ingreso_inventario: 1,
+                fecha_creacion: 1,
+                fecha_estimada_llegada: 1,
+                observaciones: 1,
+                tipoFruta: 1,
+                promedio: 1,
+                enf: 1,
+                kilosVaciados: 1,
+                not_pass: 1
+            }
+        });
+
+        // se agrega las canastillas en inventario
+        const resultado = inventarioKeys.map(id => {
+            const lote = lotes.find(lote => lote._id.toString() === id.toString());
+
+            if (lote) {
+                return {
+                    ...lote.toObject(),
+                    inventario: inventario[id]
+                }
+            }
+            return null
+        }).filter(item => item !== null);
+
+        const query_lotes_camino = {
+            fecha_ingreso_inventario: { $exists: false },
+            fechaIngreso: { $exists: false },
+        }
+
+        const lotes_camino = await LotesRepository.getLotes({
+            query: query_lotes_camino,
+            select: {
+                fecha_ingreso_patio: 1,
+                fecha_salida_patio: 1,
+                fecha_ingreso_inventario: 1,
+                fecha_creacion: 1,
+                fecha_estimada_llegada: 1,
+                __v: 1,
+                clasificacionCalidad: 1,
+                nombrePredio: 1,
+                observaciones: 1,
+                tipoFruta: 1,
+                kilosVaciados: 1,
+                kilos_estimados: 1,
+                canastillas_estimadas: 1
+            }
+        })
+
+        return [...resultado, ...lotes_camino]
     }
     static async getInventario_orden_vaceo() {
         //JS
-        // //se obtiene los datos del inventario
-        // const inventario = await VariablesDelSistema.getInventario();
-        // const inventarioKeys = Object.keys(inventario)
-
-        // // se obtiene el inventario de desverdizado
-        // const InvDes = await VariablesDelSistema.getInventarioDesverdizado();
-        // const InvDesKeys = Object.keys(InvDes);
-
-        // const arrLotesKeys = inventarioKeys.concat(InvDesKeys);
-        // const setLotesKeys = new Set(arrLotesKeys);
-        // const lotesKeys = [...setLotesKeys];
-
-        // const lotes = await LotesRepository.getLotes({
-        //     ids: lotesKeys,
-        //     query: {
-        //         $or: [
-        //             { not_pass: false },
-        //             { not_pass: { $exists: false } }
-        //         ]
-        //     },
-        //     select: {
-        //         __v: 1,
-        //         clasificacionCalidad: 1,
-        //         nombrePredio: 1,
-        //         fechaIngreso: 1,
-        //         observaciones: 1,
-        //         tipoFruta: 1,
-        //         promedio: 1,
-        //         enf: 1,
-        //         kilosVaciados: 1,
-        //         directoNacional: 1,
-        //         desverdizado: 1,
-        //         fecha_ingreso_inventario: 1,
-        //         "calidad.inspeccionIngreso": 1,
-        //     }
-        // });
-
-        // const resultado = lotesKeys.map(id => {
-        //     const lote = lotes.find(lote => lote._id.toString() === id.toString());
-
-        //     if (lote && lote.desverdizado && lote.desverdizado.fechaFinalizar) {
-        //         return {
-        //             ...lote.toObject(),
-        //             inventario: InvDes[id]
-        //         }
-        //     } else if (lote && lote.desverdizado && !lote.desverdizado.fechaFinalizar) {
-        //         return null
-        //     } else if (lote) {
-        //         return {
-        //             ...lote.toObject(),
-        //             inventario: inventario[id]
-        //         }
-        //     }
-        //     return null
-        // }).filter(item => item !== null);
-        // return resultado
-
-
-        //RUST
         //se obtiene los datos del inventario
-        const rustConnectionProceso = getRustConnectionProceso()
-        const inventoryRequest = {
-            action: "get_inventario",
-            collection: "variables_del_sistema",
-            data: {}
-        }
-        const inventarioJSON = await rustConnectionProceso.sendMessage(inventoryRequest)
-        const inventario = JSON.parse(inventarioJSON)
-        console.log(inventario)
-        const inventarioKeys = Object.keys(inventario.VariablesDelSistema)
+        const inventario = await VariablesDelSistema.getInventario();
+        const inventarioKeys = Object.keys(inventario)
 
         // se obtiene el inventario de desverdizado
         const InvDes = await VariablesDelSistema.getInventarioDesverdizado();
@@ -394,12 +327,79 @@ class ProcesoRepository {
             } else if (lote) {
                 return {
                     ...lote.toObject(),
-                    inventario: inventario.VariablesDelSistema[id]
+                    inventario: inventario[id]
                 }
             }
             return null
         }).filter(item => item !== null);
         return resultado
+
+
+        //RUST
+        //se obtiene los datos del inventario
+        // const rustConnectionProceso = getRustConnectionProceso()
+        // const inventoryRequest = {
+        //     action: "get_inventario",
+        //     collection: "variables_del_sistema",
+        //     data: {}
+        // }
+        // const inventarioJSON = await rustConnectionProceso.sendMessage(inventoryRequest)
+        // const inventario = JSON.parse(inventarioJSON)
+        // console.log(inventario)
+        // const inventarioKeys = Object.keys(inventario.VariablesDelSistema)
+
+        // // se obtiene el inventario de desverdizado
+        // const InvDes = await VariablesDelSistema.getInventarioDesverdizado();
+        // const InvDesKeys = Object.keys(InvDes);
+
+        // const arrLotesKeys = inventarioKeys.concat(InvDesKeys);
+        // const setLotesKeys = new Set(arrLotesKeys);
+        // const lotesKeys = [...setLotesKeys];
+
+        // const lotes = await LotesRepository.getLotes({
+        //     ids: lotesKeys,
+        //     query: {
+        //         $or: [
+        //             { not_pass: false },
+        //             { not_pass: { $exists: false } }
+        //         ]
+        //     },
+        //     select: {
+        //         __v: 1,
+        //         clasificacionCalidad: 1,
+        //         nombrePredio: 1,
+        //         fechaIngreso: 1,
+        //         observaciones: 1,
+        //         tipoFruta: 1,
+        //         promedio: 1,
+        //         enf: 1,
+        //         kilosVaciados: 1,
+        //         directoNacional: 1,
+        //         desverdizado: 1,
+        //         fecha_ingreso_inventario: 1,
+        //         "calidad.inspeccionIngreso": 1,
+        //     }
+        // });
+
+        // const resultado = lotesKeys.map(id => {
+        //     const lote = lotes.find(lote => lote._id.toString() === id.toString());
+
+        //     if (lote && lote.desverdizado && lote.desverdizado.fechaFinalizar) {
+        //         return {
+        //             ...lote.toObject(),
+        //             inventario: InvDes[id]
+        //         }
+        //     } else if (lote && lote.desverdizado && !lote.desverdizado.fechaFinalizar) {
+        //         return null
+        //     } else if (lote) {
+        //         return {
+        //             ...lote.toObject(),
+        //             inventario: inventario.VariablesDelSistema[id]
+        //         }
+        //     }
+        //     return null
+        // }).filter(item => item !== null);
+        // return resultado
 
     }
     static async getInventarioDesverdizado() {
@@ -1059,41 +1059,8 @@ class ProcesoRepository {
         const { _id, kilosVaciados, inventario, __v, action } = data;
 
         //RUST
-        console.time("Duración de miFuncion getInventario");
+        // console.time("Duración de miFuncion getInventario");
 
-        const query = {
-            $inc: {
-                kilosVaciados: kilosVaciados,
-                __v: 1,
-            },
-            fechaProceso: new Date()
-        }
-        await LotesRepository.modificar_lote(_id, query, action, user, __v);
-        const lote = await LotesRepository.getLotes({ ids: [_id] });
-        //condicional si es desverdizado o no
-
-        const rustConnectionProceso = getRustConnectionProceso()
-
-        const inventoryRequest = {
-            action: "modificar_inventario",
-            collection: "variables_del_sistema",
-            data: {
-                _id,
-                canastillas: inventario
-            }
-        }
-        await rustConnectionProceso.sendMessage(inventoryRequest)
-
-        procesoEventEmitter.emit("proceso_event", {
-            predio: lote
-        });
-        procesoEventEmitter.emit("predio_vaciado", {
-            predio: lote
-        });
-
-        console.timeEnd("Duración de miFuncion getInventario");
-
-        //JS
         // const query = {
         //     $inc: {
         //         kilosVaciados: kilosVaciados,
@@ -1104,13 +1071,18 @@ class ProcesoRepository {
         // await LotesRepository.modificar_lote(_id, query, action, user, __v);
         // const lote = await LotesRepository.getLotes({ ids: [_id] });
         // //condicional si es desverdizado o no
-        // if (lote[0].desverdizado) {
-        //     await VariablesDelSistema.modificarInventario_desverdizado(lote[0]._id.toString(), inventario);
-        // } else {
-        //     await VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario);
+
+        // const rustConnectionProceso = getRustConnectionProceso()
+
+        // const inventoryRequest = {
+        //     action: "modificar_inventario",
+        //     collection: "variables_del_sistema",
+        //     data: {
+        //         _id,
+        //         canastillas: inventario
+        //     }
         // }
-        // await VariablesDelSistema.procesarEF1(lote[0], inventario);
-        // await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString())
+        // await rustConnectionProceso.sendMessage(inventoryRequest)
 
         // procesoEventEmitter.emit("proceso_event", {
         //     predio: lote
@@ -1118,6 +1090,34 @@ class ProcesoRepository {
         // procesoEventEmitter.emit("predio_vaciado", {
         //     predio: lote
         // });
+
+        // console.timeEnd("Duración de miFuncion getInventario");
+
+        //JS
+        const query = {
+            $inc: {
+                kilosVaciados: kilosVaciados,
+                __v: 1,
+            },
+            fechaProceso: new Date()
+        }
+        await LotesRepository.modificar_lote(_id, query, action, user, __v);
+        const lote = await LotesRepository.getLotes({ ids: [_id] });
+        //condicional si es desverdizado o no
+        if (lote[0].desverdizado) {
+            await VariablesDelSistema.modificarInventario_desverdizado(lote[0]._id.toString(), inventario);
+        } else {
+            await VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario);
+        }
+        await VariablesDelSistema.procesarEF1(lote[0], inventario);
+        await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString())
+
+        procesoEventEmitter.emit("proceso_event", {
+            predio: lote
+        });
+        procesoEventEmitter.emit("predio_vaciado", {
+            predio: lote
+        });
     }
     static async modificar_historial_fechas_en_patio(data, user) {
         try {
@@ -1173,27 +1173,6 @@ class ProcesoRepository {
     }
     static async modificarHistorialFrutaProcesada(data, user) {
         //JS
-        // const { _id, kilosVaciados, inventario, __v, action, historialLote } = data;
-        // const { _idRecord, kilosHistorial, __vHistorial } = historialLote;
-        // const queryLote = {
-        //     $inc: {
-        //         kilosVaciados: kilosVaciados,
-        //         __v: 1
-        //     }
-        // }
-        // const queryRecord = {
-        //     $inc: {
-        //         "documento.$inc.kilosVaciados": kilosHistorial,
-        //         __v: 1
-        //     }
-        // }
-        // //se modifica el lote y el inventario
-        // await VariablesDelSistema.modificarInventario(_id, -inventario);
-        // await LotesRepository.modificar_lote(_id, queryLote, action, user, __v);
-        // //se modifica el registro
-        // await RecordLotesRepository.modificarRecord(_idRecord, queryRecord, __vHistorial);
-
-        //RUST
         const { _id, kilosVaciados, inventario, __v, action, historialLote } = data;
         const { _idRecord, kilosHistorial, __vHistorial } = historialLote;
         const queryLote = {
@@ -1209,38 +1188,45 @@ class ProcesoRepository {
             }
         }
         //se modifica el lote y el inventario
-        const rustConnectionProceso = getRustConnectionProceso()
-        const inventoryRequest = {
-            action: "modificar_inventario",
-            collection: "variables_del_sistema",
-            data: {
-                _id,
-                canastillas: inventario
-            }
-        }
-        await rustConnectionProceso.sendMessage(inventoryRequest)
-
+        await VariablesDelSistema.modificarInventario(_id, -inventario);
         await LotesRepository.modificar_lote(_id, queryLote, action, user, __v);
         //se modifica el registro
         await RecordLotesRepository.modificarRecord(_idRecord, queryRecord, __vHistorial);
 
+        //RUST
+        // const { _id, kilosVaciados, inventario, __v, action, historialLote } = data;
+        // const { _idRecord, kilosHistorial, __vHistorial } = historialLote;
+        // const queryLote = {
+        //     $inc: {
+        //         kilosVaciados: kilosVaciados,
+        //         __v: 1
+        //     }
+        // }
+        // const queryRecord = {
+        //     $inc: {
+        //         "documento.$inc.kilosVaciados": kilosHistorial,
+        //         __v: 1
+        //     }
+        // }
+        // //se modifica el lote y el inventario
+        // const rustConnectionProceso = getRustConnectionProceso()
+        // const inventoryRequest = {
+        //     action: "modificar_inventario",
+        //     collection: "variables_del_sistema",
+        //     data: {
+        //         _id,
+        //         canastillas: inventario
+        //     }
+        // }
+        // await rustConnectionProceso.sendMessage(inventoryRequest)
+
+        // await LotesRepository.modificar_lote(_id, queryLote, action, user, __v);
+        // //se modifica el registro
+        // await RecordLotesRepository.modificarRecord(_idRecord, queryRecord, __vHistorial);
+
     }
     static async directoNacional(data, user) {
         //JS
-        // const { _id, infoSalidaDirectoNacional, directoNacional, inventario, __v, action } = data;
-        // const query = {
-        //     $inc: {
-        //         directoNacional: directoNacional,
-        //         __v: 1
-        //     },
-        //     infoSalidaDirectoNacional: infoSalidaDirectoNacional
-        // };
-        // const lote = await LotesRepository.modificar_lote(_id, query, action, user, __v);
-
-        // await VariablesDelSistema.modificarInventario(_id, inventario);
-        // await LotesRepository.deshidratacion(lote);
-
-        //RUST
         const { _id, infoSalidaDirectoNacional, directoNacional, inventario, __v, action } = data;
         const query = {
             $inc: {
@@ -1250,18 +1236,32 @@ class ProcesoRepository {
             infoSalidaDirectoNacional: infoSalidaDirectoNacional
         };
         const lote = await LotesRepository.modificar_lote(_id, query, action, user, __v);
+
+        await VariablesDelSistema.modificarInventario(_id, inventario);
         await LotesRepository.deshidratacion(lote);
-        //se modifica el lote y el inventario
-        const rustConnectionProceso = getRustConnectionProceso()
-        const inventoryRequest = {
-            action: "modificar_inventario",
-            collection: "variables_del_sistema",
-            data: {
-                _id,
-                canastillas: inventario
-            }
-        }
-        await rustConnectionProceso.sendMessage(inventoryRequest)
+
+        //RUST
+        // const { _id, infoSalidaDirectoNacional, directoNacional, inventario, __v, action } = data;
+        // const query = {
+        //     $inc: {
+        //         directoNacional: directoNacional,
+        //         __v: 1
+        //     },
+        //     infoSalidaDirectoNacional: infoSalidaDirectoNacional
+        // };
+        // const lote = await LotesRepository.modificar_lote(_id, query, action, user, __v);
+        // await LotesRepository.deshidratacion(lote);
+        // //se modifica el lote y el inventario
+        // const rustConnectionProceso = getRustConnectionProceso()
+        // const inventoryRequest = {
+        //     action: "modificar_inventario",
+        //     collection: "variables_del_sistema",
+        //     data: {
+        //         _id,
+        //         canastillas: inventario
+        //     }
+        // }
+        // await rustConnectionProceso.sendMessage(inventoryRequest)
 
     }
     static async despacho_descarte(req, user) {
@@ -1384,19 +1384,6 @@ class ProcesoRepository {
     }
     static async desverdizado(req, user) {
         //JS
-        // const { _id, inventario, desverdizado, __v, action } = req;
-        // const query = {
-        //     desverdizado: desverdizado,
-        //     $inc: {
-        //         __v: 1
-        //     },
-        // }
-        // await LotesRepository.modificar_lote(_id, query, action, user, __v);
-
-        // await VariablesDelSistema.ingresarInventarioDesverdizado(_id, inventario)
-        // await VariablesDelSistema.modificarInventario(_id, inventario);
-
-        //RUST
         const { _id, inventario, desverdizado, __v, action } = req;
         const query = {
             desverdizado: desverdizado,
@@ -1407,18 +1394,31 @@ class ProcesoRepository {
         await LotesRepository.modificar_lote(_id, query, action, user, __v);
 
         await VariablesDelSistema.ingresarInventarioDesverdizado(_id, inventario)
+        await VariablesDelSistema.modificarInventario(_id, inventario);
 
-        //se modifica el inventariod e fruta sin procesar
-        const rustConnectionProceso = getRustConnectionProceso()
-        const inventoryRequest = {
-            action: "modificar_inventario",
-            collection: "variables_del_sistema",
-            data: {
-                _id,
-                canastillas: inventario
-            }
-        }
-        await rustConnectionProceso.sendMessage(inventoryRequest)
+        //RUST
+        // const { _id, inventario, desverdizado, __v, action } = req;
+        // const query = {
+        //     desverdizado: desverdizado,
+        //     $inc: {
+        //         __v: 1
+        //     },
+        // }
+        // await LotesRepository.modificar_lote(_id, query, action, user, __v);
+
+        // await VariablesDelSistema.ingresarInventarioDesverdizado(_id, inventario)
+
+        // //se modifica el inventariod e fruta sin procesar
+        // const rustConnectionProceso = getRustConnectionProceso()
+        // const inventoryRequest = {
+        //     action: "modificar_inventario",
+        //     collection: "variables_del_sistema",
+        //     data: {
+        //         _id,
+        //         canastillas: inventario
+        //     }
+        // }
+        // await rustConnectionProceso.sendMessage(inventoryRequest)
     }
     static async set_hora_fin_proceso() {
         const status_proceso = await VariablesDelSistema.obtener_status_proceso()
@@ -2394,37 +2394,7 @@ class ProcesoRepository {
 
         try {
             //JS
-            // console.time("Duración de miFuncion");
-            // const enf = await VariablesDelSistema.generarEF1()
-            // let lote = data.data.data
-            // const user = data.user.user
-
-            // const proveedor = await ProveedoresRepository.get_proveedores({
-            //     ids: [lote.predio],
-            //     select: { precio: 1 }
-            // })
-
-            // const query = {
-            //     ...lote,
-            //     precio: proveedor[0].precio[lote.tipoFruta],
-            //     enf: enf,
-            //     fecha_salida_patio: new Date(lote.fecha_estimada_llegada),
-            //     fecha_ingreso_inventario: new Date(lote.fecha_estimada_llegada),
-            // }
-            // lote = await LotesRepository.addLote(query, user);
-
-            // await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
-            // await VariablesDelSistema.incrementarEF1();
-
-            // procesoEventEmitter.emit("server_event", {
-            //     action:"add_lote"
-            // });
-
-            // console.timeEnd("Duración de miFuncion");
-
-            //Rust
             console.time("Duración de miFuncion");
-
             const enf = await VariablesDelSistema.generarEF1()
             let lote = data.data.data
             const user = data.user.user
@@ -2443,20 +2413,12 @@ class ProcesoRepository {
             }
             lote = await LotesRepository.addLote(query, user);
 
-            const rustConnectionProceso = getRustConnectionProceso()
-            const request = {
-                action: "ingresar_inventario",
-                collection: "variables_del_sistema",
-                data: {
-                    _id: lote._id.toString(),
-                    canastillas: Number(lote.canastillas)
-                }
-            }
-            const enf_json = await rustConnectionProceso.sendMessage(request)
-            const response = JSON.parse(enf_json)
-            console.log(response)
-
+            await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
             await VariablesDelSistema.incrementarEF1();
+
+            procesoEventEmitter.emit("server_event", {
+                action: "add_lote"
+            });
 
             procesoEventEmitter.emit("server_event", {
                 section: "inventario_fruta_sin_procesar",
@@ -2466,7 +2428,54 @@ class ProcesoRepository {
                     predio: proveedor[0].PREDIO
                 }
             });
+
             console.timeEnd("Duración de miFuncion");
+
+            //Rust
+            // console.time("Duración de miFuncion");
+
+            // const enf = await VariablesDelSistema.generarEF1()
+            // let lote = data.data.data
+            // const user = data.user.user
+
+            // const proveedor = await ProveedoresRepository.get_proveedores({
+            //     ids: [lote.predio],
+            //     select: { precio: 1 }
+            // })
+
+            // const query = {
+            //     ...lote,
+            //     precio: proveedor[0].precio[lote.tipoFruta],
+            //     enf: enf,
+            //     fecha_salida_patio: new Date(lote.fecha_estimada_llegada),
+            //     fecha_ingreso_inventario: new Date(lote.fecha_estimada_llegada),
+            // }
+            // lote = await LotesRepository.addLote(query, user);
+
+            // const rustConnectionProceso = getRustConnectionProceso()
+            // const request = {
+            //     action: "ingresar_inventario",
+            //     collection: "variables_del_sistema",
+            //     data: {
+            //         _id: lote._id.toString(),
+            //         canastillas: Number(lote.canastillas)
+            //     }
+            // }
+            // const enf_json = await rustConnectionProceso.sendMessage(request)
+            // const response = JSON.parse(enf_json)
+            // console.log(response)
+
+            // await VariablesDelSistema.incrementarEF1();
+
+            // procesoEventEmitter.emit("server_event", {
+            //     section: "inventario_fruta_sin_procesar",
+            //     action: "add_lote",
+            //     data: {
+            //         ...lote._doc,
+            //         predio: proveedor[0].PREDIO
+            //     }
+            // });
+            // console.timeEnd("Duración de miFuncion");
 
         } catch (err) {
             throw new Error(`Code ${err.code}: ${err.message}`);
