@@ -1,5 +1,7 @@
+const { procesoEventEmitter } = require("../../events/eventos")
 const { RecordLotesRepository } = require("../archive/ArchiveLotes")
 const { LotesRepository } = require("../Class/Lotes")
+const { VariablesDelSistema } = require("../Class/VariablesDelSistema")
 
 class ModificarRepository {
     static async modificar_ingreso_lote(req, user) {
@@ -40,6 +42,16 @@ class ModificarRepository {
             user,
             __v
         )
+    }
+    static async put_inventarioLogistica_frutaSinProcesar_modificar_canastillas(req) {
+        const { _id, canastillas } = req
+        await VariablesDelSistema.ingresarInventario(_id, canastillas)
+        procesoEventEmitter.emit("server_event", {
+            section: "inventario_fruta_sin_procesar",
+            action: "modificar_inventario",
+            data: {}
+        });
+
     }
 }
 

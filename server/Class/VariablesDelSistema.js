@@ -26,7 +26,7 @@ const clientePromise = iniciarRedisDB();
 
 class VariablesDelSistema {
   // #region EF1 o Predios
-  static async generarEF1() {
+  static async generarEF1(fecha_ingreso = new Date()) {
     /**
      * Se genera el codigo EF1 del sistema, el codigo se genera sienfo EF1- los primero caracteres
      * Luego los segundo dos son los ultimos dos digitos del año
@@ -41,7 +41,7 @@ class VariablesDelSistema {
       const idsJSON = fs.readFileSync(pathIDs);
       const ids = JSON.parse(idsJSON);
 
-      let fecha = new Date();
+      let fecha = new Date(fecha_ingreso);
       let year = fecha.getFullYear().toString().slice(-2);
       let month = String(fecha.getMonth() + 1).padStart(2, "0");
       let enf;

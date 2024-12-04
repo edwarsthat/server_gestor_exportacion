@@ -572,12 +572,18 @@ class ProcesoRepository {
                 descarteLavado: 1,
                 frutaNacional: 1,
                 fechaIngreso: 1,
+                fecha_ingreso_patio: 1,
+                fecha_salida_patio: 1,
+                fecha_ingreso_inventario: 1,
+                fecha_creacion: 1,
+                fecha_estimada_llegada: 1,
                 precio: 1,
                 aprobacionComercial: 1,
                 exportacionDetallada: 1,
                 observaciones: 1,
                 flag_is_favorita: 1,
-                flag_balin_free: 1
+                flag_balin_free: 1,
+
             },
             limit: resultsPerPage,
             populate: { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' }
@@ -2395,9 +2401,10 @@ class ProcesoRepository {
         try {
             //JS
             console.time("Duración de miFuncion");
-            const enf = await VariablesDelSistema.generarEF1()
             let lote = data.data.data
             const user = data.user.user
+            const enf = await VariablesDelSistema.generarEF1(lote.fecha_estimada_llegada)
+
 
             const proveedor = await ProveedoresRepository.get_proveedores({
                 ids: [lote.predio],

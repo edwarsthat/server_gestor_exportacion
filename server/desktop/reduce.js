@@ -811,7 +811,12 @@ const apiSocket = {
         const { data, user } = req
         await CalidadRepository.lotes_devolver_lote(data, user)
         return { status: 200, message: 'Ok' }
-    }
+    },
+    put_inventarioLogistica_frutaSinProcesar_modificar_canastillas: async (req) => {
+        const { data, user } = req
+        await ModificarRepository.put_inventarioLogistica_frutaSinProcesar_modificar_canastillas(data, user)
+        return { status: 200, message: 'Ok' }
+    },
 }
 
 module.exports.apiSocket = apiSocket;
