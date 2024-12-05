@@ -16,7 +16,11 @@ const permisos_generales = [
     "get_transporte_registros_programacion_mula_numeroElementos",
     "get_transporte_registros_exportacion_numeroElementos",
     "get_transporte_registros_inspeccionMula_numeroElementos",
-    "get_transporte_documentos_programacionMulas_numeroElementos"
+    "get_transporte_documentos_programacionMulas_numeroElementos",
+
+
+    //obteniendo constantes
+    "get_constantes_sistema_clasificacion_descarte"
 ]
 
 class UserRepository {

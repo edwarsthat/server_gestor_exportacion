@@ -552,7 +552,7 @@ class ProcesoRepository {
         const { page } = data;
         const resultsPerPage = 50;
         const query = {
-            enf: { $regex: '^E', $options: 'i' },
+            enf: { $regex: '^E', $options: 'i' }
         }
         const lotes = await LotesRepository.getLotes({
             query: query,

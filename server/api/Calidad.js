@@ -46,7 +46,7 @@ class CalidadRepository {
         const lotes = await LotesRepository.getLotes({ query: query, select: select })
         return lotes
     }
-    static async get_lotes_inspeccion_ingreso() {
+    static async get_calidad_ingresos_inspeccionFruta_lotes() {
         const haceUnMes = new Date();
         haceUnMes.setMonth(haceUnMes.getMonth() - 1);
         const query = {

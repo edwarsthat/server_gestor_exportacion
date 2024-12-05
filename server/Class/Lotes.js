@@ -68,7 +68,7 @@ class LotesRepository {
             ids = [],
             query = {},
             select = {},
-            sort = { fecha_creacion: -1, },
+            sort = { fecha_creacion: -1, fechaIngreso: -1 },
             limit = 50,
             skip = 0,
             populate = { path: 'predio', select: 'PREDIO ICA GGN' }

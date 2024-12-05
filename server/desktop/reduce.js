@@ -11,6 +11,7 @@ const { ModificarRepository } = require("../api/ModificarData");
 const { SistemaRepository } = require("../api/Sistema");
 const { ContabilidadRepository } = require("../api/Contabilidad");
 const { TransporteRepository } = require("../api/Transporte");
+const { ConstantesDelSistema } = require("../Class/ConstantesDelSistema");
 
 const apiSocket = {
     //#region GET
@@ -92,8 +93,8 @@ const apiSocket = {
         const clientes = await ComercialRepository.obtener_clientes_historial_contenedores();
         return { status: 200, message: 'Ok', data: clientes }
     },
-    get_lotes_inspeccion_ingreso: async () => {
-        const lotes = await CalidadRepository.get_lotes_inspeccion_ingreso();
+    get_calidad_ingresos_inspeccionFruta_lotes: async () => {
+        const lotes = await CalidadRepository.get_calidad_ingresos_inspeccionFruta_lotes();
         return { status: 200, message: 'Ok', data: lotes }
     },
     get_lotes_calidad_interna: async () => {
@@ -317,6 +318,11 @@ const apiSocket = {
     get_record_lote_ingreso_inventario: async (req) => {
         const { data } = req;
         const response = await ProcesoRepository.get_record_lote_ingreso_inventario(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
+    get_constantes_sistema_clasificacion_descarte: async (req) => {
+        const { data } = req;
+        const response = await ConstantesDelSistema.get_constantes_sistema_clasificacion_descarte(data)
         return { status: 200, message: 'Ok', data: response }
     },
     //! obtener numero de datos para paginar las tablas
