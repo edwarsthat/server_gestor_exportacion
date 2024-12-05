@@ -2416,6 +2416,7 @@ class ProcesoRepository {
                 precio: proveedor[0].precio[lote.tipoFruta],
                 enf: enf,
                 fecha_salida_patio: new Date(lote.fecha_estimada_llegada),
+                fecha_ingreso_patio: new Date(lote.fecha_estimada_llegada),
                 fecha_ingreso_inventario: new Date(lote.fecha_estimada_llegada),
             }
             lote = await LotesRepository.addLote(query, user);

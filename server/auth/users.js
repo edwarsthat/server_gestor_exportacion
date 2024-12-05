@@ -20,7 +20,8 @@ const permisos_generales = [
 
 
     //obteniendo constantes
-    "get_constantes_sistema_clasificacion_descarte"
+    "get_constantes_sistema_clasificacion_descarte",
+    "get_constantes_sistema_observaciones_calidad"
 ]
 
 class UserRepository {

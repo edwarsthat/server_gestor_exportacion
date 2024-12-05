@@ -375,6 +375,10 @@ const apiSocket = {
         const formulario = await CalidadRepository.get_info_formulario_inspeccion_fruta()
         return { status: 200, message: 'Ok', data: formulario }
     },
+    get_constantes_sistema_observaciones_calidad: async () => {
+        const formulario = await ConstantesDelSistema.get_constantes_sistema_observaciones_calidad()
+        return { status: 200, message: 'Ok', data: formulario }
+    },
 
     //! transporte
     get_transporte_exportacion_contenedores: async () => {
