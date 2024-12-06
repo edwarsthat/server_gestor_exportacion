@@ -385,25 +385,29 @@ const apiSocket = {
         const data = await TransporteRepository.get_transporte_exportacion_contenedores()
         return { status: 200, message: 'Ok', data: data }
     },
-    get_transporte_registro_exportacion: async () => {
-        const data = await TransporteRepository.get_transporte_registro_exportacion()
-        return { status: 200, message: 'Ok', data: data }
+    get_transporte_registro_exportacion: async (req) => {
+        const { data } = req;
+        const response = await TransporteRepository.get_transporte_registro_exportacion(data)
+        return { status: 200, message: 'Ok', data: response }
     },
     get_transporte_mula_contenedores: async () => {
         const data = await TransporteRepository.get_transporte_mula_contenedores()
         return { status: 200, message: 'Ok', data: data }
     },
-    get_transporte_registro_programacion_mula: async () => {
-        const data = await TransporteRepository.get_transporte_registro_programacion_mula()
-        return { status: 200, message: 'Ok', data: data }
+    get_transporte_registro_programacion_mula: async (req) => {
+        const { data } = req;
+        const response = await TransporteRepository.get_transporte_registro_programacion_mula(data)
+        return { status: 200, message: 'Ok', data: response }
     },
-    get_transporte_registro_formularios_inspeccion: async () => {
-        const data = await TransporteRepository.get_transporte_registro_formularios_inspeccion()
-        return { status: 200, message: 'Ok', data: data }
+    get_transporte_registro_formularios_inspeccion: async (req) => {
+        const { data } = req;
+        const response = await TransporteRepository.get_transporte_registro_formularios_inspeccion(data)
+        return { status: 200, message: 'Ok', data: response }
     },
-    get_transporte_documentos_programacionMula_contenedores: async () => {
-        const data = await TransporteRepository.get_transporte_documentos_programacionMula_contenedores()
-        return { status: 200, message: 'Ok', data: data }
+    get_transporte_documentos_programacionMula_contenedores: async (req) => {
+        const { data } = req;
+        const response = await TransporteRepository.get_transporte_documentos_programacionMula_contenedores(data)
+        return { status: 200, message: 'Ok', data: response }
     },
 
     //#region POST

@@ -55,8 +55,10 @@ class TransporteRepository {
             }
         }
     }
-    static async get_transporte_registro_exportacion() {
+    static async get_transporte_registro_exportacion(req) {
         try {
+            const { page } = req
+            const resultsPerPage = 50;
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: {
                     infoExportacion: { $exists: true },
@@ -67,6 +69,8 @@ class TransporteRepository {
                     __v: 1,
                     infoExportacion: 1,
                 },
+                skip: (page - 1) * resultsPerPage,
+                limit: resultsPerPage,
                 sort: { 'infoExportacion.fecha': -1 },
             });
 
@@ -127,8 +131,10 @@ class TransporteRepository {
             }
         }
     }
-    static async get_transporte_registro_programacion_mula() {
+    static async get_transporte_registro_programacion_mula(req) {
         try {
+            const { page } = req
+            const resultsPerPage = 50;
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: {
                     infoTractoMula: { $exists: true },
@@ -139,6 +145,8 @@ class TransporteRepository {
                     __v: 1,
                     infoTractoMula: 1,
                 },
+                skip: (page - 1) * resultsPerPage,
+                limit: resultsPerPage,
                 sort: { 'infoTractoMula.fecha': -1 },
             });
 
@@ -200,8 +208,10 @@ class TransporteRepository {
             }
         }
     }
-    static async get_transporte_registro_formularios_inspeccion() {
+    static async get_transporte_registro_formularios_inspeccion(req) {
         try {
+            const { page } = req
+            const resultsPerPage = 50;
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: {
                     inspeccion_mula: { $exists: true },
@@ -212,6 +222,8 @@ class TransporteRepository {
                     __v: 1,
                     inspeccion_mula: 1,
                 },
+                skip: (page - 1) * resultsPerPage,
+                limit: resultsPerPage,
                 sort: { 'inspeccion_mula.fecha': -1 },
             });
 
@@ -243,8 +255,10 @@ class TransporteRepository {
             }
         }
     }
-    static async get_transporte_documentos_programacionMula_contenedores() {
+    static async get_transporte_documentos_programacionMula_contenedores(req) {
         try {
+            const { page } = req
+            const resultsPerPage = 50;
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: {
                     infoTractoMula: { $exists: true },
@@ -259,6 +273,8 @@ class TransporteRepository {
                     infoExportacion: 1,
                     pallets: 1
                 },
+                skip: (page - 1) * resultsPerPage,
+                limit: resultsPerPage,
                 populate: {
                     path: 'infoContenedor.clienteInfo',
                     select: 'CLIENTE DIRECCIÓN',
