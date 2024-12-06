@@ -25,7 +25,7 @@ class ViewsRepository {
         if (ordenarPor === 'fecha_creacion') {
             sort = { [`${ordenarPor}`]: -1, fechaIngreso: -1 };
         } else {
-            sort = { [`${ordenarPor}`]: -1 };
+            sort = { [`${ordenarPor}`]: -1, fechaIngreso: -1 };
         }
 
         if (tipoFruta) query.tipoFruta = tipoFruta;
