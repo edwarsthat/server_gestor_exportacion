@@ -217,19 +217,23 @@ io.on("connection", socket => {
             ongoingRequests[data.data.action] = true;
             // const autorizado = await UserRepository.autentificacionPermisos(data.user.cargo, data.data.action, data.user.user);
             const autorizado2 = await UserRepository.autentificacionPermisos2(data);
-
+            console.log(autorizado2)
             if (!autorizado2) {
                 throw new AccessError(412, `Acceso no autorizado ${data.data.action}`);
             }
 
             if (!Object.prototype.hasOwnProperty.call(apiSocket, data.data.action))
                 throw new BadGetwayError(501, `Error badGetWay ${data.data.action} no existe`)
+
+
             const response = await apiSocket[data.data.action](data, sendData);
+
             const newToken = UserRepository.generateAccessToken({
                 user: data.user.user,
                 cargo: data.user.cargo,
                 _id: data.user._id
             })
+
             callback({ ...response, token: newToken })
         } catch (err) {
             console.log("Error socket: ", err);

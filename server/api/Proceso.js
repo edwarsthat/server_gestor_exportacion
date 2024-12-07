@@ -923,6 +923,13 @@ class ProcesoRepository {
         const cantidad = await RecordLotesRepository.obtener_cantidad_recordLote(filtro)
         return cantidad
     }
+    static async get_inventario_historiales_ingresoFruta_numeroElementos() {
+        const filtro = {
+            operacionRealizada: "crearLote"
+        }
+        const cantidad = await RecordLotesRepository.obtener_cantidad_recordLote(filtro)
+        return cantidad
+    }
 
 
     // #region PUT
@@ -1476,9 +1483,8 @@ class ProcesoRepository {
     }
     static async finalizar_informe_proveedor(req, userInfo) {
         const { _id, precio, action, contenedores } = req
-        const { cargo, user } = userInfo
-        if (!["66b29b1736733668246c9559"]
-            .includes(cargo)) { throw new Error("Acceso no autorizado") }
+        const { user } = userInfo
+
 
         const exportacion = {}
         const contenedoresData = await ContenedoresRepository.get_Contenedores_sin_lotes({

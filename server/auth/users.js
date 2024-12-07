@@ -17,6 +17,7 @@ const permisos_generales = [
     "get_transporte_registros_exportacion_numeroElementos",
     "get_transporte_registros_inspeccionMula_numeroElementos",
     "get_transporte_documentos_programacionMulas_numeroElementos",
+    "get_inventario_historiales_ingresoFruta_numeroElementos",
 
 
     //obteniendo constantes
@@ -228,7 +229,6 @@ class UserRepository {
             const { data, user } = req;
             const { action } = data;
             const { cargo } = user;
-            let permisoOut = false
 
             if (permisos_generales.includes(action)) {
                 return true
@@ -238,22 +238,26 @@ class UserRepository {
                 ids: [cargo]
             });
             if (!permisos) {
-                return permisoOut
+                return false
             }
-            Object.values(permisos[0]._doc).forEach(seccion => {
-                Object.values(seccion).forEach(tipo => {
-                    Object.values(tipo).forEach(item => {
+            for (const seccion of Object.values(permisos[0]._doc)) {
+                for (const tipo of Object.values(seccion)) {
+                    for (const item of Object.values(tipo)) {
                         if (item.permisos) {
-                            Object.values(item.permisos).forEach(permiso => {
-                                if (permiso === action) {
-                                    permisoOut = true
+                            for (const permiso of Object.values(item.permisos)) {
+                                console.log("permiso:", permiso);
+                                console.log("action:", action);
+                                console.log("Comparación:", permiso.trim() === action.trim());
+                                if (permiso.trim() === action.trim()) {
+                                    return true;
                                 }
-                            })
+                            }
                         }
-                    })
-                })
-            })
-            return permisoOut
+                    }
+                }
+            }
+
+            return false
         } catch (err) {
             console.log(err)
             throw new AccessError(412, `Accesos no autorizado ${req.data.action}`);

@@ -370,6 +370,10 @@ const apiSocket = {
         const data = await TransporteRepository.get_transporte_documentos_programacionMulas_numeroElementos()
         return { status: 200, message: 'Ok', data: data }
     },
+    get_inventario_historiales_ingresoFruta_numeroElementos: async () => {
+        const data = await ProcesoRepository.get_inventario_historiales_ingresoFruta_numeroElementos()
+        return { status: 200, message: 'Ok', data: data }
+    },
     //!constantes del sistema, formularios y otras cosas
     get_info_formulario_inspeccion_fruta: async () => {
         const formulario = await CalidadRepository.get_info_formulario_inspeccion_fruta()
