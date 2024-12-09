@@ -9,13 +9,12 @@ class TransporteRepository {
             haceUnMes.setMonth(haceUnMes.getMonth() - 1);
 
             const inicioDeMes = new Date(haceUnMes.getFullYear(), haceUnMes.getMonth(), 1);
-            const finDeMes = new Date(haceUnMes.getFullYear(), haceUnMes.getMonth() + 1, 0, 23, 59, 59, 999);
 
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: {
                     $and: [
                         {
-                            'infoContenedor.fechaCreacion': { $gte: inicioDeMes, $lte: finDeMes },
+                            'infoContenedor.fechaCreacion': { $gte: inicioDeMes },
                         },
                         { infoExportacion: { $exists: false } },
                     ],

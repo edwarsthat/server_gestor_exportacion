@@ -305,7 +305,7 @@ server.listen(3011, () => {
 // #region Acciones programadas
 
 //reiniciar valores del sistema
-cron.schedule("00 4 * * *", async () => {
+cron.schedule("0 4 * * *", async () => {
     await ProcesoRepository.reiniciarValores_proceso()
 });
 

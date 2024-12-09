@@ -245,9 +245,6 @@ class UserRepository {
                     for (const item of Object.values(tipo)) {
                         if (item.permisos) {
                             for (const permiso of Object.values(item.permisos)) {
-                                console.log("permiso:", permiso);
-                                console.log("action:", action);
-                                console.log("Comparación:", permiso.trim() === action.trim());
                                 if (permiso.trim() === action.trim()) {
                                     return true;
                                 }

@@ -993,10 +993,10 @@ class VariablesDelSistema {
       const clientePromise = iniciarRedisDB();
       cliente = await clientePromise;
       let kilosProcesadosLimon = await cliente.get("kilosProcesadosHoyLimon");
-      if (kilosProcesadosLimon === undefined) kilosProcesadosLimon = 0;
+      if (kilosProcesadosLimon === undefined) kilosProcesadosLimon = "0";
 
       let kilosProcesadosNaranja = await cliente.get("kilosProcesadosHoyNaranja");
-      if (kilosProcesadosNaranja === undefined) kilosProcesadosNaranja = 0;
+      if (kilosProcesadosNaranja === undefined) kilosProcesadosNaranja = "0";
 
       return { kilosProcesadosNaranja, kilosProcesadosLimon };
     } catch (err) {
@@ -1015,10 +1015,10 @@ class VariablesDelSistema {
       const clientePromise = iniciarRedisDB();
       cliente = await clientePromise;
       let kilosExportacionNaranja = await cliente.get("kilosExportacionHoyNaranja");
-      if (kilosExportacionNaranja === undefined) kilosExportacionNaranja = 0;
+      if (kilosExportacionNaranja === undefined) kilosExportacionNaranja = "0";
 
       let kilosExportacionLimon = await cliente.get("kilosExportacionHoyLimon");
-      if (kilosExportacionLimon === undefined) kilosExportacionLimon = 0;
+      if (kilosExportacionLimon === undefined) kilosExportacionLimon = "0";
 
       return { kilosExportacionNaranja, kilosExportacionLimon };
     } catch (err) {
@@ -1127,10 +1127,10 @@ class VariablesDelSistema {
       if (status === 'on' || status === 'pause') {
         await this.set_hora_fin_proceso()
       }
-      await cliente.set("kilosProcesadosHoyLimon", 0);
-      await cliente.set("kilosProcesadosHoyNaranja", 0);
-      await cliente.set("kilosExportacionHoyLimon", 0);
-      await cliente.set("kilosExportacionHoyNaranja", 0);
+      await cliente.set("kilosProcesadosHoyLimon", "0");
+      await cliente.set("kilosProcesadosHoyNaranja", "0");
+      await cliente.set("kilosExportacionHoyLimon", "0");
+      await cliente.set("kilosExportacionHoyNaranja", "0");
       await cliente.set("fechaInicioProceso", '');
       await cliente.set("statusProceso", 'off');
 
