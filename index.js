@@ -141,13 +141,13 @@ async function sendData(data) {
 };
 
 // #region events
-procesoEventEmitter.on('orden_vaceo_update', (data) => {
-    try {
-        io.emit("orden_vaceo_update", data);
-    } catch (error) {
-        console.error('Error en orden_vaceo_update:', error);
-    }
-});
+// procesoEventEmitter.on('orden_vaceo_update', (data) => {
+//     try {
+//         io.emit("orden_vaceo_update", data);
+//     } catch (error) {
+//         console.error('Error en orden_vaceo_update:', error);
+//     }
+// });
 procesoEventEmitter.on('predio_vaciado', (data) => {
     console.log(data)
     try {
@@ -170,14 +170,14 @@ procesoEventEmitter.on('status_proceso', (data) => {
         console.error('Error en status_proceso:', error);
     }
 })
-procesoEventEmitter.on('inventario_fruta_sin_procesar', (data) => {
-    try {
-        console.log("desde el emit a el cliente")
-        io.emit("inventario_fruta_sin_procesar", data);
-    } catch (error) {
-        console.error('Error en inventario_fruta_sin_procesar:', error);
-    }
-});
+// procesoEventEmitter.on('inventario_fruta_sin_procesar', (data) => {
+//     try {
+//         console.log("desde el emit a el cliente")
+//         io.emit("inventario_fruta_sin_procesar", data);
+//     } catch (error) {
+//         console.error('Error en inventario_fruta_sin_procesar:', error);
+//     }
+// });
 procesoEventEmitter.on('proceso_event', (data) => {
     try {
         io.emit("proceso_event", data);
@@ -192,13 +192,13 @@ procesoEventEmitter.on('server_event', (data) => {
         console.error('Error en nuevo_predio:', error);
     }
 })
-procesoEventEmitter.on('nuevo_predio', (data) => {
-    try {
-        io.emit("nuevo_predio", data);
-    } catch (error) {
-        console.error('Error en nuevo_predio:', error);
-    }
-})
+// procesoEventEmitter.on('nuevo_predio', (data) => {
+//     try {
+//         io.emit("nuevo_predio", data);
+//     } catch (error) {
+//         console.error('Error en nuevo_predio:', error);
+//     }
+// })
 
 
 io.on("connection", socket => {

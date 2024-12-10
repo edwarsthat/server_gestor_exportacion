@@ -4,7 +4,6 @@ const { ProcessError } = require('../../Error/ProcessError');
 const { iniciarRedisDB } = require('../../DB/redis/init');
 const { ConnectRedisError } = require('../../Error/ConnectionErrors');
 const { obtener_datos_lotes_listaEmpaque_cajasSinPallet } = require('../mobile/utils/contenedoresLotes');
-const { procesoEventEmitter } = require('../../events/eventos');
 const { TurnoDatarepository } = require('./TurnoData');
 
 const pathIDs = path.join(__dirname, '..', '..', 'inventory', 'seriales.json');
@@ -55,7 +54,7 @@ class VariablesDelSistema {
       throw new ProcessError(406, `Error creando la EF1: ${e.message}`)
     }
   }
-  static async procesarEF1(lote, inventario) {
+  static async procesarEF1(lote) {
     /**
    * Función que procesa un lote en el inventario y actualiza diversos valores como el predio vaciado
    * la cantidad de kilos vaciados y la suma de los kilos vaciados hoy
@@ -67,23 +66,23 @@ class VariablesDelSistema {
    */
     try {
       const cliente = await clientePromise;
-      const kilosVaciados = lote.promedio * inventario;
-      const kilosVaciadosExist = await cliente.exists("kilosVaciadosHoy");
-      if (kilosVaciadosExist !== 1) {
-        await cliente.set("kilosVaciadosHoy", 0);
-      }
+      // const kilosVaciados = lote.promedio * inventario;
+      // const kilosVaciadosExist = await cliente.exists("kilosVaciadosHoy");
+      // if (kilosVaciadosExist !== 1) {
+      //   await cliente.set("kilosVaciadosHoy", 0);
+      // }
 
-      let kilosVaciadosHoy = await cliente.get("kilosVaciadosHoy");
+      // let kilosVaciadosHoy = await cliente.get("kilosVaciadosHoy");
 
-      if (isNaN(kilosVaciadosHoy)) {
-        kilosVaciadosHoy = 0;
-      }
+      // if (isNaN(kilosVaciadosHoy)) {
+      //   kilosVaciadosHoy = 0;
+      // }
 
-      const kilosVaciadosRedis = Number(kilosVaciadosHoy) + Number(kilosVaciados);
+      // const kilosVaciadosRedis = Number(kilosVaciadosHoy) + Number(kilosVaciados);
       //se ingresa los datos a redis
-      await cliente.set("descarteLavado", 0);
-      await cliente.set("descarteEncerado", 0);
-      await cliente.set("kilosVaciadosHoy", kilosVaciadosRedis);
+      // await cliente.set("descarteLavado", 0);
+      // await cliente.set("descarteEncerado", 0);
+      // await cliente.set("kilosVaciadosHoy", kilosVaciadosRedis);
 
       await this.modificar_predio_proceso(lote, cliente);
       await this.modificar_predio_proceso_descartes(lote, cliente);
@@ -331,7 +330,13 @@ class VariablesDelSistema {
       const inventarioJSON = fs.readFileSync(inventarioPath);
       const inventario = JSON.parse(inventarioJSON);
 
-      inventario[_id] = canastillas;
+      if (canastillas <= 0) {
+        delete inventario[_id]
+      }
+      else {
+        inventario[_id] = canastillas;
+
+      }
 
       const newInventarioJSON = JSON.stringify(inventario);
       fs.writeFileSync(inventarioPath, newInventarioJSON);
@@ -566,7 +571,7 @@ class VariablesDelSistema {
       ordenVaceoFlag = false
     }
   }
-  static async modificarOrdenVaceo(data) {
+  static async put_inventario_inventarios_orden_vaceo_modificar(data) {
     /**
    * Modifica los datos de la orden de vaciado y los guarda en un archivo.
    *
@@ -578,10 +583,6 @@ class VariablesDelSistema {
       ordenVaceoFlag = true
 
       const ordenVaceo = data;
-
-      procesoEventEmitter.emit("orden_vaceo_update", {
-        ordenVaceo: ordenVaceo
-      });
 
       const newOrdenVaceoJSON = JSON.stringify(ordenVaceo);
       fs.writeFileSync(ordenVaceoPath, newOrdenVaceoJSON);

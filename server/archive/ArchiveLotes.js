@@ -27,6 +27,7 @@ class RecordLotesRepository {
             select = {},
             sort = { createdAt: -1 },
             limit = 50,
+            skip = 0,
             user = '',
         } = options;
         try {
@@ -42,8 +43,9 @@ class RecordLotesRepository {
 
             const lotes = recordLotes.find(lotesQuery)
                 .select(select)
-                .sort(sort)
                 .limit(limit)
+                .sort(sort)
+                .skip(skip)
                 .exec();
 
             return lotes;

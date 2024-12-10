@@ -527,8 +527,8 @@ const apiSocket = {
         await ProcesoRepository.vaciarLote(data.data, user, sendData)
         return { status: 200, message: 'Ok' }
     },
-    addOrdenDeVaceo: async (data) => {
-        await VariablesDelSistema.modificarOrdenVaceo(data.data.data)
+    put_inventario_inventarios_orden_vaceo_modificar: async (data) => {
+        await ProcesoRepository.put_inventario_inventarios_orden_vaceo_modificar(data.data.data)
         return { status: 200, message: 'Ok' }
 
     },

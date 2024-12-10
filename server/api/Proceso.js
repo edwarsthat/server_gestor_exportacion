@@ -982,15 +982,14 @@ class ProcesoRepository {
         const query = { $inc: {} };
         let kilos = 0;
         for (let i = 0; i < keys.length; i++) {
-            query.$inc[`descarteLavado.${keys[i]}`] = data[keys[i]];
-            kilos += data[keys[i]];
+            query.$inc[`descarteLavado.${keys[i]}`] = Math.round(data[keys[i]]);
+            kilos += Math.round(data[keys[i]]);
         }
         query.$inc.__v = 1;
 
         const lote = await LotesRepository.modificar_lote_proceso(_id, query, action, user);
         await LotesRepository.deshidratacion(lote);
         const is_finish = await is_finish_lote(lote);
-        console.log(is_finish)
         if (is_finish) {
             const query_fecha = {
                 fecha_finalizado_proceso: new Date()
@@ -1004,9 +1003,14 @@ class ProcesoRepository {
         }
 
         await VariablesDelSistema.modificar_inventario_descarte(_id, data, "descarteLavado", lote);
-        const kilosProcesados = await VariablesDelSistema.ingresar_kilos_procesados(kilos, lote.tipoFruta);
-        procesoEventEmitter.emit("proceso_event", {
-            kilosProcesadosHoy: kilosProcesados
+        await VariablesDelSistema.ingresar_kilos_procesados(kilos, lote.tipoFruta);
+        // procesoEventEmitter.emit("proceso_event", {
+        //     kilosProcesadosHoy: kilosProcesados
+        // });
+
+        procesoEventEmitter.emit("server_event", {
+            action: "put_descarte",
+            data: {}
         });
 
     }
@@ -1021,8 +1025,8 @@ class ProcesoRepository {
                 query.$inc[keys[i]] = data[keys[i]];
                 kilos += data[keys[i]];
             } else {
-                query.$inc[`descarteEncerado.${keys[i]}`] = data[keys[i]];
-                kilos += data[keys[i]];
+                query.$inc[`descarteEncerado.${keys[i]}`] = Math.round(data[keys[i]]);
+                kilos += Math.round(data[keys[i]]);
             }
 
         }
@@ -1032,9 +1036,14 @@ class ProcesoRepository {
         await LotesRepository.deshidratacion(lote);
 
         await VariablesDelSistema.modificar_inventario_descarte(_id, data, "descarteEncerado", lote);
-        const kilosProcesados = await VariablesDelSistema.ingresar_kilos_procesados(kilos, lote.tipoFruta);
-        procesoEventEmitter.emit("proceso_event", {
-            kilosProcesadosHoy: kilosProcesados
+        await VariablesDelSistema.ingresar_kilos_procesados(kilos, lote.tipoFruta);
+        // procesoEventEmitter.emit("proceso_event", {
+        //     kilosProcesadosHoy: kilosProcesados
+        // });
+
+        procesoEventEmitter.emit("server_event", {
+            action: "put_descarte",
+            data: {}
         });
     }
     static async ingresar_foto_calidad(req, user) {
@@ -1068,7 +1077,15 @@ class ProcesoRepository {
         }
         await LotesRepository.modificar_lote_proceso(_id, query, "Agregar foto calidad", user);
     }
+    static async put_inventario_inventarios_orden_vaceo_modificar(data) {
+        await VariablesDelSistema.put_inventario_inventarios_orden_vaceo_modificar(data)
+        procesoEventEmitter.emit("server_event", {
+            action: "modificar_orden_vaceo",
+            data: {}
+        });
+    }
     static async vaciarLote(data, user) {
+        const pilaFunciones = [];
         const { _id, kilosVaciados, inventario, __v, action } = data;
 
         //RUST
@@ -1106,31 +1123,102 @@ class ProcesoRepository {
 
         // console.timeEnd("Duración de miFuncion getInventario");
 
-        //JS
-        const query = {
-            $inc: {
-                kilosVaciados: kilosVaciados,
-                __v: 1,
-            },
-            fechaProceso: new Date()
-        }
-        await LotesRepository.modificar_lote(_id, query, action, user, __v);
-        const lote = await LotesRepository.getLotes({ ids: [_id] });
-        //condicional si es desverdizado o no
-        if (lote[0].desverdizado) {
-            await VariablesDelSistema.modificarInventario_desverdizado(lote[0]._id.toString(), inventario);
-        } else {
-            await VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario);
-        }
-        await VariablesDelSistema.procesarEF1(lote[0], inventario);
-        await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString())
+        try {
 
-        procesoEventEmitter.emit("proceso_event", {
-            predio: lote
-        });
-        procesoEventEmitter.emit("predio_vaciado", {
-            predio: lote
-        });
+            //JS
+            const query = {
+                $inc: {
+                    kilosVaciados: kilosVaciados,
+                    __v: 1,
+                },
+                fechaProceso: new Date()
+            }
+            await LotesRepository.modificar_lote(_id, query, action, user, __v);
+
+
+            pilaFunciones.push({
+                funcion: "modificar_lote",
+                datos: { _id, kilosVaciados, __v }
+            })
+
+            const lote = await LotesRepository.getLotes({ ids: [_id] });
+            //condicional si es desverdizado o no
+            if (lote[0].desverdizado) {
+                await VariablesDelSistema.modificarInventario_desverdizado(lote[0]._id.toString(), inventario);
+                pilaFunciones.push({
+                    funcion: "modificar_inventario_desverdizado",
+                    datos: { _id: lote[0]._id.toString(), inventario: inventario }
+                })
+            } else {
+                await VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario);
+                pilaFunciones.push({
+                    funcion: "modificar_inventario",
+                    datos: { _id: lote[0]._id.toString(), inventario: inventario }
+                })
+            }
+
+            const predioAnterior = await VariablesDelSistema.obtenerEF1proceso()
+
+            await VariablesDelSistema.procesarEF1(lote[0], inventario);
+            pilaFunciones.push({
+                funcion: "modificar_ef1Proceso",
+                datos: { ...predioAnterior }
+            })
+
+            await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString())
+
+            //para lista de empaque
+            procesoEventEmitter.emit("predio_vaciado", {
+                predio: lote
+            });
+            0
+            //para el desktop app
+            procesoEventEmitter.emit("server_event", {
+                action: "vaciar_lote",
+                data: {
+                    predio: lote
+                }
+            });
+        } catch (err) {
+            // se devuelven los elementos que se cambiaron
+            for (let i = pilaFunciones.length - 1; i >= 0; i--) {
+                const value = pilaFunciones[i];
+                if (value.funcion === "modificar_lote") {
+                    const { _id, kilosVaciados, __v } = value.datos
+                    const query = {
+                        $inc: {
+                            kilosVaciados: - kilosVaciados,
+                            __v: 1,
+                        },
+                        fechaProceso: new Date()
+                    }
+                    await LotesRepository.modificar_lote(
+                        _id, query, "rectificando_moficiar_lote", user, __v + 1
+                    );
+                } else if (value.funcion === "modificar_inventario_desverdizado") {
+                    const { _id, inventario } = value.datos
+                    await VariablesDelSistema.modificarInventario_desverdizado(_id, -inventario);
+                } else if (value.funcion === "modificar_inventario") {
+                    const { _id, inventario } = value.datos
+                    await VariablesDelSistema.modificarInventario_desverdizado(_id, -inventario);
+                } else if (value.funcion === "modificar_ef1Proceso") {
+                    const { _id, enf, predio, nombrePredio, tipoFruta } = value.datos
+                    const lote = {
+                        _id: _id,
+                        enf: enf,
+                        tipoFruta: tipoFruta,
+                        predio: {
+                            _id: predio,
+                            nombrePredio: nombrePredio,
+                        }
+                    }
+                    await VariablesDelSistema.procesarEF1(lote);
+                }
+            }
+            throw new Error(`Code ${err.code}: ${err.message}`);
+
+        }
+
     }
     static async modificar_historial_fechas_en_patio(data, user) {
         try {
@@ -1206,6 +1294,10 @@ class ProcesoRepository {
         //se modifica el registro
         await RecordLotesRepository.modificarRecord(_idRecord, queryRecord, __vHistorial);
 
+        procesoEventEmitter.emit("server_event", {
+            action: "modificar_historial_fruta_procesada",
+            data: {}
+        });
         //RUST
         // const { _id, kilosVaciados, inventario, __v, action, historialLote } = data;
         // const { _idRecord, kilosHistorial, __vHistorial } = historialLote;
@@ -1252,6 +1344,11 @@ class ProcesoRepository {
 
         await VariablesDelSistema.modificarInventario(_id, inventario);
         await LotesRepository.deshidratacion(lote);
+
+        procesoEventEmitter.emit("server_event", {
+            action: "directo_nacional",
+            data: {}
+        });
 
         //RUST
         // const { _id, infoSalidaDirectoNacional, directoNacional, inventario, __v, action } = data;
@@ -2430,12 +2527,8 @@ class ProcesoRepository {
             await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
             await VariablesDelSistema.incrementarEF1();
 
-            procesoEventEmitter.emit("server_event", {
-                action: "add_lote"
-            });
 
             procesoEventEmitter.emit("server_event", {
-                section: "inventario_fruta_sin_procesar",
                 action: "add_lote",
                 data: {
                     ...lote._doc,
