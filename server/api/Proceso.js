@@ -1556,7 +1556,7 @@ class ProcesoRepository {
     static async sp32_funcionamiento_maquina(data) {
         let estado_maquina = false
         const status_proceso = await VariablesDelSistema.obtener_status_proceso()
-        if (Number(data) >= 500) {
+        if (Number(data) >= 1925) {
             estado_maquina = true
         }
         //al inicio maquina apagada, status off

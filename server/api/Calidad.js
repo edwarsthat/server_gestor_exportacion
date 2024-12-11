@@ -220,12 +220,16 @@ class CalidadRepository {
                         }
                     }
                     await LotesRepository.modificar_lote_proceso(_id, query, action, user);
-                    procesoEventEmitter.emit("inventario_fruta_sin_procesar", {});
+                    procesoEventEmitter.emit("server_event", {
+                        action: "inspeccion_fruta",
+                        data: {}
+                    });
                     return
                 }
                 porcentajeDescarte += value
             }
         }
+
         if (porcentageExportacion <= porcentajeDescarte) {
             const query = {
                 ...data,
@@ -236,8 +240,10 @@ class CalidadRepository {
                 }
             }
             await LotesRepository.modificar_lote_proceso(_id, query, action, user);
-            procesoEventEmitter.emit("inventario_fruta_sin_procesar", {});
-
+            procesoEventEmitter.emit("server_event", {
+                action: "inspeccion_fruta",
+                data: {}
+            });
             return
         }
 
@@ -251,7 +257,10 @@ class CalidadRepository {
         }
         await LotesRepository.modificar_lote_proceso(_id, query, action, user);
 
-        procesoEventEmitter.emit("inventario_fruta_sin_procesar", {});
+        procesoEventEmitter.emit("server_event", {
+            action: "inspeccion_fruta",
+            data: {}
+        });
 
     }
     static async put_lotes_clasificacion_descarte(req, user) {
@@ -268,6 +277,10 @@ class CalidadRepository {
     static async ingresoCalidadInterna(req, user) {
         const { _id, data, action } = req
         await LotesRepository.modificar_lote_proceso(_id, data, action, user);
+        procesoEventEmitter.emit("server_event", {
+            action: "calidad_interna",
+            data: {}
+        });
     }
     static async add_item_formulario_calidad(req, user) {
         // const { tipoFormulario, _id, area, item, cumple, observaciones } = req
@@ -308,7 +321,10 @@ class CalidadRepository {
         await LotesRepository.modificar_lote_proceso(
             _id, query, action, user
         )
-        procesoEventEmitter.emit("inventario_fruta_sin_procesar", {});
+        procesoEventEmitter.emit("server_event", {
+            action: "derogar_lote",
+            data: {}
+        });
 
     }
     static async lotes_devolver_lote(req, user) {
