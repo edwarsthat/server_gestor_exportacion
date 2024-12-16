@@ -1,11 +1,10 @@
 const mongoose = require("mongoose");
-const { Usuarios } = require("../usuarios/schemaUsuarios");
 const { Schema } = mongoose;
 
 const conn = mongoose.createConnection(process.env.MONGODB_SISTEMA);
 
 const erroresSchema = new Schema({
-    usuario: { type: Schema.Types.ObjectId, ref: Usuarios },
+    usuario: { type: Schema.Types.ObjectId, ref: "Usuarios" },
     message: String,
     name: String,
     stack: String,

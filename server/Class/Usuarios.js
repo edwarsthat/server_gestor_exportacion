@@ -1,9 +1,8 @@
+const { Cargo, Usuarios } = require("../../DB/mongoDB/config/init");
 const { HigienePersonal } = require("../../DB/mongoDB/schemas/calidad/schemaHigienePersonal");
 const { VolanteCalidad } = require("../../DB/mongoDB/schemas/calidad/schemaVolanteCalidad");
-const { Cargo } = require("../../DB/mongoDB/schemas/usuarios/schemaCargos");
 const { recordCargo } = require("../../DB/mongoDB/schemas/usuarios/schemaRecordCargos");
 const { recordUsuario } = require("../../DB/mongoDB/schemas/usuarios/schemaRecordUsuarios");
-const { Usuarios } = require("../../DB/mongoDB/schemas/usuarios/schemaUsuarios");
 const { ConnectionDBError, PostError, PutError } = require("../../Error/ConnectionErrors");
 const { ItemBussyError } = require("../../Error/ProcessError");
 let bussyIdsUsuario = new Set();
@@ -38,13 +37,12 @@ class UsuariosRepository {
             if (ids.length > 0) {
                 cargosQuery._id = { $in: ids };
             }
-            const cargos = await Cargo.find(cargosQuery)
+            const cargos = await global.Cargo.find(cargosQuery)
                 .select(select)
                 .sort(sort)
                 .limit(limit)
                 .skip(skip)
                 .exec();
-
             return cargos
 
         } catch (err) {
@@ -80,7 +78,7 @@ class UsuariosRepository {
             if (ids.length > 0) {
                 usuariosQuery._id = { $in: ids };
             }
-            const usuario = await Usuarios.find(usuariosQuery)
+            const usuario = await global.Usuarios.find(usuariosQuery)
                 .select(select)
                 .sort(sort)
                 .populate(populate)
@@ -97,7 +95,7 @@ class UsuariosRepository {
     }
     static async add_cargo(data, user) {
         try {
-            const cargo = new Cargo(data);
+            const cargo = new Cargo()(data);
             const saveCargo = await cargo.save();
             let record = new recordCargo({
                 operacionRealizada: 'crearCargo',
@@ -112,7 +110,7 @@ class UsuariosRepository {
     }
     static async eliminar_cargo(_id, user) {
         try {
-            const cargo = await Cargo.findByIdAndDelete(_id)
+            const cargo = await Cargo().findByIdAndDelete(_id)
             const cargoObj = new Object(cargo.toObject());
             let record = new recordCargo({
                 operacionRealizada: 'Eliminar cargo',
@@ -139,7 +137,7 @@ class UsuariosRepository {
         this.validateBussyCargoIds(id)
         try {
 
-            await Cargo.replaceOne({ _id: id }, query, { new: true });
+            await Cargo().replaceOne({ _id: id }, query, { new: true });
 
             let record = new recordCargo({
                 operacionRealizada: action,

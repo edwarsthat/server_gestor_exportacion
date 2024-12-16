@@ -1506,6 +1506,10 @@ class ProcesoRepository {
         await VariablesDelSistema.ingresarInventarioDesverdizado(_id, inventario)
         await VariablesDelSistema.modificarInventario(_id, inventario);
 
+        procesoEventEmitter.emit("server_event", {
+            action: "enviar_desverdizado",
+            data: {}
+        });
         //RUST
         // const { _id, inventario, desverdizado, __v, action } = req;
         // const query = {
@@ -1529,6 +1533,20 @@ class ProcesoRepository {
         //     }
         // }
         // await rustConnectionProceso.sendMessage(inventoryRequest)
+    }
+    static async put_inventarios_desverdizado_finalizar(req, user) {
+        const { _id, __v, action } = req;
+        const query = {
+            "desverdizado.fechaFinalizar": new Date(),
+            $inc: {
+                __v: 1,
+            }
+        }
+        await LotesRepository.modificar_lote(_id, query, action, user, __v);
+        procesoEventEmitter.emit("server_event", {
+            action: "finalizar_desverdizado",
+            data: {}
+        });
     }
     static async set_hora_fin_proceso() {
         const status_proceso = await VariablesDelSistema.obtener_status_proceso()

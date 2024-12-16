@@ -61,7 +61,8 @@ app.use("/sistema", routerSistema)
 app.use("/appTV", routerAppTv)
 app.use("/sp32", sp32)
 app.get("/", (req, res) => {
-    res.send('Hello from the root route!');
+    console.log("entra aqui")
+    res.sendFile(path.join(__dirname, 'public', 'web', 'index.html'));
 });
 
 //se envia el archivo ymal para actualizar la aplicacion de ecritorio

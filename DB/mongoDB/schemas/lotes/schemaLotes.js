@@ -4,6 +4,7 @@ const { Proveedores } = require("../proveedores/schemaProveedores");
 const { Schema } = mongoose;
 
 const conn = mongoose.createConnection(process.env.MONGODB_PROCESO);
+console.log("se creo la conecion de lotes")
 
 
 const calidadInternaSchema = new Schema({

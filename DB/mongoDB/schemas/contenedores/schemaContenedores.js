@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const { Clientes } = require("../clientes/schemaClientes");
 const { Lotes } = require("../lotes/schemaLotes");
-const { Usuarios } = require("../usuarios/schemaUsuarios");
 
 const { Schema } = mongoose;
 
@@ -100,7 +99,7 @@ const inspeccionMulasSchema = new Schema({
   insumos: criteriosSchema,
   medidas: criteriosSchema,
   fecha: { type: Date, default: () => new Date() },
-  usuario: { type: Schema.Types.ObjectId, ref: Usuarios },
+  usuario: { type: Schema.Types.ObjectId, ref: "Usuarios" },
 }, { _id: false });
 
 const schemaInfoMula = new Schema({

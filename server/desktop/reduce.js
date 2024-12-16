@@ -609,16 +609,9 @@ const apiSocket = {
         await LotesRepository.modificar_lote(_id, query, action, user, __v);
         return { status: 200, message: 'Ok' }
     },
-    set_finalizar_desverdizado: async (req) => {
-        const { _id, __v, action } = req.data;
-        const user = req.user.user;
-        const query = {
-            "desverdizado.fechaFinalizar": new Date(),
-            $inc: {
-                __v: 1,
-            }
-        }
-        await LotesRepository.modificar_lote(_id, query, action, user, __v);
+    put_inventarios_desverdizado_finalizar: async (req) => {
+        const { data, user } = req
+        await ProcesoRepository.put_inventarios_desverdizado_finalizar(data, user.user)
         return { status: 200, message: 'Ok' }
     },
     ingresar_descarte_lavado: async (req) => {

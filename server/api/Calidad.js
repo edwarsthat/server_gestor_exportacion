@@ -340,7 +340,10 @@ class CalidadRepository {
             _id, query, action, user
         )
         await VariablesDelSistema.modificarInventario(_id, Number(canastillas));
-        procesoEventEmitter.emit("inventario_fruta_sin_procesar", {});
+        procesoEventEmitter.emit("server_event", {
+            action: "derogar_lote",
+            data: {}
+        });
 
     }
 

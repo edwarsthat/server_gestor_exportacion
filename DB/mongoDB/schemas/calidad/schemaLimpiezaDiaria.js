@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { Usuarios } = require("../usuarios/schemaUsuarios");
 const { Schema } = mongoose;
 
 const conn = mongoose.createConnection(process.env.MONGODB_PROCESO);
@@ -8,7 +7,7 @@ const elementoSchema = new Schema({
     status: Boolean,
     observaciones: String,
     createdAt: { type: Date, default: Date.now },
-    responsable: { type: Schema.Types.ObjectId, ref: Usuarios },
+    responsable: { type: Schema.Types.ObjectId, ref: "Usuarios" },
 }, { _id: false })
 
 const laboratorioSchema = new Schema({

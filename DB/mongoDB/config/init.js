@@ -1,6 +1,9 @@
 const { exec } = require('child_process');
 const mongoose = require('mongoose');
 const { connectProcesoDB, connectSistemaDB } = require('./config');
+const { defineCargo } = require('../schemas/usuarios/schemaCargos');
+const { defineUser } = require('../schemas/usuarios/schemaUsuarios');
+const { defineFrutaDescompuesta } = require('../schemas/frutaDescompuesta/schemaFrutaDecompuesta');
 
 const checkMongoDBRunning = () => {
     return new Promise((resolve) => {
@@ -42,6 +45,7 @@ const waitForMongoDB = () => {
     });
 };
 
+
 const initMongoDB = async () => {
     try {
         const isMongoDBRunning = await checkMongoDBRunning();
@@ -55,12 +59,41 @@ const initMongoDB = async () => {
         }
 
         console.log("Conectando a las bases de datos...");
-        await connectProcesoDB();
-        await connectSistemaDB();
+        const procesoDB = await connectProcesoDB();
+        const sistemaDb = await connectSistemaDB();
+
+        await defineSchemasSistema(sistemaDb)
+        await defineSchemasProceso(procesoDB)
         console.log("Conexiones establecidas con éxito.");
     } catch (error) {
         console.error("Error durante la inicialización de MongoDB:", error);
     }
 };
+
+const defineSchemasProceso = async (sysConn) => {
+    try {
+
+        const frutaDescompuesta = await defineFrutaDescompuesta(sysConn);
+
+        global.frutaDescompuesta = frutaDescompuesta;
+
+    } catch (error) {
+        console.error("Error durante la inicialización de MongoDB: creando los schemas", error);
+    }
+}
+
+const defineSchemasSistema = async (sysConn) => {
+    try {
+
+        const Cargo = await defineCargo(sysConn);
+        const Usuarios = await defineUser(sysConn);
+
+        global.Cargo = Cargo;
+        global.Usuarios = Usuarios;
+
+    } catch (error) {
+        console.error("Error durante la inicialización de MongoDB: creando los schemas", error);
+    }
+}
 
 module.exports.initMongoDB = initMongoDB;

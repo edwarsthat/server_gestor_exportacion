@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" data-astro-cid-sckkx6r4>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <meta name="generator" content="Astro v5.0.5">
+    <title>Astro Basics</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%
+        }
+
+        [data-astro-image] {
+            width: 100%;
+            height: auto;
+            object-fit: var(--fit);
+            object-position: var(--pos);
+            aspect-ratio: var(--w) / var(--h)
+        }
+
+        [data-astro-image=responsive] {
+            max-width: calc(var(--w) * 1px);
+            max-height: calc(var(--h) * 1px)
+        }
+
+        [data-astro-image=fixed] {
+            width: calc(var(--w) * 1px);
+            height: calc(var(--h) * 1px)
+        }
+
+        .logo-style[data-astro-cid-wpdkkdke] {
+            width: 120px;
+            height: 120px
+        }
+
+        .login-container[data-astro-cid-wpdkkdke] {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f3f4f6;
+            font-family: Arial, sans-serif
+        }
+
+        form[data-astro-cid-wpdkkdke] {
+            display: flex;
+            flex-direction: column;
+            width: 300px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px #0000001a
+        }
+
+        .input-group[data-astro-cid-wpdkkdke] {
+            margin-bottom: 15px
+        }
+
+        input[data-astro-cid-wpdkkdke] {
+            width: 90%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 14px
+        }
+
+        button[data-astro-cid-wpdkkdke] {
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px
+        }
+
+        .error-message[data-astro-cid-wpdkkdke] {
+            visibility: hidden;
+            color: red;
+            margin-top: 4px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            height: 14px
+        }
+    </style>
+</head>
+
+<body data-astro-cid-sckkx6r4>
+    <script
+        type="module">async function c(o) { o.preventDefault(); try { const e = document.getElementById("user"), r = document.getElementById("password"), t = document.getElementById("error-message"), n = document.getElementById("error-message-password"); if (!e || !r) throw new Error("Elementos no encontrados en el DOM."); const i = e.value, a = r.value; if (!i || !a) throw new Error("Usuario o contraseña vacíos."); const s = await (await fetch("http://192.168.0.18:3010/login2", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ user: i, password: a }) })).json(); if (s.status === 401) { t && (t.textContent = "Usuario incorrecto.", t.style.visibility = "visible"), setTimeout(() => { t && (t.style.visibility = "hidden") }, 2e3); return } if (s.status === 402) { n && (n.textContent = "Contraseña incorrecta.", n.style.visibility = "visible"), setTimeout(() => { n && (n.style.visibility = "hidden") }, 2e3); return } if (s.status === 200) { window.location.href = "/Menu"; return } } catch (e) { e instanceof Error && console.log("Error:", e.message) } } document.addEventListener("DOMContentLoaded", () => { const o = document.querySelector("form"); o && o.addEventListener("submit", c) });</script>
+    <div class="login-container" data-astro-cid-wpdkkdke> <img src="/web/astroweb/_astro/Logo_app.BpsmkQgV_YvI8U.webp"
+            alt="Logo de la aplicación CitriApp" data-astro-cid-wpdkkdke="true" width="768" height="768" loading="lazy"
+            decoding="async" class="logo-style">
+        <h2 data-astro-cid-wpdkkdke>Iniciar Sesión</h2>
+        <form method="post" data-astro-cid-wpdkkdke>
+            <div class="input-group" data-astro-cid-wpdkkdke> <label data-astro-cid-wpdkkdke>
+                    Usuario
+                    <input type="text" id="user" required data-astro-cid-wpdkkdke> </label>
+                <div id="error-message" class="error-message" data-astro-cid-wpdkkdke></div>
+            </div>
+            <div class="input-group" data-astro-cid-wpdkkdke> <label data-astro-cid-wpdkkdke>
+                    Contraseña
+                    <input type="password" id="password" required data-astro-cid-wpdkkdke> </label>
+                <div id="error-message-password" class="error-message" data-astro-cid-wpdkkdke></div>
+            </div> <button type="submit" data-astro-cid-wpdkkdke>Iniciar Sesión</button>
+        </form>
+    </div>
+</body>
+
+</html>

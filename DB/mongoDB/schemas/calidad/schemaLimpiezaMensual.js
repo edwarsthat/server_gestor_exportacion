@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { Usuarios } = require("../usuarios/schemaUsuarios");
 const { Schema } = mongoose;
 
 const conn = mongoose.createConnection(process.env.MONGODB_PROCESO);
@@ -7,7 +6,7 @@ const conn = mongoose.createConnection(process.env.MONGODB_PROCESO);
 const elementoSchema = new Schema({
     status: Boolean,
     observaciones: String,
-    responsable: { type: Schema.Types.ObjectId, ref: Usuarios },
+    responsable: { type: Schema.Types.ObjectId, ref: "Usuarios" },
     createdAt: { type: Date, default: Date.now },
 }, { _id: false })
 
@@ -91,7 +90,7 @@ const cartonSchema = new Schema({
 
 const LimpiezaMensualSchema = new Schema({
     createdAt: { type: Date, default: Date.now() },
-    responsable: { type: Schema.Types.ObjectId, ref: Usuarios },
+    responsable: { type: Schema.Types.ObjectId, ref: "Usuarios" },
     fechaFin: Date,
     fechaInicio: Date,
     ID: { type: String, require: true },
