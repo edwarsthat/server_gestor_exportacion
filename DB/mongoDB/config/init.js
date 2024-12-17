@@ -4,6 +4,12 @@ const { connectProcesoDB, connectSistemaDB } = require('./config');
 const { defineCargo } = require('../schemas/usuarios/schemaCargos');
 const { defineUser } = require('../schemas/usuarios/schemaUsuarios');
 const { defineFrutaDescompuesta } = require('../schemas/frutaDescompuesta/schemaFrutaDecompuesta');
+const { defineRecordcargo } = require('../schemas/usuarios/schemaRecordCargos');
+const { defineRecordusuario } = require('../schemas/usuarios/schemaRecordUsuarios');
+const { defineControlPlagas } = require('../schemas/calidad/schemaControlPlagas');
+const { defineHigienePersonal } = require('../schemas/calidad/schemaHigienePersonal');
+const { defineLimpiezaDiaria } = require('../schemas/calidad/schemaLimpiezaDiaria');
+const db = {};
 
 const checkMongoDBRunning = () => {
     return new Promise((resolve) => {
@@ -73,9 +79,7 @@ const initMongoDB = async () => {
 const defineSchemasProceso = async (sysConn) => {
     try {
 
-        const frutaDescompuesta = await defineFrutaDescompuesta(sysConn);
-
-        global.frutaDescompuesta = frutaDescompuesta;
+        db.frutaDescompuesta = await defineFrutaDescompuesta(sysConn);
 
     } catch (error) {
         console.error("Error durante la inicialización de MongoDB: creando los schemas", error);
@@ -85,15 +89,21 @@ const defineSchemasProceso = async (sysConn) => {
 const defineSchemasSistema = async (sysConn) => {
     try {
 
-        const Cargo = await defineCargo(sysConn);
-        const Usuarios = await defineUser(sysConn);
+        db.Cargo = await defineCargo(sysConn);
+        db.recordCargo = await defineRecordcargo(sysConn);
+        db.Usuarios = await defineUser(sysConn);
+        db.recordUsuario = await defineRecordusuario(sysConn);
+        db.ControlPlagas = await defineControlPlagas(sysConn);
+        db.HigienePersonal = await defineHigienePersonal(sysConn);
+        db.LimpiezaDiaria = await defineLimpiezaDiaria(sysConn);
 
-        global.Cargo = Cargo;
-        global.Usuarios = Usuarios;
 
     } catch (error) {
         console.error("Error durante la inicialización de MongoDB: creando los schemas", error);
     }
 }
 
-module.exports.initMongoDB = initMongoDB;
+module.exports = {
+    initMongoDB,
+    db
+};

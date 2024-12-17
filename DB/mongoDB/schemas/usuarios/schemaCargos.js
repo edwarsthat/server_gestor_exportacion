@@ -41,7 +41,6 @@ const defineCargo = async (conn) => {
 
 
     const Cargo = conn.model("Cargo", cargoSchema);
-    console.log("se creo cargo")
 
     return Cargo
 }

@@ -81,10 +81,10 @@ class LotesRepository {
             }
             const lotes = await Lotes.find(lotesQuery)
                 .select(select)
-                .populate(populate)
                 .sort(sort)
                 .limit(limit)
                 .skip(skip)
+                .populate(populate)
                 .exec();
 
             return lotes

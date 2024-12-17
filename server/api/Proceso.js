@@ -16,6 +16,7 @@ const path = require('path');
 const fs = require("fs");
 
 const { have_lote_GGN_export, is_finish_lote } = require("../controllers/validations");
+const { FrutaDescompuestaRepository } = require("../Class/FrutaDescompuesta");
 // const { getRustConnectionProceso } = require("../../DB/controllers/proceso");
 
 
@@ -904,6 +905,25 @@ class ProcesoRepository {
         const predio = await VariablesDelSistema.obtener_predio_procesando()
         return predio
     }
+    static async get_inventarios_registros_fruta_descompuesta(req) {
+        try {
+            const { page } = req
+            const resultsPerPage = 50;
+
+            const registros = await FrutaDescompuestaRepository.get_fruta_descompuesta({
+                skip: (page - 1) * resultsPerPage,
+
+            })
+
+            return registros
+
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
     //! obtener el numero de elementos para paginacion
     static async obtener_cantidad_contenedores() {
         const cantidad = await ContenedoresRepository.obtener_cantidad_contenedores()
@@ -929,6 +949,19 @@ class ProcesoRepository {
         }
         const cantidad = await RecordLotesRepository.obtener_cantidad_recordLote(filtro)
         return cantidad
+    }
+    static async get_inventarios_numero_registros_fruta_descompuesta() {
+        try {
+
+            const registros = await FrutaDescompuestaRepository.get_numero_fruta_descompuesta()
+            return registros
+
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
+        }
     }
 
 
@@ -1655,6 +1688,17 @@ class ProcesoRepository {
         await LotesRepository.modificar_lote_proceso(_id, query, action, user)
 
 
+    }
+    static async put_inventarios_registros_fruta_descompuesta(req) {
+        try {
+            const { _id, data } = req;
+            await FrutaDescompuestaRepository.put_fruta_descompuesta(_id, data);
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
+        }
     }
 
     //? lista de empaque
@@ -2607,6 +2651,34 @@ class ProcesoRepository {
 
         }
 
+    }
+    static async post_inventarios_registros_fruta_descompuesta(req, user) {
+        const pilaFunciones = [];
+
+        try {
+            const { data, descarte } = req
+            const response = await FrutaDescompuestaRepository.post_fruta_descompuesta(data, user._id);
+
+            pilaFunciones.push({
+                funcion: "post_fruta_descompuesta",
+                datos: {
+                    response
+                }
+            })
+
+            //eliminar kilos del descarte
+            VariablesDelSistema.restar_fruta_inventario_descarte(descarte, data.tipo_fruta)
+        } catch (err) {
+            if (pilaFunciones[0].funcion === "post_fruta_descompuesta") {
+                FrutaDescompuestaRepository.delete_fruta_descompuesta(
+                    pilaFunciones[0].datos.response._id
+                )
+            }
+            if (err.status === 521) {
+                throw err
+            }
+            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
+        }
     }
     static async set_hora_inicio_proceso() {
         const date = await VariablesDelSistema.set_hora_inicio_proceso();

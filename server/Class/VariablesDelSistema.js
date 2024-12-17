@@ -799,6 +799,7 @@ class VariablesDelSistema {
    */
     if (inventarioDescarteFlag) throw new ProcessError(413, "Error el archivo se esta escribiendo");
     try {
+      console.log(kilos)
       inventarioDescarteFlag = true
       let inventoryOut = {}
       const inventarioJSON = fs.readFileSync(inventarioDescartesPath);

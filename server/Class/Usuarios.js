@@ -1,8 +1,5 @@
-const { Cargo, Usuarios } = require("../../DB/mongoDB/config/init");
-const { HigienePersonal } = require("../../DB/mongoDB/schemas/calidad/schemaHigienePersonal");
+const { db } = require("../../DB/mongoDB/config/init");
 const { VolanteCalidad } = require("../../DB/mongoDB/schemas/calidad/schemaVolanteCalidad");
-const { recordCargo } = require("../../DB/mongoDB/schemas/usuarios/schemaRecordCargos");
-const { recordUsuario } = require("../../DB/mongoDB/schemas/usuarios/schemaRecordUsuarios");
 const { ConnectionDBError, PostError, PutError } = require("../../Error/ConnectionErrors");
 const { ItemBussyError } = require("../../Error/ProcessError");
 let bussyIdsUsuario = new Set();
@@ -37,7 +34,7 @@ class UsuariosRepository {
             if (ids.length > 0) {
                 cargosQuery._id = { $in: ids };
             }
-            const cargos = await global.Cargo.find(cargosQuery)
+            const cargos = await db.Cargo.find(cargosQuery)
                 .select(select)
                 .sort(sort)
                 .limit(limit)
@@ -78,7 +75,7 @@ class UsuariosRepository {
             if (ids.length > 0) {
                 usuariosQuery._id = { $in: ids };
             }
-            const usuario = await global.Usuarios.find(usuariosQuery)
+            const usuario = await db.Usuarios.find(usuariosQuery)
                 .select(select)
                 .sort(sort)
                 .populate(populate)
@@ -94,77 +91,96 @@ class UsuariosRepository {
         }
     }
     static async add_cargo(data, user) {
+        const session = await db.Cargo.startSession();
+        session.startTransaction();
         try {
-            const cargo = new Cargo()(data);
+            const cargo = new db.Cargo(data);
             const saveCargo = await cargo.save();
-            let record = new recordCargo({
+            let record = new db.recordCargo({
                 operacionRealizada: 'crearCargo',
                 user: user.user,
                 documento: saveCargo
             })
             await record.save();
+
+            await session.commitTransaction();
+            session.endSession();
+
             return saveCargo
         } catch (err) {
+            await session.abortTransaction();
+            session.endSession();
             throw new PostError(409, `Error agregando cargo ${err.message}`);
         }
     }
     static async eliminar_cargo(_id, user) {
+        const session = await db.Cargo.startSession();
+        session.startTransaction();
         try {
-            const cargo = await Cargo().findByIdAndDelete(_id)
+            const cargo = await db.Cargo.findByIdAndDelete(_id)
             const cargoObj = new Object(cargo.toObject());
-            let record = new recordCargo({
+            let record = new db.recordCargo({
                 operacionRealizada: 'Eliminar cargo',
                 user: user.user,
                 documento: cargoObj
             })
             await record.save();
+
+            await session.commitTransaction();
+            session.endSession();
             return cargo
         } catch (err) {
+            await session.abortTransaction();
+            session.endSession();
             throw new PostError(409, `Error eliminando cargo ${err.message}`);
         }
     }
     static async modificar_cargo(id, query, action, user) {
-        /**
-         * Modifica un cargo en la base de datos de MongoDB.
-         *
-         * @param {string} id - ID del cargo a modificar.
-         * @param {Object} query - Objeto con los cambios a aplicar al cargo.
-         * @param {string} action - Descripción de la acción realizada.
-         * @param {string} user - Usuario que realiza la acción.
-         * @returns {Promise<Object>} - Promesa que resuelve al objeto del cargo modificado.
-         * @throws {PutError} - Lanza un error si ocurre un problema al modificar el cargo.
-         */
         this.validateBussyCargoIds(id)
+        const session = await db.Cargo.startSession();
+        session.startTransaction();
         try {
 
-            await Cargo().replaceOne({ _id: id }, query, { new: true });
+            await db.Cargo.replaceOne({ _id: id }, query, { new: true });
 
-            let record = new recordCargo({
+            let record = new db.recordCargo({
                 operacionRealizada: action,
                 user: user,
                 documento: { ...query, _id: id }
             })
             await record.save()
 
+            await session.commitTransaction();
+            session.endSession();
         } catch (err) {
-            throw new PutError(414, `Error al modificar el cargo ${id} => ${err.name} `);
+            await session.commitTransaction();
+            session.endSession();
+            throw new PutError(414, `Error al modificar el cargo => ${err.message} `);
         } finally {
             bussyIdsCargo.delete(id);
         }
     }
     static async add_user(data, user) {
+        const session = await db.Usuarios.startSession();
+        session.startTransaction();
         try {
 
-            const usuario = new Usuarios(data);
+            const usuario = new db.Usuarios(data);
             const saveUsuario = await usuario.save();
-            let record = new recordUsuario({
+            let record = new db.recordUsuario({
                 operacionRealizada: 'crearUsuario',
                 user: user,
                 documento: saveUsuario
             })
             await record.save();
+
+            await session.commitTransaction();
+            session.endSession();
+
             return saveUsuario
         } catch (err) {
+            await session.commitTransaction();
+            session.endSession();
             throw new PostError(409, `Error agregando usuario ${err.message}`);
         }
     }
@@ -181,7 +197,8 @@ class UsuariosRepository {
          * @throws {PutError} - Lanza un error si ocurre un problema al modificar el usuario.
          */
         this.validateBussyUsuarioIds(id);
-
+        const session = await db.Usuarios.startSession();
+        session.startTransaction();
         try {
             const filter = { _id: id };
 
@@ -190,11 +207,11 @@ class UsuariosRepository {
                 filter.__v = __v;
             }
 
-            const usuario = await Usuarios.findOneAndUpdate(filter, query, { new: true });
+            const usuario = await db.Usuarios.findOneAndUpdate(filter, query, { new: true });
             const usuario_obj = usuario ? usuario.toObject() : null;
 
             if (usuario_obj) {
-                const record = new recordUsuario({
+                const record = new db.recordUsuario({
                     operacionRealizada: action,
                     user: user,
                     documento: { ...query, _id: id }
@@ -202,8 +219,13 @@ class UsuariosRepository {
                 await record.save();
             }
 
+            await session.commitTransaction();
+            session.endSession();
+
             return usuario_obj;
         } catch (err) {
+            await session.commitTransaction();
+            session.endSession();
             throw new PutError(414, `Error al modificar el dato ${id} => ${err.name}`);
         } finally {
             bussyIdsUsuario.delete(id);
@@ -233,7 +255,7 @@ class UsuariosRepository {
          *                      
          */
         try {
-            const formulario = new HigienePersonal(data);
+            const formulario = new db.HigienePersonal(data);
             const saveFormulario = await formulario.save();
             return saveFormulario
         } catch (err) {
@@ -318,16 +340,16 @@ class UsuariosRepository {
             if (ids.length > 0) {
                 higienePersonalQuery._id = { $in: ids };
             }
-            const higienePersonal = await HigienePersonal.find(higienePersonalQuery)
+            const higienePersonal = await db.HigienePersonal.find(higienePersonalQuery)
                 .select(select)
                 .sort(sort)
                 .populate({
                     path: 'operario',
-                    select: 'nombre apellido usuario', // Especifica los campos a seleccionar del documento relacionado
+                    select: 'nombre apellido usuario',
                 })
                 .populate({
                     path: 'responsable',
-                    select: 'nombre apellido usuario', // Especifica los campos a seleccionar del documento relacionado
+                    select: 'nombre apellido usuario',
                 })
                 .limit(limit)
                 .skip(skip)
@@ -342,7 +364,7 @@ class UsuariosRepository {
     }
     static async obtener_cantidad_usuarios() {
         try {
-            const count = await Usuarios.countDocuments();
+            const count = await global.Usuarios.countDocuments();
             return count;
         } catch (err) {
             throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);

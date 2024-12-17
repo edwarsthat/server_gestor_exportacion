@@ -1,0 +1,54 @@
+POST http://192.168.0.18:3010/proceso2/post_inventarios_registros_fruta_descompuesta
+Content-Type: application/json
+
+{
+    "data":{
+        "kilos_total": 5,
+        "razon":"Es una razon de prueba 3",
+        "comentario_adicional":"N/A",
+        "tipo_fruta":"Naranja"
+    },
+    "descarte":{
+            "descarteLavado": {
+            "descarteGeneral": 2,
+            "pareja": 0,
+            "balin": 0
+        },
+        "descarteEncerado": {
+            "descarteGeneral": 3,
+            "pareja": 0,
+            "balin": 0,
+            "extra": 0,
+            "suelo": 0,
+            "frutaNacional": 0
+        }
+    }
+}
+
+### obtener los registros
+GET http://192.168.0.18:3010/proceso2/get_inventarios_registros_fruta_descompuesta
+Content-Type: application/json
+
+{
+    "data":{
+        "page":1
+    }
+}
+
+### obtener la cantidad de registros
+GET http://192.168.0.18:3010/proceso2/get_inventarios_numero_registros_fruta_descompuesta
+
+
+### modificar elemento
+PUT http://192.168.0.18:3010/proceso2/put_inventarios_registros_fruta_descompuesta
+Content-Type: application/json
+
+{
+    "data":{
+        "_id": "676187a654dc2865d7b01905",
+        "data":{
+            "kilos_total": 22,
+            "comentario_adicional":"Me equivoque"
+        }
+    }
+}

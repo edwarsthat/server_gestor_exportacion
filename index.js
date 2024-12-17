@@ -27,6 +27,7 @@ const { HandleErrors } = require('./Error/recordErrors');
 const { VariablesDelSistema } = require('./server/Class/VariablesDelSistema');
 const { FormulariosCalidadRepository } = require('./server/Class/FormulariosCalidad');
 const { sp32 } = require('./server/mobile/sp32');
+const { routerProceso2 } = require('./server/routes/Proceso');
 // const { initRustProceso } = require('./DB/controllers/proceso');
 
 
@@ -55,6 +56,7 @@ app.use(express.text());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use("/variablesDeProceso", routerVariablesdelSistema);
 app.use("/proceso", routerProceso);
+app.use("/proceso2", routerProceso2);
 app.use("/comercial", routerComercial);
 app.use("/calidad", routerCalidad)
 app.use("/sistema", routerSistema)
