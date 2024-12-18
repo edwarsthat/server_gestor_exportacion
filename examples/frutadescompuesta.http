@@ -1,3 +1,33 @@
+### creacion de registro
+POST http://192.168.0.18:3010/proceso2/post_inventarios_registros_fruta_descompuesta
+Content-Type: application/json
+
+{
+    "data":{
+        "kilos_total": 5,
+        "razon":"Es una razon de prueba 3",
+        "comentario_adicional":"N/A",
+        "tipo_fruta":"Naranja"
+
+    },
+    "descarte":{
+            "descarteLavado": {
+            "descarteGeneral": 2,
+            "pareja": 0,
+            "balin": 0
+        },
+        "descarteEncerado": {
+            "descarteGeneral": 3,
+            "pareja": 0,
+            "balin": 0,
+            "extra": 0,
+            "suelo": 0,
+            "frutaNacional": 0
+        }
+    }
+}
+
+### creacion de registro sin el tipo de fruta
 POST http://192.168.0.18:3010/proceso2/post_inventarios_registros_fruta_descompuesta
 Content-Type: application/json
 
@@ -22,6 +52,19 @@ Content-Type: application/json
             "suelo": 0,
             "frutaNacional": 0
         }
+    }
+}
+
+### creacion de registro sin descarte
+POST http://192.168.0.18:3010/proceso2/post_inventarios_registros_fruta_descompuesta
+Content-Type: application/json
+
+{
+    "data":{
+        "kilos_total": 5,
+        "razon":"Es validando el error de que no se ingrese descarte",
+        "comentario_adicional":"N/A",
+        "tipo_fruta":"Limon"
     }
 }
 

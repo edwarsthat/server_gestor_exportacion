@@ -1,3 +1,5 @@
+require('dotenv').config('.');
+
 const { exec } = require('child_process');
 const mongoose = require('mongoose');
 const { connectProcesoDB, connectSistemaDB } = require('./config');
@@ -11,18 +13,21 @@ const { defineHigienePersonal } = require('../schemas/calidad/schemaHigienePerso
 const { defineLimpiezaDiaria } = require('../schemas/calidad/schemaLimpiezaDiaria');
 const db = {};
 
-const checkMongoDBRunning = () => {
-    return new Promise((resolve) => {
-        mongoose.connect(`mongodb://localhost:${process.env.MONGO_PORT}/`,
-            { serverSelectionTimeoutMS: 5000 })
-            .then(() => {
-                mongoose.connection.close();
-                resolve(true);
-            })
-            .catch(() => {
-                resolve(false);
-            });
-    });
+const checkMongoDBRunning = async () => {
+
+    try {
+        // Intentar conectarse a la base de datos
+        const db = mongoose.createConnection(process.env.MONGODB_SISTEMA, {
+            serverSelectionTimeoutMS: 2000, // Esperar un máximo de 2 segundos
+        });
+
+        console.log("Conexión exitosa a la base de datos.");
+        await db.close(); // Cerrar la conexión después de verificar
+        return true; // La base de datos está corriendo
+    } catch (error) {
+        console.error("Error conectando a la base de datos:", error.message);
+        return false; // No se pudo conectar a la base de datos
+    }
 };
 
 const startMongoDB = () => {
@@ -71,6 +76,8 @@ const initMongoDB = async () => {
         await defineSchemasSistema(sistemaDb)
         await defineSchemasProceso(procesoDB)
         console.log("Conexiones establecidas con éxito.");
+
+        return [procesoDB, sistemaDb]
     } catch (error) {
         console.error("Error durante la inicialización de MongoDB:", error);
     }

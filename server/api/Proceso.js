@@ -2665,14 +2665,17 @@ class ProcesoRepository {
                     response
                 }
             })
+            if (!descarte) throw new Error("No hay descarte")
 
             //eliminar kilos del descarte
             VariablesDelSistema.restar_fruta_inventario_descarte(descarte, data.tipo_fruta)
         } catch (err) {
-            if (pilaFunciones[0].funcion === "post_fruta_descompuesta") {
-                FrutaDescompuestaRepository.delete_fruta_descompuesta(
-                    pilaFunciones[0].datos.response._id
-                )
+            if (pilaFunciones.length > 0) {
+                if (pilaFunciones[0].funcion === "post_fruta_descompuesta") {
+                    FrutaDescompuestaRepository.delete_fruta_descompuesta(
+                        pilaFunciones[0].datos.response._id
+                    )
+                }
             }
             if (err.status === 521) {
                 throw err

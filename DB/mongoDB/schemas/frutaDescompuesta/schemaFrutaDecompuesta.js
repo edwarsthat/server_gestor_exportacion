@@ -9,7 +9,7 @@ const defineFrutaDescompuesta = async (conn) => {
         user: String,
         razon: String,
         comentario_adicional: String,
-        tipo_fruta: String
+        tipo_fruta: { type: String, required: true }
     });
 
 
