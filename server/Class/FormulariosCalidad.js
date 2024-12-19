@@ -1,5 +1,4 @@
 const { db } = require("../../DB/mongoDB/config/init");
-const { LimpiezaMensual } = require("../../DB/mongoDB/schemas/calidad/schemaLimpiezaMensual");
 const { ConnectionDBError, PutError } = require("../../Error/ConnectionErrors");
 const { ItemBussyError } = require("../../Error/ProcessError");
 
@@ -16,7 +15,7 @@ class FormulariosCalidadRepository {
         await formulario.save();
     }
     static async crear_formulario_limpieza_mensual(ID, fechaInicio, fechaFin, user) {
-        const formulario = new LimpiezaMensual({
+        const formulario = new db.LimpiezaMensual({
             ID: ID,
             fechaInicio: new Date(fechaInicio).setHours(0, 0, 0, 0),
             fechaFin: new Date(fechaFin).setHours(23, 59, 59, 59),
@@ -85,7 +84,7 @@ class FormulariosCalidadRepository {
             if (ids.length > 0) {
                 newQuery._id = { $in: ids };
             }
-            const formularios = await LimpiezaMensual.find(newQuery)
+            const formularios = await db.LimpiezaMensual.find(newQuery)
                 .select(select)
                 .sort(sort)
                 .limit(limit)
@@ -99,7 +98,7 @@ class FormulariosCalidadRepository {
     }
     static async count_documents_formularios_calidad_limpieza_mensual() {
         try {
-            const count = await LimpiezaMensual.countDocuments();
+            const count = await db.LimpiezaMensual.countDocuments();
             return count;
         } catch (err) {
             throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
@@ -179,7 +178,7 @@ class FormulariosCalidadRepository {
          */
         this.validateBussyIds(id)
         try {
-            await LimpiezaMensual.findOneAndUpdate({ _id: id, }, query, { new: true });
+            await db.LimpiezaMensual.findOneAndUpdate({ _id: id, }, query, { new: true });
 
         } catch (err) {
             throw new PutError(414, `Error al modificar el dato  ${err.name}`);

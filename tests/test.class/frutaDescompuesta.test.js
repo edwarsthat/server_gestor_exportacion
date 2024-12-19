@@ -45,13 +45,15 @@ const test_post_fruta_descompuesta = async () => {
         assert.strictEqual(result.__v, 0, chalk.red('El campo __v no coincide'));
 
         console.log(chalk.green.bold('Prueba PASADA: post_fruta_descompuesta\n'));
+
+        return result._id
     } catch (err) {
         console.error(chalk.red.bold('Prueba FALLIDA: post_fruta_descompuesta'));
         console.error(chalk.red(err.message));
         throw err; // Lanza el error para el flujo general de pruebas
     }
 };
-const test_get_fruta_descompuesta = async () => {
+const test_get_fruta_descompuesta = async (_id) => {
 
     const chalk = (await import('chalk')).default;
     console.log(chalk.blue.bold('Iniciando prueba: get_fruta_descompuesta'));
@@ -73,7 +75,7 @@ const test_get_fruta_descompuesta = async () => {
 
         //prueba filtro ids
         const filtro1 = {
-            ids: ["676187a654dc2865d7b01905", "676188b354dc2865d7b01907", "676192585519668a86fe6bfb"],
+            ids: [_id, "676188b354dc2865d7b01907", "676192585519668a86fe6bfb"],
             select: { user: 1 }
         }
         const result2 = await FrutaDescompuestaRepository.get_fruta_descompuesta({
@@ -165,15 +167,84 @@ const test_get_fruta_descompuesta = async () => {
     }
 
 };
-const test_put_fruta_descompuesta = async () => {
+const test_put_fruta_descompuesta = async (_id) => {
 
     const chalk = (await import('chalk')).default;
-    console.log(chalk.blue.bold('Iniciando prueba: post_fruta_descompuesta'));
+    console.log(chalk.blue.bold('Iniciando prueba: put_fruta_descompuesta'));
 
     try {
 
+        const updateQuery = {
+            kilos_total: 10,
+            razon: "Actualización de prueba"
+        };
+
+        const result = await FrutaDescompuestaRepository.put_fruta_descompuesta(_id, updateQuery);
+
+        // Verificar que el resultado no sea nulo
+        assert.ok(result, chalk.red('No se devolvió ningún resultado de la actualización'));
+
+        // Verificar que los campos actualizados coinciden con los valores esperados
+        assert.strictEqual(result.kilos_total, updateQuery.kilos_total, chalk.red('kilos_total no se actualizó correctamente'));
+        assert.strictEqual(result.razon, updateQuery.razon, chalk.red('razon no se actualizó correctamente'));
+
+        // Verificar que los campos no actualizados permanecen iguales
+        assert.ok(result.createdAt instanceof Date, chalk.red('createdAt cambió o no es válido'));
+        assert.ok(isValidObjectId(result._id), chalk.red('El _id no es válido'));
+
+        //probar con datos invalidos
+        try {
+            await FrutaDescompuestaRepository.put_fruta_descompuesta(_id, {
+                kilos_total: "no_es_un_numero"
+            });
+
+            assert.fail(chalk.red('La función no lanzó un error con datos inválidos'));
+        } catch (err) {
+            assert.ok(err instanceof Error, chalk.red('No se lanzó un error correctamente para datos inválidos'));
+            console.log(chalk.yellow('Prueba PASADA: Manejo de datos inválidos'));
+        }
+
+        console.log(chalk.green.bold('Prueba PASADA: put_fruta_descompuesta\n'));
+
     } catch (err) {
-        console.error(chalk.red.bold('Prueba FALLIDA: post_fruta_descompuesta'));
+        console.error(chalk.red.bold('Prueba FALLIDA: put_fruta_descompuesta'));
+        console.error(chalk.red(err.message));
+        throw err; // Lanza el error para el flujo general de pruebas
+    }
+};
+const test_delete_fruta_descompuesta = async (_id) => {
+    const chalk = (await import('chalk')).default;
+    console.log(chalk.blue.bold('Iniciando prueba: delete_fruta_descompuesta'));
+
+    try {
+        // Ejecutar el método de eliminación
+        const result = await FrutaDescompuestaRepository.delete_fruta_descompuesta(_id);
+
+        // Verificar que el resultado no sea nulo
+        assert.ok(result, chalk.red('No se devolvió ningún resultado al eliminar el registro'));
+
+        // Verificar que el registro eliminado tiene el mismo `_id`
+        assert.strictEqual(result._id.toString(), _id, chalk.red('El _id del registro eliminado no coincide'));
+
+        try {
+            const result = await FrutaDescompuestaRepository.delete_fruta_descompuesta('66b62fc3777ac9bdcc5050ed'); // ID inexistente
+            assert.strictEqual(result, null, chalk.red('La función no devolvió null para un registro inexistente'));
+            console.log(chalk.green('Prueba PASADA: Manejo de registro inexistente'));
+        } catch (err) {
+            console.error(chalk.red('Prueba FALLIDA: Manejo de registro inexistente'), err.message);
+        }
+
+        try {
+            await FrutaDescompuestaRepository.delete_fruta_descompuesta('id_invalido');
+            assert.fail(chalk.red('La función no lanzó un error para un ID inválido'));
+        } catch (err) {
+            assert.ok(err instanceof Error, chalk.red('No se lanzó el error correcto para un ID inválido'));
+            console.log(chalk.green('Prueba PASADA: Manejo de ID inválido'));
+        }
+
+        console.log(chalk.green.bold('Prueba PASADA: delete_fruta_descompuesta\n'));
+    } catch (err) {
+        console.error(chalk.red.bold('Prueba FALLIDA: delete_fruta_descompuesta'));
         console.error(chalk.red(err.message));
         throw err; // Lanza el error para el flujo general de pruebas
     }
@@ -182,5 +253,7 @@ const test_put_fruta_descompuesta = async () => {
 
 module.exports = {
     test_post_fruta_descompuesta,
-    test_get_fruta_descompuesta
+    test_get_fruta_descompuesta,
+    test_put_fruta_descompuesta,
+    test_delete_fruta_descompuesta
 }

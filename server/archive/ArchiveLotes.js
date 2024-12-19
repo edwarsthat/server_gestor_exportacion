@@ -1,4 +1,4 @@
-const { recordLotes } = require("../../DB/mongoDB/schemas/lotes/schemaRecordLotes");
+const { db } = require("../../DB/mongoDB/config/init");
 const { ConnectionDBError, PutError } = require("../../Error/ConnectionErrors");
 const { ItemBussyError } = require("../../Error/ProcessError");
 
@@ -41,7 +41,7 @@ class RecordLotesRepository {
                 lotesQuery.user = user;
             }
 
-            const lotes = recordLotes.find(lotesQuery)
+            const lotes = db.recordLotes.find(lotesQuery)
                 .select(select)
                 .limit(limit)
                 .sort(sort)
@@ -80,7 +80,7 @@ class RecordLotesRepository {
             if (ids.length > 0) {
                 lotesQuery._id = { $in: ids };
             }
-            const lotes = recordLotes.find(lotesQuery)
+            const lotes = db.recordLotes.find(lotesQuery)
                 .select(select)
                 .sort(sort)
                 .exec();
@@ -94,7 +94,7 @@ class RecordLotesRepository {
     static async modificarRecord(id, query, __v = 0) {
         this.validateBussyIds(id)
         try {
-            const record = await recordLotes.findOneAndUpdate({ _id: id, __v: __v }, query, { new: true });
+            const record = await db.recordLotes.findOneAndUpdate({ _id: id, __v: __v }, query, { new: true });
             return record
         } catch (err) {
             throw new PutError(414, `Error al modificar el registro  ${err.essage}`);
@@ -104,7 +104,7 @@ class RecordLotesRepository {
     }
     static async obtener_cantidad_recordLote(filtro = {}) {
         try {
-            const count = await recordLotes.countDocuments(filtro);
+            const count = await db.recordLotes.countDocuments(filtro);
             return count;
         } catch (err) {
             throw new ConnectionDBError(408, `Error obteniendo cantidad contenedores ${err.message}`);

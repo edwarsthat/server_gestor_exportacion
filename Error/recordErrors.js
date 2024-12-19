@@ -1,4 +1,4 @@
-const { Errores } = require("../DB/mongoDB/schemas/errors/schemaErrores");
+const { db } = require("../DB/mongoDB/config/init");
 const { PostError } = require("./ConnectionErrors");
 
 class HandleErrors {
@@ -20,7 +20,7 @@ class HandleErrors {
                 action: action,
                 user: user
             }
-            const err = new Errores(errorObj);
+            const err = new db.Errores(errorObj);
             await err.save();
 
 

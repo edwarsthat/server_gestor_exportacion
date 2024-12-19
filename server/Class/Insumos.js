@@ -1,5 +1,4 @@
-const { recordTipoInsumos } = require("../../DB/mongoDB/schemas/insumos/RecordSchemaInsumos");
-const { Insumos } = require("../../DB/mongoDB/schemas/insumos/schemaInsumos");
+const { db } = require("../../DB/mongoDB/config/init");
 const { ConnectionDBError, PutError, PostError } = require("../../Error/ConnectionErrors");
 const { ItemBussyError } = require("../../Error/ProcessError");
 
@@ -7,16 +6,7 @@ let bussyIds = new Set();
 
 class InsumosRepository {
     static async get_insumos(options = {}) {
-        /**
-         * Funcion que obtiene insumes de la base de datos de MongoDB.
-         *
-         * @param {Object} options - Objeto de configuración para obtener los lotes.
-         * @param {Array<string>} [options.ids=[]] - Array de IDs de los lotes a obtener.
-         * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
-         * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
-         * @returns {Promise<Array>} - Promesa que resuelve a un array de lotes obtenidos.
-         * @throws {PostError} - Lanza un error si ocurre un problema al obtener los lotes.
-         */
+
         const {
             ids = [],
             query = {},
@@ -28,7 +18,7 @@ class InsumosRepository {
             if (ids.length > 0) {
                 InsumosQuery._id = { $in: ids };
             }
-            const lotes = await Insumos.find(InsumosQuery)
+            const lotes = await db.Insumos.find(InsumosQuery)
                 .select(select)
                 .exec();
 
@@ -52,14 +42,14 @@ class InsumosRepository {
         this.validateBussyIds(id)
         try {
 
-            const insumo = await Insumos.findOneAndUpdate(
+            const insumo = await db.Insumos.findOneAndUpdate(
                 { _id: id },
                 query,
                 { new: true }
             );
             const insumo_obj = new Object(insumo.toObject());
 
-            let record = new recordTipoInsumos({
+            let record = new db.recordTipoInsumos({
                 operacionRealizada: action,
                 user: user,
                 documento: { ...query, _id: id }
@@ -74,9 +64,9 @@ class InsumosRepository {
     }
     static async add_tipo_insumo(data, user) {
         try {
-            const insumo = new Insumos(data);
+            const insumo = new db.Insumos(data);
             const saveInsumo = await insumo.save();
-            let record = new recordTipoInsumos({
+            let record = new db.recordTipoInsumos({
                 operacionRealizada: 'crearTipoInsumo',
                 user: user.user,
                 documento: saveInsumo

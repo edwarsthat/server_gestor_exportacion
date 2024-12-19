@@ -2,17 +2,19 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-const conn = mongoose.createConnection(process.env.MONGODB_SISTEMA);
+const defineVolanteCalidad = async (conn) => {
 
-const VolanteCalidadSchema = new Schema({
-    tipoFruta: String,
-    unidades: Number,
-    defectos: Number,
-    fecha: { type: Date, default: Date.now() },
-    operario: { type: Schema.Types.ObjectId, ref: "Usuarios" },
-    responsable: { type: Schema.Types.ObjectId, ref: "Usuarios" },
-});
+    const VolanteCalidadSchema = new Schema({
+        tipoFruta: String,
+        unidades: Number,
+        defectos: Number,
+        fecha: { type: Date, default: Date.now() },
+        operario: { type: Schema.Types.ObjectId, ref: "usuario" },
+        responsable: { type: Schema.Types.ObjectId, ref: "usuario" },
+    });
 
-const VolanteCalidad = conn.model("VolanteCalidad", VolanteCalidadSchema);
+    const VolanteCalidad = conn.model("VolanteCalidad", VolanteCalidadSchema);
+    return VolanteCalidad
+}
 
-module.exports.VolanteCalidad = VolanteCalidad;
+module.exports.defineVolanteCalidad = defineVolanteCalidad;

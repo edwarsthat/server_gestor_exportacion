@@ -62,7 +62,7 @@ routerSistema.get("/obtener_operarios_higiene", async (req, res) => {
         const token = req.headers['authorization'];
 
         const user = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisos(user.cargo, 'obtener_operarios_higiene')
+        await UserRepository.autentificacionPermisosHttps(user.cargo, 'obtener_operarios_higiene')
 
         const data = req.body
 
@@ -80,7 +80,7 @@ routerSistema.post("/add_higiene_personal", async (req, res) => {
     try {
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisos(user.cargo, "add_higiene_personal")
+        await UserRepository.autentificacionPermisosHttps(user.cargo, "add_higiene_personal")
 
         const data = req.body
 

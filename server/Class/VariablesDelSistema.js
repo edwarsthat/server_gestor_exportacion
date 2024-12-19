@@ -26,15 +26,6 @@ const clientePromise = iniciarRedisDB();
 class VariablesDelSistema {
   // #region EF1 o Predios
   static async generarEF1(fecha_ingreso = new Date()) {
-    /**
-     * Se genera el codigo EF1 del sistema, el codigo se genera sienfo EF1- los primero caracteres
-     * Luego los segundo dos son los ultimos dos digitos del año
-     * Luego los siguientes dos digitos son el mes del año
-     * por ultimo el consecutivo que esta guardado en un archivo json dentro de inventory
-     * 
-     * @throws - Devuelve un error si hay algun error abriendo y guardadndo el archivo
-     * @return {string} enf - El string con el codigo EF1-
-     */
     try {
 
       const idsJSON = fs.readFileSync(pathIDs);
@@ -54,35 +45,29 @@ class VariablesDelSistema {
       throw new ProcessError(406, `Error creando la EF1: ${e.message}`)
     }
   }
+  static async generarEF8(fecha_ingreso = new Date()) {
+    try {
+
+      const idsJSON = fs.readFileSync(pathIDs);
+      const ids = JSON.parse(idsJSON);
+
+      let fecha = new Date(fecha_ingreso);
+      let year = fecha.getFullYear().toString().slice(-2);
+      let month = String(fecha.getMonth() + 1).padStart(2, "0");
+      let enf;
+      if (ids.ef8 < 10) {
+        enf = "EF8-" + year + month + "0" + ids.ef8;
+      } else {
+        enf = "EF8-" + year + month + ids.ef8;
+      }
+      return enf;
+    } catch (e) {
+      throw new ProcessError(406, `Error creando la EF1: ${e.message}`)
+    }
+  }
   static async procesarEF1(lote) {
-    /**
-   * Función que procesa un lote en el inventario y actualiza diversos valores como el predio vaciado
-   * la cantidad de kilos vaciados y la suma de los kilos vaciados hoy
-   *
-   * @param {Object} lote - El lote a procesar.
-   * @param {number} inventario - La cantidad de inventario a procesar.
-   * @returns {Promise<void>} - Promesa que se resuelve cuando el procesamiento ha terminado.
-   * @throws {ConnectRedisError} - Lanza un error si ocurre un problema con la conexión a Redis.
-   */
     try {
       const cliente = await clientePromise;
-      // const kilosVaciados = lote.promedio * inventario;
-      // const kilosVaciadosExist = await cliente.exists("kilosVaciadosHoy");
-      // if (kilosVaciadosExist !== 1) {
-      //   await cliente.set("kilosVaciadosHoy", 0);
-      // }
-
-      // let kilosVaciadosHoy = await cliente.get("kilosVaciadosHoy");
-
-      // if (isNaN(kilosVaciadosHoy)) {
-      //   kilosVaciadosHoy = 0;
-      // }
-
-      // const kilosVaciadosRedis = Number(kilosVaciadosHoy) + Number(kilosVaciados);
-      //se ingresa los datos a redis
-      // await cliente.set("descarteLavado", 0);
-      // await cliente.set("descarteEncerado", 0);
-      // await cliente.set("kilosVaciadosHoy", kilosVaciadosRedis);
 
       await this.modificar_predio_proceso(lote, cliente);
       await this.modificar_predio_proceso_descartes(lote, cliente);
@@ -138,17 +123,22 @@ class VariablesDelSistema {
     }
   }
   static async incrementarEF1() {
-    /**
-     * Funcion que aumenta en 1 el serial del codigo EF1 que esta almacenado en el archivo json
-     *  en inventario  seriales.json
-     * 
-     * @throws - Devuelve un error si hay algun error abriendo y guardadndo el archivo
-     * @return {void} - no devuelve nada
-     */
     try {
       const idsJSON = fs.readFileSync(pathIDs);
       const ids = JSON.parse(idsJSON);
       ids.enf += 1;
+      const newidsJSON = JSON.stringify(ids);
+      fs.writeFileSync(pathIDs, newidsJSON);
+    } catch (err) {
+      throw new ProcessError(411, `Error incrementando el EF1 ${err.message}`)
+    }
+  }
+  static async incrementarEF8() {
+
+    try {
+      const idsJSON = fs.readFileSync(pathIDs);
+      const ids = JSON.parse(idsJSON);
+      ids.ef8 += 1;
       const newidsJSON = JSON.stringify(ids);
       fs.writeFileSync(pathIDs, newidsJSON);
     } catch (err) {
@@ -790,13 +780,6 @@ class VariablesDelSistema {
     }
   }
   static async restar_fruta_inventario_descarte(kilos, tipoFruta) {
-    /**
-   * Resta una cantidad específica de kilos de fruta del inventario de descarte según el tipo de fruta.
-   *
-   * @param {Object} kilos - Objeto que contiene los kilos a restar de cada tipo de descarte.
-   * @param {string} tipoFruta - Tipo de fruta del que se restarán los kilos.
-   * @throws {ProcessError} - Lanza un error si ocurre un problema al restar los kilos o si el archivo está siendo escrito.
-   */
     if (inventarioDescarteFlag) throw new ProcessError(413, "Error el archivo se esta escribiendo");
     try {
       console.log(kilos)

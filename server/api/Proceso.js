@@ -23,7 +23,7 @@ const { FrutaDescompuestaRepository } = require("../Class/FrutaDescompuesta");
 class ProcesoRepository {
 
     // #region GET
-    static async get_ef1() {
+    static async get_inventarios_ingresos_ef1() {
         //rust
         // console.time("Duración de miFuncion");
 
@@ -44,6 +44,10 @@ class ProcesoRepository {
         console.time("Duración de miFuncion");
         const enf = await VariablesDelSistema.generarEF1();
         console.timeEnd("Duración de miFuncion");
+        return enf
+    }
+    static async get_inventarios_ingresos_ef8() {
+        const enf = await VariablesDelSistema.generarEF8();
         return enf
     }
     static async get_predio_Proceso_Descarte() {
@@ -2561,34 +2565,46 @@ class ProcesoRepository {
     }
 
     // #region POST
-    static async addLote(data) {
+    static async post_inventarios_ingreso_lote(req, user) {
 
         try {
             //JS
             console.time("Duración de miFuncion");
-            let lote = data.data.data
-            const user = data.user.user
-            const enf = await VariablesDelSistema.generarEF1(lote.fecha_estimada_llegada)
+            const { data } = req
+            let enf
+
+            if (data.ef.startsWith('EF1')) {
+                enf = await VariablesDelSistema.generarEF1(data.fecha_estimada_llegada)
+            } else if (data.ef.startsWith('EF8')) {
+                enf = await VariablesDelSistema.generarEF8(data.fecha_estimada_llegada)
+
+            } else {
+                throw new ProcessError(470, `Error codigo no valido de EF`)
+            }
 
 
             const proveedor = await ProveedoresRepository.get_proveedores({
-                ids: [lote.predio],
+                ids: [data.predio],
                 select: { precio: 1 }
             })
 
             const query = {
-                ...lote,
-                precio: proveedor[0].precio[lote.tipoFruta],
+                ...data,
+                precio: proveedor[0].precio[data.tipoFruta],
                 enf: enf,
-                fecha_salida_patio: new Date(lote.fecha_estimada_llegada),
-                fecha_ingreso_patio: new Date(lote.fecha_estimada_llegada),
-                fecha_ingreso_inventario: new Date(lote.fecha_estimada_llegada),
+                fecha_salida_patio: new Date(data.fecha_estimada_llegada),
+                fecha_ingreso_patio: new Date(data.fecha_estimada_llegada),
+                fecha_ingreso_inventario: new Date(data.fecha_estimada_llegada),
             }
-            lote = await LotesRepository.addLote(query, user);
+            const lote = await LotesRepository.addLote(query, user);
 
             await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
-            await VariablesDelSistema.incrementarEF1();
 
+            if (data.ef.startsWith('EF1')) {
+                await VariablesDelSistema.incrementarEF1();
+            } else if (data.ef.startsWith('EF8')) {
+                await VariablesDelSistema.incrementarEF8();
+            }
 
             procesoEventEmitter.emit("server_event", {
                 action: "add_lote",
@@ -2755,31 +2771,7 @@ class ProcesoRepository {
 
     //     await VariablesDelSistema.ingresar_item_cajas_sin_pallet(item)
     // }
-    // static async agregar_cajas_sin_pallet(req, user) {
 
-    //     const { item } = req;
-    //     await VariablesDelSistema.ingresar_item_cajas_sin_pallet(item)
-    //     //se agrega la exportacion a el lote
-    //     const kilos = Number(item.tipoCaja.split('-')[1].replace(",", "."))
-    //     let kilosTotal = kilos * Number(item.cajas)
-
-    //     const query = { $inc: {} }
-    //     query.$inc[calidadFile[item.calidad]] = kilosTotal
-    //     const lote = await LotesRepository.modificar_lote_proceso(item.lote, query, "Agregar exportacion", user)
-    //     await LotesRepository.rendimiento(lote);
-    //     await LotesRepository.deshidratacion(lote);
-
-    //     const { kilosProcesadosHoy, kilosExportacionHoy } =
-    //         await VariablesDelSistema.ingresar_exportacion(kilosTotal, lote.tipoFruta);
-    //     procesoEventEmitter.emit("proceso_event", {
-    //         kilosProcesadosHoy: kilosProcesadosHoy,
-    //         kilosExportacionHoy: kilosExportacionHoy
-    //     });
-
-    //     //envia las cajas sin pallet actualizadas
-    //     const cajasSinPallet = await VariablesDelSistema.obtener_cajas_sin_pallet();
-    //     return cajasSinPallet
-    // }
 }
 
 module.exports.ProcesoRepository = ProcesoRepository

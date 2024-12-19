@@ -1,19 +1,11 @@
-const { historialDespachoDescarte } = require("../../DB/mongoDB/schemas/lotes/schemaHistorialDespachosDescartes");
+const { db } = require("../../DB/mongoDB/config/init");
 const { PostError, ConnectionDBError } = require("../../Error/ConnectionErrors");
 
 class DespachoDescartesRepository {
     static async crear_nuevo_despacho(data, lotes) {
-        /**
-         * Funcion que agrega un nuevo despacho a la base de datos lote de mongoDB
-         *
-         * @param {object} data - Recibe un objeto, donde estan los datos del despacho que se va a ingresar,
-         *                        ademas del tipo de accion, y tipo de accion que se esta haciendo, el usuario y el cargo
-         *
-         * @param [object] data - Un array con los lotes y la cantidad de kilos que se despacharon
-        */
-
         try {
-            const despacho = new historialDespachoDescarte({
+
+            const despacho = new db.historialDespachoDescarte({
                 ...data,
                 lotesDespachados: lotes
             });
@@ -53,7 +45,7 @@ class DespachoDescartesRepository {
             if (ids.length > 0) {
                 historialQuery._id = { $in: ids };
             }
-            const historial = await historialDespachoDescarte.find(historialQuery)
+            const historial = await db.historialDespachoDescarte.find(historialQuery)
                 .select(select)
                 .sort(sort)
                 .limit(limit)

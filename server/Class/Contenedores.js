@@ -1,5 +1,4 @@
-const { Contenedores } = require("../../DB/mongoDB/schemas/contenedores/schemaContenedores");
-const { recordContenedores } = require("../../DB/mongoDB/schemas/contenedores/schemaRecordContenedores");
+const { db } = require("../../DB/mongoDB/config/init");
 const { ConnectionDBError, PutError } = require("../../Error/ConnectionErrors");
 const { ProcessError, ItemBussyError } = require("../../Error/ProcessError");
 const { oobtener_datos_lotes_to_listaEmpaque } = require("../mobile/utils/contenedoresLotes");
@@ -33,10 +32,10 @@ class ContenedoresRepository {
          * @throws {ProcessError} - Lanza un error si ocurre un problema al crear el contenedor.
          */
         try {
-            const contenedor = new Contenedores(data.data.data);
+            const contenedor = new db.Contenedores(data.data.data);
             const contenedorGuardado = await contenedor.save();
 
-            let record = new recordContenedores({ operacionRealizada: 'crearContenedor', user: data.user.user, documento: contenedorGuardado })
+            let record = new db.recordContenedores({ operacionRealizada: 'crearContenedor', user: data.user.user, documento: contenedorGuardado })
             await record.save();
 
         } catch (err) {
@@ -77,7 +76,7 @@ class ContenedoresRepository {
             if (ids.length > 0) {
                 contenedorQuery._id = { $in: ids };
             }
-            const contenedores = await Contenedores.find(contenedorQuery)
+            const contenedores = await db.Contenedores.find(contenedorQuery)
                 .select(select)
                 .populate(populate)
                 .sort(sort)
@@ -125,7 +124,7 @@ class ContenedoresRepository {
             if (ids.length > 0) {
                 contenedorQuery._id = { $in: ids };
             }
-            const contenedores = await Contenedores.find(contenedorQuery)
+            const contenedores = await db.Contenedores.find(contenedorQuery)
                 .select(select)
                 .populate(populate)
                 .sort(sort)
@@ -159,18 +158,18 @@ class ContenedoresRepository {
         try {
             this.lockItem(id, "pallets", pallet)
 
-            const contenedor = await Contenedores.findById({ _id: id });
+            const contenedor = await db.Contenedores.findById({ _id: id });
             if (!contenedor) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null")
 
             contenedor.pallets[pallet].get("settings").tipoCaja = settings.tipoCaja;
             contenedor.pallets[pallet].get("settings").calidad = settings.calidad;
             contenedor.pallets[pallet].get("settings").calibre = settings.calibre;
-            await Contenedores.updateOne({ _id: id }, {
+            await db.Contenedores.updateOne({ _id: id }, {
                 $set: { [`pallets.${pallet}`]: contenedor.pallets[pallet] }
             });
 
 
-            let record = new recordContenedores({
+            let record = new db.recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: {
@@ -203,13 +202,13 @@ class ContenedoresRepository {
         try {
             this.lockItem(id, "pallets", pallet)
 
-            const contenedor = await Contenedores.findById({ _id: id });
+            const contenedor = await db.Contenedores.findById({ _id: id });
             if (!contenedor) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null")
 
             contenedor.pallets[pallet].get("EF1").push(item);
-            await Contenedores.updateOne({ _id: id }, { $set: { pallets: contenedor.pallets } });
+            await db.Contenedores.updateOne({ _id: id }, { $set: { pallets: contenedor.pallets } });
 
-            let record = new recordContenedores({
+            let record = new db.recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: {
@@ -231,7 +230,7 @@ class ContenedoresRepository {
 
         try {
             this.lockItem(id, "pallets", pallet)
-            await Contenedores.updateOne(
+            await db.Contenedores.updateOne(
                 { _id: id },
                 {
                     $set: {
@@ -240,7 +239,7 @@ class ContenedoresRepository {
                 });
 
             //se guarda el record
-            let record = new recordContenedores({
+            let record = new db.recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: {
@@ -276,17 +275,17 @@ class ContenedoresRepository {
         try {
             const len = seleccion.length;
             let cajas = [];
-            const contenedor = await Contenedores.findById({ _id: id });
+            const contenedor = await db.Contenedores.findById({ _id: id });
             for (let i = 0; i < len; i++) {
                 cajas.push(contenedor.pallets[pallet].get("EF1").splice(seleccion[i], 1)[0]);
             }
-            await Contenedores.updateOne({ _id: id },
+            await db.Contenedores.updateOne({ _id: id },
                 {
                     $set:
                         { [`pallets.${pallet}`]: contenedor.pallets[pallet] }
                 });
 
-            let record = new recordContenedores({
+            let record = new db.recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: {
@@ -323,7 +322,7 @@ class ContenedoresRepository {
 
             let item;
 
-            const contenedor = await Contenedores.findById({ _id: id });
+            const contenedor = await db.Contenedores.findById({ _id: id });
             if (!contenedor) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null")
 
             contenedor.pallets[pallet].get("EF1")[seleccion].cajas -= cajas;
@@ -332,12 +331,12 @@ class ContenedoresRepository {
             if (contenedor.pallets[pallet].get("EF1")[seleccion].cajas === 0) {
                 contenedor.pallets[pallet].get("EF1").splice(seleccion, 1)[0];
             }
-            await Contenedores.updateOne(
+            await db.Contenedores.updateOne(
                 { _id: id }, { $set: { [`pallets.${pallet}`]: contenedor.pallets[pallet] } }
             );
 
 
-            let record = new recordContenedores({
+            let record = new db.recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: {
@@ -383,18 +382,18 @@ class ContenedoresRepository {
             let cajas = [];
 
             //se obtienen los items y se borran
-            const contenedor = await Contenedores.findById({ _id: id1 });
+            const contenedor = await db.Contenedores.findById({ _id: id1 });
             for (let i = 0; i < len; i++) {
                 cajas.push(contenedor.pallets[pallet1].get("EF1").splice(seleccion[i], 1)[0]);
             }
-            await Contenedores.updateOne({ _id: id1 }, { $set: { [`pallets.${pallet1}`]: contenedor.pallets[pallet1] } });
+            await db.Contenedores.updateOne({ _id: id1 }, { $set: { [`pallets.${pallet1}`]: contenedor.pallets[pallet1] } });
 
             pilaFunciones.push({
                 funcion: "borrar_item_pallet",
                 datos: cajas
             })
 
-            const contenedor2 = await Contenedores.findById({ _id: id2 });
+            const contenedor2 = await db.Contenedores.findById({ _id: id2 });
             for (let i = 0; i < len; i++) {
                 const index = contenedor2
                     .pallets[pallet2].get("EF1").findIndex(item => (
@@ -410,9 +409,9 @@ class ContenedoresRepository {
                     contenedor2.pallets[pallet2].get("EF1")[index].cajas += cajas[i].cajas
                 }
             }
-            await Contenedores.updateOne({ _id: id2 }, { $set: { [`pallets.${pallet2}`]: contenedor2.pallets[pallet2] } });
+            await db.Contenedores.updateOne({ _id: id2 }, { $set: { [`pallets.${pallet2}`]: contenedor2.pallets[pallet2] } });
 
-            let record = new recordContenedores({
+            let record = new db.recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: {
@@ -432,12 +431,12 @@ class ContenedoresRepository {
             for (const value of Object.values(pilaFunciones)) {
                 if (value.funcion === "borrar_item_pallet") {
                     const { datos } = value
-                    const contenedor = await Contenedores.findById({ _id: id1 });
+                    const contenedor = await db.Contenedores.findById({ _id: id1 });
 
                     for (const item of datos) {
                         contenedor.pallets[pallet1].get("EF1").push(item);
                     }
-                    await Contenedores.updateOne(
+                    await db.Contenedores.updateOne(
                         { _id: id1 },
                         { $set: { [`pallets.${pallet1}`]: contenedor.pallets[pallet1] } }
                     );
@@ -470,13 +469,13 @@ class ContenedoresRepository {
          */
         this.validateBussyIds(id)
         try {
-            const contenedor = await Contenedores.findById({ _id: id });
+            const contenedor = await db.Contenedores.findById({ _id: id });
             for (let i = 0; i < cajas.length; i++) {
                 contenedor.pallets[pallet].get("EF1").push(cajas[i]);
             }
-            await Contenedores.updateOne({ _id: id }, { $set: { pallets: contenedor.pallets } });
+            await db.Contenedores.updateOne({ _id: id }, { $set: { pallets: contenedor.pallets } });
 
-            let record = new recordContenedores({
+            let record = new db.recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: {
@@ -519,7 +518,7 @@ class ContenedoresRepository {
             let itemRecord = [];
             let item;
             //se restan las cajas en el item
-            const contenedor = await Contenedores.findById({ _id: id1 });
+            const contenedor = await db.Contenedores.findById({ _id: id1 });
             if (!contenedor) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null")
 
             itemRecord.push(contenedor.pallets[pallet1].get("EF1")[seleccion])
@@ -530,7 +529,7 @@ class ContenedoresRepository {
                 contenedor.pallets[pallet1].get("EF1").splice(seleccion, 1)[0];
             }
 
-            await Contenedores.updateOne(
+            await db.Contenedores.updateOne(
                 { _id: id1 },
                 { $set: { [`pallets.${pallet1}`]: contenedor.pallets[pallet1] } }
             );
@@ -544,7 +543,7 @@ class ContenedoresRepository {
                 }
             })
             //se añade el item al contenedor
-            const contenedor2 = await Contenedores.findById({ _id: id2 });
+            const contenedor2 = await db.Contenedores.findById({ _id: id2 });
             if (!contenedor2) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null")
 
             item.cajas = cajas;
@@ -558,15 +557,15 @@ class ContenedoresRepository {
 
             if (index === -1) {
                 contenedor2.pallets[pallet2].get("EF1").push(item);
-                await Contenedores.updateOne({ _id: id2 }, { $set: { pallets: contenedor2.pallets } });
+                await db.Contenedores.updateOne({ _id: id2 }, { $set: { pallets: contenedor2.pallets } });
             } else {
                 contenedor2.pallets[pallet2].get("EF1")[index].cajas += cajas;
-                await Contenedores.updateOne({ _id: id2 }, { $set: { pallets: contenedor2.pallets } });
+                await db.Contenedores.updateOne({ _id: id2 }, { $set: { pallets: contenedor2.pallets } });
 
             }
 
 
-            let record = new recordContenedores({
+            let record = new db.recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: {
@@ -587,7 +586,7 @@ class ContenedoresRepository {
                 if (value.funcion === "borrar_item_pallet") {
                     const { item, cajas } = value.datos
                     let newPallet;
-                    const contenedor = await Contenedores.findById({ _id: id1 });
+                    const contenedor = await db.Contenedores.findById({ _id: id1 });
 
                     const index = contenedor.pallets[pallet1].get("EF1").findIndex(
                         lote => lote.lote === item[0].lote &&
@@ -604,7 +603,7 @@ class ContenedoresRepository {
                         newPallet.get("EF1")[index].cajas += cajas;
                     }
 
-                    await Contenedores.updateOne(
+                    await db.Contenedores.updateOne(
                         { _id: id1 },
                         {
                             $set: {
@@ -630,7 +629,7 @@ class ContenedoresRepository {
         try {
             this.lockItem(id, "pallets", pallet)
 
-            const contenedor = await Contenedores.findById({ _id: id });
+            const contenedor = await db.Contenedores.findById({ _id: id });
             if (!contenedor) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null");
 
             contenedor.pallets[pallet].get("listaLiberarPallet").rotulado = item.rotulado;
@@ -639,14 +638,14 @@ class ContenedoresRepository {
             contenedor.pallets[pallet].get("listaLiberarPallet").estadoCajas = item.estadoCajas;
             contenedor.pallets[pallet].get("listaLiberarPallet").estiba = item.estiba;
 
-            await Contenedores.updateOne(
+            await db.Contenedores.updateOne(
                 { _id: id },
                 {
                     $set: { [`pallets.${pallet}`]: contenedor.pallets[pallet] }
                 });
 
 
-            let record = new recordContenedores({
+            let record = new db.recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: {
@@ -667,7 +666,7 @@ class ContenedoresRepository {
         this.validateBussyIds(id)
         try {
 
-            await Contenedores.updateOne(
+            await db.Contenedores.updateOne(
                 { _id: id },
                 {
                     ...insumos,
@@ -675,7 +674,7 @@ class ContenedoresRepository {
                     'infoContenedor.fechaFinalizado': new Date(),
                 });
 
-            let record = new recordContenedores({
+            let record = new db.recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: {
@@ -694,7 +693,7 @@ class ContenedoresRepository {
         this.lockItem(id, "pallets", pallet)
 
         try {
-            const contenedor = await Contenedores.findById({ _id: id });
+            const contenedor = await db.Contenedores.findById({ _id: id });
             if (!contenedor) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null");
 
             let oldData = JSON.parse(JSON.stringify(contenedor.pallets[pallet].get("EF1")));
@@ -704,12 +703,12 @@ class ContenedoresRepository {
                 contenedor.pallets[pallet].get("EF1")[seleccion[i]].tipoCaja = data.tipoCaja;
             }
 
-            await Contenedores.updateOne(
+            await db.Contenedores.updateOne(
                 { _id: id },
                 { $set: { [`pallets.${pallet}`]: contenedor.pallets[pallet] } }
             );
 
-            let record = new recordContenedores({
+            let record = new db.recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: {
@@ -751,7 +750,7 @@ class ContenedoresRepository {
                 updateQuery.$inc = { __v: 1 };
             }
 
-            const contenedor = await Contenedores.findOneAndUpdate(
+            const contenedor = await db.Contenedores.findOneAndUpdate(
                 findQuery,
                 updateQuery,
                 { new: true }
@@ -763,7 +762,7 @@ class ContenedoresRepository {
 
             const contenedor_obj = new Object(contenedor.toObject());
 
-            let record = new recordContenedores({
+            let record = new db.recordContenedores({
                 operacionRealizada: action,
                 user: user,
                 documento: { ...query, _id: id }
@@ -784,7 +783,7 @@ class ContenedoresRepository {
     }
     static async obtener_cantidad_contenedores(filtro = {}) {
         try {
-            const count = await Contenedores.countDocuments(filtro);
+            const count = await db.Contenedores.countDocuments(filtro);
             return count;
         } catch (err) {
             throw new ConnectionDBError(520, `Error obteniendo cantidad contenedores ${filtro} --- ${err.message}`);

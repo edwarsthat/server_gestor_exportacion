@@ -116,7 +116,8 @@ app.post('/login2', async (req, res) => {
             message: 'Ok',
             permisos: dataUser.cargo,
             user: dataUser.usuario,
-            cargo: dataUser.cargo.Cargo
+            cargo: dataUser.cargo.Cargo,
+            Rol: dataUser.cargo.Rol
         })
     } catch (err) {
         await HandleErrors.addError(err, req.body.user)
@@ -220,7 +221,6 @@ io.on("connection", socket => {
             ongoingRequests[data.data.action] = true;
             // const autorizado = await UserRepository.autentificacionPermisos(data.user.cargo, data.data.action, data.user.user);
             const autorizado2 = await UserRepository.autentificacionPermisos2(data);
-            console.log(autorizado2)
             if (!autorizado2) {
                 throw new AccessError(412, `Acceso no autorizado ${data.data.action}`);
             }

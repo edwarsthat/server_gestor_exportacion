@@ -1,5 +1,4 @@
 const { db } = require("../../DB/mongoDB/config/init");
-const { VolanteCalidad } = require("../../DB/mongoDB/schemas/calidad/schemaVolanteCalidad");
 const { ConnectionDBError, PostError, PutError } = require("../../Error/ConnectionErrors");
 const { ItemBussyError } = require("../../Error/ProcessError");
 let bussyIdsUsuario = new Set();
@@ -7,19 +6,6 @@ let bussyIdsCargo = new Set();
 
 class UsuariosRepository {
     static async get_cargos(options = {}) {
-        /**
-        * Funcion que obtiene los cargos de la base de datos de MongoDB.
-        *
-        * @param {Object} options - Objeto de configuración para obtener los cargos.
-        * @param {Array<string>} [options.ids=[]] - Array de IDs de los cargos.
-        * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
-        * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
-        * @param {Object} [options.sort={ createdAt: -1 }] - Criterios de ordenación para los resultados.
-        * @param {number} [options.limit=50] - Número máximo de documentos a obtener.
-        * @param {number} [options.skip=0] - Número de documentos a omitir desde el inicio.
-        * @returns {Promise<Array>} - Promesa que resuelve a un array de lotes obtenidos.
-        * @throws {PostError} - Lanza un error si ocurre un problema al obtener los lotes.
-        */
         const {
             ids = [],
             query = {},
@@ -239,7 +225,7 @@ class UsuariosRepository {
          *                      
          */
         try {
-            const lote = new VolanteCalidad(data);
+            const lote = new db.VolanteCalidad(data);
             const saveLote = await lote.save();
             return saveLote
         } catch (err) {
@@ -290,7 +276,7 @@ class UsuariosRepository {
             if (ids.length > 0) {
                 volanteCalidadQuery._id = { $in: ids };
             }
-            const volanteCalidad = await VolanteCalidad.find(volanteCalidadQuery)
+            const volanteCalidad = await db.VolanteCalidad.find(volanteCalidadQuery)
                 .select(select)
                 .sort(sort)
                 .populate({
@@ -313,19 +299,6 @@ class UsuariosRepository {
         }
     }
     static async obtener_formularios_higiene_personal(options = {}) {
-        /**
-        * Funcion que obtiene los formularios de higiene personal de la base de datos de MongoDB.
-        *
-        * @param {Object} options - Objeto de configuración para obtener los formularios.
-        * @param {Array<string>} [options.ids=[]] - Array de IDs de los formularios.
-        * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
-        * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
-        * @param {Object} [options.sort={ createdAt: -1 }] - Criterios de ordenación para los resultados.
-        * @param {number} [options.limit=50] - Número máximo de documentos a obtener.
-        * @param {number} [options.skip=0] - Número de documentos a omitir desde el inicio.
-        * @returns {Promise<Array>} - Promesa que resuelve a un array de lotes obtenidos.
-        * @throws {PostError} - Lanza un error si ocurre un problema al obtener los formularios.
-        */
         const {
             ids = [],
             query = {},
@@ -364,7 +337,7 @@ class UsuariosRepository {
     }
     static async obtener_cantidad_usuarios() {
         try {
-            const count = await global.Usuarios.countDocuments();
+            const count = await db.Usuarios.countDocuments();
             return count;
         } catch (err) {
             throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);

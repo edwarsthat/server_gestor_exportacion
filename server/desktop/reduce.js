@@ -15,8 +15,12 @@ const { ConstantesDelSistema } = require("../Class/ConstantesDelSistema");
 
 const apiSocket = {
     //#region GET
-    obtenerEF1: async () => {
-        const enf = await ProcesoRepository.get_ef1()
+    get_inventarios_ingresos_ef1: async () => {
+        const enf = await ProcesoRepository.get_inventarios_ingresos_ef1()
+        return { status: 200, message: 'Ok', data: enf }
+    },
+    get_inventarios_ingresos_ef8: async () => {
+        const enf = await ProcesoRepository.get_inventarios_ingresos_ef8()
         return { status: 200, message: 'Ok', data: enf }
     },
     get_predio_Proceso_Descarte: async () => {
@@ -213,10 +217,6 @@ const apiSocket = {
     obtener_predio_listaDeEmpaque: async () => {
         const response = await VariablesDelSistema.obtener_EF1_listaDeEmpaque();
         return { status: 200, message: 'Ok', data: response }
-    },
-    obtener_cajas_sin_pallet: async () => {
-        const cajasSinPallet = await VariablesDelSistema.obtener_cajas_sin_pallet();
-        return { status: 200, message: 'Ok', data: cajasSinPallet }
     },
     obtener_tipo_insumos: async () => {
         const insumos = await SistemaRepository.obtener_tipo_insumos();
@@ -415,8 +415,9 @@ const apiSocket = {
     },
 
     //#region POST
-    guardarLote: async (data) => {
-        await ProcesoRepository.addLote(data)
+    post_inventarios_ingreso_lote: async (req) => {
+        const { data, user } = req;
+        await ProcesoRepository.post_inventarios_ingreso_lote(data, user);
         return { status: 200, message: 'Ok' }
     },
     lote_recepcion_pendiente: async (req) => {

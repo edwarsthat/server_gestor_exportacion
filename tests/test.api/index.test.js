@@ -1,8 +1,6 @@
 require('dotenv').config({ path: '../../.env' });
 
 const { initMongoDB } = require("../../DB/mongoDB/config/init");
-const { test_post_clientes, test_get_clientes, test_put_clientes } = require('./Clientes.test');
-const { test_post_fruta_descompuesta, test_get_fruta_descompuesta, test_put_fruta_descompuesta, test_delete_fruta_descompuesta } = require("./frutaDescompuesta.test");
 
 
 (
@@ -12,19 +10,10 @@ const { test_post_fruta_descompuesta, test_get_fruta_descompuesta, test_put_frut
 
         try {
             [procesoDB, sistemaDb] = await initMongoDB()
+
             console.log(chalk.blue.bold('Iniciando prueba...'));
 
 
-            //#region clientes
-            const id_clientes = await test_post_clientes();
-            await test_get_clientes(id_clientes.toString());
-            await test_put_clientes(id_clientes.toString());
-
-            //#region fruta descompuesta
-            const _id = await test_post_fruta_descompuesta();
-            await test_get_fruta_descompuesta(_id.toString());
-            await test_put_fruta_descompuesta(_id.toString());
-            await test_delete_fruta_descompuesta(_id.toString());
             console.log(chalk.green('Todas las pruebas PASARON correctamente.'));
 
         } catch (error) {

@@ -11,6 +11,22 @@ const { defineRecordusuario } = require('../schemas/usuarios/schemaRecordUsuario
 const { defineControlPlagas } = require('../schemas/calidad/schemaControlPlagas');
 const { defineHigienePersonal } = require('../schemas/calidad/schemaHigienePersonal');
 const { defineLimpiezaDiaria } = require('../schemas/calidad/schemaLimpiezaDiaria');
+const { defineLimpiezaMensual } = require('../schemas/calidad/schemaLimpiezaMensual');
+const { defineVolanteCalidad } = require('../schemas/calidad/schemaVolanteCalidad');
+const { defineClientes } = require('../schemas/clientes/schemaClientes');
+const { defineRecordClientes } = require('../schemas/clientes/schemaRecordClientes');
+const { defineproveedores } = require('../schemas/proveedores/schemaProveedores');
+const { defineLotes } = require('../schemas/lotes/schemaLotes');
+const { defineContenedores } = require('../schemas/contenedores/schemaContenedores');
+const { defineRecordContenedores } = require('../schemas/contenedores/schemaRecordContenedores');
+const { defineErrores } = require('../schemas/errors/schemaErrores');
+const { defineRecordTipoInsumos } = require('../schemas/insumos/RecordSchemaInsumos');
+const { defineInsumos } = require('../schemas/insumos/schemaInsumos');
+const { defineHistorialDescarte } = require('../schemas/lotes/schemaHistorialDescarte');
+const { defineHistorialDespachoDescarte } = require('../schemas/lotes/schemaHistorialDespachosDescartes');
+const { defineTurnoData } = require('../schemas/proceso/TurnoData');
+const { defineRecordProveedor } = require('../schemas/proveedores/schemaRecordProveedores');
+const { defineRecordLotes } = require('../schemas/lotes/schemaRecordLotes');
 const db = {};
 
 const checkMongoDBRunning = async () => {
@@ -86,7 +102,22 @@ const initMongoDB = async () => {
 const defineSchemasProceso = async (sysConn) => {
     try {
 
+
+        db.Insumos = await defineInsumos(sysConn);
+        db.defineRecordTipoInsumos = await defineRecordTipoInsumos(sysConn);
         db.frutaDescompuesta = await defineFrutaDescompuesta(sysConn);
+        db.Clientes = await defineClientes(sysConn);
+        db.recordClientes = await defineRecordClientes(sysConn);
+        db.Proveedores = await defineproveedores(sysConn);
+        db.recordProveedor = await defineRecordProveedor(sysConn);
+        db.recordContenedores = await defineRecordContenedores(sysConn);
+        db.Lotes = await defineLotes(sysConn);
+        db.recordLotes = await defineRecordLotes(sysConn);
+        db.Contenedores = await defineContenedores(sysConn);
+        db.historialDescarte = await defineHistorialDescarte(sysConn);
+        db.historialDespachoDescarte = await defineHistorialDespachoDescarte(sysConn);
+        db.TurnoData = await defineTurnoData(sysConn);
+
 
     } catch (error) {
         console.error("Error durante la inicialización de MongoDB: creando los schemas", error);
@@ -103,6 +134,9 @@ const defineSchemasSistema = async (sysConn) => {
         db.ControlPlagas = await defineControlPlagas(sysConn);
         db.HigienePersonal = await defineHigienePersonal(sysConn);
         db.LimpiezaDiaria = await defineLimpiezaDiaria(sysConn);
+        db.LimpiezaMensual = await defineLimpiezaMensual(sysConn);
+        db.VolanteCalidad = await defineVolanteCalidad(sysConn);
+        db.Errores = await defineErrores(sysConn);
 
 
     } catch (error) {

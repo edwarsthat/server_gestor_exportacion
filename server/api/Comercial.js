@@ -82,7 +82,7 @@ class ComercialRepository {
     }
     static async modificar_info_cliente(req, user) {
         const { _id, data, action } = req
-        await ClientesRepository.modificar_cliente(
+        await ClientesRepository.put_cliente(
             _id,
             data,
             action,
@@ -91,7 +91,7 @@ class ComercialRepository {
     }
     static async add_cliente(req, user) {
         const { data } = req
-        await ClientesRepository.add_cliente(data, user)
+        await ClientesRepository.post_cliente(data, user)
     }
     static async lote_caso_favorita(req, user) {
         try {
