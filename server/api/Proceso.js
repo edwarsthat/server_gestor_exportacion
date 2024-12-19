@@ -2569,7 +2569,6 @@ class ProcesoRepository {
 
         try {
             //JS
-            console.time("Duración de miFuncion");
             const { data } = req
             let enf
 
@@ -2614,7 +2613,6 @@ class ProcesoRepository {
                 }
             });
 
-            console.timeEnd("Duración de miFuncion");
 
             //Rust
             // console.time("Duración de miFuncion");
