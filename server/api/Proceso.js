@@ -2571,8 +2571,8 @@ class ProcesoRepository {
             //JS
             const { data } = req
             let enf
-
-            if (data.ef.startsWith('EF1')) {
+            console.log(data)
+            if (!data.ef || data.ef.startsWith('EF1')) {
                 enf = await VariablesDelSistema.generarEF1(data.fecha_estimada_llegada)
             } else if (data.ef.startsWith('EF8')) {
                 enf = await VariablesDelSistema.generarEF8(data.fecha_estimada_llegada)
@@ -2668,7 +2668,6 @@ class ProcesoRepository {
     }
     static async post_inventarios_registros_fruta_descompuesta(req, user) {
         const pilaFunciones = [];
-
         try {
             const { data, descarte } = req
             const response = await FrutaDescompuestaRepository.post_fruta_descompuesta(data, user._id);
@@ -2683,6 +2682,11 @@ class ProcesoRepository {
 
             //eliminar kilos del descarte
             VariablesDelSistema.restar_fruta_inventario_descarte(descarte, data.tipo_fruta)
+
+            procesoEventEmitter.emit("server_event", {
+                action: "registro_fruta_descompuesta"
+            });
+
         } catch (err) {
             if (pilaFunciones.length > 0) {
                 if (pilaFunciones[0].funcion === "post_fruta_descompuesta") {

@@ -512,6 +512,11 @@ const apiSocket = {
         await TransporteRepository.post_transporte_registros_inspeccionMula_modificar(data, user.user)
         return { status: 200, message: 'Ok' }
     },
+    post_inventarios_registros_fruta_descompuesta: async (req) => {
+        const { data, user } = req;
+        await ProcesoRepository.post_inventarios_registros_fruta_descompuesta(data, user)
+        return { status: 200, message: 'Ok' }
+    },
     //#region PUT
     directoNacional: async (data) => {
         const user = data.user.user;

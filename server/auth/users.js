@@ -101,7 +101,6 @@ class UserRepository {
         */
         try {
             const decoded = jwt.verify(token, process.env.ACCES_TOKEN);
-            console.log(decoded)
             return decoded
         } catch (err) {
             if (err.name === 'TokenExpiredError') {

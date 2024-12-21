@@ -10,13 +10,13 @@ const routerProceso2 = express.Router();
 routerProceso2.post("/post_inventarios_registros_fruta_descompuesta", async (req, res) => {
     try {
         //autentificacion
-        // const token = req.headers['authorization'];
-        // const user = await UserRepository.authenticateToken(token);
-        // await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
+        const token = req.headers['authorization'];
+        const user = await UserRepository.authenticateToken(token);
+        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
 
-        console.log(req.body)
+        // console.log(req.body)
         const data = req.body
-        const user = { _id: "66b62fc3777ac9bdcc5050ed" }
+        // const user = { _id: "66b62fc3777ac9bdcc5050ed" }
 
         await ProcesoRepository.post_inventarios_registros_fruta_descompuesta(data, user)
 

@@ -17,7 +17,8 @@ const defineUser = async (conn) => {
         updateAt: { type: Date, default: Date.now },
         estado: Boolean,
         direccion: String,
-        telefono: String
+        telefono: String,
+        cedula: Number,
     });
 
 

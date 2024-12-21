@@ -111,6 +111,7 @@ const defineContenedores = async (conn) => {
     temperatura: String,
     precinto: String,
     datalogger_id: String,
+    flete: Number,
     marca: String,
     fecha: { type: Date, default: () => new Date() },
   }, { _id: false });
