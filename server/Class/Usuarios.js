@@ -33,19 +33,6 @@ class UsuariosRepository {
         }
     }
     static async get_users(options = {}) {
-        /**
-        * Funcion que obtiene los usuarios de la base de datos de MongoDB.
-        *
-        * @param {Object} options - Objeto de configuración para obtener los cargos.
-        * @param {Array<string>} [options.ids=[]] - Array de IDs de los usuarios.
-        * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
-        * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
-        * @param {Object} [options.sort={ createdAt: -1 }] - Criterios de ordenación para los resultados.
-        * @param {number} [options.limit=50] - Número máximo de documentos a obtener.
-        * @param {number} [options.skip=0] - Número de documentos a omitir desde el inicio.
-        * @returns {Promise<Array>} - Promesa que resuelve a un array de lotes obtenidos.
-        * @throws {PostError} - Lanza un error si ocurre un problema al obtener los lotes.
-        */
         const {
             ids = [],
             query = {},
@@ -54,6 +41,7 @@ class UsuariosRepository {
             populate = { path: 'cargo' },
             limit = 50,
             skip = 0,
+            getAll = false,
         } = options;
         try {
             let usuariosQuery = { ...query };
@@ -61,14 +49,19 @@ class UsuariosRepository {
             if (ids.length > 0) {
                 usuariosQuery._id = { $in: ids };
             }
-            const usuario = await db.Usuarios.find(usuariosQuery)
+            // Construimos la query base
+            let mongoQuery = db.Usuarios.find(usuariosQuery)
                 .select(select)
                 .sort(sort)
                 .populate(populate)
-                .limit(limit)
-                .skip(skip)
-                .exec();
+                .skip(skip);
 
+            // Si no se quiere todo, aplicamos el limit
+            if (!getAll) {
+                mongoQuery = mongoQuery.limit(limit);
+            }
+
+            const usuario = await mongoQuery.exec();
             return usuario
 
         } catch (err) {

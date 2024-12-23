@@ -120,7 +120,8 @@ class SistemaRepository {
                     { cargo: "66bf8e40281360363ce25353" },
                     { cargo: "66c513dcb7dca1eebff39a96" }
                 ]
-            }
+            },
+            getAll: true,
         });
         return usuarios
     }
