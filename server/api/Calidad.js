@@ -1,3 +1,4 @@
+const { CalidadError } = require("../../Error/CalidadError");
 const { ProcessError } = require("../../Error/ProcessError");
 const { procesoEventEmitter } = require("../../events/eventos");
 const { ConstantesDelSistema } = require("../Class/ConstantesDelSistema");
@@ -161,10 +162,6 @@ class CalidadRepository {
         return limpieza_diaria
 
     }
-    static async count_documents_formularios_calidad_limpieza_diaria() {
-        const count = await FormulariosCalidadRepository.count_documents_formularios_calidad_limpieza_diaria()
-        return count
-    }
     static async get_view_formularios_limpieza_mensual(req) {
         const { page } = req
         const resultsPerPage = 30;
@@ -175,10 +172,6 @@ class CalidadRepository {
         })
         return limpieza_diaria
 
-    }
-    static async count_documents_formularios_calidad_limpieza_mensual() {
-        const count = await FormulariosCalidadRepository.count_documents_formularios_calidad_limpieza_mensual()
-        return count
     }
     static async get_view_formularios_control_plagas(req) {
         const { page } = req
@@ -191,9 +184,51 @@ class CalidadRepository {
         return limpieza_diaria
 
     }
-    static async count_documents_formularios_calidad_control_plagas() {
-        const count = await FormulariosCalidadRepository.count_documents_formularios_calidad_control_plagas()
+    //!numero de elementos
+    static async get_calidad_formularios_controlPlagas_numeroElementos() {
+        const count = await FormulariosCalidadRepository.get_calidad_formularios_controlPlagas_numeroElementos()
         return count
+    }
+    static async get_calidad_formularios_limpiezaMensual_numeroElementos() {
+        const count = await FormulariosCalidadRepository.get_calidad_formularios_limpiezaMensual_numeroElementos()
+        return count
+    }
+    static async get_calidad_formularios_higienePersonal_numeroElementos() {
+        const count = await FormulariosCalidadRepository.get_calidad_formularios_higienePersonal_numeroElementos()
+        return count
+    }
+    static async get_calidad_historial_calidadInterna_numeroElementos() {
+        try {
+            const filtro = {
+                enf: { $regex: '^E', $options: 'i' },
+                "calidad.calidadInterna": { $exists: true },
+            }
+            const numeroContenedores = await LotesRepository.get_numero_lotes(filtro)
+            return numeroContenedores
+
+        } catch (err) {
+            if (err.status === 508) {
+                throw err
+            } else {
+                throw new CalidadError(440, `Error obteniendo numero de lotes con calidad interna --- ${err.message}`)
+            }
+        }
+    }
+    static async get_calidad_informes_calidad_informe_proveedor_numero_datos() {
+        try {
+            const filtro = {
+                enf: { $regex: '^E', $options: 'i' },
+            }
+            const numeroContenedores = await LotesRepository.get_numero_lotes(filtro)
+            return numeroContenedores
+
+        } catch (err) {
+            if (err.status === 508) {
+                throw err
+            } else {
+                throw new CalidadError(440, `Error obteniendo numero de lotes con calidad interna --- ${err.message}`)
+            }
+        }
     }
     // #region PUT
     static async put_lotes_inspeccion_ingreso(req, user) {

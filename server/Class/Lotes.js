@@ -226,6 +226,14 @@ class LotesRepository {
 
         }
     }
+    static async get_numero_lotes(filtro = {}) {
+        try {
+            const count = await db.Lotes.countDocuments(filtro);
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(520, `Error obteniendo cantidad lotes ${filtro} --- ${err.message}`);
+        }
+    }
     static descarteTotal(descarte) {
         /**
          * Funcion que suma los descartes 

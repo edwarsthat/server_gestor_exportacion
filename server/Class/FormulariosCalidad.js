@@ -61,7 +61,7 @@ class FormulariosCalidadRepository {
             throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
         }
     }
-    static async count_documents_formularios_calidad_limpieza_diaria() {
+    static async get_calidad_formularios_higienePersonal_numeroElementos() {
         try {
             const count = await db.LimpiezaDiaria.countDocuments();
             return count;
@@ -96,7 +96,7 @@ class FormulariosCalidadRepository {
             throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
         }
     }
-    static async count_documents_formularios_calidad_limpieza_mensual() {
+    static async get_calidad_formularios_limpiezaMensual_numeroElementos() {
         try {
             const count = await db.LimpiezaMensual.countDocuments();
             return count;
@@ -131,7 +131,7 @@ class FormulariosCalidadRepository {
             throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
         }
     }
-    static async count_documents_formularios_calidad_control_plagas() {
+    static async get_calidad_formularios_controlPlagas_numeroElementos() {
         try {
             const count = await db.ControlPlagas.countDocuments();
             return count;

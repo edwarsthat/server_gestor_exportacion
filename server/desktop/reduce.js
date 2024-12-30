@@ -12,9 +12,14 @@ const { SistemaRepository } = require("../api/Sistema");
 const { ContabilidadRepository } = require("../api/Contabilidad");
 const { TransporteRepository } = require("../api/Transporte");
 const { ConstantesDelSistema } = require("../Class/ConstantesDelSistema");
+const { Get_info_update_app_desktop } = require("./docs/getDocs");
 
 const apiSocket = {
     //#region GET
+    Get_info_update_app_desktop: async () => {
+        const data = await Get_info_update_app_desktop()
+        return { status: 200, message: 'Ok', data: data }
+    },
     get_inventarios_ingresos_ef1: async () => {
         const enf = await ProcesoRepository.get_inventarios_ingresos_ef1()
         return { status: 200, message: 'Ok', data: enf }
@@ -308,7 +313,6 @@ const apiSocket = {
     obtener_predio_procesando: async () => {
         const data = await ProcesoRepository.obtener_predio_procesando()
         return { status: 200, message: 'Ok', data: data }
-
     },
     get_record_lote_recepcion_pendiente: async (req) => {
         const { data } = req;
@@ -325,17 +329,22 @@ const apiSocket = {
         const response = await ConstantesDelSistema.get_constantes_sistema_clasificacion_descarte(data)
         return { status: 200, message: 'Ok', data: response }
     },
+    get_inventarios_registros_fruta_descompuesta: async (req) => {
+        const { data } = req;
+        const response = await ProcesoRepository.get_inventarios_registros_fruta_descompuesta(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
     //! obtener numero de datos para paginar las tablas
-    count_documents_formularios_calidad_control_plagas: async () => {
-        const count = await CalidadRepository.count_documents_formularios_calidad_control_plagas();
+    get_calidad_formularios_controlPlagas_numeroElementos: async () => {
+        const count = await CalidadRepository.get_calidad_formularios_controlPlagas_numeroElementos();
         return { status: 200, message: 'Ok', data: count }
     },
-    count_documents_formularios_calidad_limpieza_mensual: async () => {
-        const count = await CalidadRepository.count_documents_formularios_calidad_limpieza_mensual();
+    get_calidad_formularios_limpiezaMensual_numeroElementos: async () => {
+        const count = await CalidadRepository.get_calidad_formularios_limpiezaMensual_numeroElementos();
         return { status: 200, message: 'Ok', data: count }
     },
-    count_documents_formularios_calidad_limpieza_diaria: async () => {
-        const count = await CalidadRepository.count_documents_formularios_calidad_limpieza_diaria();
+    get_calidad_formularios_higienePersonal_numeroElementos: async () => {
+        const count = await CalidadRepository.get_calidad_formularios_higienePersonal_numeroElementos();
         return { status: 200, message: 'Ok', data: count }
     },
     obtener_cantidad_usuarios: async () => {
@@ -372,6 +381,18 @@ const apiSocket = {
     },
     get_inventario_historiales_ingresoFruta_numeroElementos: async () => {
         const data = await ProcesoRepository.get_inventario_historiales_ingresoFruta_numeroElementos()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_inventarios_numero_registros_fruta_descompuesta: async () => {
+        const data = await ProcesoRepository.get_inventarios_numero_registros_fruta_descompuesta()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_calidad_historial_calidadInterna_numeroElementos: async () => {
+        const data = await CalidadRepository.get_calidad_historial_calidadInterna_numeroElementos()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_calidad_informes_calidad_informe_proveedor_numero_datos: async () => {
+        const data = await CalidadRepository.get_calidad_informes_calidad_informe_proveedor_numero_datos()
         return { status: 200, message: 'Ok', data: data }
     },
     //!constantes del sistema, formularios y otras cosas
@@ -832,6 +853,11 @@ const apiSocket = {
     put_inventarioLogistica_frutaSinProcesar_modificar_canastillas: async (req) => {
         const { data, user } = req
         await ModificarRepository.put_inventarioLogistica_frutaSinProcesar_modificar_canastillas(data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    put_inventarios_registros_fruta_descompuesta: async (req) => {
+        const { data, user } = req
+        await ProcesoRepository.put_inventarios_registros_fruta_descompuesta(data, user)
         return { status: 200, message: 'Ok' }
     },
 }

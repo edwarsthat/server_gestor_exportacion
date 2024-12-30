@@ -95,7 +95,7 @@ class SistemaRepository {
                 }
             }]
 
-        await UsuariosRepository.modificar_ususario(_id, query, action, user.user, __v);
+        await UsuariosRepository.modificar_usuario(_id, query, action, user.user, __v);
     }
     static async modificar_usuario(req, user) {
         const { action, data, _id, __v } = req

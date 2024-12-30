@@ -5,9 +5,9 @@ const permisos_generales = [
     "obtener_status_proceso",
     "obtener_info_mi_cuenta",
     "modificar_mi_password",
-    "count_documents_formularios_calidad_limpieza_diaria",
-    "count_documents_formularios_calidad_limpieza_mensual",
-    "count_documents_formularios_calidad_control_plagas",
+    "get_calidad_formularios_higienePersonal_numeroElementos",
+    "get_calidad_formularios_limpiezaMensual_numeroElementos",
+    "get_calidad_formularios_controlPlagas_numeroElementos",
     "obtener_cantidad_usuarios",
     "obtener_cantidad_contenedores",
     "obtener_cantidad_historial_espera_descargue",
@@ -18,11 +18,17 @@ const permisos_generales = [
     "get_transporte_registros_inspeccionMula_numeroElementos",
     "get_transporte_documentos_programacionMulas_numeroElementos",
     "get_inventario_historiales_ingresoFruta_numeroElementos",
-
+    "get_inventarios_numero_registros_fruta_descompuesta",
+    "get_calidad_historial_calidadInterna_numeroElementos",
+    "get_calidad_informes_calidad_informe_proveedor_numero_datos",
 
     //obteniendo constantes
     "get_constantes_sistema_clasificacion_descarte",
-    "get_constantes_sistema_observaciones_calidad"
+    "get_constantes_sistema_observaciones_calidad",
+
+
+    //se obtiene datos del sistema
+    "Get_info_update_app_desktop"
 ]
 
 class UserRepository {
