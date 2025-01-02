@@ -8,7 +8,7 @@ async function Get_info_update_app_desktop() {
         const fileContents = await fs.readFile(versionPath, 'utf8');
         const version = yaml.load(fileContents);
 
-        const infoVersionPath = path.join(__dirname, 'updates', `${version.version}.md`);
+        const infoVersionPath = path.join(__dirname, 'update', `${version.version}.md`);
         const file = await fs.readFile(infoVersionPath, 'utf8');
         return file;
     } catch (error) {
