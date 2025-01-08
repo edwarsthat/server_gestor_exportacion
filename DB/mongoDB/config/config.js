@@ -1,7 +1,9 @@
+
 const mongoose = require("mongoose");
 
 const connectProcesoDB = async () => {
   let tipoBaseDatos = process.env.MONGODB_PROCESO;
+
   try {
 
     const db = mongoose.createConnection(tipoBaseDatos);

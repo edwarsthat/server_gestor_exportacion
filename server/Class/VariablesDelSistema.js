@@ -1109,15 +1109,21 @@ class VariablesDelSistema {
       const clientePromise = iniciarRedisDB();
       cliente = await clientePromise;
       const status = await cliente.get("statusProceso")
+
+
       if (status === 'on' || status === 'pause') {
         await this.set_hora_fin_proceso()
       }
+      console.log("se reinician los valores")
+
       await cliente.set("kilosProcesadosHoyLimon", "0");
       await cliente.set("kilosProcesadosHoyNaranja", "0");
       await cliente.set("kilosExportacionHoyLimon", "0");
       await cliente.set("kilosExportacionHoyNaranja", "0");
       await cliente.set("fechaInicioProceso", '');
       await cliente.set("statusProceso", 'off');
+
+      console.log("se reiniciaron los valores")
 
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis sumar exportacion: ${err.name}`)
@@ -1357,7 +1363,6 @@ class VariablesDelSistema {
       const fechaInicio = turno[0].pausaProceso[lenPausas].finalPausa;
       const segundosPausa = Math.floor((new Date().getTime() - fechaInicio.getTime()) / 1000)
       const totalsegundos = segundosPausa + turno[0].tiempoTrabajado;
-
 
       const change = {
         horaFin: new Date(),

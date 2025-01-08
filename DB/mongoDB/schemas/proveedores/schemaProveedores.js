@@ -44,6 +44,7 @@ const defineproveedores = async (conn) => {
     N: Boolean,
     L: Boolean,
     M: Boolean,
+    tipo_fruta: [String],
     PROVEEDORES: String,
     DEPARTAMENTO: String,
     urlArchivos: [String],

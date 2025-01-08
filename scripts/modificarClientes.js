@@ -11,7 +11,7 @@ const updateContenedores = async () => {
         console.error("Error al modificar:", error);
     } finally {
         // Cierra la conexión después de la operación
-        await db.disconnectDB();
+        await db.close();
     }
 };
 
