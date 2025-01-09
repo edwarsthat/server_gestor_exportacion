@@ -82,6 +82,7 @@ class ComercialRepository {
     }
     static async modificar_info_cliente(req, user) {
         const { _id, data, action } = req
+        delete data._id
         await ClientesRepository.put_cliente(
             _id,
             data,
