@@ -1112,6 +1112,9 @@ class ProcesoRepository {
             ...fotos,
             "calidad.fotosCalidad.fechaIngreso": Date.now(),
         }
+        console.log("se hace todo hasta aqui")
+        console.log(_id)
+        console.log(query)
         await LotesRepository.modificar_lote_proceso(_id, query, "Agregar foto calidad", user);
     }
     static async put_inventario_inventarios_orden_vaceo_modificar(data) {

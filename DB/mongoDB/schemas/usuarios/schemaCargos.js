@@ -35,6 +35,7 @@ const defineCargo = async (conn) => {
         Comercial: seccionSchema,
         "Gestión de cuentas": seccionSchema,
         Transporte: seccionSchema,
+        Contabilidad: seccionSchema,
         Rol: Number,
 
     });
