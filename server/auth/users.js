@@ -21,6 +21,7 @@ const permisos_generales = [
     "get_inventarios_numero_registros_fruta_descompuesta",
     "get_calidad_historial_calidadInterna_numeroElementos",
     "get_calidad_informes_calidad_informe_proveedor_numero_datos",
+    "get_indicadores_proceso_numero_items",
 
     //obteniendo constantes
     "get_constantes_sistema_clasificacion_descarte",

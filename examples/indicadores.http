@@ -1,0 +1,44 @@
+
+GET http://192.168.0.18:3010/indicadores/get_indicadores_proceso_numero_items
+
+
+### OBTENER REGISTROS DE EFICIENCIA DE LA FRUTA
+GET http://192.168.0.18:3010/indicadores/get_indicadores_eficiencia_operativa_elementos
+Content-Type: application/json
+
+{
+    "data":{
+        "page":1
+    }
+}
+
+### modificar el registro para la eficiencia operativa
+PUT http://192.168.0.18:3010/indicadores/put_indicadores_eficiencia_operativa_modificar
+Content-Type: application/json
+
+{
+    "data":{
+        "_id": "67827d9806e5b05a5de9fe8e",
+        "data":{
+            "meta_kilos_procesados": 3800,
+            "total_horas_hombre":400,
+            "tipo_fruta": "Limon"
+        }
+    }
+}
+
+### modificar el registro para la eficiencia operativa tratar de cambiar otro dato
+PUT http://192.168.0.18:3010/indicadores/put_indicadores_eficiencia_operativa_modificar
+Content-Type: application/json
+
+{
+    "data":{
+        "_id": "67827d9806e5b05a5de9fe8e",
+        "data":{
+            "meta_kilos_procesados": 2800,
+            "total_horas_hombre": 400,
+            "tipo_fruta": "Limon",
+            "kilos_procesados":2800
+        }
+    }
+}

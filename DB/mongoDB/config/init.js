@@ -27,6 +27,7 @@ const { defineHistorialDespachoDescarte } = require('../schemas/lotes/schemaHist
 const { defineTurnoData } = require('../schemas/proceso/TurnoData');
 const { defineRecordProveedor } = require('../schemas/proveedores/schemaRecordProveedores');
 const { defineRecordLotes } = require('../schemas/lotes/schemaRecordLotes');
+const { defineIndicadores } = require('../schemas/indicadores/schemaIndicadoresProceso');
 const db = {};
 
 const checkMongoDBRunning = async () => {
@@ -117,7 +118,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.historialDescarte = await defineHistorialDescarte(sysConn);
         db.historialDespachoDescarte = await defineHistorialDespachoDescarte(sysConn);
         db.TurnoData = await defineTurnoData(sysConn);
-
+        db.Indicadores = await defineIndicadores(sysConn);
 
     } catch (error) {
         console.error("Error durante la inicialización de MongoDB: creando los schemas", error);

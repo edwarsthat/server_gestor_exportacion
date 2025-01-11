@@ -35,22 +35,45 @@ const defineproveedores = async (conn) => {
     tipo_fruta: [String]
   })
 
+  const frutaSchema = new Schema({
+    arboles: Number,
+    hectareas: Number,
+  })
+
+
+  const tipoFrutaSchema = new Schema({
+    any: {
+      type: Map,
+      of: frutaSchema
+    },
+  }, { _id: false, strict: false });
+
+
 
   const PredioSchema = new Schema({
     PREDIO: { type: String, required: true },
     ICA: String,
     "CODIGO INTERNO": { type: String, required: true },
     GGN: GGNSchema,
-    N: Boolean,
-    L: Boolean,
-    M: Boolean,
-    tipo_fruta: [String],
+    tipo_fruta: tipoFrutaSchema,
     PROVEEDORES: String,
     DEPARTAMENTO: String,
     urlArchivos: [String],
     activo: { type: Boolean, required: true, default: true },
     precio: PrecioSchema,
     SISPAP: { type: Boolean, default: false },
+
+    telefono_predio: String,
+    contacto_finca: String,
+    correo_informes: String,
+    telefono_propietario: String,
+    propietario: String,
+    razon_social: String,
+    nit_facturar: String,
+
+    // N: Boolean,
+    // L: Boolean,
+    // M: Boolean,
   });
 
   // Middleware pre-save para establecer alt = _id en la creación inicial

@@ -28,6 +28,8 @@ const { VariablesDelSistema } = require('./server/Class/VariablesDelSistema');
 const { FormulariosCalidadRepository } = require('./server/Class/FormulariosCalidad');
 const { sp32 } = require('./server/mobile/sp32');
 const { routerProceso2 } = require('./server/routes/Proceso');
+const { IndicadoresAPIRepository } = require('./server/api/IndicadoresAPI');
+const { routerIndicadores } = require('./server/routes/indicadores');
 // const { initRustProceso } = require('./DB/controllers/proceso');
 
 
@@ -57,6 +59,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use("/variablesDeProceso", routerVariablesdelSistema);
 app.use("/proceso", routerProceso);
 app.use("/proceso2", routerProceso2);
+app.use("/indicadores", routerIndicadores);
 app.use("/comercial", routerComercial);
 app.use("/calidad", routerCalidad)
 app.use("/sistema", routerSistema)
@@ -310,6 +313,10 @@ server.listen(3011, () => {
 //reiniciar valores del sistema
 cron.schedule('0 8 * * *', async () => {
     await ProcesoRepository.reiniciarValores_proceso();
+});
+
+cron.schedule('0 7 * * *', async () => {
+    await IndicadoresAPIRepository.post_indicadores_eficiencia_operativa_registro();
 });
 
 cron.schedule("7 9 * * *", async () => {
