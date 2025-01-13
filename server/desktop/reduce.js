@@ -13,6 +13,7 @@ const { ContabilidadRepository } = require("../api/Contabilidad");
 const { TransporteRepository } = require("../api/Transporte");
 const { ConstantesDelSistema } = require("../Class/ConstantesDelSistema");
 const { Get_info_update_app_desktop } = require("./docs/getDocs");
+const { IndicadoresAPIRepository } = require("../api/IndicadoresAPI");
 
 const apiSocket = {
     //#region GET
@@ -334,6 +335,11 @@ const apiSocket = {
         const response = await ProcesoRepository.get_inventarios_registros_fruta_descompuesta(data)
         return { status: 200, message: 'Ok', data: response }
     },
+    get_indicadores_eficiencia_operativa_elementos: async (req) => {
+        const { data } = req;
+        const response = await IndicadoresAPIRepository.get_indicadores_eficiencia_operativa_elementos(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
     //! obtener numero de datos para paginar las tablas
     get_calidad_formularios_controlPlagas_numeroElementos: async () => {
         const count = await CalidadRepository.get_calidad_formularios_controlPlagas_numeroElementos();
@@ -393,6 +399,10 @@ const apiSocket = {
     },
     get_calidad_informes_calidad_informe_proveedor_numero_datos: async () => {
         const data = await CalidadRepository.get_calidad_informes_calidad_informe_proveedor_numero_datos()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_indicadores_proceso_numero_items: async () => {
+        const data = await IndicadoresAPIRepository.get_indicadores_proceso_numero_items()
         return { status: 200, message: 'Ok', data: data }
     },
     //!constantes del sistema, formularios y otras cosas
@@ -858,6 +868,11 @@ const apiSocket = {
     put_inventarios_registros_fruta_descompuesta: async (req) => {
         const { data, user } = req
         await ProcesoRepository.put_inventarios_registros_fruta_descompuesta(data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    put_indicadores_eficiencia_operativa_modificar: async (req) => {
+        const { data, user } = req
+        await IndicadoresAPIRepository.put_indicadores_eficiencia_operativa_modificar(data, user)
         return { status: 200, message: 'Ok' }
     },
 }

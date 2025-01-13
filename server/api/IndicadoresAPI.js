@@ -54,7 +54,7 @@ class IndicadoresAPIRepository {
             const { _id, data } = req;
 
             // Lista de campos permitidos
-            const camposPermitidos = ["meta_kilos_procesados", "total_horas_hombre", "tipo_fruta"];
+            const camposPermitidos = ["meta_kilos_procesados", "total_horas_hombre"];
 
             // Validar que los datos sean válidos
             if (typeof data !== 'object' || data === null) {
@@ -72,23 +72,16 @@ class IndicadoresAPIRepository {
             // Validar tipos de datos
             if (
                 data.meta_kilos_procesados !== undefined &&
-                typeof data.meta_kilos_procesados !== "number"
+                typeof Number(data.meta_kilos_procesados) !== "number"
             ) {
                 throw new ProcessError(400, "El campo 'meta_kilos_procesados' debe ser un número.");
             }
 
             if (
                 data.total_horas_hombre !== undefined &&
-                typeof data.total_horas_hombre !== "number"
+                typeof Number(data.total_horas_hombre) !== "number"
             ) {
                 throw new ProcessError(400, "El campo 'total_horas_hombre' debe ser un número.");
-            }
-
-            if (
-                data.tipo_fruta !== undefined &&
-                typeof data.tipo_fruta !== "string"
-            ) {
-                throw new ProcessError(400, "El campo 'tipo_fruta' debe ser un string.");
             }
 
             await IndicadoresRepository.put_indicador(_id, data);

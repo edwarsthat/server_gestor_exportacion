@@ -27,7 +27,6 @@ const permisos_generales = [
     "get_constantes_sistema_clasificacion_descarte",
     "get_constantes_sistema_observaciones_calidad",
 
-
     //se obtiene datos del sistema
     "Get_info_update_app_desktop"
 ]

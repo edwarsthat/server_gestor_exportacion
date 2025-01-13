@@ -39,7 +39,7 @@ routerIndicadores.get("/get_indicadores_eficiencia_operativa_elementos", async (
 })
 routerIndicadores.put("/put_indicadores_eficiencia_operativa_modificar", async (req, res) => {
     try {
-        //autentificacion
+        // autentificacion
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
         await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)

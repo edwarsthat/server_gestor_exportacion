@@ -8,7 +8,7 @@ const defineIndicadores = async (conn) => {
         kilos_procesador: Number,
         meta_kilos_procesados: Number,
         total_horas_hombre: Number,
-        tipo_fruta: String
+        tipo_fruta: [String]
     })
 
     const Indicadores = conn.model("indicadore", IndicadoresSchema);
