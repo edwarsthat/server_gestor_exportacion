@@ -46,7 +46,7 @@ class IndicadoresAPIRepository {
             if (err.status === 522) {
                 throw err
             }
-            throw new ProcessError(522, `Error ${err.type}: ${err.message}`)
+            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
         }
     }
     static async put_indicadores_eficiencia_operativa_modificar(req) {
@@ -91,7 +91,7 @@ class IndicadoresAPIRepository {
             } else if (err.status === 400) {
                 throw err
             }
-            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
+            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
         }
     }
 }

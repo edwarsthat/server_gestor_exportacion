@@ -31,7 +31,12 @@ class ContabilidadRepository {
                 exportacionDetallada: 1,
                 observaciones: 1,
                 flag_is_favorita: 1,
-                flag_balin_free: 1
+                flag_balin_free: 1,
+                fecha_ingreso_patio: 1,
+                fecha_salida_patio: 1,
+                fecha_ingreso_inventario: 1,
+                fecha_creacion: 1,
+                fecha_estimada_llegada: 1,
 
             },
             limit: resultsPerPage,

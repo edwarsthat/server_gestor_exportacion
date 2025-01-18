@@ -9,6 +9,8 @@ const bcrypt = require('bcrypt');
 const { UserRepository } = require('../auth/users');
 const { ValidationUserError } = require('../../Error/ValidationErrors');
 const { InsumosRepository } = require('../Class/Insumos');
+const { ConstantesDelSistema } = require('../Class/ConstantesDelSistema');
+const { ProcessError } = require('../../Error/ProcessError');
 
 class SistemaRepository {
     static async check_mobile_version() {
@@ -211,7 +213,7 @@ class SistemaRepository {
         const isValid = await bcrypt.compare(data.password, user[0].password);
         if (!isValid) throw new ValidationUserError(402, "Contraseña incorrecta");
 
-        return { usuario: user[0].usuario, cargo: user[0].cargo, _id: user[0]._id }
+        return { usuario: user[0].usuario, cargo: user[0].cargo, _id: user[0]._id, }
 
     }
     static async isNewVersion() {
@@ -264,6 +266,32 @@ class SistemaRepository {
     static async obtener_cantidad_usuarios() {
         const cantidad = await UsuariosRepository.obtener_cantidad_usuarios()
         return cantidad
+    }
+
+    //#region get
+    static async get_constantes_sistema_tipo_frutas() {
+        try {
+            const response = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas();
+            return response
+        } catch (err) {
+
+            if (err.status === 540) {
+                throw err
+            }
+            throw new ProcessError(490, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_constantes_sistema_paises_GGN() {
+        try {
+            const response = await ConstantesDelSistema.get_constantes_sistema_paises_GGN();
+            return response
+        } catch (err) {
+
+            if (err.status === 540) {
+                throw err
+            }
+            throw new ProcessError(490, `Error ${err.type}: ${err.message}`)
+        }
     }
 }
 

@@ -33,7 +33,14 @@ const defineproveedores = async (conn) => {
     fechaVencimiento: Date,
     paises: [String],
     tipo_fruta: [String]
-  })
+  }, { _id: false, strict: false })
+
+
+  const ICASchema = new Schema({
+    code: String,
+    tipo_fruta: [String],
+    fechaVencimiento: Date
+  }, { _id: false, strict: false })
 
   const frutaSchema = new Schema({
     arboles: Number,
@@ -52,8 +59,8 @@ const defineproveedores = async (conn) => {
 
   const PredioSchema = new Schema({
     PREDIO: { type: String, required: true },
-    ICA: String,
-    "CODIGO INTERNO": { type: String, required: true },
+    ICA: ICASchema,
+    "CODIGO INTERNO": { type: Number, required: true, unique: true },
     GGN: GGNSchema,
     tipo_fruta: tipoFrutaSchema,
     PROVEEDORES: String,
@@ -61,8 +68,7 @@ const defineproveedores = async (conn) => {
     urlArchivos: [String],
     activo: { type: Boolean, required: true, default: true },
     precio: PrecioSchema,
-    SISPAP: { type: Boolean, default: false },
-
+    SISPAP: { type: Boolean, default: true },
     telefono_predio: String,
     contacto_finca: String,
     correo_informes: String,
@@ -71,9 +77,15 @@ const defineproveedores = async (conn) => {
     razon_social: String,
     nit_facturar: String,
 
-    // N: Boolean,
-    // L: Boolean,
-    // M: Boolean,
+
+    //Borrar datos
+    ICA_temp: String,
+    // ICA: String,
+    "FECHA VENCIMIENTO GGN": String,
+    N: Boolean,
+    L: Boolean,
+    M: Boolean,
+    alt: String
   });
 
   // Middleware pre-save para establecer alt = _id en la creación inicial

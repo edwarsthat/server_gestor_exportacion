@@ -22,10 +22,12 @@ const permisos_generales = [
     "get_calidad_historial_calidadInterna_numeroElementos",
     "get_calidad_informes_calidad_informe_proveedor_numero_datos",
     "get_indicadores_proceso_numero_items",
-
+    "get_comercial_proveedores_numero_elementos",
     //obteniendo constantes
     "get_constantes_sistema_clasificacion_descarte",
     "get_constantes_sistema_observaciones_calidad",
+    "get_constantes_sistema_tipo_frutas",
+    "get_constantes_sistema_paises_GGN",
 
     //se obtiene datos del sistema
     "Get_info_update_app_desktop"
@@ -45,40 +47,14 @@ class UserRepository {
         if (user.password < 3) throw new ValidationUserError(402, "La constraseña debe tener mas de 3 caracteres de largo")
     }
     static async validate_userName(user) {
-        /**
-         * Valida los valores de usuario son validos
-         * 
-         * @param {{user:string, password:string}} user - Un objeto que contiene la informacion de inicio de sesion
-         * @throws {TypeError} - Retorna un error de tipo si no cumple con alguna de las condiciones
-         * @return {void}
-         * 
-         */
-
         if (typeof user.user !== "string") throw new ValidationUserError(401, "El usuario debe ser texto")
         if (user.user < 3) throw new ValidationUserError(401, "El usuario debe tener mas de 3 letras")
     }
     static generateAccessToken(data) {
-        /**
-         * Se genera el token de acceso con la libreria jwt
-         * 
-         * @param {            
-         * user: string,
-         * cargo: string
-         * _id: string
-         * }
-         * @return - Access token
-         * 
-         */
         return jwt.sign(data, process.env.ACCES_TOKEN, { expiresIn: '5h' })
     }
     static async authenticateTokenSocket(socket, next) {
-        /**
-         * Autentica el token de acceso para establecer la conexion con el socket
-         * 
-         * @param {socket} - El socket que va a crear la conexion
-         * @param {next} - Es la funcion que pasa cuando se cumple el middleware
-         * @throws - ValidationTokenError regresa un error si el token expiró
-         */
+
         const token = socket.handshake.auth.token;
 
         if (!token) {

@@ -1,8 +1,123 @@
+const { ProcessError } = require("../../Error/ProcessError");
 const { ClientesRepository } = require("../Class/Clientes");
 const { LotesRepository } = require("../Class/Lotes");
 const { ProveedoresRepository } = require("../Class/Proveedores");
+const { ComercialValidationsRepository } = require("../validations/Comercial");
 
 class ComercialRepository {
+
+
+    static async get_comercial_proveedores_elementos(req, user) {
+        try {
+            const { page, filtro } = req
+            const resultsPerPage = 25;
+            let query
+
+
+            ComercialValidationsRepository
+                .val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
+            query = ComercialValidationsRepository
+                .query_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
+
+            if (user.Rol > 2) {
+                query = {
+                    ...query,
+                    activo: true
+                }
+            }
+
+
+            const registros = await ProveedoresRepository.get_proveedores({
+                skip: (page - 1) * resultsPerPage,
+                query: query
+            })
+
+            return registros
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_comercial_proveedores_numero_elementos(req, user) {
+        try {
+            const { filtro } = req
+
+            ComercialValidationsRepository
+                .val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
+            let query = ComercialValidationsRepository
+                .query_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro)
+
+            if (user.Rol > 2) {
+                query = {
+                    ...query,
+                    activo: true
+                }
+            }
+
+            const registros = await ProveedoresRepository.get_cantidad_proveedores(query)
+            return registros
+
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_inventarios_ingresos_proveedores_registros() {
+        try {
+            return await ProveedoresRepository.get_proveedores(
+                { query: { activo: true }, limit: 'all' }
+            );
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async post_comercial_proveedores_add_proveedor(req, user) {
+        try {
+            const { data } = req
+
+            ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data)
+
+            // Se crea el registro
+            await ProveedoresRepository.addProveedor(data, user._id);
+
+        } catch (err) {
+
+            if (err.status === 521) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_comercial_proveedores_modify_proveedor(req, user) {
+        try {
+
+            const { _id, data, action } = req
+
+            ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data)
+
+            await ProveedoresRepository.modificar_proveedores(
+                _id,
+                data,
+                action,
+                user
+            )
+        } catch (err) {
+
+            if (err.status === 521) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+
+
     static async get_proveedores() {
         return await ProveedoresRepository.get_proveedores();
     }
@@ -37,15 +152,6 @@ class ComercialRepository {
     static async addProveedor(req, user) {
         const { data } = req
         await ProveedoresRepository.addProveedor(data, user)
-    }
-    static async modificar_proveedor(req, user) {
-        const { _id, data, action } = req
-        await ProveedoresRepository.modificar_proveedores(
-            _id,
-            data,
-            action,
-            user
-        )
     }
     static async obtener_precio_proveedores(req) {
         const { data } = req
@@ -124,6 +230,8 @@ class ComercialRepository {
 
         }
     }
+
+
 }
 
 module.exports.ComercialRepository = ComercialRepository

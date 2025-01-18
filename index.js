@@ -111,7 +111,8 @@ app.post('/login2', async (req, res) => {
         const accesToken = UserRepository.generateAccessToken({
             user: dataUser.usuario,
             cargo: dataUser.cargo._id,
-            _id: dataUser._id
+            _id: dataUser._id,
+            Rol: dataUser.cargo.Rol
         })
         res.json({
             accesToken: accesToken,
@@ -121,6 +122,7 @@ app.post('/login2', async (req, res) => {
             user: dataUser.usuario,
             cargo: dataUser.cargo.Cargo,
             Rol: dataUser.cargo.Rol
+
         })
     } catch (err) {
         await HandleErrors.addError(err, req.body.user)
@@ -237,7 +239,8 @@ io.on("connection", socket => {
             const newToken = UserRepository.generateAccessToken({
                 user: data.user.user,
                 cargo: data.user.cargo,
-                _id: data.user._id
+                _id: data.user._id,
+                Rol: data.user.Rol,
             })
 
             callback({ ...response, token: newToken })
@@ -249,7 +252,9 @@ io.on("connection", socket => {
                 const newToken = data.user ? UserRepository.generateAccessToken({
                     user: data.user.user,
                     cargo: data.user.cargo,
-                    _id: data.user._id
+                    _id: data.user._id,
+                    Rol: data.user.Rol,
+
                 }) : null;
                 callback({ ...err, token: newToken });
             } else {

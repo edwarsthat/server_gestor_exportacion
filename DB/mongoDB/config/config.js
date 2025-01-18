@@ -1,9 +1,16 @@
 
 const mongoose = require("mongoose");
 
-const connectProcesoDB = async () => {
-  let tipoBaseDatos = process.env.MONGODB_PROCESO;
+const connectProcesoDB = async (url = '') => {
 
+  let tipoBaseDatos
+
+  if (url === '') {
+    tipoBaseDatos = process.env.MONGODB_PROCESO;
+
+  } else {
+    tipoBaseDatos = url
+  }
   try {
 
     const db = mongoose.createConnection(tipoBaseDatos);
@@ -19,7 +26,9 @@ const connectProcesoDB = async () => {
 };
 
 const connectSistemaDB = async () => {
+
   let tipoBaseDatos = process.env.MONGODB_SISTEMA;
+
   try {
 
     const db = mongoose.createConnection(tipoBaseDatos);

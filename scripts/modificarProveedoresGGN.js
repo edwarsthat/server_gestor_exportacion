@@ -4,16 +4,60 @@ const { defineproveedores } = require("../DB/mongoDB/schemas/proveedores/schemaP
 
 async function modificar_proveedores_new_ggn_tipoFruta() {
     try {
-        const db = await connectProcesoDB()
+        const db = await connectProcesoDB("mongodb://localhost:27017/proceso")
+
         const Proveedor = await defineproveedores(db);
+        // const proveedores_temp = await Proveedor.find().exec();
+
+        // for (const item of proveedores_temp) {
+        //     console.log(item)
+        //     item.ICA_temp = item.ICA
+
+        //     await Proveedor.findByIdAndUpdate(item._id, {
+        //         $set: item
+        //     }, {
+        //         new: true,  // Retorna el documento actualizado
+        //         runValidators: true
+        //     });
+        // }
+
+
+
         const proveedores = await Proveedor.find().exec();
 
         for (const item of proveedores) {
             const tipoFruta = []
 
-            if (item.N) tipoFruta.push('Naranja');
-            if (item.L) tipoFruta.push('Limon');
-            if (item.M) tipoFruta.push('Mandarina');
+            item["CODIGO INTERNO"] = Number(item["CODIGO INTERNO"])
+
+
+            const ICA = item.ICA_temp
+            item.ICA = {
+                code: ICA,
+                tipo_fruta: []
+            }
+            console.log(item.N)
+            if (item.N) {
+                tipoFruta.Naranja = {
+                    Arboles: 0,
+                    Hectareas: 0,
+                }
+                item.ICA.tipo_fruta.push('Naranja')
+            }
+            if (item.L) {
+                tipoFruta.Limon = {
+                    Arboles: 0,
+                    Hectareas: 0,
+                }
+                tipoFruta.push('Limon');
+            }
+            if (item.M) {
+                tipoFruta.Mandarina = {
+                    Arboles: 0,
+                    Hectareas: 0,
+                }
+                item.ICA.tipo_fruta.push('Mandarina')
+            }
 
 
             if (!Object.prototype.hasOwnProperty.call(item._doc, 'GGN')) {
@@ -26,16 +70,14 @@ async function modificar_proveedores_new_ggn_tipoFruta() {
             }
 
             if (!item.GGN.code) {
-                console.log(item.GGN.code);
 
                 item.GGN = {
                     ...item.GGN,
                     code: null,
                     fechaVencimiento: null
                 }
-                console.log(item.GGN);
-
             }
+
 
 
             // Eliminar campos que no necesitas
@@ -47,6 +89,7 @@ async function modificar_proveedores_new_ggn_tipoFruta() {
             delete updateData.L;
             delete updateData.M;
             delete updateData['FECHA VENCIMIENTO GGN'];
+            delete updateData.ICA_temp;
 
             const unsetFields = {
                 N: "",
@@ -54,9 +97,7 @@ async function modificar_proveedores_new_ggn_tipoFruta() {
                 M: "",
                 "FECHA VENCIMIENTO GGN": ''
             };
-
-
-
+            console.log(updateData)
 
             // Actualizar y eliminar campos al mismo tiempo
             await Proveedor.findByIdAndUpdate(item._id, {

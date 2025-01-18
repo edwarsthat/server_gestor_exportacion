@@ -33,6 +33,8 @@ const apiSocket = {
         const response = await ProcesoRepository.get_predio_Proceso_Descarte()
         return { data: response, status: 200, message: 'Ok' }
     },
+
+    //!proveedores
     getProveedores: async () => {
         const proveedores = await ComercialRepository.get_proveedores();
         return { status: 200, message: 'Ok', data: proveedores }
@@ -41,6 +43,23 @@ const apiSocket = {
         const proveedores = await ComercialRepository.get_proveedores_proceso();
         return { status: 200, message: 'Ok', data: proveedores }
     },
+    obtener_precio_proveedores: async (req) => {
+        const { data } = req
+        const response = await ComercialRepository.obtener_precio_proveedores(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
+    //?proveedores que ya estan bajo el esquema
+    get_comercial_proveedores_elementos: async (req) => {
+        const { data, user } = req;
+        const proveedores = await ComercialRepository.get_comercial_proveedores_elementos(data, user);
+        return { status: 200, message: 'Ok', data: proveedores }
+    },
+    get_inventarios_ingresos_proveedores_registros: async () => {
+        const proveedores = await ComercialRepository.get_inventarios_ingresos_proveedores_registros();
+        return { status: 200, message: 'Ok', data: proveedores }
+    },
+
+
     getInventario: async () => {
         const resultado = await ProcesoRepository.getInventario();
         return { data: resultado, status: 200, message: 'Ok' }
@@ -170,11 +189,6 @@ const apiSocket = {
     obtener_imagen_lote_calidad: async (req) => {
         const { data } = req
         const response = await CalidadRepository.obtener_imagen_lote_calidad(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
-    obtener_precio_proveedores: async (req) => {
-        const { data } = req
-        const response = await ComercialRepository.obtener_precio_proveedores(data)
         return { status: 200, message: 'Ok', data: response }
     },
     get_cargos: async (req) => {
@@ -340,6 +354,7 @@ const apiSocket = {
         const response = await IndicadoresAPIRepository.get_indicadores_eficiencia_operativa_elementos(data)
         return { status: 200, message: 'Ok', data: response }
     },
+
     //! obtener numero de datos para paginar las tablas
     get_calidad_formularios_controlPlagas_numeroElementos: async () => {
         const count = await CalidadRepository.get_calidad_formularios_controlPlagas_numeroElementos();
@@ -405,6 +420,11 @@ const apiSocket = {
         const data = await IndicadoresAPIRepository.get_indicadores_proceso_numero_items()
         return { status: 200, message: 'Ok', data: data }
     },
+    get_comercial_proveedores_numero_elementos: async (req) => {
+        const { data, user } = req;
+        const response = await ComercialRepository.get_comercial_proveedores_numero_elementos(data, user)
+        return { status: 200, message: 'Ok', data: response }
+    },
     //!constantes del sistema, formularios y otras cosas
     get_info_formulario_inspeccion_fruta: async () => {
         const formulario = await CalidadRepository.get_info_formulario_inspeccion_fruta()
@@ -413,6 +433,14 @@ const apiSocket = {
     get_constantes_sistema_observaciones_calidad: async () => {
         const formulario = await ConstantesDelSistema.get_constantes_sistema_observaciones_calidad()
         return { status: 200, message: 'Ok', data: formulario }
+    },
+    get_constantes_sistema_tipo_frutas: async () => {
+        const data = await SistemaRepository.get_constantes_sistema_tipo_frutas()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    get_constantes_sistema_paises_GGN: async () => {
+        const data = await SistemaRepository.get_constantes_sistema_paises_GGN()
+        return { status: 200, message: 'Ok', data: data }
     },
 
     //! transporte
@@ -515,6 +543,11 @@ const apiSocket = {
     crear_formulario_calidad: async (req) => {
         const { data, user } = req
         await CalidadRepository.crear_formulario_calidad(data, user._id)
+        return { status: 200, message: 'Ok' }
+    },
+    post_comercial_proveedores_add_proveedor: async (req) => {
+        const { data, user } = req
+        await ComercialRepository.post_comercial_proveedores_add_proveedor(data, user._id)
         return { status: 200, message: 'Ok' }
     },
     //! transporte
@@ -693,11 +726,6 @@ const apiSocket = {
         await ComercialRepository.addProveedor(data, user.user)
         return { status: 200, message: 'Ok' }
     },
-    modificar_proveedor: async (req) => {
-        const { data, user } = req
-        await ComercialRepository.modificar_proveedor(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
     modificar_predio_proceso_descarte: async (req) => {
         const { data, user } = req
         await ProcesoRepository.modificar_predio_proceso_descarte(data, user.user)
@@ -873,6 +901,11 @@ const apiSocket = {
     put_indicadores_eficiencia_operativa_modificar: async (req) => {
         const { data, user } = req
         await IndicadoresAPIRepository.put_indicadores_eficiencia_operativa_modificar(data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    put_comercial_proveedores_modify_proveedor: async (req) => {
+        const { data, user } = req
+        await ComercialRepository.put_comercial_proveedores_modify_proveedor(data, user.user)
         return { status: 200, message: 'Ok' }
     },
 }
