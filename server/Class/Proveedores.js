@@ -60,9 +60,10 @@ class ProveedoresRepository {
     static async modificar_proveedores(id, query, action, user) {
         this.validateBussyIds(id)
         try {
-            await db.Proveedores.findOneAndUpdate({ _id: id }, query, { new: true });
+            const proveedor = await db.Proveedores.findOneAndUpdate({ _id: id }, query, { new: true });
             let record = new db.recordProveedor({ operacionRealizada: action, user: user, documento: { ...query, _id: id } })
             await record.save()
+            return proveedor
         } catch (err) {
             throw new PutError(414, `Error al modificar el dato  ${err.message}`);
         } finally {

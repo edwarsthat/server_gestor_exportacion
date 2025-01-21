@@ -1810,7 +1810,7 @@ class ProcesoRepository {
                 select: { GGN: 1, PREDIO: 1 }
             })
 
-            const have_ggn = have_lote_GGN_export(predio[0], contenedor[0])
+            const have_ggn = have_lote_GGN_export(predio[0], contenedor[0], item)
             if (have_ggn) {
                 const query = {
                     $inc: {}
@@ -2590,6 +2590,8 @@ class ProcesoRepository {
                 select: { precio: 1 }
             })
 
+            if (!proveedor[0].precio) throw Error("El proveedor no tiene un precio establecido")
+
             const query = {
                 ...data,
                 precio: proveedor[0].precio[data.tipoFruta],
@@ -2664,7 +2666,10 @@ class ProcesoRepository {
             // console.timeEnd("Duración de miFuncion");
 
         } catch (err) {
-            throw new Error(`Code ${err.code}: ${err.message}`);
+            if (err.status === 521) {
+                throw err
+            }
+            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
 
         }
 

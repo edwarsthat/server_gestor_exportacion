@@ -4,6 +4,7 @@ const { initMongoDB } = require("../../DB/mongoDB/config/init");
 const { test_post_clientes, test_get_clientes, test_put_clientes } = require('./Clientes.test');
 const { test_post_fruta_descompuesta, test_get_fruta_descompuesta, test_put_fruta_descompuesta, test_delete_fruta_descompuesta } = require("./frutaDescompuesta.test");
 const { test_post_indicador, test_get_indicadores, test_put_indicador } = require('./Indicadores.test');
+const { test_post_proveedores, test_get_proveedores, test_put_predios } = require('./Proveedores.test');
 
 
 (
@@ -31,6 +32,11 @@ const { test_post_indicador, test_get_indicadores, test_put_indicador } = requir
             const _id_indicadores = await test_post_indicador();
             await test_get_indicadores(_id_indicadores.toString());
             await test_put_indicador(_id_indicadores.toString());
+
+            //test proveedores
+            const _id_proveedores = await test_post_proveedores();
+            await test_get_proveedores(_id_proveedores.toString());
+            await test_put_predios(_id_proveedores.toString());
             console.log(chalk.green('Todas las pruebas PASARON correctamente.'));
 
         } catch (error) {

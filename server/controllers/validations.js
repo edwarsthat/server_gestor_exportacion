@@ -1,5 +1,5 @@
 
-function have_lote_GGN_export(predio, contenedor) {
+function have_lote_GGN_export(predio, contenedor, item) {
 
     if (!("GGN" in predio)) return false;
     if (predio.GGN === undefined || predio.GGN === '') return false;
@@ -8,16 +8,17 @@ function have_lote_GGN_export(predio, contenedor) {
     if (!("tipo_fruta" in predio.GGN)) return false;
     if (predio.GGN.paises.lenght < 1) return false
     if (predio.GGN.tipo_fruta.lenght < 1) return false
-
+    //Verificar los datos del contenedor
     if (!("clienteInfo" in contenedor.infoContenedor)) return false;
     if (!("PAIS_DESTINO" in contenedor.infoContenedor.clienteInfo)) return false;
+
     if (!predio.GGN.paises.some(
         element => contenedor.infoContenedor.clienteInfo.PAIS_DESTINO.includes(element)
     )) return false;
-
     //se verifica si el tipo de fruta del lote es del mismo que el del ggn
     //toca revisar si si 
-    if (!predio.GGN.tipo_fruta.includes(predio.tipoFruta)) return false;
+    if (!predio.GGN.tipo_fruta.includes(item.tipoFruta)) return false;
+
 
     return true;
 }

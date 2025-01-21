@@ -30,7 +30,7 @@ class LotesRepository {
             await record.save();
             return new_lote;
         } catch (err) {
-            throw new PostError(409, `Error agregando lote ${err.message}`);
+            throw new PostError(521, `Error creando lote ${err.message}`);
         }
     }
     static async getLotes(options = {}) {
