@@ -224,7 +224,6 @@ io.on("connection", socket => {
 
             // Mark the request as ongoing
             ongoingRequests[data.data.action] = true;
-            // const autorizado = await UserRepository.autentificacionPermisos(data.user.cargo, data.data.action, data.user.user);
             const autorizado2 = await UserRepository.autentificacionPermisos2(data);
             if (!autorizado2) {
                 throw new AccessError(412, `Acceso no autorizado ${data.data.action}`);
@@ -315,13 +314,20 @@ server.listen(3011, () => {
 
 // #region Acciones programadas
 
-//reiniciar valores del sistema
-cron.schedule('0 8 * * *', async () => {
-    await ProcesoRepository.reiniciarValores_proceso();
+
+//crear indicador diario
+// cron.schedule('0 7 * * *', async () => {
+//     await IndicadoresAPIRepository.post_indicadores_eficiencia_operativa_registro();
+// });
+cron.schedule('40 10 * * *', async () => {
+    await IndicadoresAPIRepository.post_indicadores_eficiencia_operativa_registro();
 });
 
-cron.schedule('0 7 * * *', async () => {
-    await IndicadoresAPIRepository.post_indicadores_eficiencia_operativa_registro();
+//Kilos procesados al finalizar el dia
+cron.schedule('00 11 * * *', async () => {
+    await IndicadoresAPIRepository.sys_indicadores_eficiencia_operativa_kilos_procesados();
+    await ProcesoRepository.reiniciarValores_proceso();
+
 });
 
 cron.schedule("7 9 * * *", async () => {

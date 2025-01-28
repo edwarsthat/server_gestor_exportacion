@@ -1,5 +1,6 @@
 const { ProcessError } = require("../../Error/ProcessError")
 const { IndicadoresRepository } = require("../Class/Indicadores")
+const { VariablesDelSistema } = require("../Class/VariablesDelSistema")
 
 class IndicadoresAPIRepository {
     //! Eficiencia operativa
@@ -34,6 +35,61 @@ class IndicadoresAPIRepository {
                 select: {
                     fecha_creacion: 1,
                     kilos_procesados: 1,
+                    meta_kilos_procesados: 1,
+                    total_horas_hombre: 1,
+                    tipo_fruta: 1
+                }
+
+            })
+
+            return registros
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_indicadores_operaciones_eficiencia_operativa_registros(req) {
+        try {
+            const { filtro } = req
+            const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
+
+            const query = {}
+
+            if (fechaInicio || fechaFin) {
+                query.fecha_creacion = {}
+                if (fechaInicio) {
+                    const fechaInicioUTC = new Date(fechaInicio);
+                    fechaInicioUTC.setHours(fechaInicioUTC.getHours() + 5);
+                    query.fecha_creacion.$gte = fechaInicioUTC;
+                } else {
+                    query.fecha_creacion.$gte = new Date(0);
+                }
+                if (fechaFin) {
+                    const fechaFinUTC = new Date(fechaFin)
+                    fechaFinUTC.setDate(fechaFinUTC.getDate() + 1);
+                    fechaFinUTC.setHours(fechaFinUTC.getHours() + 5);
+                    query.fecha_creacion.$lt = fechaFinUTC;
+                } else {
+                    query.fecha_creacion.$lt = new Date();
+                }
+            }
+
+            // Filtro por tipoFruta
+            if (tipoFruta && tipoFruta.length > 0) {
+                query.tipo_fruta = {
+                    $all: tipoFruta,          // Debe contener todos los elementos del filtro
+                    $size: tipoFruta.length   // Debe tener exactamente esta cantidad
+                };
+            }
+
+            console.log(query);
+            const registros = await IndicadoresRepository.get_indicadores({
+                query: query,
+                select: {
+                    fecha_creacion: 1,
+                    kilos_procesador: 1,
                     meta_kilos_procesados: 1,
                     total_horas_hombre: 1,
                     tipo_fruta: 1
@@ -89,6 +145,30 @@ class IndicadoresAPIRepository {
             if (err.status === 523) {
                 throw err
             } else if (err.status === 400) {
+                throw err
+            }
+            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async sys_indicadores_eficiencia_operativa_kilos_procesados() {
+        try {
+            const indicador = await IndicadoresRepository.get_indicadores({
+                sort: { fecha_creacion: -1 },
+                limit: 1
+            })
+            const kilos_procesados = await VariablesDelSistema.get_kilos_procesados_hoy2()
+
+            const kilos_total = Object.values(kilos_procesados).reduce((a, b) => a + b, 0);
+            const tipo_fruta = Object.keys(kilos_procesados);
+
+            await IndicadoresRepository.put_indicador(indicador[0]._id, {
+                tipo_fruta: tipo_fruta,
+                kilos_procesador: kilos_total
+            })
+
+
+        } catch (err) {
+            if (err.status === 525) {
                 throw err
             }
             throw new ProcessError(475, `Error ${err.type}: ${err.message}`)

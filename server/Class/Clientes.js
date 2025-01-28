@@ -43,6 +43,7 @@ class ClientesRepository {
     }
     static async post_cliente(data, user) {
         try {
+            delete data._id;
             const proveedor = new db.Clientes(data);
             const saveProveedor = await proveedor.save();
             let record = new db.recordClientes({ operacionRealizada: 'crear cliente', user: user, documento: saveProveedor })

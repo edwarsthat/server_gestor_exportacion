@@ -1041,9 +1041,8 @@ class ProcesoRepository {
 
         await VariablesDelSistema.modificar_inventario_descarte(_id, data, "descarteLavado", lote);
         await VariablesDelSistema.ingresar_kilos_procesados(kilos, lote.tipoFruta);
-        // procesoEventEmitter.emit("proceso_event", {
-        //     kilosProcesadosHoy: kilosProcesados
-        // });
+        await VariablesDelSistema.ingresar_kilos_procesados2(kilos, lote.tipoFruta);
+
 
         procesoEventEmitter.emit("server_event", {
             action: "put_descarte",
@@ -1074,9 +1073,7 @@ class ProcesoRepository {
 
         await VariablesDelSistema.modificar_inventario_descarte(_id, data, "descarteEncerado", lote);
         await VariablesDelSistema.ingresar_kilos_procesados(kilos, lote.tipoFruta);
-        // procesoEventEmitter.emit("proceso_event", {
-        //     kilosProcesadosHoy: kilosProcesados
-        // });
+        await VariablesDelSistema.ingresar_kilos_procesados2(kilos, lote.tipoFruta);
 
         procesoEventEmitter.emit("server_event", {
             action: "put_descarte",
@@ -1796,6 +1793,8 @@ class ProcesoRepository {
             // se agrega la exportacion a las variables del sistema
 
             await VariablesDelSistema.ingresar_exportacion(kilosExportacion, lote.tipoFruta)
+            await VariablesDelSistema.ingresar_kilos_procesados2(kilosExportacion, lote.tipoFruta)
+
             pilaFunciones.push({
                 funcion: "exportacion_variables_sistema",
                 datos: {
@@ -1867,6 +1866,7 @@ class ProcesoRepository {
                     const { kilosExportacion, tipoFruta } = funcion.datos
 
                     await VariablesDelSistema.ingresar_exportacion(kilosExportacion, tipoFruta)
+                    await VariablesDelSistema.ingresar_kilos_procesados2(kilosExportacion, tipoFruta)
 
                     procesoEventEmitter.emit("proceso_event", {});
                     procesoEventEmitter.emit("listaempaque_update");
@@ -2135,6 +2135,8 @@ class ProcesoRepository {
             //se modifica la cantidad de kilos exportacion
             for (const [key, value] of Object.entries(kilosTotal)) {
                 await VariablesDelSistema.ingresar_exportacion(-value, key);
+                await VariablesDelSistema.ingresar_kilos_procesados2(-value, key)
+
             }
 
             pilaFunciones.push({
@@ -2168,6 +2170,7 @@ class ProcesoRepository {
 
                     for (const [key, value] of Object.entries(datos)) {
                         await VariablesDelSistema.ingresar_exportacion(value, key);
+                        await VariablesDelSistema.ingresar_kilos_procesados2(value, key)
                     }
 
                     procesoEventEmitter.emit("proceso_event", {});
@@ -2293,6 +2296,8 @@ class ProcesoRepository {
             })
 
             await VariablesDelSistema.ingresar_exportacion(-kilos, loteDB.tipoFruta)
+            await VariablesDelSistema.ingresar_kilos_procesados2(-kilos, lote.tipoFruta)
+
             pilaFunciones.push({
                 funcion: "exportacion_variables_sistema",
                 datos: {
@@ -2349,6 +2354,8 @@ class ProcesoRepository {
                     const { kilosExportacion, tipoFruta } = value.datos
 
                     await VariablesDelSistema.ingresar_exportacion(kilosExportacion, tipoFruta)
+                    await VariablesDelSistema.ingresar_kilos_procesados2(kilosExportacion, tipoFruta)
+
 
                 } else if (value.funcion === "Cambiar kilos GGN") {
                     const { query, id } = value.datos;

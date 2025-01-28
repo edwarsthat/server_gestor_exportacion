@@ -82,10 +82,19 @@ class ComercialRepository {
         try {
             const { data } = req
 
-            ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data)
+            const predio = await ProveedoresRepository.get_proveedores({
+                query: { "CODIGO INTERNO": 0 }
+            })
+
+            ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data);
+
+            const nuevoPredioConPrecio = {
+                ...data,
+                precio: predio[0].precio
+            }
 
             // Se crea el registro
-            await ProveedoresRepository.addProveedor(data, user._id);
+            await ProveedoresRepository.addProveedor(nuevoPredioConPrecio, user._id);
 
         } catch (err) {
 

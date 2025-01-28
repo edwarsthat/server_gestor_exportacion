@@ -11,7 +11,7 @@ const defineproveedores = async (conn) => {
     frutaNacional: { type: Number, default: 0 },
     descarte: { type: Number, default: 0 },
     combinado: { type: Number, default: 0 },
-  })
+  }, { _id: false, strict: false })
 
   const NaranjaPrecioSchema = new Schema({
     "1": { type: Number, default: 0 },
@@ -20,13 +20,13 @@ const defineproveedores = async (conn) => {
     frutaNacional: { type: Number, default: 0 },
     descarte: { type: Number, default: 0 },
     zumex: { type: Number, default: 0 },
-  })
+  }, { _id: false, strict: false })
 
   const PrecioSchema = new Schema({
     Limon: LimonPrecioSchema,
     Naranja: NaranjaPrecioSchema,
     fecha: { type: Date, default: Date.now }
-  });
+  }, { _id: false, strict: false });
 
   const GGNSchema = new Schema({
     code: String,

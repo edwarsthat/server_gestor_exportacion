@@ -6,8 +6,8 @@ const defineIndicadores = async (conn) => {
     const IndicadoresSchema = Schema({
         fecha_creacion: { type: Date, default: () => new Date() },
         kilos_procesador: Number,
-        meta_kilos_procesados: Number,
-        total_horas_hombre: Number,
+        meta_kilos_procesados: { type: Number, default: 0 },
+        total_horas_hombre: { type: Number, default: 0 },
         tipo_fruta: [String]
     })
 

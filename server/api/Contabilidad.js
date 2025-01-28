@@ -6,7 +6,8 @@ class ContabilidadRepository {
         const resultsPerPage = 50;
         const query = {
             enf: { $regex: '^E', $options: 'i' },
-            aprobacionComercial: true
+            aprobacionComercial: true,
+            exportacionDetallada: { $exists: true }
         }
         const lotes = await LotesRepository.getLotes({
             query: query,
