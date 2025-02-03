@@ -59,7 +59,7 @@ const defineproveedores = async (conn) => {
 
   const PredioSchema = new Schema({
     PREDIO: { type: String, required: true },
-    // ICA: ICASchema,
+    ICA: ICASchema,
     "CODIGO INTERNO": { type: Number, required: true, unique: true },
     GGN: GGNSchema,
     tipo_fruta: tipoFrutaSchema,
@@ -80,7 +80,7 @@ const defineproveedores = async (conn) => {
 
     //Borrar datos
     ICA_temp: String,
-    ICA: String,
+    // ICA: String,
     "FECHA VENCIMIENTO GGN": String,
     N: Boolean,
     L: Boolean,
