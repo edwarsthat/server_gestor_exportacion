@@ -1728,6 +1728,9 @@ class ProcesoRepository {
         const pilaFunciones = [];
         try {
             const { _id, pallet, item, action } = req;
+
+            if (item.calidad === '') throw new Error("El item debe tener una calidad")
+
             const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 ids: [_id],
                 populate: {

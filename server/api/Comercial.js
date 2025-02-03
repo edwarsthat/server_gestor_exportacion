@@ -9,28 +9,36 @@ class ComercialRepository {
 
     static async get_comercial_proveedores_elementos(req, user) {
         try {
-            const { page, filtro } = req
+            const { page, filtro } = req || {}
             const resultsPerPage = 25;
+            let filter
             let query
 
+            if (filtro) {
+                ComercialValidationsRepository
+                    .val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
+                filter = ComercialValidationsRepository
+                    .query_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
 
-            ComercialValidationsRepository
-                .val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
-            query = ComercialValidationsRepository
-                .query_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
+                if (user.Rol > 2) {
+                    filter = {
+                        ...filter,
+                        activo: true
+                    }
+                }
 
-            if (user.Rol > 2) {
                 query = {
-                    ...query,
-                    activo: true
+                    skip: (page - 1) * resultsPerPage,
+                    query: filter
+                }
+            } else {
+                query = {
+                    limit: 'all'
                 }
             }
 
 
-            const registros = await ProveedoresRepository.get_proveedores({
-                skip: (page - 1) * resultsPerPage,
-                query: query
-            })
+            const registros = await ProveedoresRepository.get_proveedores(query)
 
             return registros
         } catch (err) {

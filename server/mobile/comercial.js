@@ -52,5 +52,21 @@ routerComercial.get("/get_proveedores_proceso", async (req, res) => {
     }
 })
 
+routerComercial.get("/get_comercial_proveedores_elementos", async (req, res) => {
+    try {
+        //autentificacion
+        const token = req.headers['authorization'];
+        const user = await UserRepository.authenticateToken(token);
+        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
+
+        const response = await ComercialRepository.get_comercial_proveedores_elementos()
+
+        res.send({ status: 200, message: 'Ok', data: response })
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
 
 module.exports.routerComercial = routerComercial;
