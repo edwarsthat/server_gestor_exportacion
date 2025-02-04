@@ -1096,13 +1096,6 @@ class VariablesDelSistema {
   }
 
   static async ingresar_exportacion(kilos, tipoFruta) {
-    /**
-   * Función que ingresa y actualiza los kilos de exportación en el sistema.
-   *
-   * @param {number} kilos - Cantidad de kilos a agregar al total de kilos exportados hoy.
-   * @returns {Promise<void>} - Promesa que se resuelve cuando la operación se completa.
-   * @throws {ConnectRedisError} - Lanza un error si ocurre un problema al actualizar los kilos en Redis.
-   */
     let cliente
 
     try {
@@ -1145,6 +1138,51 @@ class VariablesDelSistema {
       if (cliente) {
         cliente.quit();
         console.log('Cerrando la conexión con Redis...');
+      }
+    }
+  }
+  static async ingresar_exportacion2(kilos, tipoFruta) {
+    let cliente;
+    try {
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
+      const key = "kilosExportacionHoy";
+
+      // Obtener los kilos procesados de Redis
+      let kilosProcesados = await cliente.get(key);
+      console.log("Fruta procesada antes de sumar:", kilosProcesados);
+
+      // Si no existe, inicializar como un objeto vacío
+      if (kilosProcesados === null) {
+        kilosProcesados = {};
+      } else {
+        // Parsear el JSON almacenado
+        kilosProcesados = JSON.parse(kilosProcesados);
+      }
+
+      console.log("Fruta procesada antes de sumar:", kilosProcesados);
+
+      // Convertir el valor a número o inicializar si es null
+      kilosProcesados[tipoFruta] = kilosProcesados[tipoFruta] ? parseInt(kilosProcesados[tipoFruta], 10) : 0;
+
+      // Sumar los nuevos kilos
+      kilosProcesados[tipoFruta] += kilos;
+
+      // Actualizar el valor en Redis
+      await cliente.set(key, JSON.stringify(kilosProcesados));
+
+      return kilosProcesados;
+
+    } catch (err) {
+      console.error("Error socket: ", err);
+      throw new ConnectRedisError(
+        419,
+        `Error con la conexión con Redis sumando kilos procesados: ${err.message}`
+      );
+    } finally {
+      if (cliente) {
+        cliente.quit();
+        console.log("Cerrando la conexión con Redis...");
       }
     }
   }
