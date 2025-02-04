@@ -23,6 +23,7 @@ const permisos_generales = [
     "get_calidad_informes_calidad_informe_proveedor_numero_datos",
     "get_indicadores_proceso_numero_items",
     "get_comercial_proveedores_numero_elementos",
+    "get_inventarios_historiales_lista_empaque_proveedores",
     //obteniendo constantes
     "get_constantes_sistema_clasificacion_descarte",
     "get_constantes_sistema_observaciones_calidad",
