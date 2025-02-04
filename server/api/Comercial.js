@@ -133,6 +133,24 @@ class ComercialRepository {
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async get_inventarios_historiales_lista_empaque_proveedores() {
+        try {
+
+            const query = {
+                limit: 'all'
+            }
+
+
+            const registros = await ProveedoresRepository.get_proveedores(query)
+
+            return registros
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
 
 
     static async get_proveedores() {
