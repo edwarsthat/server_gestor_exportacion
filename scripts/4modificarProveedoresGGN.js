@@ -4,8 +4,8 @@ const { defineproveedores } = require("../DB/mongoDB/schemas/proveedores/schemaP
 
 async function modificar_proveedores_new_ggn_tipoFruta() {
     try {
-        // const db = await connectProcesoDB("mongodb://localhost:27017/proceso")
-        const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/proceso?authSource=admin")
+        const db = await connectProcesoDB("mongodb://localhost:27017/proceso")
+        // const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/proceso?authSource=admin")
 
         const Proveedor = await defineproveedores(db);
         // const proveedores_temp = await Proveedor.find().exec();

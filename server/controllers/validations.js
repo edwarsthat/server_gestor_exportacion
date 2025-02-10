@@ -7,6 +7,7 @@ function have_lote_GGN_export(predio, contenedor, item) {
     //se verifica si el GGN tiene tipo de fruta
     if (!("tipo_fruta" in predio.GGN)) return false;
     if (predio.GGN.paises.lenght < 1) return false
+    if (predio.GGN.tipo_fruta.lenght === undefined) return false
     if (predio.GGN.tipo_fruta.lenght < 1) return false
     //Verificar los datos del contenedor
     if (!("clienteInfo" in contenedor.infoContenedor)) return false;

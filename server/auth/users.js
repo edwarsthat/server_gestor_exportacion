@@ -31,7 +31,10 @@ const permisos_generales = [
     "get_constantes_sistema_paises_GGN",
 
     //se obtiene datos del sistema
-    "Get_info_update_app_desktop"
+    "Get_info_update_app_desktop",
+
+    //obtener los proveedores para desplegables
+    "get_sys_proveedores"
 ]
 
 class UserRepository {

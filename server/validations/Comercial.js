@@ -97,6 +97,15 @@ class ComercialValidationsRepository {
             }
         });
     }
+    static val_get_sys_proveedores(data) {
+        const valoresValidos = ['activos', 'all'];
+
+        if (!valoresValidos.includes(data)) {
+            throw new Error("Error en los parametros de entrada de la funcion para obtener proveedores");
+        }
+
+    }
+
 }
 
 module.exports.ComercialValidationsRepository = ComercialValidationsRepository

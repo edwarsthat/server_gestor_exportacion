@@ -1517,6 +1517,39 @@ class VariablesDelSistema {
 
     }
   }
+  static async get_kilos_exportacion_hoy2() {
+    let cliente;
+
+    try {
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
+      const key = "kilosExportacionHoy";
+
+      // Verificar si la clave existe
+      let kilos_procesados = await cliente.get(key);
+
+      // Si no existe, crearla como un arreglo vacío (JSON)
+      if (kilos_procesados === null) {
+        await cliente.set(key, JSON.stringify({})); // Crea un arreglo vacío
+        kilos_procesados = []; // Retorna el arreglo vacío
+      } else {
+        // Parsear el JSON almacenado
+        kilos_procesados = JSON.parse(kilos_procesados);
+      }
+
+      return kilos_procesados;
+
+
+    } catch (err) {
+      throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
+    } finally {
+      if (cliente) {
+        await cliente.quit();
+        console.log('Cerrando la conexión con Redis...');
+      }
+
+    }
+  }
   //#region Constantes
   static async obtener_observaciones_calidad() {
     try {

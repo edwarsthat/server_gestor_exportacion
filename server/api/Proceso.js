@@ -1797,6 +1797,7 @@ class ProcesoRepository {
 
             await VariablesDelSistema.ingresar_exportacion(kilosExportacion, lote.tipoFruta)
             await VariablesDelSistema.ingresar_kilos_procesados2(kilosExportacion, lote.tipoFruta)
+            await VariablesDelSistema.ingresar_exportacion2(kilosExportacion, lote.tipoFruta)
 
             pilaFunciones.push({
                 funcion: "exportacion_variables_sistema",
@@ -1870,7 +1871,7 @@ class ProcesoRepository {
 
                     await VariablesDelSistema.ingresar_exportacion(kilosExportacion, tipoFruta)
                     await VariablesDelSistema.ingresar_kilos_procesados2(kilosExportacion, tipoFruta)
-
+                    await VariablesDelSistema.ingresar_exportacion2(kilosExportacion, tipoFruta)
                     procesoEventEmitter.emit("proceso_event", {});
                     procesoEventEmitter.emit("listaempaque_update");
                 }
@@ -1948,9 +1949,8 @@ class ProcesoRepository {
                 query.$inc[calidadFile[data.calidad]] = 0;
                 for (let i = 0; i < oldData.length; i++) {
                     const kilosviejos = Number(oldData[i].tipoCaja.split('-')[1].replace(",", "."))
-
-                    query.$inc[calidadFile[data.calidad]] =
-                        (kilosnuevos * Number(oldData[i].cajas)) - (kilosviejos * Number(oldData[i].cajas))
+                    const kilosNuevos = (kilosnuevos * Number(oldData[i].cajas)) - (kilosviejos * Number(oldData[i].cajas))
+                    query.$inc[calidadFile[data.calidad]] = kilosNuevos
 
                     const lote = await LotesRepository.modificar_lote_proceso(
                         oldData[i].lote,
@@ -1966,6 +1966,17 @@ class ProcesoRepository {
                             id: oldData[i].lote
                         }
                     })
+                    await VariablesDelSistema.ingresar_kilos_procesados2(kilosNuevos, oldData[i].tipoFruta)
+                    await VariablesDelSistema.ingresar_exportacion2(kilosNuevos, oldData[i].tipoFruta)
+
+                    pilaFunciones.push({
+                        funcion: "Cambiar kilosprocesados",
+                        datos: {
+                            kilosNuevos,
+                            tipoFruta: oldData[i].tipoFruta
+                        }
+                    })
+
 
                     const predio = await ProveedoresRepository.get_proveedores({
                         ids: [lote.predio], select: { GGN: 1 }
@@ -2047,6 +2058,15 @@ class ProcesoRepository {
                         "rectificando fallo",
                         user
                     )
+                } else if (value.funcion === 'Cambiar kilosprocesados') {
+                    await VariablesDelSistema.ingresar_kilos_procesados2(
+                        -(value.datos.kilosNuevos), value.datos.tipoFruta
+                    )
+                    await VariablesDelSistema.ingresar_exportacion2(
+                        -(value.datos.kilosNuevos), value.datos.tipoFruta
+                    )
+
+
                 }
             }
 
@@ -2061,7 +2081,7 @@ class ProcesoRepository {
         const pilaFunciones = [];
         try {
             const { _id, pallet, seleccion, action } = req;
-            let kilosTotal = { Limon: 0, Naranja: 0 };
+            let kilosTotal = {};
             //se ordenan los items seleccionados
             const seleccionOrdenado = seleccion.sort((a, b) => b - a);
             //se eliminan los items de la lista de empaque
@@ -2099,8 +2119,13 @@ class ProcesoRepository {
                 await LotesRepository.rendimiento(loteDB);
                 await LotesRepository.deshidratacion(loteDB);
 
-                if (diaItem === hoy)
+                if (diaItem === hoy) {
+                    if (!Object.prototype.hasOwnProperty.call(kilosTotal, loteDB.tipoFruta))
+                        kilosTotal[loteDB.tipoFruta] = 0
+
                     kilosTotal[loteDB.tipoFruta] += kilos;
+
+                }
 
                 query.$inc[calidadFile[calidad]] = kilos;
                 pilaFunciones.push({
@@ -2139,6 +2164,7 @@ class ProcesoRepository {
             for (const [key, value] of Object.entries(kilosTotal)) {
                 await VariablesDelSistema.ingresar_exportacion(-value, key);
                 await VariablesDelSistema.ingresar_kilos_procesados2(-value, key)
+                await VariablesDelSistema.ingresar_exportacion2(-value, key)
 
             }
 
@@ -2174,6 +2200,7 @@ class ProcesoRepository {
                     for (const [key, value] of Object.entries(datos)) {
                         await VariablesDelSistema.ingresar_exportacion(value, key);
                         await VariablesDelSistema.ingresar_kilos_procesados2(value, key)
+                        await VariablesDelSistema.ingresar_exportacion2(value, key)
                     }
 
                     procesoEventEmitter.emit("proceso_event", {});
@@ -2299,7 +2326,8 @@ class ProcesoRepository {
             })
 
             await VariablesDelSistema.ingresar_exportacion(-kilos, loteDB.tipoFruta)
-            await VariablesDelSistema.ingresar_kilos_procesados2(-kilos, lote.tipoFruta)
+            await VariablesDelSistema.ingresar_kilos_procesados2(-kilos, loteDB.tipoFruta)
+            await VariablesDelSistema.ingresar_exportacion2(-kilos, loteDB.tipoFruta)
 
             pilaFunciones.push({
                 funcion: "exportacion_variables_sistema",
@@ -2358,6 +2386,7 @@ class ProcesoRepository {
 
                     await VariablesDelSistema.ingresar_exportacion(kilosExportacion, tipoFruta)
                     await VariablesDelSistema.ingresar_kilos_procesados2(kilosExportacion, tipoFruta)
+                    await VariablesDelSistema.ingresar_exportacion2(kilosExportacion, tipoFruta)
 
 
                 } else if (value.funcion === "Cambiar kilos GGN") {

@@ -34,7 +34,7 @@ class IndicadoresAPIRepository {
                 skip: (page - 1) * resultsPerPage,
                 select: {
                     fecha_creacion: 1,
-                    kilos_procesados: 1,
+                    kilos_procesador: 1,
                     meta_kilos_procesados: 1,
                     total_horas_hombre: 1,
                     tipo_fruta: 1
@@ -164,6 +164,26 @@ class IndicadoresAPIRepository {
             await IndicadoresRepository.put_indicador(indicador[0]._id, {
                 tipo_fruta: tipo_fruta,
                 kilos_procesador: kilos_total
+            })
+
+
+        } catch (err) {
+            if (err.status === 525) {
+                throw err
+            }
+            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async sys_indicadores_eficiencia_fruta_kilos_procesados() {
+        try {
+            const indicador = await IndicadoresRepository.get_indicadores({
+                sort: { fecha_creacion: -1 },
+                limit: 1
+            })
+            const kilos_exportacion = await VariablesDelSistema.get_kilos_exportacion_hoy2()
+
+            await IndicadoresRepository.put_indicador(indicador[0]._id, {
+                kilos_exportacion: kilos_exportacion
             })
 
 

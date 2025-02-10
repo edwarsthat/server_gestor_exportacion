@@ -33,16 +33,6 @@ const apiSocket = {
         const response = await ProcesoRepository.get_predio_Proceso_Descarte()
         return { data: response, status: 200, message: 'Ok' }
     },
-
-    //!proveedores
-    getProveedores: async () => {
-        const proveedores = await ComercialRepository.get_proveedores();
-        return { status: 200, message: 'Ok', data: proveedores }
-    },
-    get_proveedores_proceso: async () => {
-        const proveedores = await ComercialRepository.get_proveedores_proceso();
-        return { status: 200, message: 'Ok', data: proveedores }
-    },
     obtener_precio_proveedores: async (req) => {
         const { data } = req
         const response = await ComercialRepository.obtener_precio_proveedores(data)
@@ -54,15 +44,11 @@ const apiSocket = {
         const proveedores = await ComercialRepository.get_comercial_proveedores_elementos(data, user);
         return { status: 200, message: 'Ok', data: proveedores }
     },
-    get_inventarios_ingresos_proveedores_registros: async () => {
-        const proveedores = await ComercialRepository.get_inventarios_ingresos_proveedores_registros();
-        return { status: 200, message: 'Ok', data: proveedores }
+    get_sys_proveedores: async (req) => {
+        const { data } = req;
+        const response = await ComercialRepository.get_sys_proveedores(data.data);
+        return { status: 200, message: 'Ok', data: response }
     },
-    get_inventarios_historiales_lista_empaque_proveedores: async () => {
-        const proveedores = await ComercialRepository.get_inventarios_historiales_lista_empaque_proveedores();
-        return { status: 200, message: 'Ok', data: proveedores }
-    },
-
 
     getInventario: async () => {
         const resultado = await ProcesoRepository.getInventario();
@@ -363,6 +349,7 @@ const apiSocket = {
         const response = await IndicadoresAPIRepository.get_indicadores_operaciones_eficiencia_operativa_registros(data)
         return { status: 200, message: 'Ok', data: response }
     },
+
 
     //! obtener numero de datos para paginar las tablas
     get_calidad_formularios_controlPlagas_numeroElementos: async () => {
@@ -728,11 +715,6 @@ const apiSocket = {
     inactivar_Proveesdor: async (req) => {
         const { data, user } = req
         await ComercialRepository.inactivar_Proveedor(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
-    addProveedor: async (req) => {
-        const { data, user } = req
-        await ComercialRepository.addProveedor(data, user.user)
         return { status: 200, message: 'Ok' }
     },
     modificar_predio_proceso_descarte: async (req) => {

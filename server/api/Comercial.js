@@ -6,7 +6,36 @@ const { ComercialValidationsRepository } = require("../validations/Comercial");
 
 class ComercialRepository {
 
+    //proveedores
+    static async get_sys_proveedores(data) {
+        let query
+        try {
 
+            ComercialValidationsRepository.val_get_sys_proveedores(data)
+
+            if (data === 'activos') {
+                query = {
+                    query: { activo: true },
+                    limit: 'all',
+                    select: { PREDIO: 1, 'ICA.code': 1, SISPAP: 1, GGN: 1 }
+                }
+            } else if (data === 'all') {
+                query = {
+                    limit: 'all',
+                    select: { PREDIO: 1, 'ICA.code': 1, SISPAP: 1, GGN: 1 }
+                }
+            } else {
+                throw new Error("Error en los parametros de busqueda")
+            }
+
+            return await ProveedoresRepository.get_proveedores(query);
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
     static async get_comercial_proveedores_elementos(req, user) {
         try {
             const { page, filtro } = req || {}
@@ -74,17 +103,40 @@ class ComercialRepository {
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_inventarios_ingresos_proveedores_registros() {
+    static async put_comercial_proveedores_modify_proveedor(req, user) {
         try {
-            return await ProveedoresRepository.get_proveedores(
-                { query: { activo: true }, limit: 'all' }
-            );
+
+            const { _id, data, action } = req
+
+            ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data)
+
+            await ProveedoresRepository.modificar_proveedores(
+                _id,
+                data,
+                action,
+                user
+            )
         } catch (err) {
-            if (err.status === 522) {
+
+            if (err.status === 521) {
                 throw err
             }
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
         }
+    }
+    static async inactivar_Proveedor(data, user) {
+        const { _id, action } = data
+        const query = [{
+            $set: {
+                activo: { $not: "$activo" }
+            }
+        }]
+        await ProveedoresRepository.modificar_proveedores(
+            _id,
+            query,
+            action,
+            user
+        )
     }
     static async post_comercial_proveedores_add_proveedor(req, user) {
         try {
@@ -112,55 +164,8 @@ class ComercialRepository {
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async put_comercial_proveedores_modify_proveedor(req, user) {
-        try {
-
-            const { _id, data, action } = req
-
-            ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data)
-
-            await ProveedoresRepository.modificar_proveedores(
-                _id,
-                data,
-                action,
-                user
-            )
-        } catch (err) {
-
-            if (err.status === 521) {
-                throw err
-            }
-            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_inventarios_historiales_lista_empaque_proveedores() {
-        try {
-
-            const query = {
-                limit: 'all'
-            }
 
 
-            const registros = await ProveedoresRepository.get_proveedores(query)
-
-            return registros
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
-
-
-    static async get_proveedores() {
-        return await ProveedoresRepository.get_proveedores();
-    }
-    static async get_proveedores_proceso() {
-        return await ProveedoresRepository.get_proveedores(
-            { query: { activo: true } }
-        );
-    }
     static async get_clientes() {
         return await ClientesRepository.get_clientes();
     }
@@ -169,24 +174,6 @@ class ComercialRepository {
             query: { activo: true },
             select: { CLIENTE: 1 }
         });
-    }
-    static async inactivar_Proveedor(data, user) {
-        const { _id, action } = data
-        const query = [{
-            $set: {
-                activo: { $not: "$activo" }
-            }
-        }]
-        await ProveedoresRepository.modificar_proveedores(
-            _id,
-            query,
-            action,
-            user
-        )
-    }
-    static async addProveedor(req, user) {
-        const { data } = req
-        await ProveedoresRepository.addProveedor(data, user)
     }
     static async obtener_precio_proveedores(req) {
         const { data } = req

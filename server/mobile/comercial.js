@@ -8,20 +8,6 @@ routerComercial.get("/", (req, res) => {
     res.send("Comercial")
 });
 
-routerComercial.get("/get-proveedores", async (req, res) => {
-    try {
-        const token = req.headers['authorization'];
-        await UserRepository.authenticateToken(token);
-
-        const data = await ComercialRepository.get_proveedores();
-
-        res.json({ status: 200, data: data });
-    } catch (err) {
-        res.json({ status: err.status, message: err.message });
-    }
-
-});
-
 routerComercial.put("/ingresar_precio_fruta", async (req, res) => {
     try {
         const token = req.headers['authorization'];
@@ -36,19 +22,6 @@ routerComercial.put("/ingresar_precio_fruta", async (req, res) => {
     } catch (err) {
         res.json({ status: err.status, message: err.message });
 
-    }
-})
-
-routerComercial.get("/get_proveedores_proceso", async (req, res) => {
-    try {
-        const token = req.headers['authorization'];
-        await UserRepository.authenticateToken(token);
-
-        const data = await ComercialRepository.get_proveedores_proceso();
-        res.json({ status: 200, message: 'Ok', data: data });
-    } catch (err) {
-        console.log(`Code ${err.status}: ${err.message}`)
-        res.json({ status: err.status, message: err.message })
     }
 })
 
