@@ -319,23 +319,21 @@ server.listen(3011, () => {
 // cron.schedule('0 7 * * *', async () => {
 //     await IndicadoresAPIRepository.post_indicadores_eficiencia_operativa_registro();
 // });
-cron.schedule('15 9 * * *', async () => {
+cron.schedule('17 14 * * *', async () => {
     await IndicadoresAPIRepository.post_indicadores_eficiencia_operativa_registro();
 
 });
 
 //Kilos procesados al finalizar el dia
-cron.schedule('17 16 * * *', async () => {
+cron.schedule('16 13 * * *', async () => {
     await IndicadoresAPIRepository.sys_indicadores_eficiencia_operativa_kilos_procesados();
+    await IndicadoresAPIRepository.sys_indicadores_eficiencia_fruta_kilos_procesados();
     await ProcesoRepository.reiniciarValores_proceso();
 
 });
 
 
-cron.schedule('20 16 * * *', async () => {
-    await IndicadoresAPIRepository.sys_indicadores_eficiencia_fruta_kilos_procesados();
 
-});
 
 cron.schedule("7 9 * * *", async () => {
     const inicio = new Date().setHours(0, 0, 0, 0);
