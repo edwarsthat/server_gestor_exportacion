@@ -12,36 +12,45 @@ const defineLotes = async (conn) => {
     fecha: { type: Date, default: Date.now }
   }, { _id: false });
 
+  // const clasificacionCalidadSchema = new Schema({
+  //   acaro: Number,
+  //   alsinoe: Number,
+  //   dannosMecanicos: Number,
+  //   deshidratada: Number,
+  //   division: Number,
+  //   escama: Number,
+  //   frutaMadura: Number,
+  //   frutaVerde: Number,
+  //   fumagina: Number,
+  //   grillo: Number,
+  //   herbicida: Number,
+  //   mancha: Number,
+  //   melanosis: Number,
+  //   oleocelosis: Number,
+  //   piel: Number,
+  //   sombra: Number,
+  //   trips: Number,
+  //   wood: Number,
+  //   nutrientes: Number,
+  //   antracnosis: Number,
+  //   frutaRajada: Number,
+  //   ombligona: Number,
+  //   despezonada: Number,
+  //   variegacion: Number,
+  //   verdeManzana: Number,
+  //   otrasPlagas: Number,
+  //   fecha: { type: Date, default: Date.now }
+
+  // }, { _id: false });
+
   const clasificacionCalidadSchema = new Schema({
-    acaro: Number,
-    alsinoe: Number,
-    dannosMecanicos: Number,
-    deshidratada: Number,
-    division: Number,
-    escama: Number,
-    frutaMadura: Number,
-    frutaVerde: Number,
-    fumagina: Number,
-    grillo: Number,
-    herbicida: Number,
-    mancha: Number,
-    melanosis: Number,
-    oleocelosis: Number,
-    piel: Number,
-    sombra: Number,
-    trips: Number,
-    wood: Number,
-    nutrientes: Number,
-    antracnosis: Number,
-    frutaRajada: Number,
-    ombligona: Number,
-    despezonada: Number,
-    variegacion: Number,
-    verdeManzana: Number,
-    otrasPlagas: Number,
+    any: {
+      type: Map,
+      of: String
+    },
     fecha: { type: Date, default: Date.now }
 
-  }, { _id: false });
+  }, { _id: false, strict: false });
 
   const fotosCalidadSchema = new Schema({
     any: {
