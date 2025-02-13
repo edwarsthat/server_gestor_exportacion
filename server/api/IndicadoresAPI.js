@@ -1,5 +1,6 @@
 const { ProcessError } = require("../../Error/ProcessError")
 const { IndicadoresRepository } = require("../Class/Indicadores")
+const { LotesRepository } = require("../Class/Lotes")
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema")
 
 class IndicadoresAPIRepository {
@@ -50,7 +51,7 @@ class IndicadoresAPIRepository {
             throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_indicadores_operaciones_eficiencia_operativa_registros(req) {
+    static async get_indicadores_operaciones_registros(req) {
         try {
             const { filtro } = req
             const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
@@ -84,7 +85,6 @@ class IndicadoresAPIRepository {
                 };
             }
 
-            console.log(query);
             const registros = await IndicadoresRepository.get_indicadores({
                 query: query,
                 select: {
@@ -92,7 +92,8 @@ class IndicadoresAPIRepository {
                     kilos_procesador: 1,
                     meta_kilos_procesados: 1,
                     total_horas_hombre: 1,
-                    tipo_fruta: 1
+                    tipo_fruta: 1,
+                    kilos_exportacion: 1
                 }
 
             })
@@ -105,6 +106,60 @@ class IndicadoresAPIRepository {
             throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async get_indicaores_operaciones_lotes(req) {
+        try {
+            const { filtro } = req
+            const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
+
+            const query = {}
+
+            if (fechaInicio || fechaFin) {
+                query.fecha_ingreso_inventario = {}
+                if (fechaInicio) {
+                    const fechaInicioUTC = new Date(fechaInicio);
+                    fechaInicioUTC.setHours(fechaInicioUTC.getHours() + 5);
+                    query.fecha_ingreso_inventario.$gte = fechaInicioUTC;
+                } else {
+                    query.fecha_ingreso_inventario.$gte = new Date(0);
+                }
+                if (fechaFin) {
+                    const fechaFinUTC = new Date(fechaFin)
+                    fechaFinUTC.setDate(fechaFinUTC.getDate() + 1);
+                    fechaFinUTC.setHours(fechaFinUTC.getHours() + 5);
+                    query.fecha_ingreso_inventario.$lt = fechaFinUTC;
+                } else {
+                    query.fecha_ingreso_inventario.$lt = new Date();
+                }
+            }
+
+            // Filtro por tipoFruta
+            if (tipoFruta && tipoFruta.length > 0) {
+                query.tipoFruta = {
+                    $all: tipoFruta,          // Debe contener todos los elementos del filtro
+                };
+            }
+
+            query.fecha_finalizado_proceso = { $exists: true }
+
+            const registros = await LotesRepository.getLotes({
+                query: query,
+                limit: 'all',
+                select: {
+                    fecha_ingreso_inventario: 1,
+                    fecha_finalizado_proceso: 1,
+                }
+
+            })
+
+            return registros
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+        }
+    }
+
     static async put_indicadores_eficiencia_operativa_modificar(req) {
         try {
             const { _id, data } = req;

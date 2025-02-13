@@ -1674,7 +1674,8 @@ class ProcesoRepository {
 
         const query = {
             precio: precio,
-            aprobacionComercial: true
+            aprobacionComercial: true,
+            fecha_finalizado_proceso: new Date()
         }
 
         Object.keys(exportacion).forEach(cont => {

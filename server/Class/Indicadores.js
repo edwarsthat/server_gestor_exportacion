@@ -20,7 +20,6 @@ class IndicadoresRepository {
             skip = 0,
         } = options;
         try {
-            console.log(ids)
             let registroQuery = { ...query };
 
             if (ids.length > 0) {

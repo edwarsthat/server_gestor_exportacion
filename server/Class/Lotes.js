@@ -49,10 +49,13 @@ class LotesRepository {
             if (ids.length > 0) {
                 lotesQuery._id = { $in: ids };
             }
+
+            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
+
             const lotes = await db.Lotes.find(lotesQuery)
                 .select(select)
                 .sort(sort)
-                .limit(limit)
+                .limit(limitToUse)
                 .skip(skip)
                 .populate(populate)
                 .exec();
@@ -60,7 +63,7 @@ class LotesRepository {
             return lotes
 
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo lotes ${err.message}`);
+            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
         }
     }
     static async modificar_lote(id, query, action, user, __v = 0) {

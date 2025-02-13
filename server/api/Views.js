@@ -100,17 +100,15 @@ class ViewsRepository {
             const contenedoresSet = new Set(contenedoresArr)
             const cont = [...contenedoresSet]
 
-            const contenedores = await ContenedoresRepository.getContenedores({
+            const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 ids: cont,
-                select: { numeroContenedor: 1, pallets: 1 }
+                select: { numeroContenedor: 1 }
             });
 
             return { lotes: lotes, contenedores: contenedores }
         }
 
     }
-
-
 }
 
 module.exports.ViewsRepository = ViewsRepository
