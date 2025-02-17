@@ -1207,6 +1207,7 @@ class VariablesDelSistema {
       await cliente.set("statusProceso", 'off');
       await cliente.set("statusProceso", 'off');
       await cliente.set("kilosProcesadosHoy", '{}');
+      await cliente.set("kilosExportacionHoy", '{}');
 
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis sumar exportacion: ${err.name}`)

@@ -148,10 +148,21 @@ class IndicadoresAPIRepository {
                     fecha_ingreso_inventario: 1,
                     fecha_finalizado_proceso: 1,
                 }
-
             })
 
-            return registros
+            const new_registros = registros.map(lote => {
+                const fechaInicio = new Date(lote.fecha_ingreso_inventario)
+                const fechaFin = new Date(lote.fecha_finalizado_proceso)
+
+                const diferencia = Math.abs(fechaFin - fechaInicio)
+
+                const dias = diferencia / (1000 * 60 * 60)
+
+                return { ...lote._doc, dias_inicio_fin: dias }
+            })
+
+
+            return new_registros
         } catch (err) {
             if (err.status === 522) {
                 throw err

@@ -28,6 +28,7 @@ const { defineTurnoData } = require('../schemas/proceso/TurnoData');
 const { defineRecordProveedor } = require('../schemas/proveedores/schemaRecordProveedores');
 const { defineRecordLotes } = require('../schemas/lotes/schemaRecordLotes');
 const { defineIndicadores } = require('../schemas/indicadores/schemaIndicadoresProceso');
+const { definePrecios } = require('../schemas/precios/schemaPrecios');
 const db = {};
 
 const checkMongoDBRunning = async () => {
@@ -103,7 +104,6 @@ const initMongoDB = async () => {
 const defineSchemasProceso = async (sysConn) => {
     try {
 
-
         db.Insumos = await defineInsumos(sysConn);
         db.defineRecordTipoInsumos = await defineRecordTipoInsumos(sysConn);
         db.frutaDescompuesta = await defineFrutaDescompuesta(sysConn);
@@ -119,6 +119,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.historialDespachoDescarte = await defineHistorialDespachoDescarte(sysConn);
         db.TurnoData = await defineTurnoData(sysConn);
         db.Indicadores = await defineIndicadores(sysConn);
+        db.Precios = await definePrecios(sysConn)
 
     } catch (error) {
         console.error("Error durante la inicialización de MongoDB: creando los schemas", error);
@@ -138,7 +139,6 @@ const defineSchemasSistema = async (sysConn) => {
         db.LimpiezaMensual = await defineLimpiezaMensual(sysConn);
         db.VolanteCalidad = await defineVolanteCalidad(sysConn);
         db.Errores = await defineErrores(sysConn);
-
 
     } catch (error) {
         console.error("Error durante la inicialización de MongoDB: creando los schemas", error);

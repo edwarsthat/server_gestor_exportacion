@@ -17,7 +17,6 @@ const { routerSistema } = require('./server/mobile/sistema');
 const { routerVariablesdelSistema } = require('./server/mobile/variablesDelSistema');
 const { routerProceso } = require('./server/mobile/process');
 const { routerCalidad } = require('./server/mobile/calidad');
-const { routerComercial } = require('./server/mobile/comercial');
 const { routerAppTv } = require('./server/routes/appTv');
 const { ProcesoRepository } = require('./server/api/Proceso');
 const { SistemaRepository } = require('./server/api/Sistema');
@@ -30,6 +29,7 @@ const { sp32 } = require('./server/mobile/sp32');
 const { routerProceso2 } = require('./server/routes/Proceso');
 const { IndicadoresAPIRepository } = require('./server/api/IndicadoresAPI');
 const { routerIndicadores } = require('./server/routes/indicadores');
+const { routerComercial } = require('./server/routes/comercial');
 // const { initRustProceso } = require('./DB/controllers/proceso');
 
 

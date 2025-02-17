@@ -1,12 +1,13 @@
 const { ProcessError } = require("../../Error/ProcessError");
 const { ClientesRepository } = require("../Class/Clientes");
 const { LotesRepository } = require("../Class/Lotes");
+const { PreciosRepository } = require("../Class/Precios");
 const { ProveedoresRepository } = require("../Class/Proveedores");
 const { ComercialValidationsRepository } = require("../validations/Comercial");
 
 class ComercialRepository {
 
-    //proveedores
+    //#region proveedores
     static async get_sys_proveedores(data) {
         let query
         try {
@@ -70,6 +71,23 @@ class ComercialRepository {
             const registros = await ProveedoresRepository.get_proveedores(query)
 
             return registros
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_comercial_precios_proveedores_registros() {
+        try {
+
+            const query = {
+                limit: 'all'
+            }
+
+            const registros = await ProveedoresRepository.get_proveedores(query)
+            return registros
+
         } catch (err) {
             if (err.status === 522) {
                 throw err
@@ -162,6 +180,36 @@ class ComercialRepository {
                 throw err
             }
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+
+
+    //#region Precios
+    static async post_comercial_precios_add_precio(req) {
+        try {
+            const { data } = req
+
+            ComercialValidationsRepository.val_post_comercial_precios_add_precio(data);
+
+            await PreciosRepository.post_precio(data)
+
+        } catch (err) {
+
+            if (err.status === 521) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_comercial_precios_cantidad_registros() {
+        try {
+            const response = await PreciosRepository.get_cantidad_precios()
+            return response;
+        } catch (err) {
+            if (err.status === 524) {
+                throw err
+            }
+            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
         }
     }
 

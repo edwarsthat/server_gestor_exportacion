@@ -1,0 +1,62 @@
+
+POST http://172.31.176.1:3010/comercial/post_comercial_precios_add_precio
+Content-Type: application/json
+
+{
+    "data":{
+        "tipo_fruta":{
+            "Limon":{
+                "listaEmpaque":{
+                    "1":4600,
+                    "15":2500
+                },
+                "descartes": {
+                    "frutaNacional": 1500,
+                    "descarte":800
+                }
+            }
+        }
+    }
+}
+
+### otro ejemplo
+POST http://172.31.176.1:3010/comercial/post_comercial_precios_add_precio
+Content-Type: application/json
+
+{
+    "data":{
+        "tipo_fruta":{
+            "Limon":{
+                "listaEmpaque":{
+                    "1":4600,
+                    "15":2500
+                },
+                "descartes": {
+                    "frutaNacional": 1500,
+                    "descarte":800
+                }
+            },
+            "Naranja":{
+                "listaEmpaque":{
+                    "2":4600,
+                    "15":2500
+                },
+                "descartes": {
+                    "descarte":800
+                }
+            }
+        }
+    }
+}
+
+### ejemplo con error
+POST http://172.31.176.1:3010/comercial/post_comercial_precios_add_precio
+Content-Type: application/json
+{
+    "data":{}
+}
+
+
+### otro ejemplo
+GET http://172.31.176.1:3010/comercial/get_comercial_precios_cantidad_registros
+

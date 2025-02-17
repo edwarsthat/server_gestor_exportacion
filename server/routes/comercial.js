@@ -41,5 +41,38 @@ routerComercial.get("/get_comercial_proveedores_elementos", async (req, res) => 
     }
 })
 
+routerComercial.post("/post_comercial_precios_add_precio", async (req, res) => {
+    try {
+        //autentificacion
+        // const token = req.headers['authorization'];
+        // const user = await UserRepository.authenticateToken(token);
+        // await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
+        const data = req.body
+
+        const response = await ComercialRepository.post_comercial_precios_add_precio(data)
+
+        res.send({ status: 200, message: 'Ok', data: response })
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
+routerComercial.get("/get_comercial_precios_cantidad_registros", async (req, res) => {
+    try {
+        //autentificacion
+        // const token = req.headers['authorization'];
+        // const user = await UserRepository.authenticateToken(token);
+        // await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
+
+        const response = await ComercialRepository.get_comercial_precios_cantidad_registros()
+
+        res.send({ status: 200, message: 'Ok', data: response })
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+
 
 module.exports.routerComercial = routerComercial;

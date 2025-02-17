@@ -105,6 +105,12 @@ class ComercialValidationsRepository {
         }
 
     }
+    static val_post_comercial_precios_add_precio(data) {
+        if (!Object.prototype.hasOwnProperty.call(data, "tipo_fruta"))
+            throw new Error("Ingrese un tipo de fruta")
+        if (Object.keys(data.tipo_fruta).length <= 0)
+            throw new Error("Ingrese un tipo de fruta")
+    }
 
 }
 

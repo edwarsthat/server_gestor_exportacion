@@ -44,11 +44,16 @@ const apiSocket = {
         const proveedores = await ComercialRepository.get_comercial_proveedores_elementos(data, user);
         return { status: 200, message: 'Ok', data: proveedores }
     },
+    get_comercial_precios_proveedores_registros: async () => {
+        const proveedores = await ComercialRepository.get_comercial_precios_proveedores_registros();
+        return { status: 200, message: 'Ok', data: proveedores }
+    },
     get_sys_proveedores: async (req) => {
         const { data } = req;
         const response = await ComercialRepository.get_sys_proveedores(data.data);
         return { status: 200, message: 'Ok', data: response }
     },
+
 
     getInventario: async () => {
         const resultado = await ProcesoRepository.getInventario();
