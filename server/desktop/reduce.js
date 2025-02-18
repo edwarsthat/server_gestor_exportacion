@@ -359,6 +359,11 @@ const apiSocket = {
         const response = await IndicadoresAPIRepository.get_indicaores_operaciones_lotes(data)
         return { status: 200, message: 'Ok', data: response }
     },
+    get_indicadores_operaciones_noCalidad: async (req) => {
+        const { data } = req;
+        const response = await IndicadoresAPIRepository.get_indicadores_operaciones_noCalidad(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
 
 
 

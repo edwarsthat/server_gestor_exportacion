@@ -4,7 +4,7 @@ const { defineLotes } = require("../DB/mongoDB/schemas/lotes/schemaLotes");
 
 async function modificar_lotes_fecha_fecha_inicio() {
     try {
-        const db = await connectProcesoDB("mongodb://localhost:27017/proceso")
+        const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/proceso?authSource=admin")
         // const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/proceso?authSource=admin")
 
         const Lote = await defineLotes(db);

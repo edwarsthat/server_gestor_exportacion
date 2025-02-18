@@ -1,6 +1,7 @@
 const { ProcessError } = require("../../Error/ProcessError")
 const { IndicadoresRepository } = require("../Class/Indicadores")
 const { LotesRepository } = require("../Class/Lotes")
+const { UsuariosRepository } = require("../Class/Usuarios")
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema")
 
 class IndicadoresAPIRepository {
@@ -163,6 +164,55 @@ class IndicadoresAPIRepository {
 
 
             return new_registros
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_indicadores_operaciones_noCalidad(req) {
+        try {
+            const { filtro } = req
+            const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
+
+            const query = {}
+
+            if (fechaInicio || fechaFin) {
+                query.fecha = {}
+                if (fechaInicio) {
+                    const fechaInicioUTC = new Date(fechaInicio);
+                    fechaInicioUTC.setHours(fechaInicioUTC.getHours() + 5);
+                    query.fecha.$gte = fechaInicioUTC;
+                } else {
+                    query.fecha.$gte = new Date(0);
+                }
+                if (fechaFin) {
+                    const fechaFinUTC = new Date(fechaFin)
+                    fechaFinUTC.setDate(fechaFinUTC.getDate() + 1);
+                    fechaFinUTC.setHours(fechaFinUTC.getHours() + 5);
+                    query.fecha.$lt = fechaFinUTC;
+                } else {
+                    query.fecha.$lt = new Date();
+                }
+            }
+
+            // Filtro por tipoFruta
+            if (tipoFruta && tipoFruta.length > 0) {
+                query.tipoFruta = {
+                    $all: tipoFruta,          // Debe contener todos los elementos del filtro
+                };
+            }
+
+
+            const registros = await UsuariosRepository.obtener_volante_calidad({
+                query: query,
+                limit: 'all'
+            })
+
+
+
+            return registros
         } catch (err) {
             if (err.status === 522) {
                 throw err

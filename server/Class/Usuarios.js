@@ -242,19 +242,6 @@ class UsuariosRepository {
         }
     }
     static async obtener_volante_calidad(options = {}) {
-        /**
-        * Funcion que obtiene los formularios de volante calidad de la base de datos de MongoDB.
-        *
-        * @param {Object} options - Objeto de configuración para obtener los cargos.
-        * @param {Array<string>} [options.ids=[]] - Array de IDs de los formularios.
-        * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
-        * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
-        * @param {Object} [options.sort={ createdAt: -1 }] - Criterios de ordenación para los resultados.
-        * @param {number} [options.limit=50] - Número máximo de documentos a obtener.
-        * @param {number} [options.skip=0] - Número de documentos a omitir desde el inicio.
-        * @returns {Promise<Array>} - Promesa que resuelve a un array de lotes obtenidos.
-        * @throws {PostError} - Lanza un error si ocurre un problema al obtener los formularios.
-        */
         const {
             ids = [],
             query = {},
@@ -264,31 +251,36 @@ class UsuariosRepository {
             skip = 0,
         } = options;
         try {
-            let volanteCalidadQuery = { ...query };
+            let registroQuery = { ...query };
 
             if (ids.length > 0) {
-                volanteCalidadQuery._id = { $in: ids };
+                registroQuery._id = { $in: ids };
             }
-            const volanteCalidad = await db.VolanteCalidad.find(volanteCalidadQuery)
+
+            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
+
+
+            const volanteCalidad = await db.VolanteCalidad.find(registroQuery)
                 .select(select)
                 .sort(sort)
                 .populate({
                     path: 'operario',
-                    select: 'nombre apellido usuario', // Especifica los campos a seleccionar del documento relacionado
+                    select: 'nombre apellido usuario',
                 })
                 .populate({
                     path: 'responsable',
-                    select: 'nombre apellido usuario', // Especifica los campos a seleccionar del documento relacionado
+                    select: 'nombre apellido usuario',
                 })
-                .limit(limit)
+                .limit(limitToUse)
                 .skip(skip)
                 .exec();
+
 
             return volanteCalidad
 
         } catch (err) {
-            console.log(err)
-            throw new ConnectionDBError(408, `Error obteniendo volante calidad ${err.message}`);
+            throw new ConnectionDBError(522, `Volante calidad -> ${err.message}`);
+
         }
     }
     static async obtener_formularios_higiene_personal(options = {}) {
