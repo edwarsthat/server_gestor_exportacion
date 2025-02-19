@@ -30,6 +30,7 @@ const { routerProceso2 } = require('./server/routes/Proceso');
 const { IndicadoresAPIRepository } = require('./server/api/IndicadoresAPI');
 const { routerIndicadores } = require('./server/routes/indicadores');
 const { routerComercial } = require('./server/routes/comercial');
+const { routerPythonData } = require('./server/routes/pythonServer');
 // const { initRustProceso } = require('./DB/controllers/proceso');
 
 
@@ -56,6 +57,7 @@ app.use(express.text());
 
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use("/data", routerPythonData)
 app.use("/variablesDeProceso", routerVariablesdelSistema);
 app.use("/proceso", routerProceso);
 app.use("/proceso2", routerProceso2);
