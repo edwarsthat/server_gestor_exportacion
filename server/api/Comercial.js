@@ -4,6 +4,8 @@ const { LotesRepository } = require("../Class/Lotes");
 const { PreciosRepository } = require("../Class/Precios");
 const { ProveedoresRepository } = require("../Class/Proveedores");
 const { ComercialValidationsRepository } = require("../validations/Comercial");
+const { filtroFechaInicioFin, filtroPorSemana } = require("./utils/filtros");
+const { getISOWeek } = require('date-fns')
 
 class ComercialRepository {
 
@@ -185,13 +187,71 @@ class ComercialRepository {
 
 
     //#region Precios
-    static async post_comercial_precios_add_precio(req) {
+    static async post_comercial_precios_add_precio(req, user) {
         try {
             const { data } = req
+            const [yearStr, weekStr] = data.week.split("-W");
+            const year = parseInt(yearStr, 10);
+            const week = parseInt(weekStr, 10);
+
+            data.week = week
+            data.year = year
 
             ComercialValidationsRepository.val_post_comercial_precios_add_precio(data);
 
-            await PreciosRepository.post_precio(data)
+            const precio = await PreciosRepository.post_precio(data)
+
+
+            const query = {
+                _id: { $in: data.predios }
+            }
+
+            const new_data = { [`precio.${data.tipoFruta}`]: precio._id }
+
+            await ProveedoresRepository.modificar_varios_proveedores(
+                query, new_data
+            )
+
+
+            const simple = new Date(year, 0, 1 + (week - 1) * 7);
+            const dow = simple.getDay();
+
+            const ISOweekStart = new Date(simple);
+            if (dow === 0) {
+                ISOweekStart.setDate(simple.getDate() - 6);
+            } else {
+                ISOweekStart.setDate(simple.getDate() - (dow - 1));
+            }
+
+            const ISOweekEnd = new Date(ISOweekStart);
+            ISOweekEnd.setDate(ISOweekStart.getDate() + 7);
+
+            let lotesQuery = {}
+
+            lotesQuery = filtroFechaInicioFin(ISOweekStart, ISOweekEnd, lotesQuery, "fecha_ingreso_patio")
+
+            lotesQuery.tipoFruta = data.tipoFruta
+
+            const lotes = await LotesRepository.getLotes({
+                query: lotesQuery,
+                select: { predio: 1, precio: 1, tipoFruta: 1 }
+            })
+
+
+            for (const lote of lotes) {
+
+                if (precio.predios.includes(lote.predio._id.toString())) {
+                    lote.precio = precio._id
+
+                    await LotesRepository.modificar_lote_proceso(
+                        lote._id,
+                        lote,
+                        "Cambiar precio",
+                        user
+                    )
+                }
+            }
+
 
         } catch (err) {
 
@@ -201,15 +261,135 @@ class ComercialRepository {
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_comercial_precios_cantidad_registros() {
+    static async put_comercial_precios_precioLotes(req, user) {
         try {
-            const response = await PreciosRepository.get_cantidad_precios()
-            return response;
+            const { data } = req
+            const fecha = new Date();
+            const year = fecha.getFullYear();
+            const week = getISOWeek(fecha);
+
+            data.week = week
+            data.year = year
+
+            ComercialValidationsRepository.val_post_comercial_precios_add_precio_lote(data);
+
+            const precio = await PreciosRepository.post_precio(data)
+
+
+            let lotesQuery = {}
+
+
+            lotesQuery.enf = data.enf
+
+            const lotes = await LotesRepository.getLotes({
+                query: lotesQuery,
+                select: { predio: 1, precio: 1, tipoFruta: 1 }
+            })
+
+            for (const lote of lotes) {
+
+                lote.precio = precio._id
+
+                await LotesRepository.modificar_lote_proceso(
+                    lote._id,
+                    lote,
+                    "Cambiar precio lote",
+                    user
+                )
+            }
+
+
         } catch (err) {
-            if (err.status === 524) {
+
+            if (err.status === 521) {
                 throw err
             }
-            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_comercial_precios_registros_precios_proveedor(req, user) {
+        try {
+            const { page, filtro } = req || {}
+            const resultsPerPage = 50;
+            let filter
+            let query
+
+            if (filtro) {
+                ComercialValidationsRepository
+                    .val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
+                filter = ComercialValidationsRepository
+                    .query_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
+
+                if (user.Rol > 2) {
+                    filter = {
+                        ...filter,
+                        activo: true
+                    }
+                }
+
+                query = {
+                    skip: (page - 1) * resultsPerPage,
+                    query: filter
+                }
+            } else {
+                query = {
+                    limit: 'all'
+                }
+            }
+
+
+            const registros = await ProveedoresRepository.get_proveedores(query)
+
+
+            return registros
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_comercial_precios_registros_precios_proveedores(req) {
+        try {
+            const { page = 1, filtro } = req || {}
+            const resultsPerPage = 50;
+            const skip = (page - 1) * resultsPerPage;
+
+            ComercialValidationsRepository
+                .val_get_comercial_precios_registros_filtro(filtro);
+
+            let query = { skip };
+            let queryNumber = {}
+
+            if (filtro) {
+                let filter = {};
+                // Actualiza filter con el manejo de fechas.
+
+                filter = filtroPorSemana(filtro.fechaInicio, filtro.fechaFin, filter);
+
+                // Asigna tipoFruta si existe
+                if (filtro.tipoFruta) {
+                    filter.tipoFruta = filtro.tipoFruta;
+                }
+                // Asigna proveedor en filter.predios si existe
+                if (filtro.proveedor) {
+                    filter.predios = { $in: filtro.proveedor };
+                }
+
+                query = { skip, query: filter };
+                queryNumber = filter;
+
+            }
+
+            const registros = await PreciosRepository.get_precios(query)
+            const response = await PreciosRepository.get_cantidad_precios(queryNumber)
+
+            return { registros: registros, numeroRegistros: response }
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
         }
     }
 

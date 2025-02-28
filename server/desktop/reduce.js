@@ -1,7 +1,6 @@
 const { ContenedoresRepository } = require("../Class/Contenedores");
 const { LotesRepository } = require("../Class/Lotes");
 const { ProcesoRepository } = require("../api/Proceso");
-const { ProveedoresRepository } = require("../Class/Proveedores");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
 const { RecordLotesRepository } = require("../archive/ArchiveLotes");
 const { CalidadRepository } = require("../api/Calidad");
@@ -364,6 +363,18 @@ const apiSocket = {
         const response = await IndicadoresAPIRepository.get_indicadores_operaciones_noCalidad(data)
         return { status: 200, message: 'Ok', data: response }
     },
+    get_comercial_precios_registros_precios_proveedor: async (req) => {
+        //Obtiene los proveedores
+        const { data } = req;
+        const response = await ComercialRepository.get_comercial_precios_registros_precios_proveedor(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
+    get_comercial_precios_registros_precios_proveedores: async (req) => {
+        //Obtiene los registros de los precios
+        const { data } = req;
+        const response = await ComercialRepository.get_comercial_precios_registros_precios_proveedores(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
 
 
 
@@ -484,7 +495,7 @@ const apiSocket = {
         const response = await TransporteRepository.get_transporte_documentos_programacionMula_contenedores(data)
         return { status: 200, message: 'Ok', data: response }
     },
-
+    //#endregion
     //#region POST
     post_inventarios_ingreso_lote: async (req) => {
         const { data, user } = req;
@@ -593,6 +604,12 @@ const apiSocket = {
         await ProcesoRepository.post_inventarios_registros_fruta_descompuesta(data, user)
         return { status: 200, message: 'Ok' }
     },
+    post_comercial_precios_add_precio: async (req) => {
+        const { data, user } = req;
+        await ComercialRepository.post_comercial_precios_add_precio(data, user)
+        return { status: 200, message: 'Ok' }
+    },
+    //#endregion
     //#region PUT
     directoNacional: async (data) => {
         const user = data.user.user;
@@ -661,20 +678,6 @@ const apiSocket = {
     reprocesar_celifrut: async (req) => {
         const { data, user } = req
         await ProcesoRepository.reprocesar_celifrut(data, user.user);
-        return { status: 200, message: 'Ok' }
-    },
-    ingresar_precio_fruta: async (req) => {
-        const { action, data } = req.data
-        const { precio, tipoFruta } = data
-        const user = req.user.user;
-
-        const keys = Object.keys(precio);
-        const info = {};
-        for (let i = 0; i < keys.length; i++) {
-            let key2 = `precio.${tipoFruta}.${keys[i]}`
-            info[key2] = precio[keys[i]]
-        }
-        await ProveedoresRepository.modificar_varios_proveedores({}, { $set: info }, action, user);
         return { status: 200, message: 'Ok' }
     },
     set_parametros_desverdizado: async (req) => {
@@ -915,8 +918,12 @@ const apiSocket = {
         await ComercialRepository.put_comercial_proveedores_modify_proveedor(data, user.user)
         return { status: 200, message: 'Ok' }
     },
+    put_comercial_precios_precioLotes: async (req) => {
+        const { data, user } = req
+        await ComercialRepository.put_comercial_precios_precioLotes(data, user.user)
+        return { status: 200, message: 'Ok' }
+    },
+    //#endregion
 }
 
 module.exports.apiSocket = apiSocket;
-
-

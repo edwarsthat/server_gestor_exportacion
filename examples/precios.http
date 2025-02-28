@@ -4,50 +4,19 @@ Content-Type: application/json
 
 {
     "data":{
-        "tipo_fruta":{
-            "Limon":{
-                "listaEmpaque":{
-                    "1":4600,
-                    "15":2500
-                },
-                "descartes": {
-                    "frutaNacional": 1500,
-                    "descarte":800
-                }
-            }
-        }
+        "tipo_fruta":"Limon",
+        "1":4600,
+        "15":2500,
+        "frutaNacional": 1500,
+        "descarte":800,
+        "predios":[
+            "655e68b24e055637327c2f07",
+            "655e68b24e055637327c2f06"
+        ]
     }
 }
 
 ### otro ejemplo
-POST http://172.31.176.1:3010/comercial/post_comercial_precios_add_precio
-Content-Type: application/json
-
-{
-    "data":{
-        "tipo_fruta":{
-            "Limon":{
-                "listaEmpaque":{
-                    "1":4600,
-                    "15":2500
-                },
-                "descartes": {
-                    "frutaNacional": 1500,
-                    "descarte":800
-                }
-            },
-            "Naranja":{
-                "listaEmpaque":{
-                    "2":4600,
-                    "15":2500
-                },
-                "descartes": {
-                    "descarte":800
-                }
-            }
-        }
-    }
-}
 
 ### ejemplo con error
 POST http://172.31.176.1:3010/comercial/post_comercial_precios_add_precio

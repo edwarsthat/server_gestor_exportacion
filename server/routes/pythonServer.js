@@ -17,21 +17,20 @@ routerPythonData.get("/python", async (req, res) => {
     try {
         console.log("📡 Enviando solicitud a Python...");
 
-        client.GetData({}, (error, response) => {
+        client.GetData({ input: "hola desde node" }, (error, response) => {
             if (error) {
                 console.error("❌ Error en gRPC:", error);
                 return res.status(500).json({ status: 500, message: "Error en gRPC" });
             }
-
             console.log("✅ Datos recibidos de Python:", response);
-            res.json({ status: 200, data: response });
+            return res.json({ status: 200, data: response });
         });
 
-        res.send({ status: 200, message: 'Ok' })
     } catch (err) {
-        console.log(`Code ${err.status}: ${err.message}`)
-        res.json({ status: err.status, message: err.message })
+        console.log(`Code ${err.status}: ${err.message}`);
+        return res.json({ status: err.status, message: err.message });
     }
-})
+});
+
 
 module.exports.routerPythonData = routerPythonData

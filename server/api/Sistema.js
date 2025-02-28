@@ -2,7 +2,6 @@
 const fs = require('fs');
 const path = require('path');
 const yaml = require("js-yaml");
-const { startOfDay, parse, endOfDay } = require('date-fns');
 
 const { UsuariosRepository } = require('../Class/Usuarios');
 const bcrypt = require('bcrypt');
@@ -11,6 +10,7 @@ const { ValidationUserError } = require('../../Error/ValidationErrors');
 const { InsumosRepository } = require('../Class/Insumos');
 const { ConstantesDelSistema } = require('../Class/ConstantesDelSistema');
 const { ProcessError } = require('../../Error/ProcessError');
+const { filtroFechaInicioFin } = require('./utils/filtros');
 
 class SistemaRepository {
     static async check_mobile_version() {
@@ -146,26 +146,11 @@ class SistemaRepository {
     static async obtener_volante_calidad(data) {
         const { tipoFruta, fechaInicio, fechaFin } = data;
         let query = {}
+
+        query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha")
+
         if (tipoFruta !== '') {
             query.tipoFruta = tipoFruta
-        }
-        if (fechaInicio) {
-            const localDate = parse(fechaInicio, 'yyyy-MM-dd', new Date())
-            const inicio = startOfDay(localDate);
-
-            query.fecha = { $gte: inicio };
-        } else {
-            const inicio = new Date(0);
-
-            query.fecha = { $gte: inicio };
-        }
-        if (fechaFin) {
-            const localDate = parse(fechaFin, 'yyyy-MM-dd', new Date());
-            const fin = endOfDay(localDate);
-            query.fecha = { ...query.fecha, $lte: fin };
-        } else {
-            const fin = new Date()
-            query.fecha = { ...query.fecha, $lte: fin };
         }
 
         const volanteCalidad = await UsuariosRepository.obtener_volante_calidad({
@@ -176,26 +161,11 @@ class SistemaRepository {
     static async obtener_formularios_higiene_personal(data) {
         const { tipoFruta, fechaInicio, fechaFin } = data;
         let query = {}
+
+        query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha")
+
         if (tipoFruta !== '') {
             query.tipoFruta = tipoFruta
-        }
-        if (fechaInicio) {
-            const localDate = parse(fechaInicio, 'yyyy-MM-dd', new Date())
-            const inicio = startOfDay(localDate);
-
-            query.fecha = { $gte: inicio };
-        } else {
-            const inicio = new Date(0);
-
-            query.fecha = { $gte: inicio };
-        }
-        if (fechaFin) {
-            const localDate = parse(fechaFin, 'yyyy-MM-dd', new Date());
-            const fin = endOfDay(localDate);
-            query.fecha = { ...query.fecha, $lte: fin };
-        } else {
-            const fin = new Date()
-            query.fecha = { ...query.fecha, $lte: fin };
         }
 
         const volanteCalidad = await UsuariosRepository.obtener_formularios_higiene_personal({

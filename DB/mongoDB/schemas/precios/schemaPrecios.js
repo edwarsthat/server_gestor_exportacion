@@ -5,32 +5,19 @@ const { Schema } = mongoose;
 
 const definePrecios = async (conn) => {
 
-    const CalidadesExpSchema = new Schema({
+    const PreciosSchema = new Schema({
+        fecha: { type: Date, default: () => new Date() },
+        tipoFruta: String,
         "1": { type: Number, default: 0 },
         "15": { type: Number, default: 0 },
         "2": { type: Number, default: 0 },
-    }, { _id: false, strict: false })
-
-    const CalidadesDescartesSchema = new Schema({
         frutaNacional: { type: Number, default: 0 },
         descarte: { type: Number, default: 0 },
-        combinado: { type: Number, default: 0 },
-    }, { _id: false, strict: false })
+        predios: [String],
+        week: Number,
+        year: Number
 
-    const PreciosSchema = new Schema({
-        fecha: { type: Date, default: () => new Date() },
-        tipo_fruta: {
-            fruta: String,
-            listaEmpaque: {
-                type: Map,
-                of: CalidadesExpSchema
-            },
-            descartes: {
-                type: Map,
-                of: CalidadesDescartesSchema
-            }
-        }
-    }, { strict: false })
+    })
 
     const Precios = conn.model("precio", PreciosSchema);
     return Precios;

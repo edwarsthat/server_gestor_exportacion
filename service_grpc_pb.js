@@ -4,6 +4,17 @@
 var grpc = require('@grpc/grpc-js');
 var service_pb = require('./service_pb.js');
 
+function serialize_DataRequest(arg) {
+  if (!(arg instanceof service_pb.DataRequest)) {
+    throw new Error('Expected argument of type DataRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_DataRequest(buffer_arg) {
+  return service_pb.DataRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 function serialize_DataResponse(arg) {
   if (!(arg instanceof service_pb.DataResponse)) {
     throw new Error('Expected argument of type DataResponse');
@@ -15,27 +26,16 @@ function deserialize_DataResponse(buffer_arg) {
   return service_pb.DataResponse.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
-function serialize_Empty(arg) {
-  if (!(arg instanceof service_pb.Empty)) {
-    throw new Error('Expected argument of type Empty');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_Empty(buffer_arg) {
-  return service_pb.Empty.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
 
 var DataServiceService = exports.DataServiceService = {
   getData: {
     path: '/DataService/GetData',
     requestStream: false,
-    responseStream: true,
-    requestType: service_pb.Empty,
+    responseStream: false,
+    requestType: service_pb.DataRequest,
     responseType: service_pb.DataResponse,
-    requestSerialize: serialize_Empty,
-    requestDeserialize: deserialize_Empty,
+    requestSerialize: serialize_DataRequest,
+    requestDeserialize: deserialize_DataRequest,
     responseSerialize: serialize_DataResponse,
     responseDeserialize: deserialize_DataResponse,
   },

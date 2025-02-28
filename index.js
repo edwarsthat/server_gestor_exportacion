@@ -330,6 +330,7 @@ cron.schedule('10 5 * * *', async () => {
 cron.schedule('0 5 * * *', async () => {
     await IndicadoresAPIRepository.sys_indicadores_eficiencia_operativa_kilos_procesados();
     await IndicadoresAPIRepository.sys_indicadores_eficiencia_fruta_kilos_procesados();
+    await IndicadoresAPIRepository.sys_indicadores_eficiencia_fruta_kilos_vaciados();
     await ProcesoRepository.reiniciarValores_proceso();
 
 });

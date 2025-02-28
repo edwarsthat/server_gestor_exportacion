@@ -43,9 +43,9 @@ class PreciosRepository {
 
         }
     }
-    static async get_cantidad_precios() {
+    static async get_cantidad_precios(filtro) {
         try {
-            const count = await db.Precios.countDocuments();
+            const count = await db.Precios.countDocuments(filtro);
             return count;
         } catch (err) {
             throw new ConnectionDBError(524, `Precios => ${err.message}`);

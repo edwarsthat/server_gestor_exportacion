@@ -77,6 +77,7 @@ class ComercialValidationsRepository {
             "contacto_finca",
             "telefono_predio",
         ];
+        console.log(data)
 
         requiredFields.forEach((field) => {
             if (!data[field] || data[field] === "") {
@@ -106,10 +107,43 @@ class ComercialValidationsRepository {
 
     }
     static val_post_comercial_precios_add_precio(data) {
-        if (!Object.prototype.hasOwnProperty.call(data, "tipo_fruta"))
+        if (!Object.prototype.hasOwnProperty.call(data, "tipoFruta"))
             throw new Error("Ingrese un tipo de fruta")
-        if (Object.keys(data.tipo_fruta).length <= 0)
+        if (data.tipoFruta === '')
             throw new Error("Ingrese un tipo de fruta")
+        if (!Object.prototype.hasOwnProperty.call(data, "week"))
+            throw new Error("Ingrese la semana del año")
+        if (data.tipoFruta === '')
+            throw new Error("Ingrese la semana del año")
+
+    }
+    static val_post_comercial_precios_add_precio_lote(data) {
+
+        if (!Object.prototype.hasOwnProperty.call(data, "enf"))
+            throw new Error("Ingrese un EF")
+        if (data.enf === '')
+            throw new Error("Ingrese un EF")
+
+    }
+    static val_get_comercial_precios_registros_filtro(data) {
+        const filtrosTypes = ["fechaInicio", "fechaFin", "tipoFruta", "proveedor"]
+        for (const key in data) {
+            if (!filtrosTypes.includes(key)) {
+                throw new Error(`El filtro ${key} no es permitido`)
+            }
+
+            if (key === "tipoFruta") {
+                if (typeof data[key] !== "string") {
+                    throw new Error(`El filtro ${key} debe ser de tipo string`)
+                }
+            }
+            if (key === "fechaInicio" || key === "fechaFin") {
+                if (typeof data[key] !== "string") {
+                    throw new Error(`El filtro ${key} debe ser una fecha válida en formato string`);
+                }
+            }
+
+        }
     }
 
 }

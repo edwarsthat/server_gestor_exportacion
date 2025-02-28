@@ -584,119 +584,6 @@ class VariablesDelSistema {
     }
   }
 
-  // #region Lista de empaque
-  // static async ingresar_item_cajas_sin_pallet(item) {
-  //   /**
-  //  * Función que ingresa un item a la lista de cajas sin pallet.
-  //  *
-  //  * @param {Object} item - Objeto del item a agregar a la lista de cajas sin pallet.
-  //  * @returns {Promise<void>} - Promesa que se resuelve cuando la operación se completa.
-  //  * @throws {ProcessError} - Lanza un error si ocurre un problema al guardar los datos de las cajas sin pallet.
-  //  */
-  //   try {
-  //     if (cajasSinPalletFlag) throw new ProcessError(413, "Error el archivo se esta escribiendo")
-
-  //     cajasSinPalletFlag = true
-  //     const cajasSinPalletJSON = fs.readFileSync(cajasSinPalletPath);
-  //     const cajasSinPallet = JSON.parse(cajasSinPalletJSON);
-
-  //     cajasSinPallet.push(item)
-
-  //     const newCajasSinPalletJSON = JSON.stringify(cajasSinPallet);
-  //     fs.writeFileSync(cajasSinPalletPath, newCajasSinPalletJSON);
-  //   } catch (err) {
-  //     throw new ProcessError(410, `Error Guardando datos de las cajas sin pallet: ${err.name}`)
-  //   } finally {
-  //     cajasSinPalletFlag = false
-  //   }
-  // }
-  // static async obtener_cajas_sin_pallet() {
-  //   /**
-  //  * Función que obtiene la lista de cajas sin pallet.
-  //  *
-  //  * @returns {Promise<Array>} - Promesa que resuelve a un array con la lista de cajas sin pallet.
-  //  * @throws {ProcessError} - Lanza un error si ocurre un problema al obtener los datos de las cajas sin pallet.
-  //  */
-  //   try {
-  //     if (cajasSinPalletFlag) throw new ProcessError(413, "Error el archivo se esta escribiendo")
-
-  //     cajasSinPalletFlag = true
-  //     const cajasSinPalletJSON = fs.readFileSync(cajasSinPalletPath);
-  //     const cajasSinPallet = JSON.parse(cajasSinPalletJSON);
-
-  //     const data = await obtener_datos_lotes_listaEmpaque_cajasSinPallet(cajasSinPallet);
-  //     return data
-  //   } catch (err) {
-  //     throw new ProcessError(410, `Error obteniendo datos de las cajas sin pallet: ${err.name}`)
-  //   } finally {
-  //     cajasSinPalletFlag = false
-  //   }
-  // }
-  // static async eliminar_items_cajas_sin_pallet(items) {
-  //   /**
-  //  * Elimina elementos específicos de las cajas sin pallet.
-  //  *
-  //  * @param {Array<number>} items - Índices de los elementos a eliminar de las cajas sin pallet.
-  //  * @returns {Promise<Array<Object>>} - Promesa que resuelve al arreglo de cajas eliminadas.
-  //  * @throws {ProcessError} - Lanza un error si ocurre un problema al eliminar los elementos o si el archivo está siendo escrito.
-  //  */
-  //   try {
-  //     if (cajasSinPalletFlag) throw new ProcessError(413, "Error el archivo se esta escribiendo")
-  //     cajasSinPalletFlag = true
-
-  //     const cajasSinPalletJSON = fs.readFileSync(cajasSinPalletPath);
-  //     const cajasSinPallet = JSON.parse(cajasSinPalletJSON);
-  //     let cajas = [];
-
-  //     for (let i = 0; i < items.length; i++) {
-  //       cajas.push(cajasSinPallet.splice(items[i], 1)[0]);
-  //     }
-
-  //     const newCajasSinPalletJSON = JSON.stringify(cajasSinPallet);
-  //     fs.writeFileSync(cajasSinPalletPath, newCajasSinPalletJSON);
-
-  //     return cajas;
-  //   } catch (err) {
-  //     throw new ProcessError(410, `Error eliminando los items ${err.message}`);
-  //   } finally {
-  //     cajasSinPalletFlag = false;
-  //   }
-  // }
-  // static async restar_items_cajas_sin_pallet(item, cajas) {
-  //   /**
-  //  * Resta una cantidad específica de cajas de un ítem en las cajas sin pallet.
-  //  *
-  //  * @param {number} item - Índice del ítem al que se le restarán las cajas.
-  //  * @param {number} cajas - Cantidad de cajas a restar del ítem.
-  //  * @returns {Promise<Object>} - Promesa que resuelve al objeto del ítem modificado.
-  //  * @throws {ProcessError} - Lanza un error si ocurre un problema al restar las cajas o si el archivo está siendo escrito.
-  //  */
-  //   try {
-  //     if (cajasSinPalletFlag) throw new ProcessError(413, "Error el archivo se esta escribiendo")
-  //     cajasSinPalletFlag = true
-
-  //     const cajasSinPalletJSON = fs.readFileSync(cajasSinPalletPath);
-  //     const cajasSinPallet = JSON.parse(cajasSinPalletJSON);
-
-  //     let newItem = JSON.parse(JSON.stringify(cajasSinPallet[item]));
-  //     newItem.cajas = cajas;
-
-  //     cajasSinPallet[item].cajas -= cajas
-
-  //     if (cajasSinPallet[item].cajas <= 0) {
-  //       cajasSinPallet.splice(item, 1)[0];
-  //     }
-
-  //     const newCajasSinPalletJSON = JSON.stringify(cajasSinPallet);
-  //     fs.writeFileSync(cajasSinPalletPath, newCajasSinPalletJSON);
-
-  //     return newItem;
-  //   } catch (err) {
-  //     throw new ProcessError(410, `Error eliminando los items ${err.message}`);
-  //   } finally {
-  //     cajasSinPalletFlag = false;
-  //   }
-  // }
   // #region inventario descartes
   static async obtener_inventario_descartes() {
     /**
@@ -1086,6 +973,45 @@ class VariablesDelSistema {
       throw new ConnectRedisError(
         419,
         `Error con la conexión con Redis sumando kilos procesados: ${err.message}`
+      );
+    } finally {
+      if (cliente) {
+        cliente.quit();
+        console.log("Cerrando la conexión con Redis...");
+      }
+    }
+  }
+  static async ingresar_kilos_vaciados(kilos) {
+    let cliente;
+    try {
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
+      const key = "kilosVaciadosHoy";
+
+      // Obtener los kilos procesados de Redis
+      let kilosProcesados = await cliente.get(key);
+
+      // Si no existe, inicializar como un objeto vacío
+      if (kilosProcesados === null) {
+        kilosProcesados = 0;
+      }
+
+      // Convertir el valor a número o inicializar si es null
+      kilosProcesados = kilosProcesados ? parseInt(kilosProcesados, 10) : 0;
+
+      // Sumar los nuevos kilos
+      kilosProcesados += kilos;
+
+      // Actualizar el valor en Redis
+      await cliente.set(key, kilosProcesados);
+
+      return kilosProcesados;
+
+    } catch (err) {
+      console.error("Error socket: ", err);
+      throw new ConnectRedisError(
+        419,
+        `Error con la conexión con Redis sumando kilos vaceados: ${err.message}`
       );
     } finally {
       if (cliente) {
@@ -1540,6 +1466,35 @@ class VariablesDelSistema {
 
       return kilos_procesados;
 
+
+    } catch (err) {
+      throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
+    } finally {
+      if (cliente) {
+        await cliente.quit();
+        console.log('Cerrando la conexión con Redis...');
+      }
+
+    }
+  }
+  static async get_kilos_vaciados_hoy() {
+    let cliente;
+
+    try {
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
+      const key = "kilosVaciadosHoy";
+
+      // Verificar si la clave existe
+      let kilos_procesados = await cliente.get(key);
+
+      // Si no existe, crearla como un arreglo vacío (JSON)
+      if (kilos_procesados === null) {
+        await cliente.set(key, 0);
+        kilos_procesados = 0; // Retorna el arreglo vacío
+      }
+
+      return kilos_procesados;
 
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);

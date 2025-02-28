@@ -12,37 +12,6 @@ const defineLotes = async (conn) => {
     fecha: { type: Date, default: Date.now }
   }, { _id: false });
 
-  // const clasificacionCalidadSchema = new Schema({
-  //   acaro: Number,
-  //   alsinoe: Number,
-  //   dannosMecanicos: Number,
-  //   deshidratada: Number,
-  //   division: Number,
-  //   escama: Number,
-  //   frutaMadura: Number,
-  //   frutaVerde: Number,
-  //   fumagina: Number,
-  //   grillo: Number,
-  //   herbicida: Number,
-  //   mancha: Number,
-  //   melanosis: Number,
-  //   oleocelosis: Number,
-  //   piel: Number,
-  //   sombra: Number,
-  //   trips: Number,
-  //   wood: Number,
-  //   nutrientes: Number,
-  //   antracnosis: Number,
-  //   frutaRajada: Number,
-  //   ombligona: Number,
-  //   despezonada: Number,
-  //   variegacion: Number,
-  //   verdeManzana: Number,
-  //   otrasPlagas: Number,
-  //   fecha: { type: Date, default: Date.now }
-
-  // }, { _id: false });
-
   const clasificacionCalidadSchema = new Schema({
     any: {
       type: Map,
@@ -139,16 +108,6 @@ const defineLotes = async (conn) => {
     },
   }, { _id: false })
 
-  const precioLoteSchema = new Schema({
-    "1": Number,
-    "15": Number,
-    "2": Number,
-    frutaNacional: Number,
-    descarte: Number,
-    zumex: Number,
-    combinado: Number,
-  }, { _id: false })
-
 
 
   const dataSchema = new Schema({
@@ -178,7 +137,6 @@ const defineLotes = async (conn) => {
     fechaProceso: { type: Date },
     fecha_finalizado_proceso: { type: Date },
     frutaNacional: { type: Number, default: 0 },
-    flag_is_favorita: { type: Boolean, default: false },
     flag_balin_free: { type: Boolean, default: true },
     historialDescarte: mongoose.Types.ObjectId,
     informeEnviado: { type: Boolean, default: false },
@@ -193,7 +151,7 @@ const defineLotes = async (conn) => {
     not_pass: Boolean,
     observaciones: String,
     placa: String,
-    precio: precioLoteSchema,
+    precio: { type: Schema.Types.ObjectId, ref: 'precio' },
     predio: { type: Schema.Types.ObjectId, ref: 'Proveedor' },
     promedio: Number,
     rendimiento: { type: Number, default: 0 },

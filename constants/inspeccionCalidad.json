@@ -6,6 +6,7 @@
     "oleocelosis": {"name":"Oleocelosis y daño mecanico", "porcentage":0.2},
     "acaro": {"name":"Acaro", "porcentage":0.2},
     "diametro_inferior": {"name":"Diametro inferior al requerido", "porcentage":0.2},
+    "sombra": {"name":"Sombra", "porcentage":0.5},
     "sobre_maduro": {"name":"Sobre maduración", "porcentage":0.1},
     "diametro": {"name":"Diametro", "porcentage":0.2},
     "exportacion1": {"name":"Exportación 1", "porcentage":0},

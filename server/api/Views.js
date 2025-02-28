@@ -1,5 +1,6 @@
 const { ContenedoresRepository } = require("../Class/Contenedores");
-const { LotesRepository } = require("../Class/Lotes")
+const { LotesRepository } = require("../Class/Lotes");
+const { filtroFechaInicioFin } = require("./utils/filtros");
 
 class ViewsRepository {
     static async view_lotes(req) {
@@ -19,7 +20,7 @@ class ViewsRepository {
             criterio,
             ordenarPor
         } = req;
-        const query = {}
+        let query = {}
         let sort
         if (ordenarPor === 'fecha_creacion') {
             sort = { [`${ordenarPor}`]: -1, fechaIngreso: -1 };
@@ -31,24 +32,8 @@ class ViewsRepository {
         if (predio) query.predio = predio;
         if (enf) query.enf = enf;
 
-        if (fechaInicio || fechaFin) {
-            query[`${ordenarPor}`] = {}
-            if (fechaInicio) {
-                const fechaInicioUTC = new Date(fechaInicio);
-                fechaInicioUTC.setHours(fechaInicioUTC.getHours() + 5);
-                query[ordenarPor].$gte = fechaInicioUTC;
-            } else {
-                query[ordenarPor].$gte = new Date(0);
-            }
-            if (fechaFin) {
-                const fechaFinUTC = new Date(fechaFin)
-                fechaFinUTC.setDate(fechaFinUTC.getDate() + 1);
-                fechaFinUTC.setHours(fechaFinUTC.getHours() + 5);
-                query[ordenarPor].$lt = fechaFinUTC;
-            } else {
-                query[ordenarPor].$lt = new Date();
-            }
-        }
+        query = filtroFechaInicioFin(fechaInicio, fechaFin, query, ordenarPor)
+
         if (rendimientoMin || rendimientoMax) {
             query.rendimiento = {}
             if (rendimientoMin) {

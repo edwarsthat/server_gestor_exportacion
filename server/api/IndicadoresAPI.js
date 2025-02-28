@@ -3,6 +3,7 @@ const { IndicadoresRepository } = require("../Class/Indicadores")
 const { LotesRepository } = require("../Class/Lotes")
 const { UsuariosRepository } = require("../Class/Usuarios")
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema")
+const { filtroFechaInicioFin } = require("./utils/filtros")
 
 class IndicadoresAPIRepository {
     //! Eficiencia operativa
@@ -57,26 +58,9 @@ class IndicadoresAPIRepository {
             const { filtro } = req
             const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
 
-            const query = {}
+            let query = {}
 
-            if (fechaInicio || fechaFin) {
-                query.fecha_creacion = {}
-                if (fechaInicio) {
-                    const fechaInicioUTC = new Date(fechaInicio);
-                    fechaInicioUTC.setHours(fechaInicioUTC.getHours() + 5);
-                    query.fecha_creacion.$gte = fechaInicioUTC;
-                } else {
-                    query.fecha_creacion.$gte = new Date(0);
-                }
-                if (fechaFin) {
-                    const fechaFinUTC = new Date(fechaFin)
-                    fechaFinUTC.setDate(fechaFinUTC.getDate() + 1);
-                    fechaFinUTC.setHours(fechaFinUTC.getHours() + 5);
-                    query.fecha_creacion.$lt = fechaFinUTC;
-                } else {
-                    query.fecha_creacion.$lt = new Date();
-                }
-            }
+            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_creacion')
 
             // Filtro por tipoFruta
             if (tipoFruta && tipoFruta.length > 0) {
@@ -112,26 +96,9 @@ class IndicadoresAPIRepository {
             const { filtro } = req
             const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
 
-            const query = {}
+            let query = {}
 
-            if (fechaInicio || fechaFin) {
-                query.fecha_ingreso_inventario = {}
-                if (fechaInicio) {
-                    const fechaInicioUTC = new Date(fechaInicio);
-                    fechaInicioUTC.setHours(fechaInicioUTC.getHours() + 5);
-                    query.fecha_ingreso_inventario.$gte = fechaInicioUTC;
-                } else {
-                    query.fecha_ingreso_inventario.$gte = new Date(0);
-                }
-                if (fechaFin) {
-                    const fechaFinUTC = new Date(fechaFin)
-                    fechaFinUTC.setDate(fechaFinUTC.getDate() + 1);
-                    fechaFinUTC.setHours(fechaFinUTC.getHours() + 5);
-                    query.fecha_ingreso_inventario.$lt = fechaFinUTC;
-                } else {
-                    query.fecha_ingreso_inventario.$lt = new Date();
-                }
-            }
+            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha_ingreso_inventario")
 
             // Filtro por tipoFruta
             if (tipoFruta && tipoFruta.length > 0) {
@@ -176,26 +143,9 @@ class IndicadoresAPIRepository {
             const { filtro } = req
             const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
 
-            const query = {}
+            let query = {}
 
-            if (fechaInicio || fechaFin) {
-                query.fecha = {}
-                if (fechaInicio) {
-                    const fechaInicioUTC = new Date(fechaInicio);
-                    fechaInicioUTC.setHours(fechaInicioUTC.getHours() + 5);
-                    query.fecha.$gte = fechaInicioUTC;
-                } else {
-                    query.fecha.$gte = new Date(0);
-                }
-                if (fechaFin) {
-                    const fechaFinUTC = new Date(fechaFin)
-                    fechaFinUTC.setDate(fechaFinUTC.getDate() + 1);
-                    fechaFinUTC.setHours(fechaFinUTC.getHours() + 5);
-                    query.fecha.$lt = fechaFinUTC;
-                } else {
-                    query.fecha.$lt = new Date();
-                }
-            }
+            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha")
 
             // Filtro por tipoFruta
             if (tipoFruta && tipoFruta.length > 0) {
@@ -204,13 +154,10 @@ class IndicadoresAPIRepository {
                 };
             }
 
-
             const registros = await UsuariosRepository.obtener_volante_calidad({
                 query: query,
                 limit: 'all'
             })
-
-
 
             return registros
         } catch (err) {
@@ -300,6 +247,26 @@ class IndicadoresAPIRepository {
 
             await IndicadoresRepository.put_indicador(indicador[0]._id, {
                 kilos_exportacion: kilos_exportacion
+            })
+
+
+        } catch (err) {
+            if (err.status === 525) {
+                throw err
+            }
+            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async sys_indicadores_eficiencia_fruta_kilos_vaciados() {
+        try {
+            const indicador = await IndicadoresRepository.get_indicadores({
+                sort: { fecha_creacion: -1 },
+                limit: 1
+            })
+            const kilos_exportacion = await VariablesDelSistema.get_kilos_vaciados_hoy()
+
+            await IndicadoresRepository.put_indicador(indicador[0]._id, {
+                kilos_vaciados: kilos_exportacion
             })
 
 

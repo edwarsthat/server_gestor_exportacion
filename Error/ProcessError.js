@@ -1,5 +1,5 @@
 class ProcessError extends Error {
-    constructor(code ,message){
+    constructor(code, message) {
         super();
         this.name = "ProcessError"
         this.status = code
@@ -8,9 +8,18 @@ class ProcessError extends Error {
 }
 
 class ItemBussyError extends Error {
-    constructor(code ,message){
+    constructor(code, message) {
         super();
         this.name = "Bussy item error"
+        this.status = code
+        this.message = message
+    }
+}
+
+class UtilError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Error de utilidad"
         this.status = code
         this.message = message
     }
@@ -19,5 +28,6 @@ class ItemBussyError extends Error {
 
 module.exports = {
     ProcessError,
-    ItemBussyError
+    ItemBussyError,
+    UtilError
 }

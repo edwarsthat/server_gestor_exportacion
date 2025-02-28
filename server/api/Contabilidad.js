@@ -41,8 +41,10 @@ class ContabilidadRepository {
 
             },
             limit: resultsPerPage,
-            populate: { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' }
-
+            populate: [
+                { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' },
+                { path: 'precio', select: '1 2 15 frutaNacional descarte' }
+            ]
         })
         return lotes
     }

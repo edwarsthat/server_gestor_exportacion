@@ -11,7 +11,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-goog.provide('proto.DataResponse');
+goog.provide('proto.DataRequest');
 
 goog.require('jspb.BinaryReader');
 goog.require('jspb.BinaryWriter');
@@ -27,16 +27,16 @@ goog.require('jspb.Message');
  * @extends {jspb.Message}
  * @constructor
  */
-proto.DataResponse = function(opt_data) {
+proto.DataRequest = function(opt_data) {
   jspb.Message.initialize(this, opt_data, 0, -1, null, null);
 };
-goog.inherits(proto.DataResponse, jspb.Message);
+goog.inherits(proto.DataRequest, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
   /**
    * @public
    * @override
    */
-  proto.DataResponse.displayName = 'proto.DataResponse';
+  proto.DataRequest.displayName = 'proto.DataRequest';
 }
 
 
@@ -54,8 +54,8 @@ if (jspb.Message.GENERATE_TO_OBJECT) {
  *     http://goto/soy-param-migration
  * @return {!Object}
  */
-proto.DataResponse.prototype.toObject = function(opt_includeInstance) {
-  return proto.DataResponse.toObject(opt_includeInstance, this);
+proto.DataRequest.prototype.toObject = function(opt_includeInstance) {
+  return proto.DataRequest.toObject(opt_includeInstance, this);
 };
 
 
@@ -64,14 +64,13 @@ proto.DataResponse.prototype.toObject = function(opt_includeInstance) {
  * @param {boolean|undefined} includeInstance Deprecated. Whether to include
  *     the JSPB instance for transitional soy proto support:
  *     http://goto/soy-param-migration
- * @param {!proto.DataResponse} msg The msg instance to transform.
+ * @param {!proto.DataRequest} msg The msg instance to transform.
  * @return {!Object}
  * @suppress {unusedLocalVariables} f is only used for nested messages
  */
-proto.DataResponse.toObject = function(includeInstance, msg) {
+proto.DataRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    values: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    timestamp: jspb.Message.getFieldWithDefault(msg, 2, "")
+    input: jspb.Message.getFieldWithDefault(msg, 1, "")
   };
 
   if (includeInstance) {
@@ -85,23 +84,23 @@ proto.DataResponse.toObject = function(includeInstance, msg) {
 /**
  * Deserializes binary data (in protobuf wire format).
  * @param {jspb.ByteSource} bytes The bytes to deserialize.
- * @return {!proto.DataResponse}
+ * @return {!proto.DataRequest}
  */
-proto.DataResponse.deserializeBinary = function(bytes) {
+proto.DataRequest.deserializeBinary = function(bytes) {
   var reader = new jspb.BinaryReader(bytes);
-  var msg = new proto.DataResponse;
-  return proto.DataResponse.deserializeBinaryFromReader(msg, reader);
+  var msg = new proto.DataRequest;
+  return proto.DataRequest.deserializeBinaryFromReader(msg, reader);
 };
 
 
 /**
  * Deserializes binary data (in protobuf wire format) from the
  * given reader into the given message object.
- * @param {!proto.DataResponse} msg The message object to deserialize into.
+ * @param {!proto.DataRequest} msg The message object to deserialize into.
  * @param {!jspb.BinaryReader} reader The BinaryReader to use.
- * @return {!proto.DataResponse}
+ * @return {!proto.DataRequest}
  */
-proto.DataResponse.deserializeBinaryFromReader = function(msg, reader) {
+proto.DataRequest.deserializeBinaryFromReader = function(msg, reader) {
   while (reader.nextField()) {
     if (reader.isEndGroup()) {
       break;
@@ -110,11 +109,7 @@ proto.DataResponse.deserializeBinaryFromReader = function(msg, reader) {
     switch (field) {
     case 1:
       var value = /** @type {string} */ (reader.readString());
-      msg.setValues(value);
-      break;
-    case 2:
-      var value = /** @type {string} */ (reader.readString());
-      msg.setTimestamp(value);
+      msg.setInput(value);
       break;
     default:
       reader.skipField();
@@ -129,9 +124,9 @@ proto.DataResponse.deserializeBinaryFromReader = function(msg, reader) {
  * Serializes the message to binary data (in protobuf wire format).
  * @return {!Uint8Array}
  */
-proto.DataResponse.prototype.serializeBinary = function() {
+proto.DataRequest.prototype.serializeBinary = function() {
   var writer = new jspb.BinaryWriter();
-  proto.DataResponse.serializeBinaryToWriter(this, writer);
+  proto.DataRequest.serializeBinaryToWriter(this, writer);
   return writer.getResultBuffer();
 };
 
@@ -139,62 +134,37 @@ proto.DataResponse.prototype.serializeBinary = function() {
 /**
  * Serializes the given message to binary data (in protobuf wire
  * format), writing to the given BinaryWriter.
- * @param {!proto.DataResponse} message
+ * @param {!proto.DataRequest} message
  * @param {!jspb.BinaryWriter} writer
  * @suppress {unusedLocalVariables} f is only used for nested messages
  */
-proto.DataResponse.serializeBinaryToWriter = function(message, writer) {
+proto.DataRequest.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getValues();
+  f = message.getInput();
   if (f.length > 0) {
     writer.writeString(
       1,
       f
     );
   }
-  f = message.getTimestamp();
-  if (f.length > 0) {
-    writer.writeString(
-      2,
-      f
-    );
-  }
 };
 
 
 /**
- * optional string values = 1;
+ * optional string input = 1;
  * @return {string}
  */
-proto.DataResponse.prototype.getValues = function() {
+proto.DataRequest.prototype.getInput = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 1, ""));
 };
 
 
 /**
  * @param {string} value
- * @return {!proto.DataResponse} returns this
+ * @return {!proto.DataRequest} returns this
  */
-proto.DataResponse.prototype.setValues = function(value) {
+proto.DataRequest.prototype.setInput = function(value) {
   return jspb.Message.setProto3StringField(this, 1, value);
-};
-
-
-/**
- * optional string timestamp = 2;
- * @return {string}
- */
-proto.DataResponse.prototype.getTimestamp = function() {
-  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
-};
-
-
-/**
- * @param {string} value
- * @return {!proto.DataResponse} returns this
- */
-proto.DataResponse.prototype.setTimestamp = function(value) {
-  return jspb.Message.setProto3StringField(this, 2, value);
 };
 
 
