@@ -273,11 +273,7 @@ class ComercialRepository {
 
             ComercialValidationsRepository.val_post_comercial_precios_add_precio_lote(data);
 
-            const precio = await PreciosRepository.post_precio(data)
-
-
             let lotesQuery = {}
-
 
             lotesQuery.enf = data.enf
 
@@ -285,6 +281,8 @@ class ComercialRepository {
                 query: lotesQuery,
                 select: { predio: 1, precio: 1, tipoFruta: 1 }
             })
+
+            const precio = await PreciosRepository.post_precio({ ...data, tipoFruta: lotes[0].tipoFruta })
 
             for (const lote of lotes) {
 
