@@ -18,6 +18,7 @@ class ContabilidadRepository {
                 calidad: 1,
                 __v: 1,
                 deshidratacion: 1,
+                directoNacional: 1,
                 kilos: 1,
                 contenedores: 1,
                 calidad1: 1,
