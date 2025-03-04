@@ -1,0 +1,11 @@
+
+GET http://172.31.176.1:3010/API/get_data_lotes
+Content-Type: application/json
+
+{
+    "data":{
+        "user": "edwarsthat",
+        "password": "calidadstopyse"
+    }
+}
+

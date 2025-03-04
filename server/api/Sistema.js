@@ -183,7 +183,7 @@ class SistemaRepository {
         const isValid = await bcrypt.compare(data.password, user[0].password);
         if (!isValid) throw new ValidationUserError(402, "Contraseña incorrecta");
 
-        return { usuario: user[0].usuario, cargo: user[0].cargo, _id: user[0]._id, }
+        return { usuario: user[0].usuario, cargo: user[0].cargo, _id: user[0]._id, status: 200 }
 
     }
     static async isNewVersion() {

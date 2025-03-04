@@ -31,6 +31,7 @@ class ViewsRepository {
         if (tipoFruta) query.tipoFruta = tipoFruta;
         if (predio) query.predio = predio;
         if (enf) query.enf = enf;
+        else query.enf = { $regex: '^E', $options: 'i' }
 
         query = filtroFechaInicioFin(fechaInicio, fechaFin, query, ordenarPor)
 
@@ -68,6 +69,7 @@ class ViewsRepository {
                 query[`calidad.calidadInterna.${criterio}`].$lt = 999999999
             }
         }
+
 
         const lotes = await LotesRepository.getLotes({
             query: query,
