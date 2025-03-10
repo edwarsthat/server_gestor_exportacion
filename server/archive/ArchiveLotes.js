@@ -51,7 +51,7 @@ class RecordLotesRepository {
             return lotes;
 
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo el historial de lotes procesados ${err.message}`);
+            throw new ConnectionDBError(522, `Error obteniendo el historial de lotes procesados ${err.message}`);
         }
     }
     static async getVaciadoRecord(options = {}) {
@@ -88,7 +88,7 @@ class RecordLotesRepository {
             return lotes;
 
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo el historial de lotes procesados ${err.message}`);
+            throw new ConnectionDBError(522, `Error obteniendo el historial de lotes procesados ${err.message}`);
         }
     }
     static async modificarRecord(id, query, __v = 0) {
@@ -97,7 +97,7 @@ class RecordLotesRepository {
             const record = await db.recordLotes.findOneAndUpdate({ _id: id, __v: __v }, query, { new: true });
             return record
         } catch (err) {
-            throw new PutError(414, `Error al modificar el registro  ${err.essage}`);
+            throw new PutError(523, `Error al modificar el registro  ${err.essage}`);
         } finally {
             bussyIds.delete(id);
         }

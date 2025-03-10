@@ -2,10 +2,8 @@ const { ContenedoresRepository } = require("../Class/Contenedores");
 const { LotesRepository } = require("../Class/Lotes");
 const { ProcesoRepository } = require("../api/Proceso");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
-const { RecordLotesRepository } = require("../archive/ArchiveLotes");
 const { CalidadRepository } = require("../api/Calidad");
 const { ComercialRepository } = require("../api/Comercial");
-const { ViewsRepository } = require("../api/Views");
 const { ModificarRepository } = require("../api/ModificarData");
 const { SistemaRepository } = require("../api/Sistema");
 const { ContabilidadRepository } = require("../api/Contabilidad");
@@ -20,14 +18,7 @@ const apiSocket = {
         const data = await Get_info_update_app_desktop()
         return { status: 200, message: 'Ok', data: data }
     },
-    get_inventarios_ingresos_ef1: async () => {
-        const enf = await ProcesoRepository.get_inventarios_ingresos_ef1()
-        return { status: 200, message: 'Ok', data: enf }
-    },
-    get_inventarios_ingresos_ef8: async () => {
-        const enf = await ProcesoRepository.get_inventarios_ingresos_ef8()
-        return { status: 200, message: 'Ok', data: enf }
-    },
+
     get_predio_Proceso_Descarte: async () => {
         const response = await ProcesoRepository.get_predio_Proceso_Descarte()
         return { data: response, status: 200, message: 'Ok' }
@@ -43,43 +34,12 @@ const apiSocket = {
         const proveedores = await ComercialRepository.get_comercial_proveedores_elementos(data, user);
         return { status: 200, message: 'Ok', data: proveedores }
     },
-    get_comercial_precios_proveedores_registros: async () => {
-        const proveedores = await ComercialRepository.get_comercial_precios_proveedores_registros();
-        return { status: 200, message: 'Ok', data: proveedores }
-    },
     get_sys_proveedores: async (req) => {
         const { data } = req;
         const response = await ComercialRepository.get_sys_proveedores(data.data);
         return { status: 200, message: 'Ok', data: response }
     },
 
-
-    getInventario: async () => {
-        const resultado = await ProcesoRepository.getInventario();
-        return { data: resultado, status: 200, message: 'Ok' }
-    },
-    getInventario_orden_vaceo: async () => {
-        const resultado = await ProcesoRepository.getInventario_orden_vaceo();
-        return { data: resultado, status: 200, message: 'Ok' }
-    },
-    getInventarioDesverdizado: async () => {
-        const response = await ProcesoRepository.getInventarioDesverdizado()
-        return { data: response, status: 200, message: 'Ok' }
-
-    },
-    getOrdenVaceo: async () => {
-        const oredenVaceo = await VariablesDelSistema.getOrdenVaceo()
-        return { status: 200, message: 'Ok', data: oredenVaceo }
-    },
-    obtenerHistorialLotes: async (data) => {
-        const response = await ProcesoRepository.obtenerHistorialLotes(data.data)
-        return { data: response, status: 200, message: 'Ok' }
-    },
-    obtenerHistorialLotesDirectoNacional: async (data) => {
-        const reponse = await ProcesoRepository.obtenerHistorialLotesDirectoNacional(data.data)
-        return { data: reponse, status: 200, message: 'Ok' }
-
-    },
     getInfoIndicadoresProceso: async (data) => {
         const { fecha, query, select, sort, limit } = data.data.data;
         const newQuery = {
@@ -99,10 +59,6 @@ const apiSocket = {
         return { data: lotes, status: 200, message: 'Ok' }
 
 
-    },
-    obtener_inventario_descartes: async () => {
-        const inventario = await ProcesoRepository.obtener_inventario_descartes();
-        return { status: 200, message: 'Ok', data: inventario }
     },
     get_clientes: async () => {
         const clientes = await ComercialRepository.get_clientes();
@@ -148,12 +104,6 @@ const apiSocket = {
         const { data } = req
         const response = await ProcesoRepository.get_lotes_informe_calidad(data);
         return { status: 200, message: 'Ok', data: response }
-    },
-    view_lotes: async (req) => {
-        const { data } = req
-        const response = await ViewsRepository.view_lotes(data)
-        return { status: 200, message: 'Ok', data: response }
-
     },
     get_ingresos_lotes: async (req) => {
         const { data } = req
@@ -369,12 +319,6 @@ const apiSocket = {
         const response = await ComercialRepository.get_comercial_precios_registros_precios_proveedor(data)
         return { status: 200, message: 'Ok', data: response }
     },
-    get_comercial_precios_registros_precios_proveedores: async (req) => {
-        //Obtiene los registros de los precios
-        const { data } = req;
-        const response = await ComercialRepository.get_comercial_precios_registros_precios_proveedores(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
 
 
 
@@ -497,22 +441,7 @@ const apiSocket = {
     },
     //#endregion
     //#region POST
-    post_inventarios_ingreso_lote: async (req) => {
-        const { data, user } = req;
-        await ProcesoRepository.post_inventarios_ingreso_lote(data, user);
-        return { status: 200, message: 'Ok' }
-    },
-    lote_recepcion_pendiente: async (req) => {
-        const { user, data } = req
-        await ProcesoRepository.lote_recepcion_pendiente(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
-    send_lote_to_inventario: async (req) => {
-        const { user, data } = req
 
-        await ProcesoRepository.send_lote_to_inventario(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
     guardarDescarteHistorial: async (data) => {
         const descarte = data.data.inventario
 
@@ -599,67 +528,11 @@ const apiSocket = {
         await TransporteRepository.post_transporte_registros_inspeccionMula_modificar(data, user.user)
         return { status: 200, message: 'Ok' }
     },
-    post_inventarios_registros_fruta_descompuesta: async (req) => {
-        const { data, user } = req;
-        await ProcesoRepository.post_inventarios_registros_fruta_descompuesta(data, user)
-        return { status: 200, message: 'Ok' }
-    },
-    post_comercial_precios_add_precio: async (req) => {
-        const { data, user } = req;
-        await ComercialRepository.post_comercial_precios_add_precio(data, user)
-        return { status: 200, message: 'Ok' }
-    },
     //#endregion
     //#region PUT
-    directoNacional: async (data) => {
-        const user = data.user.user;
-        await ProcesoRepository.directoNacional(data.data, user)
-        return { status: 200, message: 'Ok' }
-    },
     desverdizado: async (data) => {
         const user = data.user.user;
         await ProcesoRepository.desverdizado(data.data, user)
-        return { status: 200, message: 'Ok' }
-    },
-    vaciarLote: async (data, sendData) => {
-        const user = data.user.user;
-        await ProcesoRepository.vaciarLote(data.data, user, sendData)
-        return { status: 200, message: 'Ok' }
-    },
-    put_inventario_inventarios_orden_vaceo_modificar: async (data) => {
-        await ProcesoRepository.put_inventario_inventarios_orden_vaceo_modificar(data.data.data)
-        return { status: 200, message: 'Ok' }
-
-    },
-    modificarHistorialFrutaProcesada: async (data) => {
-        const user = data.user.user;
-        await ProcesoRepository.modificarHistorialFrutaProcesada(data.data, user)
-        return { status: 200, message: 'Ok' }
-    },
-    modificarHistorial_directoNacional: async (data) => {
-        const { _id, directoNacional, inventario, __v, action, historialLote } = data.data;
-        const { _idRecord, kilosHistorial, __vHistorial } = historialLote;
-        const user = data.user.user;
-        const queryLote = {
-            $inc: {
-                directoNacional: directoNacional,
-                __v: 1
-            }
-        }
-        const queryRecord = {
-            $inc: {
-                "documento.$inc.directoNacional": kilosHistorial,
-                __v: 1
-            }
-        }
-        //se modifica el lote y el inventario
-        await VariablesDelSistema.modificarInventario(_id, -inventario);
-        const lote = await LotesRepository.modificar_lote(_id, queryLote, action, user, __v);
-        await LotesRepository.deshidratacion(lote);
-
-
-        //se modifica el registro
-        await RecordLotesRepository.modificarRecord(_idRecord, queryRecord, __vHistorial);
         return { status: 200, message: 'Ok' }
     },
     ingresoCalidadInterna: async (data) => {
@@ -671,34 +544,6 @@ const apiSocket = {
         await CalidadRepository.put_lotes_clasificacion_descarte(req.data, user)
         return { status: 200, message: 'Ok' }
     },
-    reprocesar_predio: async (data) => {
-        await ProcesoRepository.reprocesar_predio(data.data, data.user.user)
-        return { status: 200, message: 'Ok' }
-    },
-    reprocesar_celifrut: async (req) => {
-        const { data, user } = req
-        await ProcesoRepository.reprocesar_celifrut(data, user.user);
-        return { status: 200, message: 'Ok' }
-    },
-    set_parametros_desverdizado: async (req) => {
-        const { __v, _id, data, action } = req.data;
-        const user = req.user.user;
-        const query = {
-            $push: {
-                "desverdizado.parametros": data
-            },
-            $inc: {
-                __v: 1,
-            }
-        }
-        await LotesRepository.modificar_lote(_id, query, action, user, __v);
-        return { status: 200, message: 'Ok' }
-    },
-    put_inventarios_desverdizado_finalizar: async (req) => {
-        const { data, user } = req
-        await ProcesoRepository.put_inventarios_desverdizado_finalizar(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
     ingresar_descarte_lavado: async (req) => {
         const { data, user } = req;
         await ProcesoRepository.ingresar_descarte_lavado(data, user)
@@ -708,12 +553,6 @@ const apiSocket = {
         const { data, user } = req;
         await ProcesoRepository.ingresar_descarte_encerado(data, user)
         return { status: 200, message: 'Ok' }
-    },
-    despacho_descarte: async (req) => {
-        const { data, user } = req;
-        const descarte = await ProcesoRepository.despacho_descarte(data, user.user);
-        return { status: 200, message: 'Ok', data: descarte }
-
     },
     modificar_ingreso_lote: async (req) => {
         const { data, user } = req
@@ -888,21 +727,7 @@ const apiSocket = {
         await ProcesoRepository.modificar_historial_lote_ingreso_inventario(data, user)
         return { status: 200, message: 'Ok' }
     },
-    lotes_derogar_lote: async (req) => {
-        const { data, user } = req
-        await CalidadRepository.lotes_derogar_lote(data, user)
-        return { status: 200, message: 'Ok' }
-    },
-    lotes_devolver_lote: async (req) => {
-        const { data, user } = req
-        await CalidadRepository.lotes_devolver_lote(data, user)
-        return { status: 200, message: 'Ok' }
-    },
-    put_inventarioLogistica_frutaSinProcesar_modificar_canastillas: async (req) => {
-        const { data, user } = req
-        await ModificarRepository.put_inventarioLogistica_frutaSinProcesar_modificar_canastillas(data, user)
-        return { status: 200, message: 'Ok' }
-    },
+
     put_inventarios_registros_fruta_descompuesta: async (req) => {
         const { data, user } = req
         await ProcesoRepository.put_inventarios_registros_fruta_descompuesta(data, user)

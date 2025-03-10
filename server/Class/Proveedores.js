@@ -83,7 +83,8 @@ class ProveedoresRepository {
 
 
         } catch (err) {
-            throw new PutError(414, `Error al modificando los lotes ${err.essage}`);
+            console.log(err)
+            throw new PutError(522, `Error al modificando los proveedores ${err.essage}`);
         }
     }
     static async addProveedor(data, user) {

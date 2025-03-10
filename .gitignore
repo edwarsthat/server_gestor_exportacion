@@ -19,3 +19,5 @@ updates/
 #ignora las fotos
 fotos_frutas/
 
+#ignora los uploads
+uploads/

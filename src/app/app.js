@@ -14,6 +14,8 @@ const { sp32 } = require("../../server/mobile/sp32");
 const { routerAPI } = require("../../server/routes/api");
 const { SistemaRepository } = require("../../server/api/Sistema");
 const { UserRepository } = require("../../server/auth/users");
+const { middleWareHandleErrors } = require("../middleware/errorHandler");
+const { formsAPI } = require("../../server/routes/public/forms");
 
 const app = express();
 
@@ -23,7 +25,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.text());
 
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '..', '..', 'public')));
+
 app.use("/data", routerPythonData)
 app.use("/variablesDeProceso", routerVariablesdelSistema);
 app.use("/proceso", routerProceso);
@@ -35,9 +38,15 @@ app.use("/sistema", routerSistema)
 app.use("/appTV", routerAppTv)
 app.use("/sp32", sp32)
 app.use("/API", routerAPI)
+app.use("/forms", formsAPI)
 app.get("/", (req, res) => {
     console.log("entra aqui")
-    res.sendFile(path.join(__dirname, 'public', 'web', 'index.html'));
+    res.sendFile(path.join(
+        __dirname,
+        '..', '..',
+        'public',
+        'web',
+        'index.html'));
 });
 
 //se envia el archivo ymal para actualizar la aplicacion de ecritorio
@@ -54,9 +63,13 @@ app.get("/latest.yml", async (req, res, next) => {
     }
 })
 //Envia los archivos para actualizar la aplicacion de escritorio 
-app.get('/:filename', async (req, res, next) => {
+app.get('../../:filename', async (req, res, next) => {
     try {
+        console.log("filename")
+
         let { filename } = req.params;
+
+
         filename = path.basename(filename);
         const file =
             await SistemaRepository.getCelifrutAppFile(filename)
@@ -97,5 +110,7 @@ app.post('/login2', async (req, res, next) => {
         next(err);
     }
 });
+
+app.use((err, req, res, next) => middleWareHandleErrors(err, req, res, next))
 
 module.exports = app;

@@ -87,7 +87,7 @@ class LotesRepository {
             await record.save()
             return lote_obj;
         } catch (err) {
-            throw new PutError(414, `Error al modificar el dato ${id} => ${err.name} `);
+            throw new PutError(523, `Error ${err.name} -- ${id} - ${query}`);
         } finally {
             bussyIds.delete(id);
         }
@@ -171,7 +171,7 @@ class LotesRepository {
             return deshidratacion;
 
         } catch (err) {
-            throw new ProcessError(415, `Error sumando los descartes ${err.message}`);
+            throw new ProcessError(515, `Error sumando los descartes ${err.message}`);
         } finally {
             bussyIds.delete(id);
         }

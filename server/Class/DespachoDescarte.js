@@ -13,7 +13,7 @@ class DespachoDescartesRepository {
 
             return despachoSave
         } catch (err) {
-            throw new PostError(409, `Error agregando el registro del despacho ${err.message}`);
+            throw new PostError(521, `Error agregando el registro del despacho ${err.message}`);
         }
     }
     static async get_historial_descarte(options = {}) {

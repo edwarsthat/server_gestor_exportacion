@@ -124,6 +124,32 @@ const defineContenedores = async (conn) => {
     fecha: { type: Date, default: () => new Date() },
   }, { _id: false })
 
+  const reclamacionSchema = new Schema({
+    responsable: String,
+    Cargo: String,
+    telefono: String,
+    cliente: String,
+    fechaArribo: String,
+    contenedor: String,
+    correo: String,
+    kilos: Number,
+    cajas: Number,
+    fechaDeteccion: Date,
+    moho_encontrado: String,
+    moho_permitido: String,
+    golpes_encontrado: String,
+    golpes_permitido: String,
+    frio_encontrado: String,
+    frio_permitido: String,
+    maduracion_encontrado: String,
+    maduracion_permitido: String,
+    otroDefecto: String,
+    observaciones: String,
+    archivosSubidos: [String],
+    fecha: { type: Date, default: () => new Date() }
+
+  }, { _id: false })
+
   const listaEmpaqueSchema = new Schema({
     numeroContenedor: Number,
     pallets: [{ type: Map, of: subSchema }],
@@ -131,7 +157,8 @@ const defineContenedores = async (conn) => {
     infoTractoMula: schemaInfoMula,
     infoExportacion: schemaInfoExportacion,
     insumosData: insumosSchema,
-    inspeccion_mula: inspeccionMulasSchema
+    inspeccion_mula: inspeccionMulasSchema,
+    reclamacionCalidad: reclamacionSchema
   });
 
   // Middleware to update `ultimaModificacion` field

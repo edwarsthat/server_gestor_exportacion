@@ -160,7 +160,7 @@ class VariablesDelSistema {
       const newidsJSON = JSON.stringify(ids);
       fs.writeFileSync(pathIDs, newidsJSON);
     } catch (err) {
-      throw new ProcessError(411, `Error incrementando el serial celifrut ${err.message}`)
+      throw new ProcessError(511, `Error incrementando el serial celifrut ${err.message}`)
     }
 
   }
@@ -251,7 +251,7 @@ class VariablesDelSistema {
 
       return 'Celifrut-' + ids.idCelifrut;
     } catch (err) {
-      throw new ProcessError(406, `Error creando el codigo celifrut: ${err.message}`)
+      throw new ProcessError(506, `Error creando el codigo celifrut: ${err.message}`)
     }
   }
   static async generar_codigo_informe_calidad() {
@@ -420,7 +420,7 @@ class VariablesDelSistema {
       return flagEliminarItem;
 
     } catch (err) {
-      throw new ProcessError(418, `Error modificando datos del inventario json ${err.name}`)
+      throw new ProcessError(518, `Error modificando datos del inventario json ${err.name}`)
     } finally {
       inventarioFleg = false
     }
@@ -601,7 +601,7 @@ class VariablesDelSistema {
       return inventario
 
     } catch (err) {
-      throw new ProcessError(418, `Error modificando datos del inventario descarte json: ${err.name}`)
+      throw new ProcessError(518, `Error modificando datos del inventario descarte json: ${err.name}`)
     } finally {
       inventarioDescarteFlag = false
     }
@@ -661,7 +661,7 @@ class VariablesDelSistema {
       fs.writeFileSync(inventarioDescartesPath, newInventarioJSON);
 
     } catch (err) {
-      throw new ProcessError(418, `Error modificando datos del inventario descarte json ${err.name}`)
+      throw new ProcessError(518, `Error modificando datos del inventario descarte json ${err.name}`)
     } finally {
       inventarioDescarteFlag = false
     }
@@ -669,7 +669,6 @@ class VariablesDelSistema {
   static async restar_fruta_inventario_descarte(kilos, tipoFruta) {
     if (inventarioDescarteFlag) throw new ProcessError(413, "Error el archivo se esta escribiendo");
     try {
-      console.log(kilos)
       inventarioDescarteFlag = true
       let inventoryOut = {}
       const inventarioJSON = fs.readFileSync(inventarioDescartesPath);
@@ -762,8 +761,7 @@ class VariablesDelSistema {
       return inventoryOut;
 
     } catch (err) {
-      console.log(err.message)
-      throw new ProcessError(418, `Error modificando las variables del sistema: ${err.message}`)
+      throw new ProcessError(518, `Error modificando inventario descarte: ${err.message}`)
     } finally {
       inventarioDescarteFlag = false
 
@@ -853,7 +851,7 @@ class VariablesDelSistema {
       });
 
     } catch (err) {
-      throw new ProcessError(418, `Error modificando las variables del sistema: ${err.name}`)
+      throw new ProcessError(518, `Error modificando las variables del sistema: ${err.name}`)
     }
   }
 

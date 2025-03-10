@@ -7,7 +7,6 @@ class ContabilidadRepository {
         const query = {
             enf: { $regex: '^E', $options: 'i' },
             aprobacionComercial: true,
-            exportacionDetallada: { $exists: true }
         }
         const lotes = await LotesRepository.getLotes({
             query: query,

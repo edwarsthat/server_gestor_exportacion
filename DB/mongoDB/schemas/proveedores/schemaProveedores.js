@@ -60,16 +60,17 @@ const defineproveedores = async (conn) => {
     propietario: String,
     razon_social: String,
     nit_facturar: String,
+    precioFijo: Boolean,
 
 
     //Borrar datos
-    ICA_temp: String,
+    // ICA_temp: String,
     // ICA: String,
-    "FECHA VENCIMIENTO GGN": String,
-    N: Boolean,
-    L: Boolean,
-    M: Boolean,
-    alt: String
+    // "FECHA VENCIMIENTO GGN": String,
+    // N: Boolean,
+    // L: Boolean,
+    // M: Boolean,
+    // alt: String
   });
 
   // Middleware pre-save para establecer alt = _id en la creación inicial

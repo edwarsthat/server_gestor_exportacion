@@ -187,9 +187,11 @@ class ComercialRepository {
 
 
     //#region Precios
-    static async post_comercial_precios_add_precio(req, user) {
+    static async post_comercial_precios_add_precio(req) {
         try {
-            const { data } = req
+            const { data: datos, user } = req;
+
+            const { data } = datos
             const [yearStr, weekStr] = data.week.split("-W");
             const year = parseInt(yearStr, 10);
             const week = parseInt(weekStr, 10);
@@ -264,14 +266,6 @@ class ComercialRepository {
     static async put_comercial_precios_precioLotes(req, user) {
         try {
             const { data } = req
-            const fecha = new Date();
-            const year = fecha.getFullYear();
-            const week = getISOWeek(fecha);
-
-            data.week = week
-            data.year = year
-
-            ComercialValidationsRepository.val_post_comercial_precios_add_precio_lote(data);
 
             let lotesQuery = {}
 
@@ -281,6 +275,15 @@ class ComercialRepository {
                 query: lotesQuery,
                 select: { predio: 1, precio: 1, tipoFruta: 1 }
             })
+
+            const fecha = new Date(lotes[0].fecha_creacion);
+            const year = fecha.getFullYear();
+            const week = getISOWeek(fecha);
+
+            data.week = week
+            data.year = year
+
+            ComercialValidationsRepository.val_post_comercial_precios_add_precio_lote(data);
 
             const precio = await PreciosRepository.post_precio({ ...data, tipoFruta: lotes[0].tipoFruta })
 
@@ -300,6 +303,30 @@ class ComercialRepository {
         } catch (err) {
 
             if (err.status === 521) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_comercial_precios_proveedores_precioFijo(req) {
+        try {
+            const { data: datos } = req
+            const { data } = datos
+
+
+            const query = { _id: { $in: data } }; // Busca documentos cuyo _id esté en la lista
+            const update = [
+                { $set: { precioFijo: { $not: "$precioFijo" } } }
+            ];
+
+            await ProveedoresRepository.modificar_varios_proveedores(
+                query,
+                update
+            )
+
+        } catch (err) {
+
+            if (err.status === 522) {
                 throw err
             }
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
@@ -349,7 +376,8 @@ class ComercialRepository {
     }
     static async get_comercial_precios_registros_precios_proveedores(req) {
         try {
-            const { page = 1, filtro } = req || {}
+            const { data } = req;
+            const { page = 1, filtro } = data || {}
             const resultsPerPage = 50;
             const skip = (page - 1) * resultsPerPage;
 

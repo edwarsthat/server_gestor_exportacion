@@ -345,8 +345,10 @@ class CalidadRepository {
             return
         }
     }
-    static async lotes_derogar_lote(req, user) {
-        const { _id, action, observaciones, clasificacionCalidad } = req;
+    static async lotes_derogar_lote(req) {
+        const { data, user } = req
+
+        const { _id, action, observaciones, clasificacionCalidad } = data;
 
         const query = {
             observaciones,
@@ -362,8 +364,9 @@ class CalidadRepository {
         });
 
     }
-    static async lotes_devolver_lote(req, user) {
-        const { _id, canastillas, observaciones, action } = req;
+    static async lotes_devolver_lote(req) {
+        const { data, user } = req
+        const { _id, canastillas, observaciones, action } = data
 
         const query = {
             observaciones: observaciones + " | Devuelto debido a la mala calidad de la fruta",

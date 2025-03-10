@@ -61,6 +61,24 @@ class PilaAccess_Error extends Error {
     }
 }
 
+class ErrorUndefinedData extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Petición inválida: falta 'action'"
+        this.status = code
+        this.message = message
+    }
+}
+
+class ErrorActionAlready extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Acción en curso, por favor espera."
+        this.status = code
+        this.message = message
+    }
+}
+
 module.exports = {
     ConnectionDBError,
     BadGetwayError,
@@ -68,5 +86,7 @@ module.exports = {
     PutError,
     ConnectRedisError,
     ConnectAWS_Error,
-    PilaAccess_Error
+    PilaAccess_Error,
+    ErrorUndefinedData,
+    ErrorActionAlready
 }

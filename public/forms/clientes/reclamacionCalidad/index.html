@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Cuestionario para Reclamaciones de Calidad</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+
+        /* Centrar contenido */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #f2f2f2;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        fieldset {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+
+        legend {
+            font-weight: bold;
+            padding: 0 10px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="email"],
+        textarea,
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-section {
+            margin-bottom: 10px;
+        }
+
+        button[type="submit"] {
+            margin-top: 20px;
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        /* Opcional: estilo para la imagen corporativa */
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo-container img {
+            max-width: 200px;
+            /* Ajusta el ancho según lo necesites */
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Contenedor principal -->
+    <!-- Imagen corporativa -->
+    <div class="logo-container">
+        <!-- Ajusta 'src' a la ruta real de tu logotipo -->
+        <img src="/1.webp" alt="Logo Celifrut" />
+    </div>
+    <div class="container">
+
+
+
+        <h1>Cuestionario para Reclamaciones de Calidad</h1>
+
+        <form action="#" method="post" enctype="multipart/form-data">
+
+            <!-- SECCIÓN 1: CONFIRMACIÓN Y FIRMA -->
+            <fieldset>
+                <legend>1. Confirmación y Firma</legend>
+                <p>
+                    Declaro que la información proporcionada es veraz y completa para la adecuada gestión de la
+                    reclamación.
+                </p>
+                <div class="form-section">
+                    <label for="responsable">Nombre del responsable:</label>
+                    <input type="text" id="responsable" name="responsable"
+                        placeholder="Ingresa el nombre del responsable" required />
+                </div>
+
+                <div class="form-section">
+                    <label for="Cargo">Cargo:</label>
+                    <input type="text" id="Cargo" name="Cargo" placeholder="Cargo" required />
+                </div>
+
+                <div class="form-section">
+                    <label for="telefono">Teléfono de Contacto:</label>
+                    <input type="text" id="telefono" name="telefono" placeholder="Número de teléfono" />
+                </div>
+            </fieldset>
+
+            <!-- SECCIÓN 2: DETALLES DE LA RECLAMACIÓN -->
+            <fieldset>
+                <legend>2. Detalles de la reclamación</legend>
+
+
+
+                <div class="form-section">
+                    <label for="cliente">Nombre del Cliente:</label>
+                    <input type="text" id="cliente" name="cliente" placeholder="Ingresa el cliente" required />
+                </div>
+
+                <div class="form-section">
+                    <label for="fechaArribo">Fecha arribo contenedor:</label>
+                    <input type="date" id="fechaArribo" name="fechaArribo" required />
+                </div>
+
+                <div class="form-section">
+                    <label for="contenedor">Número del contenedor:</label>
+                    <input type="text" id="contenedor" name="contenedor" placeholder="Número de contenedor" />
+                </div>
+
+                <div class="form-section">
+                    <label for="correo">Correo Electrónico:</label>
+                    <input type="email" id="correo" name="correo" placeholder="correo@ejemplo.com" required />
+                </div>
+
+                <div class="form-section">
+                    <label for="kilos">Cantidad de kilos afectados:</label>
+                    <input type="text" id="kilos" name="kilos" placeholder="Ingrese el número de kilos" />
+                </div>
+
+                <div class="form-section">
+                    <label for="cajas">Cantidad de cajas afectadas:</label>
+                    <input type="text" id="cajas" name="cajas" placeholder="Ingrese el número de cajas" />
+                </div>
+
+                <div class="form-section">
+                    <label for="fechaDeteccion">Fecha en que se detectó el problema:</label>
+                    <input type="date" id="fechaDeteccion" name="fechaDeteccion" required />
+                </div>
+            </fieldset>
+
+            <!-- SECCIÓN 3: PROBLEMAS REPORTADOS -->
+            <fieldset>
+                <legend>3. Problemas Reportados</legend>
+
+                <div class="form-section">
+                    <label for="moho">Moho:</label>
+                    <input type="text" id="mohoporcentage" name="moho_encontrado" placeholder="% Encontrado" />
+                    <input type="text" id="mohopermitido" name="moho_permitido" placeholder="% Permitido" />
+                </div>
+
+                <div class="form-section">
+                    <label for="golpes">Golpes:</label>
+                    <input type="text" id="golpesporcentage" name="golpes_encontrado" placeholder="% Encontrado" />
+                    <input type="text" id="golpespermitido" name="golpes_permitido" placeholder="% Permitido" />
+                </div>
+
+                <div class="form-section">
+                    <label for="frio">Daño por frío:</label>
+                    <input type="text" id="frioporcentage" name="frio_encontrado" placeholder="% Encontrado" />
+                    <input type="text" id="friopermitido" name="frio_permitido" placeholder="% Permitido" />
+                </div>
+
+                <div class="form-section">
+                    <label for="maduracion">Problemas de Maduración:</label>
+                    <input type="text" id="maduracionporcentage" name="maduracion_encontrado"
+                        placeholder="% Encontrado" />
+                    <input type="text" id="maduracionpermitido" name="maduracion_permitido" placeholder="% Permitido" />
+                </div>
+
+                <div class="form-section">
+                    <label for="otroDefecto">Otros (Especificar):</label>
+                    <input type="text" id="otroDefecto" name="otroDefecto" placeholder="Otro defecto" />
+                </div>
+
+                <div class="form-section">
+                    <label for="observaciones">Observaciones Adicionales:</label>
+                    <textarea id="observaciones" name="observaciones"
+                        placeholder="Anota cualquier información adicional relevante"></textarea>
+                </div>
+            </fieldset>
+
+            <!-- SECCIÓN 4: DOCUMENTACIÓN REQUERIDA -->
+            <fieldset>
+                <legend>4. Documentación Requerida</legend>
+
+                <p>Para una mejor evaluación de la reclamación, adjunte los siguientes documentos:</p>
+                <ul>
+                    <li>Fotos del rótulo de las cajas afectadas.</li>
+                    <li>Registro del data logger del contenedor.</li>
+                    <li>Fotos de la fruta afectada.</li>
+                    <li>Registro de la inspección practicada a la fruta (si aplica, adjuntar informe oficial de
+                        inspección).</li>
+                </ul>
+
+                <div class="form-section">
+                    <label for="documentos">Cargar documentos (PDF o imágenes):</label>
+                    <!-- `accept` con `.pdf,image/*` para PDFs e imágenes -->
+                    <input type="file" id="documentos" name="documentos" multiple accept=".pdf,image/*" />
+                </div>
+            </fieldset>
+
+            <button type="submit">Enviar Reclamación</button>
+        </form>
+
+    </div><!-- Fin container -->
+
+</body>
+
+</html>

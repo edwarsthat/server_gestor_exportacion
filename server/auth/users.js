@@ -58,7 +58,7 @@ class UserRepository {
         if (user.user < 3) throw new ValidationUserError(401, "El usuario debe tener mas de 3 letras")
     }
     static generateAccessToken(data) {
-        return jwt.sign(data, process.env.ACCES_TOKEN, { expiresIn: '5h' })
+        return jwt.sign(data, process.env.ACCES_TOKEN, { expiresIn: '8h' })
     }
     static async authenticateTokenSocket(socket, next) {
 

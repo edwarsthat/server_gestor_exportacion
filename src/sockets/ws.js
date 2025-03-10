@@ -1,10 +1,12 @@
-const { BadGetwayError } = require("../../Error/ConnectionErrors");
+const { BadGetwayError, ErrorUndefinedData } = require("../../Error/ConnectionErrors");
 const { HandleErrors } = require("../../Error/recordErrors");
 const { AccessError } = require("../../Error/ValidationErrors");
 const { procesoEventEmitter } = require("../../events/eventos");
 const { UserRepository } = require("../../server/auth/users");
 const { apiSocket } = require("../../server/desktop/reduce");
 const { socketMobileRepository } = require("../../server/mobile/socket");
+const { apiSocketComercial } = require("../../server/routes/sockets/comercial");
+const { apiSocketInventarios } = require("../../server/routes/sockets/inventarios");
 
 
 
@@ -13,8 +15,12 @@ function initSockets(io) {
 
 
 
-    io.use((socket, next) => {
-        UserRepository.authenticateTokenSocket(socket, next)
+    io.use(async (socket, next) => {
+        try {
+            await UserRepository.authenticateTokenSocket(socket, next);
+        } catch (err) {
+            next(err);
+        }
     });
 
     async function sendData(data) {
@@ -23,7 +29,6 @@ function initSockets(io) {
 
 
     procesoEventEmitter.on('predio_vaciado', (data) => {
-        console.log(data)
         try {
             io.emit("predio_vaciado", data);
         } catch (error) {
@@ -45,13 +50,13 @@ function initSockets(io) {
         }
     })
 
-    procesoEventEmitter.on('proceso_event', (data) => {
-        try {
-            io.emit("proceso_event", data);
-        } catch (error) {
-            console.error('Error en proceso_event:', error);
-        }
-    });
+    // procesoEventEmitter.on('proceso_event', (data) => {
+    //     try {
+    //         io.emit("proceso_event", data);
+    //     } catch (error) {
+    //         console.error('Error en proceso_event:', error);
+    //     }
+    // });
     procesoEventEmitter.on('server_event', (data) => {
         try {
             io.emit("server_event", data);
@@ -64,99 +69,54 @@ function initSockets(io) {
 
     io.on("connection", socket => {
         console.log("an user has connected");
-        let ongoingRequests = {};
-        socket.on("Desktop2", async (data, callback) => {
-            try {
-                // If the request is already ongoing, return
-                if (ongoingRequests[data.data.action]) {
-                    return;
-                }
-                const user = await UserRepository.authenticateToken(data.token)
-                data = { ...data, user: user }
 
-                // Mark the request as ongoing
-                ongoingRequests[data.data.action] = true;
+        const handleRequest = async (data, callback, repository) => {
+            try {
+
+                const user = await UserRepository.authenticateToken(data.token)
+                data.user = user;
+
                 const autorizado2 = await UserRepository.autentificacionPermisos2(data);
                 if (!autorizado2) {
                     throw new AccessError(412, `Acceso no autorizado ${data.data.action}`);
                 }
 
-                if (!Object.prototype.hasOwnProperty.call(apiSocket, data.data.action))
-                    throw new BadGetwayError(501, `Error badGetWay ${data.data.action} no existe`)
+                if (!Object.prototype.hasOwnProperty.call(repository, data.data.action)) {
+                    throw new BadGetwayError(501, `Error badGetWay: la acción ${data.data.action} no existe`);
+                }
 
+                const response = await repository[data.data.action](data, sendData);
+                callback(response);
 
-                const response = await apiSocket[data.data.action](data, sendData);
-
-                const newToken = UserRepository.generateAccessToken({
-                    user: data.user.user,
-                    cargo: data.user.cargo,
-                    _id: data.user._id,
-                    Rol: data.user.Rol,
-                })
-
-                callback({ ...response, token: newToken })
             } catch (err) {
-                console.log("Error socket: ", err);
-                await HandleErrors.addError(err)
+                await HandleErrors.addError(err);
+                callback(err);
+            }
+        }
 
-                if (![401, 402, 403, 404, 405].includes(err.status)) {
-                    const newToken = data.user ? UserRepository.generateAccessToken({
-                        user: data.user.user,
-                        cargo: data.user.cargo,
-                        _id: data.user._id,
-                        Rol: data.user.Rol,
 
-                    }) : null;
-                    callback({ ...err, token: newToken });
-                } else {
-                    callback(err);
-                }
-            } finally {
-                console.log(ongoingRequests)
-                if (data && data.data && data.data.action) {
-                    delete ongoingRequests[data.data.action]
-                }
+        socket.on("Desktop2", async (data, callback) => {
+            if (!data || !data.data || !data.data.action) {
+                return callback(new ErrorUndefinedData(425, "Petición inválida: falta 'action'"));
+            }
+            const dominio = data.data.action.split("_")[1]
+            if (dominio === "inventarios") {
+                handleRequest(data, callback, apiSocketInventarios);
+
+            } else if (dominio === "comercial") {
+                handleRequest(data, callback, apiSocketComercial);
+            }
+
+            else {
+                handleRequest(data, callback, apiSocket);
             }
         })
+
         socket.on("Mobile", async (data, callback) => {
-            try {
-                // If the request is already ongoing, return
-                if (ongoingRequests[data.data.action]) {
-                    return;
-                }
-                const user = await UserRepository.authenticateToken(data.token)
-                data = { ...data, user: user }
-
-                // Mark the request as ongoing
-                ongoingRequests[data.data.action] = true;
-                const autorizado2 = await UserRepository.autentificacionPermisos2(data);
-
-                if (!autorizado2) {
-                    throw new AccessError(412, `Acceso no autorizado ${data.data.action}`);
-                }
-
-                if (!Object.prototype.hasOwnProperty.call(socketMobileRepository, data.data.action))
-                    throw new BadGetwayError(501, `Error badGetWay ${data.data.action} no existe`)
-                const response = await socketMobileRepository[data.data.action](data);
-                callback(response)
-            } catch (err) {
-                await HandleErrors.addError(err)
-                console.log("Error socket mobile: ", err);
-                if (![401, 402, 403, 404, 405].includes(err.status)) {
-                    const newToken = data.user ? UserRepository.generateAccessToken({
-                        user: data.user.user,
-                        cargo: data.user.cargo
-                    }) : null;
-                    if (!err.status) {
-                        callback({ message: err.message, status: 401, token: newToken });
-                    }
-                    callback({ ...err, token: newToken });
-                } else {
-                    callback(err);
-                }
-            } finally {
-                delete ongoingRequests[data.data.action]
+            if (!data || !data.data || !data.data.action) {
+                return callback(new ErrorUndefinedData(425, "Petición inválida: falta 'action'"));
             }
+            handleRequest(data, callback, socketMobileRepository);
         })
     });
 }

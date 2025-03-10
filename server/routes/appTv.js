@@ -5,8 +5,12 @@ const { procesoEventEmitter } = require('../../events/eventos');
 const routerAppTv = express.Router();
 
 routerAppTv.get("/", (req, res) => {
-    console.log("entra aqui")
-    res.sendFile(path.join(__dirname, '..', '..', 'public', 'appTv', 'index.html'));
+    res.sendFile(path.join(
+        __dirname,
+        '..', '..',
+        'public',
+        'appTv',
+        'index.html'));
 });
 
 routerAppTv.get("/get_data_proceso", async (req, res) => {

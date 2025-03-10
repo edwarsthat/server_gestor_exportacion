@@ -1,5 +1,5 @@
 
-GET http://172.31.176.1:3010/API/get_data_lotes
+GET https://operativo.celifrut.com/API/get_data_lotes
 Content-Type: application/json
 
 {
