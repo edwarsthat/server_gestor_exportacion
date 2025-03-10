@@ -63,7 +63,7 @@ app.get("/latest.yml", async (req, res, next) => {
     }
 })
 //Envia los archivos para actualizar la aplicacion de escritorio 
-app.get('../../:filename', async (req, res, next) => {
+app.get('/:filename', async (req, res, next) => {
     try {
         console.log("filename")
 
