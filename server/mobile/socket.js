@@ -1,4 +1,5 @@
 
+const { InventariosRepository } = require("../api/inventarios");
 const { ProcesoRepository } = require("../api/Proceso");
 class socketMobileRepository {
     static async obtener_predio_listaDeEmpaque() {
@@ -20,7 +21,7 @@ class socketMobileRepository {
             fechaInicio,
             fechaFin
         }
-        const response = await ProcesoRepository.obtenerHistorialLotes(data)
+        const response = await InventariosRepository.get_inventarios_historialProcesado_frutaProcesada(data)
         return { status: 200, message: 'Ok', data: response }
     }
     static async obtener_contenedores_listaDeEmpaque() {

@@ -134,6 +134,13 @@ const apiSocketInventarios = {
         const response = await ViewsRepository.view_lotes(data)
         return successResponseRoutes(response)
     },
+    //#endregion
+    //#region historial ingreso fruta
+    get_inventarios_historiales_ingresoFruta_numeroElementos: async () => {
+        const response = await InventariosRepository.get_inventarios_historiales_ingresoFruta_numeroElementos()
+        return successResponseRoutes(response)
+    },
+    //#endregion
 }
 
 module.exports.apiSocketInventarios = apiSocketInventarios;

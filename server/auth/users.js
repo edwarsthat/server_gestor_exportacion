@@ -20,7 +20,7 @@ const permisos_generales = [
     "get_transporte_registros_exportacion_numeroElementos",
     "get_transporte_registros_inspeccionMula_numeroElementos",
     "get_transporte_documentos_programacionMulas_numeroElementos",
-    "get_inventario_historiales_ingresoFruta_numeroElementos",
+    "get_inventarios_historiales_ingresoFruta_numeroElementos",
     "get_inventarios_numero_registros_fruta_descompuesta",
     "get_calidad_historial_calidadInterna_numeroElementos",
     "get_calidad_informes_calidad_informe_proveedor_numero_datos",

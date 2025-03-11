@@ -636,13 +636,6 @@ class ProcesoRepository {
         const cantidad = await RecordLotesRepository.obtener_cantidad_recordLote(filtro)
         return cantidad
     }
-    static async get_inventario_historiales_ingresoFruta_numeroElementos() {
-        const filtro = {
-            operacionRealizada: "crearLote"
-        }
-        const cantidad = await RecordLotesRepository.obtener_cantidad_recordLote(filtro)
-        return cantidad
-    }
     static async get_inventarios_numero_registros_fruta_descompuesta() {
         try {
 

@@ -429,6 +429,15 @@ class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
+    //#region historial ingreso fruta 
+    static async get_inventarios_historiales_ingresoFruta_numeroElementos() {
+        const filtro = {
+            operacionRealizada: "crearLote"
+        }
+        const cantidad = await RecordLotesRepository.obtener_cantidad_recordLote(filtro)
+        return cantidad
+    }
+    //#endregion
 }
 
 
