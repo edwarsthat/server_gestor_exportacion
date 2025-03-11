@@ -1,15 +1,19 @@
 const { InventariosLogicError } = require("../../Error/logicLayerError");
 const { procesoEventEmitter } = require("../../events/eventos");
 const { RecordLotesRepository } = require("../archive/ArchiveLotes");
+const { ContenedoresRepository } = require("../Class/Contenedores");
 const { DespachoDescartesRepository } = require("../Class/DespachoDescarte");
 const { FrutaDescompuestaRepository } = require("../Class/FrutaDescompuesta");
 const { LotesRepository } = require("../Class/Lotes");
+const { PreciosRepository } = require("../Class/Precios");
+const { ProveedoresRepository } = require("../Class/Proveedores");
+const { UsuariosRepository } = require("../Class/Usuarios");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
 const { filtroFechaInicioFin } = require("./utils/filtros");
 const { transformObjectInventarioDescarte } = require("./utils/objectsTransforms");
 
 class InventariosRepository {
-    //#region desverdizando
+    //#region inventarios
     static async put_inventarios_frutaDesverdizando_parametros(req) {
         try {
             const { __v, _id, data, action } = req.data;
@@ -52,8 +56,6 @@ class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    //#endregion
-    //#region Inventario descarte
     static async get_inventarios_frutaDescarte_fruta() {
         try {
             const inventario = await VariablesDelSistema.obtener_inventario_descartes();
@@ -270,7 +272,7 @@ class InventariosRepository {
         }
     }
     //#endregion
-    //#region Historial fruta procesada
+    //#region Historiales
     static async get_inventarios_historialProcesado_frutaProcesada(data) {
         try {
 
@@ -350,8 +352,6 @@ class InventariosRepository {
         }
 
     }
-    //#endregion
-    //#region historial directo nacional
     static async put_inventarios_historialDirectoNacional_registros(req) {
         try {
             const { data } = req
@@ -429,15 +429,358 @@ class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    //#region historial ingreso fruta 
     static async get_inventarios_historiales_ingresoFruta_numeroElementos() {
-        const filtro = {
-            operacionRealizada: "crearLote"
+        try {
+            const filtro = {
+                operacionRealizada: "crearLote"
+            }
+            const cantidad = await RecordLotesRepository.obtener_cantidad_recordLote(filtro)
+            return cantidad
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
-        const cantidad = await RecordLotesRepository.obtener_cantidad_recordLote(filtro)
+    }
+    static async get_inventarios_historiales_ingresoFruta_registros(req) {
+        try {
+            const { data } = req
+            const { page } = data;
+            const query = {
+                operacionRealizada: "crearLote"
+            }
+            const resultsPerPage = 50;
+            const lotes = await RecordLotesRepository.getRecordLotes({
+                query: query,
+                skip: (page - 1) * resultsPerPage,
+                limit: resultsPerPage,
+
+            });
+
+            const proveedoresids = [];
+            const usersId = [];
+
+            for (const lote of lotes) {
+                proveedoresids.push(lote.documento.predio.toString());
+                usersId.push(lote.user.toString());
+            }
+
+            const proveedoresSet = new Set(proveedoresids)
+            const proveedoresArr = [...proveedoresSet]
+
+            const proveedores = await ProveedoresRepository.get_proveedores({
+                ids: proveedoresArr
+            })
+
+            const usersIdSet = new Set(usersId)
+            const usersIdArr = [...usersIdSet]
+
+            const user = await UsuariosRepository.get_users({
+                ids: usersIdArr,
+                getAll: true
+            })
+
+            const result = [];
+            for (const lote of lotes) {
+                const proveedor = proveedores.find(proveedor =>
+                    proveedor._id.toString() === lote.documento.predio.toString()
+                );
+
+                const usuario = user.find(u => u._id.toString() === lote.user.toString());
+
+                if (proveedor && usuario) {
+                    delete lote.documento.predio0;
+                    lote.documento.predio = {};
+                    lote.documento.predio.PREDIO = proveedor.PREDIO;
+                    lote.documento.predio._id = proveedor._id;
+                    lote.user = usuario.nombre + " " + usuario.apellido;
+                }
+                result.push(lote);
+            }
+            return result;
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_inventarios_historiales_ingresoFruta_modificar(req) {
+        try {
+            const { data: datos, user } = req
+            const { action, data, _idLote, _idRecord, __v } = datos
+            await LotesRepository.modificar_lote_proceso(
+                _idLote,
+                data,
+                action,
+                user
+            )
+            const query = {}
+            Object.keys(data).forEach(item => {
+                query[`documento.${item}`] = data[item]
+            })
+            await RecordLotesRepository.modificarRecord(
+                _idRecord,
+                query,
+                __v
+            )
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+
+    }
+    static async get_inventarios_historiales_despachoDescarte(req) {
+        try {
+            const { data } = req
+            const { page } = data;
+            const resultsPerPage = 50;
+
+            const historial = await DespachoDescartesRepository.get_historial_descarte({
+                skip: (page - 1) * resultsPerPage,
+                limit: resultsPerPage,
+            });
+            return historial;
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_inventarios_historiales_listasDeEmpaque(req) {
+        try {
+            const { data } = req;
+            const { page } = data
+            const resultsPerPage = 25;
+            const contenedores = await ContenedoresRepository.getContenedores({
+                skip: (page - 1) * resultsPerPage,
+                limit: resultsPerPage,
+                select: {
+                    infoContenedor: 1,
+                    __v: 1,
+                    pallets: 1,
+                    numeroContenedor: 1
+                },
+                query: {
+                    "infoContenedor.fechaFinalizado": { $ne: null }
+                }
+            })
+            return contenedores
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_inventarios_historiales_listasDeEmpaque_numeroRegistros() {
+        const cantidad = await ContenedoresRepository.obtener_cantidad_contenedores()
         return cantidad
     }
+    static async get_inventarios_historiales_contenedores(req) {
+        try {
+            const { data } = req;
+            const { contenedores, fechaInicio, fechaFin, clientes, tipoFruta } = data
+            let query = {}
+
+            //por numero de contenedores
+            if (contenedores.length > 0) {
+                query.numeroContenedor = { $in: contenedores }
+            }
+            //por clientes
+            if (clientes.length > 0) {
+                query["infoContenedor.clienteInfo"] = { $in: clientes }
+            }
+            //por tipo de fruta
+            if (tipoFruta !== '') {
+                query["infoContenedor.tipoFruta"] = tipoFruta
+            }
+
+            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'infoContenedor.fechaCreacion')
+
+            const cont = await ContenedoresRepository.getContenedores({
+                query: query
+            });
+            return cont
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_inventarios_registros_fruta_descompuesta(req) {
+        try {
+            const { data } = req;
+            const { page } = data
+            const resultsPerPage = 50;
+
+            const registros = await FrutaDescompuestaRepository.get_fruta_descompuesta({
+                skip: (page - 1) * resultsPerPage,
+
+            })
+
+            return registros
+
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_inventarios_numero_registros_fruta_descompuesta() {
+        try {
+            const registros = await FrutaDescompuestaRepository.get_numero_fruta_descompuesta()
+            return registros
+
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
     //#endregion
+    //#region ingresos
+    static async get_inventarios_ingresos_ef1() {
+        try {
+            const enf = await VariablesDelSistema.generarEF1();
+            return enf
+        }
+        catch (err) {
+            if (err.status === 506) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_inventarios_ingresos_ef8() {
+        try {
+            const enf = await VariablesDelSistema.generarEF8();
+            return enf
+        } catch (err) {
+            if (err.status === 506) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async post_inventarios_ingreso_lote(req) {
+        try {
+            const { data, user } = req;
+            const { data: datos } = data
+            let enf
+
+            if (!datos.ef || datos.ef.startsWith('EF1')) {
+                enf = await VariablesDelSistema.generarEF1(datos.fecha_estimada_llegada)
+            } else if (datos.ef.startsWith('EF8')) {
+                enf = await VariablesDelSistema.generarEF8(datos.fecha_estimada_llegada)
+
+            } else {
+                throw new InventariosLogicError(470, `Error codigo no valido de EF`)
+            }
+
+
+            const proveedor = await ProveedoresRepository.get_proveedores({
+                ids: [datos.predio],
+                select: { precio: 1 }
+            })
+
+            const precio = await PreciosRepository.get_precios({
+                ids: [proveedor[0].precio[datos.tipoFruta]]
+            })
+
+            if (!precio) throw Error("El proveedor no tiene un precio establecido")
+
+            const query = {
+                ...datos,
+                precio: precio[0]._id,
+                enf: enf,
+                fecha_salida_patio: new Date(datos.fecha_estimada_llegada),
+                fecha_ingreso_patio: new Date(datos.fecha_estimada_llegada),
+                fecha_ingreso_inventario: new Date(datos.fecha_estimada_llegada),
+            }
+
+            const lote = await LotesRepository.addLote(query, user);
+
+            await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
+
+            if (datos.ef.startsWith('EF1')) {
+                await VariablesDelSistema.incrementarEF1();
+            } else if (datos.ef.startsWith('EF8')) {
+                await VariablesDelSistema.incrementarEF8();
+            }
+
+            procesoEventEmitter.emit("server_event", {
+                action: "add_lote",
+                data: {
+                    ...lote._doc,
+                    predio: proveedor[0].PREDIO
+                }
+            });
+
+        } catch (err) {
+            if (err.status === 521) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+
+        }
+
+    }
+    //#endregion
+    //#region programacion
+    static async get_inventarios_programaciones_contenedores(req) {
+        try {
+            const { data } = req
+            const { fecha } = data;
+            const fechaActual = new Date(fecha);
+            const year = fechaActual.getFullYear();
+            const month = fechaActual.getMonth();
+
+            const startDate = new Date(Date.UTC(year, month, 1));
+            const endDate = new Date(Date.UTC(year, month + 1, 1));
+
+            const query = {
+                "infoContenedor.fechaInicio": {
+                    $gte: startDate,
+                    $lt: endDate
+                }
+            };
+
+            const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                select: { infoContenedor: 1, numeroContenedor: 1, __v: 1 },
+                query: query
+            });
+            return response;
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+
+        }
+    }
+    static async put_inventarios_programacion_contenedores(req) {
+        try {
+            const { data, user } = req;
+            const { _id, __v, infoContenedor, action } = data;
+            await ContenedoresRepository.modificar_contenedor(_id, infoContenedor, user.user, action, __v);
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+
+        }
+    }
+    //#endregion
+
 }
 
 

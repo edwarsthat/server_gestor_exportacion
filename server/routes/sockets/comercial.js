@@ -19,6 +19,10 @@ const apiSocketComercial = {
         await ComercialRepository.post_comercial_precios_add_precio(data)
         return successResponseRoutes()
     },
+    put_comercial_precios_precioLotes: async (data) => {
+        await ComercialRepository.put_comercial_precios_precioLotes(data)
+        return successResponseRoutes()
+    },
     //#endregion
     //#region proveedores
     get_comercial_proveedores_elementos: async (data) => {
@@ -37,7 +41,7 @@ const apiSocketComercial = {
         await ComercialRepository.post_comercial_proveedores_add_proveedor(data)
         return successResponseRoutes()
     },
-    //#endregios
+    //#endregion
 }
 
 module.exports.apiSocketComercial = apiSocketComercial

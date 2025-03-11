@@ -1,4 +1,5 @@
 const { CalidadRepository } = require("../../api/Calidad");
+const { ComercialRepository } = require("../../api/Comercial");
 const { InventariosRepository } = require("../../api/inventarios");
 const { ModificarRepository } = require("../../api/ModificarData");
 const { ProcesoRepository } = require("../../api/Proceso");
@@ -9,15 +10,7 @@ const { successResponseRoutes } = require("../helpers/responses");
 
 
 const apiSocketInventarios = {
-    //#region Fruta sin procesar
-    get_inventarios_ingresos_ef1: async () => {
-        const enf = await ProcesoRepository.get_inventarios_ingresos_ef1()
-        return successResponseRoutes(enf)
-    },
-    get_inventarios_ingresos_ef8: async () => {
-        const enf = await ProcesoRepository.get_inventarios_ingresos_ef8()
-        return successResponseRoutes(enf)
-    },
+    //#region inventarios
     get_inventarios_frutaSinProcesar_frutaEnInventario: async () => {
         const data = await ProcesoRepository.getInventario();
         return successResponseRoutes(data)
@@ -50,12 +43,6 @@ const apiSocketInventarios = {
         await ModificarRepository.put_inventarioLogistica_frutaSinProcesar_modificar_canastillas(data)
         return successResponseRoutes()
     },
-    post_inventarios_ingreso_lote: async (data) => {
-        await ProcesoRepository.post_inventarios_ingreso_lote(data);
-        return successResponseRoutes()
-    },
-    //#endregion
-    //#region Orden vaceo
     get_inventarios_ordenVaceo_inventario: async () => {
         const resultado = await ProcesoRepository.getInventario_orden_vaceo();
         return successResponseRoutes(resultado)
@@ -72,8 +59,6 @@ const apiSocketInventarios = {
         await ProcesoRepository.vaciarLote(data)
         return successResponseRoutes()
     },
-    //#endregion
-    //#region Fruta desverdizada
     get_inventarios_frutaDesverdizando_lotes: async () => {
         const response = await ProcesoRepository.getInventarioDesverdizado()
         return successResponseRoutes(response)
@@ -86,8 +71,6 @@ const apiSocketInventarios = {
         await InventariosRepository.put_inventarios_frutaDesverdizado_finalizar(data)
         return successResponseRoutes()
     },
-    //#endregion
-    //#region Invetarios descarte
     get_inventarios_frutaDescarte_fruta: async () => {
         const inventario = await InventariosRepository.get_inventarios_frutaDescarte_fruta();
         return successResponseRoutes(inventario)
@@ -109,7 +92,7 @@ const apiSocketInventarios = {
         return successResponseRoutes()
     },
     //#endregion
-    //#region historial fruta procesado
+    //#region historiales
     get_inventarios_historialProcesado_frutaProcesada: async (data) => {
         const response = await InventariosRepository.get_inventarios_historialProcesado_frutaProcesada(data)
         return successResponseRoutes(response)
@@ -118,8 +101,6 @@ const apiSocketInventarios = {
         await InventariosRepository.put_inventarios_historialProcesado_modificarHistorial(data)
         return successResponseRoutes()
     },
-    //#endregion
-    //#region historial directo nacional
     get_inventarios_historialDirectoNacional_registros: async (data) => {
         const response = await InventariosRepository.put_inventarios_historialDirectoNacional_registros(data)
         return successResponseRoutes(response)
@@ -128,17 +109,73 @@ const apiSocketInventarios = {
         await InventariosRepository.put_inventarios_historialDirectoNacional_modificarHistorial(data)
         return successResponseRoutes()
     },
-    //#endregion
-    //#region Info lotes
     get_inventarios_lotes_infoLotes: async (data) => {
         const response = await ViewsRepository.view_lotes(data)
         return successResponseRoutes(response)
     },
-    //#endregion
-    //#region historial ingreso fruta
     get_inventarios_historiales_ingresoFruta_numeroElementos: async () => {
         const response = await InventariosRepository.get_inventarios_historiales_ingresoFruta_numeroElementos()
         return successResponseRoutes(response)
+    },
+    get_inventarios_historiales_ingresoFruta_registros: async (data) => {
+        const response = await InventariosRepository.get_inventarios_historiales_ingresoFruta_registros(data)
+        return successResponseRoutes(response)
+    },
+    put_inventarios_historiales_ingresoFruta_modificar: async (data) => {
+        await InventariosRepository.put_inventarios_historiales_ingresoFruta_modificar(data)
+        return successResponseRoutes()
+    },
+    get_inventarios_historiales_despachoDescarte: async (data) => {
+        const response = await InventariosRepository.get_inventarios_historiales_despachoDescarte(data)
+        return successResponseRoutes(response)
+    },
+    get_inventarios_historiales_listasDeEmpaque: async (data) => {
+        const response = await InventariosRepository.get_inventarios_historiales_listasDeEmpaque(data)
+        return successResponseRoutes(response)
+    },
+    get_inventarios_historiales_listasDeEmpaque_numeroRegistros: async () => {
+        const response = await InventariosRepository.get_inventarios_historiales_listasDeEmpaque_numeroRegistros()
+        return successResponseRoutes(response)
+    },
+    get_inventarios_historiales_contenedores: async (data) => {
+        const response = await InventariosRepository.get_inventarios_historiales_contenedores(data)
+        return successResponseRoutes(response)
+    },
+    get_inventarios_historiales_contenedores_clientes: async () => {
+        const response = await ComercialRepository.obtener_clientes_historial_contenedores();
+        return successResponseRoutes(response)
+    },
+    get_inventarios_registros_fruta_descompuesta: async (data) => {
+        const response = await InventariosRepository.get_inventarios_registros_fruta_descompuesta(data)
+        return successResponseRoutes(response)
+    },
+    get_inventarios_numero_registros_fruta_descompuesta: async () => {
+        const data = await InventariosRepository.get_inventarios_numero_registros_fruta_descompuesta()
+        return { status: 200, message: 'Ok', data: data }
+    },
+    //#endregion
+    //#region ingresoInventario
+    get_inventarios_ingresos_ef1: async () => {
+        const response = await InventariosRepository.get_inventarios_ingresos_ef1()
+        return successResponseRoutes(response)
+    },
+    get_inventarios_ingresos_ef8: async () => {
+        const response = await InventariosRepository.get_inventarios_ingresos_ef8()
+        return successResponseRoutes(response)
+    },
+    post_inventarios_ingreso_lote: async (data) => {
+        await InventariosRepository.post_inventarios_ingreso_lote(data);
+        return successResponseRoutes()
+    },
+    //#endregion
+    //#region programaciones
+    get_inventarios_programaciones_contenedores: async (data) => {
+        const response = await InventariosRepository.get_inventarios_programaciones_contenedores(data)
+        return successResponseRoutes(response)
+    },
+    put_inventarios_programacion_contenedores: async (data) => {
+        await InventariosRepository.put_inventarios_programacion_contenedores(data)
+        return successResponseRoutes()
     },
     //#endregion
 }

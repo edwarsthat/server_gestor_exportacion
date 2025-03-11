@@ -66,7 +66,7 @@ class UsuariosRepository {
 
         } catch (err) {
             console.log(err)
-            throw new ConnectionDBError(408, `Error obteniendo lotes ${err.message}`);
+            throw new ConnectionDBError(522, `Error get user ${err.message}`);
         }
     }
     static async add_cargo(data, user) {

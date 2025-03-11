@@ -42,7 +42,7 @@ class VariablesDelSistema {
       }
       return enf;
     } catch (e) {
-      throw new ProcessError(406, `Error creando la EF1: ${e.message}`)
+      throw new ProcessError(506, `Error creando la EF1: ${e.message}`)
     }
   }
   static async generarEF8(fecha_ingreso = new Date()) {
@@ -62,7 +62,7 @@ class VariablesDelSistema {
       }
       return enf;
     } catch (e) {
-      throw new ProcessError(406, `Error creando la EF1: ${e.message}`)
+      throw new ProcessError(506, `Error creando la EF1: ${e.message}`)
     }
   }
   static async procesarEF1(lote) {

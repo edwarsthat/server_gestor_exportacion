@@ -88,7 +88,7 @@ class ContenedoresRepository {
             return contenedores
 
         } catch (err) {
-            throw new ConnectionDBError(520, `Error obteniendo contenedores ${options} --- ${err.message}`);
+            throw new ConnectionDBError(522, `Error obteniendo contenedores ${options} --- ${err.message}`);
         }
     }
     static async getContenedores(options = {}) {
@@ -137,7 +137,7 @@ class ContenedoresRepository {
             return response
 
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo contenedores ${err.message}`);
+            throw new ConnectionDBError(522, `Error contenedores ${err.message}`);
         }
     }
     static async agregar_settings_pallet(id, pallet, settings, action, user) {
@@ -776,7 +776,7 @@ class ContenedoresRepository {
             return contenedor_obj;
         } catch (err) {
             console.error(err)
-            throw new PutError(524, `Error al modificar el contenedor ${id} -- query ${query} `);
+            throw new PutError(523, `Error contenedores ${id} -- query ${query} `);
         } finally {
             this.unlockItem(id, "Contenedor", "general")
         }

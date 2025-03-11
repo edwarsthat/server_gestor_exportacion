@@ -3,7 +3,6 @@ const { ProcessError } = require("../../Error/ProcessError");
 const { procesoEventEmitter } = require("../../events/eventos");
 const { RecordLotesRepository } = require("../archive/ArchiveLotes");
 const { ContenedoresRepository } = require("../Class/Contenedores");
-const { DespachoDescartesRepository } = require("../Class/DespachoDescarte");
 const { LotesRepository } = require("../Class/Lotes");
 const { ProveedoresRepository } = require("../Class/Proveedores");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
@@ -17,7 +16,6 @@ const fs = require("fs");
 
 const { have_lote_GGN_export, is_finish_lote } = require("../controllers/validations");
 const { FrutaDescompuestaRepository } = require("../Class/FrutaDescompuesta");
-const { PreciosRepository } = require("../Class/Precios");
 const { filtroFechaInicioFin } = require("./utils/filtros");
 const { InventariosLogicError } = require("../../Error/logicLayerError");
 // const { getRustConnectionProceso } = require("../../DB/controllers/proceso");
@@ -26,55 +24,10 @@ const { InventariosLogicError } = require("../../Error/logicLayerError");
 class ProcesoRepository {
 
     // #region GET
-    static async get_inventarios_ingresos_ef1() {
-        //JS
-        const enf = await VariablesDelSistema.generarEF1();
-        return enf
-    }
-    static async get_inventarios_ingresos_ef8() {
-        const enf = await VariablesDelSistema.generarEF8();
-        return enf
-    }
+
     static async get_predio_Proceso_Descarte() {
         const data = await VariablesDelSistema.obtenerEF1Descartes();
         return data
-    }
-    static async get_ingresos_lotes(data) {
-        const { page } = data;
-        const query = {
-            operacionRealizada: "crearLote"
-        }
-        const resultsPerPage = 50;
-        const lotes = await RecordLotesRepository.getRecordLotes({
-            query: query,
-            skip: (page - 1) * resultsPerPage,
-            limit: resultsPerPage,
-
-        });
-        const proveedoresids = lotes.map(lote => lote.documento.predio);
-        const proveedoresSet = new Set(proveedoresids)
-        const proveedoresArr = [...proveedoresSet]
-
-        const proveedores = await ProveedoresRepository.get_proveedores({
-            ids: proveedoresArr
-        })
-
-        const result = lotes.map(lote => {
-            const proveedor = proveedores.find(proveedor =>
-                proveedor._id.toString() === lote.documento.predio.toString()
-            );
-
-            if (proveedor) {
-                delete lote.documento.predio0
-                lote.documento.predio = {}
-                lote.documento.predio.PREDIO = proveedor.PREDIO;
-                lote.documento.predio._id = proveedor._id;
-                return lote
-            } else {
-                return lote
-            }
-        })
-        return result;
     }
     static async getInventario() {
 
@@ -406,43 +359,8 @@ class ProcesoRepository {
             kilosExportacionHoy: kilosExportacionHoy
         }
     }
-    static async get_historial_descarte(data) {
-        const { page } = data;
-        const resultsPerPage = 50;
-
-        const historial = await DespachoDescartesRepository.get_historial_descarte({
-            skip: (page - 1) * resultsPerPage,
-            limit: resultsPerPage,
-        });
-        return historial;
-    }
-    static async obtener_contenedores_programacion(data) {
-        const { fecha } = data;
-        const fechaActual = new Date(fecha);
-        const year = fechaActual.getFullYear();
-        const month = fechaActual.getMonth();
-
-        // Aseguramos UTC desde el primer al último día de noviembre.
-        const startDate = new Date(Date.UTC(year, month, 1)); // 2024-11-01T00:00:00.000Z
-        const endDate = new Date(Date.UTC(year, month + 1, 1)); // 2024-12-01T00:00:00.000Z
-
-        console.log("Start Date (UTC):", startDate.toISOString());
-        console.log("End Date (UTC):", endDate.toISOString());
 
 
-        const query = {
-            "infoContenedor.fechaInicio": {
-                $gte: startDate,
-                $lt: endDate
-            }
-        };
-
-        const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
-            select: { infoContenedor: 1, numeroContenedor: 1, __v: 1 },
-            query: query
-        });
-        return response;
-    }
     static async obtener_contenedores_listaDeEmpaque() {
         const contenedores = await ContenedoresRepository.getContenedores({
             select: { numeroContenedor: 1, infoContenedor: 1, pallets: 1 },
@@ -462,24 +380,6 @@ class ProcesoRepository {
                 ]
             }
         });
-        return contenedores
-    }
-    static async obtener_contenedores_historial_listas_empaque(req) {
-        const { page } = req
-        const resultsPerPage = 25;
-        const contenedores = await ContenedoresRepository.getContenedores({
-            skip: (page - 1) * resultsPerPage,
-            limit: resultsPerPage,
-            select: {
-                infoContenedor: 1,
-                __v: 1,
-                pallets: 1,
-                numeroContenedor: 1
-            },
-            query: {
-                "infoContenedor.fechaFinalizado": { $ne: null }
-            }
-        })
         return contenedores
     }
     static async get_record_lote_recepcion_pendiente(req) {
@@ -559,30 +459,7 @@ class ProcesoRepository {
         })
         return result
     }
-    static async obtener_contenedores_historial_buscar(req) {
-        const { contenedores, fechaInicio, fechaFin, clientes, tipoFruta } = req
-        let query = {}
 
-        //por numero de contenedores
-        if (contenedores.length > 0) {
-            query.numeroContenedor = { $in: contenedores }
-        }
-        //por clientes
-        if (clientes.length > 0) {
-            query["infoContenedor.clienteInfo"] = { $in: clientes }
-        }
-        //por tipo de fruta
-        if (tipoFruta !== '') {
-            query["infoContenedor.tipoFruta"] = tipoFruta
-        }
-
-        query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'infoContenedor.fechaCreacion')
-
-        const cont = await ContenedoresRepository.getContenedores({
-            query: query
-        });
-        return cont
-    }
     static async obtener_fecha_inicio_proceso() {
         const fecha = VariablesDelSistema.obtener_fecha_inicio_proceso()
         return fecha
@@ -598,25 +475,6 @@ class ProcesoRepository {
     static async obtener_predio_procesando() {
         const predio = await VariablesDelSistema.obtener_predio_procesando()
         return predio
-    }
-    static async get_inventarios_registros_fruta_descompuesta(req) {
-        try {
-            const { page } = req
-            const resultsPerPage = 50;
-
-            const registros = await FrutaDescompuestaRepository.get_fruta_descompuesta({
-                skip: (page - 1) * resultsPerPage,
-
-            })
-
-            return registros
-
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
-        }
     }
 
     static async obtenerHistorialLotes(data) {
@@ -661,10 +519,7 @@ class ProcesoRepository {
 
 
     //! obtener el numero de elementos para paginacion
-    static async obtener_cantidad_contenedores() {
-        const cantidad = await ContenedoresRepository.obtener_cantidad_contenedores()
-        return cantidad
-    }
+
     static async obtener_cantidad_historial_espera_descargue() {
         const filtro = {
             operacionRealizada: "lote_recepcion_pendiente"
@@ -679,19 +534,7 @@ class ProcesoRepository {
         const cantidad = await RecordLotesRepository.obtener_cantidad_recordLote(filtro)
         return cantidad
     }
-    static async get_inventarios_numero_registros_fruta_descompuesta() {
-        try {
 
-            const registros = await FrutaDescompuestaRepository.get_numero_fruta_descompuesta()
-            return registros
-
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
 
     //#endregion
 
@@ -1037,10 +880,7 @@ class ProcesoRepository {
         await VariablesDelSistema.reiniciarValores_proceso();
         procesoEventEmitter.emit("proceso_event", {});
     }
-    static async modificar_programacion_contenedor(req, user) {
-        const { _id, __v, infoContenedor, action } = req;
-        await ContenedoresRepository.modificar_contenedor(_id, infoContenedor, user.user, action, __v);
-    }
+
     static async desverdizado(req) {
         const user = req.user.user;
         const data = req.data
@@ -2099,69 +1939,7 @@ class ProcesoRepository {
     //#endregion
 
     // #region POST
-    static async post_inventarios_ingreso_lote(req) {
-        try {
-            const { data, user } = req;
-            const { data: datos } = data
-            let enf
 
-            if (!datos.ef || datos.ef.startsWith('EF1')) {
-                enf = await VariablesDelSistema.generarEF1(datos.fecha_estimada_llegada)
-            } else if (datos.ef.startsWith('EF8')) {
-                enf = await VariablesDelSistema.generarEF8(datos.fecha_estimada_llegada)
-
-            } else {
-                throw new ProcessError(470, `Error codigo no valido de EF`)
-            }
-
-
-            const proveedor = await ProveedoresRepository.get_proveedores({
-                ids: [datos.predio],
-                select: { precio: 1 }
-            })
-
-            const precio = await PreciosRepository.get_precios({
-                ids: [proveedor[0].precio[datos.tipoFruta]]
-            })
-
-            if (!precio) throw Error("El proveedor no tiene un precio establecido")
-
-            const query = {
-                ...datos,
-                precio: precio[0]._id,
-                enf: enf,
-                fecha_salida_patio: new Date(datos.fecha_estimada_llegada),
-                fecha_ingreso_patio: new Date(datos.fecha_estimada_llegada),
-                fecha_ingreso_inventario: new Date(datos.fecha_estimada_llegada),
-            }
-
-            const lote = await LotesRepository.addLote(query, user);
-
-            await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
-
-            if (datos.ef.startsWith('EF1')) {
-                await VariablesDelSistema.incrementarEF1();
-            } else if (datos.ef.startsWith('EF8')) {
-                await VariablesDelSistema.incrementarEF8();
-            }
-
-            procesoEventEmitter.emit("server_event", {
-                action: "add_lote",
-                data: {
-                    ...lote._doc,
-                    predio: proveedor[0].PREDIO
-                }
-            });
-
-        } catch (err) {
-            if (err.status === 521) {
-                throw err
-            }
-            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
-
-        }
-
-    }
 
     static async set_hora_inicio_proceso() {
         const date = await VariablesDelSistema.set_hora_inicio_proceso();

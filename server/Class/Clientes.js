@@ -24,7 +24,7 @@ class ClientesRepository {
 
             return clientes
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo el cliente ${err.message}`);
+            throw new ConnectionDBError(522, `Error obteniendo el cliente ${err.message}`);
 
         }
     }

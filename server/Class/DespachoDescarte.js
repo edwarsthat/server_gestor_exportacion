@@ -55,7 +55,7 @@ class DespachoDescartesRepository {
             return historial;
 
         } catch (err) {
-            throw new ConnectionDBError(409, `Error obteniendo el registro del despacho ${err.message}`);
+            throw new ConnectionDBError(522, `Error despacho descarte ${err.message}`);
         }
     }
 }

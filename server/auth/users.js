@@ -9,7 +9,7 @@ const permisos_generales = [
     "get_calidad_formularios_limpiezaMensual_numeroElementos",
     "get_calidad_formularios_controlPlagas_numeroElementos",
     "obtener_cantidad_usuarios",
-    "obtener_cantidad_contenedores",
+    "get_inventarios_historiales_listasDeEmpaque_numeroRegistros",
     "obtener_cantidad_historial_espera_descargue",
     "obtener_cantidad_historial_ingreso_inventario",
     "get_comercial_precios_cantidad_registros",

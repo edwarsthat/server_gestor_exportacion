@@ -266,9 +266,10 @@ class ComercialRepository {
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async put_comercial_precios_precioLotes(req, user) {
+    static async put_comercial_precios_precioLotes(req) {
         try {
-            const { data } = req
+            const { data: datos, user } = req
+            const { data } = datos
 
             let lotesQuery = {}
 
@@ -276,10 +277,11 @@ class ComercialRepository {
 
             const lotes = await LotesRepository.getLotes({
                 query: lotesQuery,
-                select: { predio: 1, precio: 1, tipoFruta: 1 }
+                select: { predio: 1, precio: 1, tipoFruta: 1, fecha_ingreso_patio: 1 }
             })
 
-            const fecha = new Date(lotes[0].fecha_creacion);
+            console.log(lotes)
+            const fecha = new Date(lotes[0].fecha_ingreso_patio);
             const year = fecha.getFullYear();
             const week = getISOWeek(fecha);
 
@@ -298,7 +300,7 @@ class ComercialRepository {
                     lote._id,
                     lote,
                     "Cambiar precio lote",
-                    user
+                    user.user
                 )
             }
 
@@ -429,10 +431,17 @@ class ComercialRepository {
         return await ClientesRepository.get_clientes();
     }
     static async obtener_clientes_historial_contenedores() {
-        return await ClientesRepository.get_clientes({
-            query: { activo: true },
-            select: { CLIENTE: 1 }
-        });
+        try {
+            return await ClientesRepository.get_clientes({
+                query: { activo: true },
+                select: { CLIENTE: 1 }
+            });
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
     }
     static async obtener_precio_proveedores(req) {
         const { data } = req

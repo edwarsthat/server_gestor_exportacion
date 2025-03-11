@@ -107,7 +107,7 @@ class RecordLotesRepository {
             const count = await db.recordLotes.countDocuments(filtro);
             return count;
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo cantidad contenedores ${err.message}`);
+            throw new ConnectionDBError(522, `Error ${err.message}`);
         }
     }
     static validateBussyIds(id) {

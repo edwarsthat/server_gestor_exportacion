@@ -68,10 +68,10 @@ const apiSocket = {
         const clientes = await ComercialRepository.get_clientes();
         return { status: 200, message: 'Ok', data: clientes }
     },
-    obtener_clientes_historial_contenedores: async () => {
-        const clientes = await ComercialRepository.obtener_clientes_historial_contenedores();
-        return { status: 200, message: 'Ok', data: clientes }
-    },
+    // obtener_clientes_historial_contenedores: async () => {
+    //     const clientes = await ComercialRepository.obtener_clientes_historial_contenedores();
+    //     return { status: 200, message: 'Ok', data: clientes }
+    // },
     get_calidad_ingresos_inspeccionFruta_lotes: async () => {
         const lotes = await CalidadRepository.get_calidad_ingresos_inspeccionFruta_lotes();
         return { status: 200, message: 'Ok', data: lotes }
@@ -103,11 +103,6 @@ const apiSocket = {
     get_lotes_informe_calidad: async (req) => {
         const { data } = req
         const response = await ProcesoRepository.get_lotes_informe_calidad(data);
-        return { status: 200, message: 'Ok', data: response }
-    },
-    get_ingresos_lotes: async (req) => {
-        const { data } = req
-        const response = await ProcesoRepository.get_ingresos_lotes(data)
         return { status: 200, message: 'Ok', data: response }
     },
     get_historial_calidad_interna: async (req) => {
@@ -145,11 +140,6 @@ const apiSocket = {
         const response = await SistemaRepository.get_users(data, user)
         return { status: 200, message: 'Ok', data: response }
     },
-    get_historial_descarte: async (req) => {
-        const { data } = req
-        const response = await ProcesoRepository.get_historial_descarte(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
     obtener_operarios_seleccionadoras: async () => {
         const response = await SistemaRepository.obtener_operarios_seleccionadoras()
         return { status: 200, message: 'Ok', data: response }
@@ -169,11 +159,7 @@ const apiSocket = {
         const response = await SistemaRepository.obtener_formularios_higiene_personal(data)
         return { status: 200, message: 'Ok', data: response }
     },
-    obtener_contenedores_programacion: async (req) => {
-        const { data } = req
-        const response = await ProcesoRepository.obtener_contenedores_programacion(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
+
     obtener_contenedores_listaDeEmpaque: async () => {
         const contenedores = await ProcesoRepository.obtener_contenedores_listaDeEmpaque()
         return { status: 200, message: 'Ok', data: contenedores }
@@ -204,17 +190,8 @@ const apiSocket = {
         const lotes = await CalidadRepository.obtener_lotes_fotos_calidad();
         return { status: 200, message: 'Ok', data: lotes }
     },
-    obtener_contenedores_historial_listas_empaque: async (req) => {
-        const { data } = req;
-        const contenedores = await ProcesoRepository.obtener_contenedores_historial_listas_empaque(data)
-        return { status: 200, message: 'Ok', data: contenedores }
 
-    },
-    obtener_contenedores_historial_buscar: async (req) => {
-        const { data } = req;
-        const contenedores = await ProcesoRepository.obtener_contenedores_historial_buscar(data)
-        return { status: 200, message: 'Ok', data: contenedores }
-    },
+
     obtener_fecha_inicio_proceso: async () => {
         const fecha = await ProcesoRepository.obtener_fecha_inicio_proceso();
         return { status: 200, message: 'Ok', data: fecha }
@@ -288,11 +265,7 @@ const apiSocket = {
         const response = await ConstantesDelSistema.get_constantes_sistema_clasificacion_descarte(data)
         return { status: 200, message: 'Ok', data: response }
     },
-    get_inventarios_registros_fruta_descompuesta: async (req) => {
-        const { data } = req;
-        const response = await ProcesoRepository.get_inventarios_registros_fruta_descompuesta(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
+
     get_indicadores_eficiencia_operativa_elementos: async (req) => {
         const { data } = req;
         const response = await IndicadoresAPIRepository.get_indicadores_eficiencia_operativa_elementos(data)
@@ -339,10 +312,7 @@ const apiSocket = {
         const response = await SistemaRepository.obtener_cantidad_usuarios()
         return { status: 200, message: 'Ok', data: response }
     },
-    obtener_cantidad_contenedores: async () => {
-        const response = await ProcesoRepository.obtener_cantidad_contenedores()
-        return { status: 200, message: 'Ok', data: response }
-    },
+
     obtener_cantidad_historial_espera_descargue: async () => {
         const response = await ProcesoRepository.obtener_cantidad_historial_espera_descargue()
         return { status: 200, message: 'Ok', data: response }
@@ -367,10 +337,7 @@ const apiSocket = {
         const data = await TransporteRepository.get_transporte_documentos_programacionMulas_numeroElementos()
         return { status: 200, message: 'Ok', data: data }
     },
-    get_inventarios_numero_registros_fruta_descompuesta: async () => {
-        const data = await ProcesoRepository.get_inventarios_numero_registros_fruta_descompuesta()
-        return { status: 200, message: 'Ok', data: data }
-    },
+
     get_calidad_historial_calidadInterna_numeroElementos: async () => {
         const data = await CalidadRepository.get_calidad_historial_calidadInterna_numeroElementos()
         return { status: 200, message: 'Ok', data: data }
@@ -568,12 +535,6 @@ const apiSocket = {
         await ProcesoRepository.ingresar_descarte_encerado(data, user)
         return { status: 200, message: 'Ok' }
     },
-    modificar_ingreso_lote: async (req) => {
-        const { data, user } = req
-        await ModificarRepository.modificar_ingreso_lote(data, user.user)
-        return { status: 200, message: 'Ok' }
-
-    },
     modificar_calidad_interna_lote: async (req) => {
         const { data, user } = req
         await ModificarRepository.modificar_calidad_interna_lote(data, user.user)
@@ -617,11 +578,6 @@ const apiSocket = {
     modificar_cargo: async (req) => {
         const { data, user } = req;
         await SistemaRepository.modificar_cargo(data, user);
-        return { status: 200, message: 'Ok' }
-    },
-    modificar_programacion_contenedor: async (req) => {
-        const { data, user } = req;
-        await ProcesoRepository.modificar_programacion_contenedor(data, user)
         return { status: 200, message: 'Ok' }
     },
     put_lotes_inspeccion_ingreso: async (req) => {
@@ -753,11 +709,7 @@ const apiSocket = {
         return { status: 200, message: 'Ok' }
     },
 
-    put_comercial_precios_precioLotes: async (req) => {
-        const { data, user } = req
-        await ComercialRepository.put_comercial_precios_precioLotes(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
+
     //#endregion
 }
 
