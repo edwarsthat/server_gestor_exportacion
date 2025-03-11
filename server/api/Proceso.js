@@ -19,6 +19,7 @@ const { have_lote_GGN_export, is_finish_lote } = require("../controllers/validat
 const { FrutaDescompuestaRepository } = require("../Class/FrutaDescompuesta");
 const { PreciosRepository } = require("../Class/Precios");
 const { filtroFechaInicioFin } = require("./utils/filtros");
+const { InventariosLogicError } = require("../../Error/logicLayerError");
 // const { getRustConnectionProceso } = require("../../DB/controllers/proceso");
 
 
@@ -617,6 +618,48 @@ class ProcesoRepository {
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
         }
     }
+
+    static async obtenerHistorialLotes(data) {
+        try {
+
+            const { fechaInicio, fechaFin } = data
+            let query = {
+                operacionRealizada: 'vaciarLote'
+            }
+
+            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha')
+
+            const recordLotes = await RecordLotesRepository.getVaciadoRecord({ query: query })
+            const lotesIds = recordLotes.map(lote => lote.documento._id);
+
+            const lotes = await LotesRepository.getLotes({
+                ids: lotesIds,
+                limit: recordLotes.length,
+                select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1 }
+            });
+            const resultado = recordLotes.map(item => {
+                const lote = lotes.find(lote => lote._id.toString() === item.documento._id);
+                if (lote) {
+                    if (Object.prototype.hasOwnProperty.call(item.documento, "$inc")) {
+                        item.documento = { ...lote, kilosVaciados: item.documento.$inc.kilosVaciados }
+                        return (item)
+                    }
+                    else {
+                        return item
+                    }
+                }
+                return null
+            }).filter(item => item !== null);
+            return resultado
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+
+
     //! obtener el numero de elementos para paginacion
     static async obtener_cantidad_contenedores() {
         const cantidad = await ContenedoresRepository.obtener_cantidad_contenedores()
