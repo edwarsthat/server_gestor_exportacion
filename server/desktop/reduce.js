@@ -383,11 +383,7 @@ const apiSocket = {
         const data = await IndicadoresAPIRepository.get_indicadores_proceso_numero_items()
         return { status: 200, message: 'Ok', data: data }
     },
-    get_comercial_proveedores_numero_elementos: async (req) => {
-        const { data, user } = req;
-        const response = await ComercialRepository.get_comercial_proveedores_numero_elementos(data, user)
-        return { status: 200, message: 'Ok', data: response }
-    },
+
     //!constantes del sistema, formularios y otras cosas
     get_info_formulario_inspeccion_fruta: async () => {
         const formulario = await CalidadRepository.get_info_formulario_inspeccion_fruta()
@@ -435,6 +431,32 @@ const apiSocket = {
         const response = await TransporteRepository.get_transporte_documentos_programacionMula_contenedores(data)
         return { status: 200, message: 'Ok', data: response }
     },
+
+    obtenerHistorialLotes: async () => {
+        // Obtener la fecha actual en Colombia
+        const ahora = new Date();
+
+        // Crear fechaInicio (comienzo del día en Colombia, pero en UTC)
+        const fechaInicio = new Date(Date.UTC(
+            ahora.getFullYear(),
+            ahora.getMonth(),
+            ahora.getDate() - 1, // Restar dos días
+            0, 0, 0, 0 // 00:00 en Colombia es 05:00 en UTC
+        ));
+
+        // Crear fechaFin (final del día en Colombia, pero en UTC)
+        const fechaFin = new Date();
+
+        const data = {
+            fechaInicio,
+            fechaFin
+        }
+        const response = await ProcesoRepository.obtenerHistorialLotes(data)
+        return { status: 200, message: 'Ok', data: response }
+    },
+
+
+
     //#endregion
     //#region POST
 
@@ -493,11 +515,7 @@ const apiSocket = {
         await CalidadRepository.crear_formulario_calidad(data, user._id)
         return { status: 200, message: 'Ok' }
     },
-    post_comercial_proveedores_add_proveedor: async (req) => {
-        const { data, user } = req
-        await ComercialRepository.post_comercial_proveedores_add_proveedor(data, user._id)
-        return { status: 200, message: 'Ok' }
-    },
+
     //! transporte
     post_transporte_programacion_exportacion: async (req) => {
         const { data, user } = req
@@ -734,11 +752,7 @@ const apiSocket = {
         await IndicadoresAPIRepository.put_indicadores_eficiencia_operativa_modificar(data, user)
         return { status: 200, message: 'Ok' }
     },
-    put_comercial_proveedores_modify_proveedor: async (req) => {
-        const { data, user } = req
-        await ComercialRepository.put_comercial_proveedores_modify_proveedor(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
+
     put_comercial_precios_precioLotes: async (req) => {
         const { data, user } = req
         await ComercialRepository.put_comercial_precios_precioLotes(data, user.user)

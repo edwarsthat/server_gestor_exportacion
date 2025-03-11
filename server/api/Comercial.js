@@ -39,9 +39,10 @@ class ComercialRepository {
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_comercial_proveedores_elementos(req, user) {
+    static async get_comercial_proveedores_elementos(req) {
         try {
-            const { page, filtro } = req || {}
+            const { data, user } = req;
+            const { page, filtro } = data || {}
             const resultsPerPage = 25;
             let filter
             let query
@@ -97,9 +98,10 @@ class ComercialRepository {
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_comercial_proveedores_numero_elementos(req, user) {
+    static async get_comercial_proveedores_numero_elementos(req) {
         try {
-            const { filtro } = req
+            const { data, user } = req;
+            const { filtro } = data
 
             ComercialValidationsRepository
                 .val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
@@ -123,10 +125,10 @@ class ComercialRepository {
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async put_comercial_proveedores_modify_proveedor(req, user) {
+    static async put_comercial_proveedores_modify_proveedor(req) {
         try {
-
-            const { _id, data, action } = req
+            const { data: datos, user } = req
+            const { _id, data, action } = datos
 
             ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data)
 
@@ -134,7 +136,7 @@ class ComercialRepository {
                 _id,
                 data,
                 action,
-                user
+                user.user
             )
         } catch (err) {
 
@@ -158,9 +160,10 @@ class ComercialRepository {
             user
         )
     }
-    static async post_comercial_proveedores_add_proveedor(req, user) {
+    static async post_comercial_proveedores_add_proveedor(req) {
         try {
-            const { data } = req
+            const { data: datos, user } = req
+            const { data } = datos
 
             const predio = await ProveedoresRepository.get_proveedores({
                 query: { "CODIGO INTERNO": 0 }
@@ -310,8 +313,8 @@ class ComercialRepository {
     }
     static async put_comercial_precios_proveedores_precioFijo(req) {
         try {
-            const { data: datos } = req
-            const { data } = datos
+
+            const { data } = req
 
 
             const query = { _id: { $in: data } }; // Busca documentos cuyo _id esté en la lista
@@ -376,7 +379,9 @@ class ComercialRepository {
     }
     static async get_comercial_precios_registros_precios_proveedores(req) {
         try {
-            const { data } = req;
+            const { data: datos } = req;
+
+            const { data } = datos;
             const { page = 1, filtro } = data || {}
             const resultsPerPage = 50;
             const skip = (page - 1) * resultsPerPage;
