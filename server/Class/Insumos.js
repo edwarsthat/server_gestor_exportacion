@@ -25,7 +25,7 @@ class InsumosRepository {
             return lotes
 
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo lotes ${err.message}`);
+            throw new ConnectionDBError(522, `Error Insumos ${err.message}`);
         }
     }
     static async modificar_insumo(id, query, action, user) {
@@ -57,7 +57,7 @@ class InsumosRepository {
             await record.save()
             return insumo_obj;
         } catch (err) {
-            throw new PutError(414, `Error al modificar el tipo de insumo ${id} => ${err.name} `);
+            throw new PutError(523, `Error al modificar el tipo de insumo ${id} => ${err.name} `);
         } finally {
             bussyIds.delete(id);
         }
@@ -66,15 +66,18 @@ class InsumosRepository {
         try {
             const insumo = new db.Insumos(data);
             const saveInsumo = await insumo.save();
-            let record = new db.recordTipoInsumos({
+
+            let record = new db.RecordTipoInsumos({
                 operacionRealizada: 'crearTipoInsumo',
-                user: user.user,
-                documento: saveInsumo
+                user: user,
+                documento: saveInsumo.toObject()
             })
+
             await record.save();
             return saveInsumo
         } catch (err) {
-            throw new PostError(409, `Error agregando insumo ${err.message}`);
+            console.log(err)
+            throw new PostError(521, `Error agregando insumo ${err.message}`);
         }
     }
     static validateBussyIds(id) {

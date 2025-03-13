@@ -71,7 +71,7 @@ class VariablesDelSistema {
 
       await this.modificar_predio_proceso(lote, cliente);
       await this.modificar_predio_proceso_descartes(lote, cliente);
-      await this.modificar_predio_proceso_listaEmpaque(lote, cliente);
+      // await this.modificar_predio_proceso_listaEmpaque(lote, cliente);
 
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis ${err.name}`)
@@ -89,7 +89,7 @@ class VariablesDelSistema {
       const predioData = await cliente.hGetAll("predioProcesando");
       return predioData
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis ${err.name}`)
+      throw new ConnectRedisError(531, `Error con la conexion con redis ${err.name}`)
     }
   }
   static async obtenerEF1Descartes() {
@@ -196,6 +196,8 @@ class VariablesDelSistema {
    * @throws {ConnectRedisError} - Lanza un error si ocurre un problema con la conexión a Redis.
    */
     try {
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
       await cliente.hSet("predioProcesandoDescartes", {
         _id: lote._id.toString(),
         enf: lote.enf,
@@ -205,31 +207,7 @@ class VariablesDelSistema {
       });
 
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis predio descarte: ${err.name}`)
-    }
-  }
-  static modificar_predio_proceso_listaEmpaque = async (lote) => {
-    /**
-   * Función que modifica la información del predio en proceso lista de empaque en Redis.
-   *
-   * @param {Object} lote - El lote con la información a actualizar.
-   * @returns {Promise<void>} - Promesa que se resuelve cuando la modificación ha terminado.
-   * @throws {ConnectRedisError} - Lanza un error si ocurre un problema con la conexión a Redis.
-   */
-    let cliente
-    try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
-      await cliente.hSet("predioProcesandoListaEmpaque", {
-        _id: lote._id.toString(),
-        enf: lote.enf,
-        predio: lote.predio._id.toString(),
-        nombrePredio: lote.predio.PREDIO,
-        tipoFruta: lote.tipoFruta,
-      });
-
-    } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis predio lista de empaque: ${err.name}`)
+      throw new ConnectRedisError(532, `Error con la conexion con redis predio descarte: ${err.name}`)
     } finally {
       if (cliente) {
         cliente.quit();
@@ -237,6 +215,7 @@ class VariablesDelSistema {
       }
     }
   }
+
   static async generar_codigo_celifrut() {
     /**
      * Se genera el codigo celifrut , es un codigo que se asigna a un lote que se crea 
@@ -280,7 +259,7 @@ class VariablesDelSistema {
       }
       return calidad;
     } catch (e) {
-      throw new ProcessError(406, `Error creando el codigo calidad: ${e.message}`)
+      throw new ProcessError(506, `Error creando el codigo calidad: ${e.message}`)
     }
   }
   static async incrementar_codigo_informes_calidad() {
@@ -796,7 +775,7 @@ class VariablesDelSistema {
       await cliente.set("descarteEncerado", 0);
       await this.modificar_predio_proceso(lote, cliente)
       await this.modificar_predio_proceso_descartes(lote, cliente)
-      await this.modificar_predio_proceso_listaEmpaque(lote, cliente)
+      // await this.modificar_predio_proceso_listaEmpaque(lote, cliente)
 
     } catch (err) {
       throw new ProcessError(418, `Error modificando las variables del sistema: ${err.name}`)
@@ -870,7 +849,7 @@ class VariablesDelSistema {
 
       return { kilosProcesadosNaranja, kilosProcesadosLimon };
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis obteniendo kilosProcesados: ${err.name}`)
+      throw new ConnectRedisError(531, `Error con la conexion con redis obteniendo kilosProcesados: ${err.name}`)
 
     } finally {
       if (cliente) {
@@ -892,7 +871,7 @@ class VariablesDelSistema {
 
       return { kilosExportacionNaranja, kilosExportacionLimon };
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis obteniendo kilosProcesados: ${err.name}`)
+      throw new ConnectRedisError(531, `Error con la conexion con redis obteniendo kilosProcesados: ${err.name}`)
 
     } finally {
       if (cliente) {
@@ -1159,7 +1138,7 @@ class VariablesDelSistema {
       const tiempoPausaHoy = await cliente.get("tiempoPausaHoy");
       return { fechaInicio: fecha, tiempoTrabajado: tiempotrabajado, tiempoPausaHoy: tiempoPausaHoy }
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis sumar exportacion: ${err.name}`)
+      throw new ConnectRedisError(531, `Error redis: ${err.name}`)
 
     } finally {
       if (cliente) {
@@ -1185,7 +1164,7 @@ class VariablesDelSistema {
       // Redis almacena los valores como strings, por lo que puede ser necesario hacer una conversión
       return status;
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
+      throw new ConnectRedisError(531, `Error redis status proceso: ${err.name}`);
     } finally {
       if (cliente) {
         await cliente.quit();
@@ -1233,7 +1212,7 @@ class VariablesDelSistema {
       return hoy;
 
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis obteniendo kilosProcesados: ${err.name}`)
+      throw new ConnectRedisError(532, `Error redis: ${err.name}`)
 
     } finally {
       if (cliente) {
@@ -1291,7 +1270,7 @@ class VariablesDelSistema {
       await cliente.set("tiempoTrabajadoHoy", String(totalsegundos))
 
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexión con status proceso: ${err.name}`);
+      throw new ConnectRedisError(532, `Error set hora pausa proceso: ${err.name}`);
     } finally {
       if (cliente) {
         await cliente.quit();
@@ -1336,13 +1315,12 @@ class VariablesDelSistema {
 
       await TurnoDatarepository.modificar_turno(turno[0]._id.toString(), change);
 
-      console.log(totalsegundos)
       await cliente.set("tiempoPausaHoy", String(totalsegundos))
       await cliente.set("statusProceso", 'on');
 
       return;
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexión con status proceso: ${err.name}`);
+      throw new ConnectRedisError(532, `Error redis hora reanudar: ${err.name}`);
     } finally {
       if (cliente) {
         await cliente.quit();
@@ -1401,7 +1379,7 @@ class VariablesDelSistema {
 
       return
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.message}`);
+      throw new ConnectRedisError(532, `Error redis set hora inicio : ${err.message}`);
     } finally {
       if (cliente) {
         await cliente.quit();
@@ -1513,7 +1491,7 @@ class VariablesDelSistema {
 
       return observaciones;
     } catch (err) {
-      throw new ProcessError(410, `Error Obteniendo observaciones calidad ${err.name}`)
+      throw new ProcessError(522, `Error Obteniendo observaciones calidad ${err.name}`)
     }
   }
 }

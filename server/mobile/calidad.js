@@ -15,7 +15,7 @@ routerCalidad.get("/get_lotes_clasificacion_descarte", async (req, res) => {
         const { cargo, user } = await UserRepository.authenticateToken(token);
         await UserRepository.autentificacionPermisosHttps(cargo, 'get_lotes_clasificacion_descarte', user)
 
-        const data = await CalidadRepository.get_lotes_clasificacion_descarte();
+        const data = await CalidadRepository.get_calidad_ingresos_clasificacionDescarte();
         res.json({ status: 200, message: 'Ok', data: data });
     } catch (err) {
         await HandleErrors.addError(err)
@@ -48,7 +48,17 @@ routerCalidad.put("/put_lotes_clasificacion_descarte", async (req, res) => {
 
         await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action, user.user)
 
-        await CalidadRepository.put_lotes_clasificacion_descarte(req.body, user.user)
+        const data = {
+            data: {
+                ...req.body
+            },
+            user: user
+        }
+
+        await CalidadRepository.put_calidad_ingresos_clasificacionDescarte(data)
+
+
+
 
         res.send({ status: 200, message: 'Ok' })
     } catch (err) {

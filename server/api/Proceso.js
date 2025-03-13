@@ -1,4 +1,3 @@
-const { iniciarRedisDB } = require("../../DB/redis/init");
 const { ProcessError } = require("../../Error/ProcessError");
 const { procesoEventEmitter } = require("../../events/eventos");
 const { RecordLotesRepository } = require("../archive/ArchiveLotes");
@@ -178,93 +177,10 @@ class ProcesoRepository {
     }
 
 
-    static async get_calidad_interna_lote(data) {
-        const { page } = data;
-        const resultsPerPage = 50;
-        const query = {
-            enf: { $regex: '^E', $options: 'i' },
-            "calidad.calidadInterna": { $exists: true },
-        }
-        const lotes = await LotesRepository.getLotes({
-            query: query,
-            skip: (page - 1) * resultsPerPage,
-            sort: { "calidad.calidadInterna.fecha": -1 },
-            select: { enf: 1, tipoFruta: 1, calidad: 1, __v: 1 },
-            limit: resultsPerPage
-        })
-        return lotes
-    }
-    static async get_historial_clasificacion_descarte(data) {
-        const { page } = data;
-        const resultsPerPage = 50;
-        const query = {
-            enf: { $regex: '^E', $options: 'i' },
-            "calidad.clasificacionCalidad": { $exists: true },
-        }
-        const lotes = await LotesRepository.getLotes({
-            query: query,
-            skip: (page - 1) * resultsPerPage,
-            sort: { "calidad.clasificacionCalidad.fecha": -1 },
-            select: { enf: 1, tipoFruta: 1, calidad: 1, __v: 1 },
-            limit: resultsPerPage
-        })
-        return lotes
-    }
-    static async get_lotes_informe_calidad(data) {
-        const { page } = data;
-        const resultsPerPage = 50;
-        const query = {
-            enf: { $regex: '^E', $options: 'i' }
-        }
-        const lotes = await LotesRepository.getLotes({
-            query: query,
-            skip: (page - 1) * resultsPerPage,
-            select: {
-                enf: 1,
-                tipoFruta: 1,
-                calidad: 1,
-                __v: 1,
-                deshidratacion: 1,
-                kilos: 1,
-                contenedores: 1,
-                calidad1: 1,
-                calidad15: 1,
-                calidad2: 1,
-                descarteEncerado: 1,
-                descarteLavado: 1,
-                directoNacional: 1,
-                frutaNacional: 1,
-                fechaIngreso: 1,
-                fecha_ingreso_patio: 1,
-                fecha_salida_patio: 1,
-                fecha_ingreso_inventario: 1,
-                fecha_creacion: 1,
-                fecha_estimada_llegada: 1,
-                precio: 1,
-                aprobacionComercial: 1,
-                exportacionDetallada: 1,
-                observaciones: 1,
-                flag_is_favorita: 1,
-                flag_balin_free: 1,
 
-            },
-            limit: resultsPerPage,
-            populate: [
-                { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' },
-                { path: 'precio', select: '1 2 15 frutaNacional descarte' }
-            ]
 
-        })
-        return lotes
-    }
-    static async obtener_contenedores_lotes(req) {
-        const { data } = req
-        const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
-            ids: data,
-            select: { infoContenedor: 1, numeroContenedor: 1 }
-        });
-        return response
-    }
+
+
     static async obtener_historial_decarte_lavado_proceso(user) {
         const recordLotes = await RecordLotesRepository.getRecordLotes({
             query: {
@@ -349,16 +265,7 @@ class ProcesoRepository {
         const base64Image = data.toString('base64');
         return base64Image
     }
-    static async get_data_proceso() {
-        const predio = await VariablesDelSistema.obtenerEF1proceso();
-        const kilosProcesadosHoy = await VariablesDelSistema.get_kilos_procesados_hoy();
-        const kilosExportacionHoy = await VariablesDelSistema.get_kilos_exportacion_hoy();
-        return {
-            predio: predio,
-            kilosProcesadosHoy: kilosProcesadosHoy,
-            kilosExportacionHoy: kilosExportacionHoy
-        }
-    }
+
 
 
     static async obtener_contenedores_listaDeEmpaque() {
@@ -368,20 +275,7 @@ class ProcesoRepository {
         });
         return contenedores
     }
-    static async obtener_contenedores_to_add_insumos() {
-        const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
-            select: { numeroContenedor: 1, infoContenedor: 1, insumosData: 1, __v: 1 },
-            query: {
-                'infoContenedor.cerrado': true,
-                insumosData: { $exists: true },
-                $or: [
-                    { 'insumosData.flagInsumos': false }, // Contenedores con flagInsumos en false
-                    { 'insumosData.flagInsumos': { $exists: false } } // O contenedores donde no exista flagInsumos
-                ]
-            }
-        });
-        return contenedores
-    }
+
     static async get_record_lote_recepcion_pendiente(req) {
         const { page } = req
         const resultsPerPage = 50;
@@ -460,10 +354,7 @@ class ProcesoRepository {
         return result
     }
 
-    static async obtener_fecha_inicio_proceso() {
-        const fecha = VariablesDelSistema.obtener_fecha_inicio_proceso()
-        return fecha
-    }
+
     static async obtener_status_proceso() {
         const status = await VariablesDelSistema.obtener_status_proceso()
         return status
@@ -864,18 +755,12 @@ class ProcesoRepository {
 
 
 
-    static async modificar_predio_proceso_descarte(req,) {
-        const { data } = req
-        const clientePromise = iniciarRedisDB();
-        const cliente = await clientePromise
-        VariablesDelSistema.modificar_predio_proceso_descartes(data, cliente)
 
-    }
-    static async modificar_predio_proceso_listaEmpaque(req,) {
-        const { data } = req
-        VariablesDelSistema.modificar_predio_proceso_listaEmpaque(data)
-        procesoEventEmitter.emit("predio_vaciado");
-    }
+    // static async modificar_predio_proceso_listaEmpaque(req,) {
+    //     const { data } = req
+    //     VariablesDelSistema.modificar_predio_proceso_listaEmpaque(data)
+    //     procesoEventEmitter.emit("predio_vaciado");
+    // }
     static async reiniciarValores_proceso() {
         await VariablesDelSistema.reiniciarValores_proceso();
         procesoEventEmitter.emit("proceso_event", {});
@@ -903,29 +788,14 @@ class ProcesoRepository {
         });
     }
 
-    static async set_hora_fin_proceso() {
-        const status_proceso = await VariablesDelSistema.obtener_status_proceso()
 
-        if (status_proceso === 'pause') {
-            await VariablesDelSistema.set_hora_reanudar_proceso();
-        }
-        await VariablesDelSistema.set_hora_fin_proceso();
-        procesoEventEmitter.emit("status_proceso", {
-            status: "off"
-        });
-    }
     static async set_hora_pausa_proceso() {
         await VariablesDelSistema.set_hora_pausa_proceso();
         procesoEventEmitter.emit("status_proceso", {
             status: "pause"
         });
     }
-    static async set_hora_reanudar_proceso() {
-        await VariablesDelSistema.set_hora_reanudar_proceso();
-        procesoEventEmitter.emit("status_proceso", {
-            status: "on"
-        });
-    }
+
     static async sp32_funcionamiento_maquina(data) {
         let estado_maquina = false
         const status_proceso = await VariablesDelSistema.obtener_status_proceso()
@@ -951,75 +821,7 @@ class ProcesoRepository {
             status: new_status_proceso
         });
     }
-    static async finalizar_informe_proveedor(req, userInfo) {
-        const { _id, action, precio, contenedores } = req
-        const { user } = userInfo
 
-
-        const exportacion = {}
-        const contenedoresData = await ContenedoresRepository.get_Contenedores_sin_lotes({
-            ids: contenedores,
-        })
-        const numeroCont = contenedoresData.length;
-        for (let nCont = 0; nCont < numeroCont; nCont++) {
-            const contActual = contenedoresData[nCont].toObject();
-            const numeroPallets = contActual.pallets.length;
-
-            // return
-            for (let nPallets = 0; nPallets < numeroPallets; nPallets++) {
-                const palletActual = contActual.pallets[nPallets].get('EF1')
-                const numeroItems = palletActual.length
-                if (numeroItems <= 0) continue
-
-                for (let nItems = 0; nItems < numeroItems; nItems++) {
-                    const itemActual = palletActual[nItems]
-                    if (itemActual.lote === _id) {
-                        if (!Object.prototype.hasOwnProperty.call(exportacion, contActual._id)) {
-                            exportacion[contActual._id] = {}
-                        }
-                        if (!Object.prototype.hasOwnProperty.call(exportacion[contActual._id], itemActual.calidad)) {
-                            exportacion[contActual._id][itemActual.calidad] = 0
-                        }
-                        const mult = Number(itemActual.tipoCaja.split('-')[1].replace(",", "."))
-                        const kilos = mult * itemActual.cajas
-
-                        exportacion[contActual._id][itemActual.calidad] += kilos
-
-                    }
-                }
-            }
-        }
-        let query
-        if (typeof precio === 'object') {
-            query = {
-                precio: precio,
-                aprobacionComercial: true,
-                fecha_finalizado_proceso: new Date()
-            }
-        } else {
-            query = {
-                aprobacionComercial: true,
-                fecha_finalizado_proceso: new Date()
-            }
-        }
-
-
-        Object.keys(exportacion).forEach(cont => {
-
-            Object.keys(exportacion[cont]).forEach(calidad => {
-                let llave = calidad
-                if (calidad === "1.5") {
-                    llave = "15"
-                }
-                query[`exportacionDetallada.any.${cont}.${llave}`] = exportacion[cont][calidad]
-
-            })
-        })
-
-        await LotesRepository.modificar_lote_proceso(_id, query, action, user)
-
-
-    }
     static async put_inventarios_registros_fruta_descompuesta(req) {
         try {
             const { _id, data } = req;
@@ -1927,28 +1729,6 @@ class ProcesoRepository {
         procesoEventEmitter.emit("listaempaque_update");
         return { status: 200, message: 'Ok' }
     }
-    static async add_contenedor_insumos_items(req, user) {
-        const { action, data, _id, __v } = req
-        const query = {
-            insumosData: data
-        }
-        await ContenedoresRepository.modificar_contenedor(
-            _id, query, user, action, __v
-        );
-    }
-    //#endregion
-
-    // #region POST
-
-
-    static async set_hora_inicio_proceso() {
-        const date = await VariablesDelSistema.set_hora_inicio_proceso();
-        procesoEventEmitter.emit("status_proceso", {
-            status: true
-        });
-        return date
-    }
-
     //#endregion
 
 }

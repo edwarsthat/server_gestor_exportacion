@@ -106,7 +106,7 @@ const defineSchemasProceso = async (sysConn) => {
 
         db.Precios = await definePrecios(sysConn)
         db.Insumos = await defineInsumos(sysConn);
-        db.defineRecordTipoInsumos = await defineRecordTipoInsumos(sysConn);
+        db.RecordTipoInsumos = await defineRecordTipoInsumos(sysConn);
         db.frutaDescompuesta = await defineFrutaDescompuesta(sysConn);
         db.Clientes = await defineClientes(sysConn);
         db.recordClientes = await defineRecordClientes(sysConn);

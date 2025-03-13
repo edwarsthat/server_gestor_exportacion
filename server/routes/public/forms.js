@@ -30,7 +30,7 @@ const upload = multer({ storage });
 formsAPI.get("/reclamaciones_calidad", (req, res) => {
     const filePath = path.join(
         __dirname,
-        '..', '..',
+        '..', '..', '..',
         'public',
         'forms',
         'clientes',

@@ -18,7 +18,7 @@ class ConstantesDelSistema {
             return inspeccionCalidad;
 
         } catch (err) {
-            throw new ProcessError(410, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`)
+            throw new ProcessError(526, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`)
         }
     }
     static async get_constantes_sistema_clasificacion_descarte() {

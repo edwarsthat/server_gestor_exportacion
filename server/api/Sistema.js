@@ -7,12 +7,168 @@ const { UsuariosRepository } = require('../Class/Usuarios');
 const bcrypt = require('bcrypt');
 const { UserRepository } = require('../auth/users');
 const { ValidationUserError } = require('../../Error/ValidationErrors');
-const { InsumosRepository } = require('../Class/Insumos');
 const { ConstantesDelSistema } = require('../Class/ConstantesDelSistema');
 const { ProcessError } = require('../../Error/ProcessError');
+const { VariablesDelSistema } = require('../Class/VariablesDelSistema');
+const { SistemaLogicError } = require('../../Error/logicLayerError');
 const { filtroFechaInicioFin } = require('./utils/filtros');
+const { RecordLotesRepository } = require('../archive/ArchiveLotes');
+const { LotesRepository } = require('../Class/Lotes');
+const { procesoEventEmitter } = require('../../events/eventos');
+
 
 class SistemaRepository {
+    //#region proceso sistema
+    static async put_sistema_proceso_habilitarPrediosDescarte(req) {
+        try {
+            const { data } = req.data
+            VariablesDelSistema.modificar_predio_proceso_descartes(data)
+        } catch (err) {
+            if (err.status === 532) {
+                throw err
+            }
+            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_sistema_proceso_lotesProcesados() {
+        try {
+            // Obtener la fecha actual en Colombia
+            const ahora = new Date();
+
+            // Crear fechaInicio (comienzo del día en Colombia, pero en UTC)
+            const fechaInicio = new Date(Date.UTC(
+                ahora.getFullYear(),
+                ahora.getMonth(),
+                ahora.getDate() - 1,
+                0, 0, 0, 0
+            ));
+
+            // Crear fechaFin (final del día en Colombia, pero en UTC)
+            const fechaFin = new Date();
+
+
+            let query = {
+                operacionRealizada: 'vaciarLote'
+            }
+
+            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha')
+
+            const recordLotes = await RecordLotesRepository.getVaciadoRecord({ query: query })
+            const lotesIds = recordLotes.map(lote => lote.documento._id);
+
+            const lotes = await LotesRepository.getLotes({
+                ids: lotesIds,
+                limit: recordLotes.length,
+                select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1 }
+            });
+            const resultado = recordLotes.map(item => {
+                const lote = lotes.find(lote => lote._id.toString() === item.documento._id);
+                if (lote) {
+                    if (Object.prototype.hasOwnProperty.call(item.documento, "$inc")) {
+                        item.documento = { ...lote, kilosVaciados: item.documento.$inc.kilosVaciados }
+                        return (item)
+                    }
+                    else {
+                        return item
+                    }
+                }
+                return null
+            }).filter(item => item !== null);
+            return resultado
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new SistemaLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_sistema_proceso_inicioHoraProceso() {
+        try {
+            const date = await VariablesDelSistema.set_hora_inicio_proceso();
+            procesoEventEmitter.emit("status_proceso", {
+                status: true
+            });
+            return date
+        } catch (err) {
+            if (err.status === 532) {
+                throw err
+            }
+            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_sistema_proceso_inicioHoraProceso() {
+        try {
+            const fecha = VariablesDelSistema.obtener_fecha_inicio_proceso()
+            return fecha
+        } catch (err) {
+            if (err.status === 531) {
+                throw err
+            }
+            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_sistema_proceso_finalizarProceso() {
+        try {
+            const status_proceso = await VariablesDelSistema.obtener_status_proceso()
+
+            if (status_proceso === 'pause') {
+                await VariablesDelSistema.set_hora_reanudar_proceso();
+            }
+            await VariablesDelSistema.set_hora_fin_proceso();
+            procesoEventEmitter.emit("status_proceso", {
+                status: "off"
+            });
+        } catch (err) {
+            if (err.status === 532 || err.status === 531) {
+                throw err
+            }
+            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_sistema_proceso_pausaProceso() {
+        try {
+            await VariablesDelSistema.set_hora_pausa_proceso();
+            procesoEventEmitter.emit("status_proceso", {
+                status: "pause"
+            });
+        } catch (err) {
+            if (err.status === 532) {
+                throw err
+            }
+            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_sistema_proceso_reanudarProceso() {
+        try {
+            await VariablesDelSistema.set_hora_reanudar_proceso();
+            procesoEventEmitter.emit("status_proceso", {
+                status: "on"
+            });
+        } catch (err) {
+            if (err.status === 532) {
+                throw err
+            }
+            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_sistema_proceso_dataProceso() {
+        try {
+            const predio = await VariablesDelSistema.obtenerEF1proceso();
+            const kilosProcesadosHoy = await VariablesDelSistema.get_kilos_procesados_hoy();
+            const kilosExportacionHoy = await VariablesDelSistema.get_kilos_exportacion_hoy();
+            return {
+                predio: predio,
+                kilosProcesadosHoy: kilosProcesadosHoy,
+                kilosExportacionHoy: kilosExportacionHoy
+            }
+        } catch (err) {
+            if (err.status === 531) {
+                throw err
+            }
+            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    //#endregion
     static async check_mobile_version() {
         const apkLatest = path.join(__dirname, '..', '..', 'updates', 'mobile', 'latest.yml');
         const fileContents = fs.readFileSync(apkLatest, 'utf8');
@@ -103,76 +259,6 @@ class SistemaRepository {
         const { action, data, _id, __v } = req
         await UsuariosRepository.modificar_usuario(_id, data, action, user.user, __v);
     }
-    static async obtener_operarios_seleccionadoras() {
-        const usuarios = await UsuariosRepository.get_users({
-            query: { estado: true, cargo: "66bfbd0e281360363ce25dfc" }
-        });
-        // const resultado = usuarios.filter(usuario => usuario.cargo.Rol >)
-        return usuarios
-    }
-    static async obtener_operarios_higiene() {
-        const usuarios = await UsuariosRepository.get_users({
-            query: {
-                estado: true,
-                $or: [
-                    { cargo: "66bfbd0e281360363ce25dfc" },
-                    { cargo: "66bf8a99281360363ce252be" },
-                    { cargo: "66bf8ab6281360363ce252c7" },
-                    { cargo: "66bf8ad5281360363ce252d0" },
-                    { cargo: "66bf8e40281360363ce25353" },
-                    { cargo: "66c513dcb7dca1eebff39a96" }
-                ]
-            },
-            getAll: true,
-        });
-        return usuarios
-    }
-    static async add_volante_calidad(req, user) {
-        const { data } = req
-        const volante_calidad = {
-            ...data,
-            responsable: user._id
-        }
-        await UsuariosRepository.add_volante_calidad(volante_calidad)
-    }
-    static async add_higiene_personal(req, user) {
-        const { data } = req
-        const higienePersonal = {
-            ...data,
-            responsable: user._id
-        }
-        await UsuariosRepository.add_higiene_personal(higienePersonal)
-    }
-    static async obtener_volante_calidad(data) {
-        const { tipoFruta, fechaInicio, fechaFin } = data;
-        let query = {}
-
-        query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha")
-
-        if (tipoFruta !== '') {
-            query.tipoFruta = tipoFruta
-        }
-
-        const volanteCalidad = await UsuariosRepository.obtener_volante_calidad({
-            query: query
-        });
-        return volanteCalidad
-    }
-    static async obtener_formularios_higiene_personal(data) {
-        const { tipoFruta, fechaInicio, fechaFin } = data;
-        let query = {}
-
-        query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha")
-
-        if (tipoFruta !== '') {
-            query.tipoFruta = tipoFruta
-        }
-
-        const volanteCalidad = await UsuariosRepository.obtener_formularios_higiene_personal({
-            query: query
-        });
-        return volanteCalidad
-    }
     static async login2(data) {
         await UserRepository.validate_userName(data);
         await UserRepository.validate_password(data);
@@ -196,23 +282,8 @@ class SistemaRepository {
         const fileContents = fs.readFileSync(filePath);
         return fileContents
     }
-    static async obtener_tipo_insumos() {
-        const insumos = await InsumosRepository.get_insumos()
-        return insumos
-    }
-    static async modificar_tipo_insumo(req, user) {
-        const { data, action } = req
-        await InsumosRepository.modificar_insumo(
-            data._id,
-            data,
-            action,
-            user,
-        )
-    }
-    static async add_tipo_insumo(req, user) {
-        const { data } = req;
-        await InsumosRepository.add_tipo_insumo(data, user)
-    }
+
+
     static async obtener_info_mi_cuenta(user) {
         const { _id } = user
         const usuario = await UsuariosRepository.get_users({

@@ -178,6 +178,28 @@ const apiSocketInventarios = {
         return successResponseRoutes()
     },
     //#endregion
+    //#region insumos
+    get_inventarios_insumos: async () => {
+        const response = await InventariosRepository.get_inventarios_insumos();
+        return successResponseRoutes(response)
+    },
+    put_inventarios_insumos: async (data) => {
+        await InventariosRepository.put_inventarios_insumos(data)
+        return successResponseRoutes()
+    },
+    post_inventarios_insumos_tipoInsumo: async (data) => {
+        await InventariosRepository.post_inventarios_insumos_tipoInsumo(data)
+        return successResponseRoutes()
+    },
+    get_inventarios_insumos_contenedores: async () => {
+        const response = await InventariosRepository.get_inventarios_insumos_contenedores();
+        return successResponseRoutes(response)
+    },
+    put_inventarios_insumos_contenedores: async (data) => {
+        await InventariosRepository.put_inventarios_insumos_contenedores(data)
+        return successResponseRoutes()
+    },
+    //#endregion
 }
 
 module.exports.apiSocketInventarios = apiSocketInventarios;

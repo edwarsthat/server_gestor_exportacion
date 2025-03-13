@@ -7,7 +7,25 @@ class InventariosLogicError extends Error {
         this.message = message
     }
 }
+class CalidadLogicError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Logica calidad error"
+        this.status = code
+        this.message = message
+    }
+}
+class SistemaLogicError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Logica sistema error"
+        this.status = code
+        this.message = message
+    }
+}
 
 module.exports = {
-    InventariosLogicError
+    InventariosLogicError,
+    CalidadLogicError,
+    SistemaLogicError
 }

@@ -5,8 +5,10 @@ const { procesoEventEmitter } = require("../../events/eventos");
 const { UserRepository } = require("../../server/auth/users");
 const { apiSocket } = require("../../server/desktop/reduce");
 const { socketMobileRepository } = require("../../server/mobile/socket");
+const { apiSocketCalidad } = require("../../server/routes/sockets/calidad");
 const { apiSocketComercial } = require("../../server/routes/sockets/comercial");
 const { apiSocketInventarios } = require("../../server/routes/sockets/inventarios");
+const { apiSocketSistema } = require("../../server/routes/sockets/sistema");
 
 
 
@@ -102,9 +104,12 @@ function initSockets(io) {
             const dominio = data.data.action.split("_")[1]
             if (dominio === "inventarios") {
                 handleRequest(data, callback, apiSocketInventarios);
-
             } else if (dominio === "comercial") {
                 handleRequest(data, callback, apiSocketComercial);
+            } else if (dominio === "calidad") {
+                handleRequest(data, callback, apiSocketCalidad);
+            } else if (dominio === "sistema") {
+                handleRequest(data, callback, apiSocketSistema);
             }
 
             else {

@@ -1,27 +1,11 @@
 
 const { ProcesoRepository } = require("../api/Proceso");
+const { SistemaRepository } = require("../api/Sistema");
+const { successResponseRoutes } = require("../routes/helpers/responses");
 class socketMobileRepository {
     static async obtener_predio_listaDeEmpaque() {
-        // Obtener la fecha actual en Colombia
-        const ahora = new Date();
-
-        // Crear fechaInicio (comienzo del día en Colombia, pero en UTC)
-        const fechaInicio = new Date(Date.UTC(
-            ahora.getFullYear(),
-            ahora.getMonth(),
-            ahora.getDate() - 1, // Restar dos días
-            0, 0, 0, 0 // 00:00 en Colombia es 05:00 en UTC
-        ));
-
-        // Crear fechaFin (final del día en Colombia, pero en UTC)
-        const fechaFin = new Date();
-
-        const data = {
-            fechaInicio,
-            fechaFin
-        }
-        const response = await ProcesoRepository.obtenerHistorialLotes(data)
-        return { status: 200, message: 'Ok', data: response }
+        const response = await SistemaRepository.get_sistema_proceso_lotesProcesados()
+        return successResponseRoutes(response)
     }
     static async obtener_contenedores_listaDeEmpaque() {
         const contenedores = await ProcesoRepository.obtener_contenedores_listaDeEmpaque()

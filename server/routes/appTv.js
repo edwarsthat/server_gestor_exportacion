@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path')
-const { ProcesoRepository } = require('../api/Proceso');
 const { procesoEventEmitter } = require('../../events/eventos');
+const { SistemaRepository } = require('../api/Sistema');
 const routerAppTv = express.Router();
 
 routerAppTv.get("/", (req, res) => {
@@ -16,7 +16,7 @@ routerAppTv.get("/", (req, res) => {
 routerAppTv.get("/get_data_proceso", async (req, res) => {
     try {
         console.log(req.method)
-        const response = await ProcesoRepository.get_data_proceso()
+        const response = await SistemaRepository.get_sistema_proceso_dataProceso()
         res.json({ status: 200, message: 'Ok', data: response })
     } catch (err) {
         res.json({ status: err.status, message: err.message })
@@ -25,7 +25,7 @@ routerAppTv.get("/get_data_proceso", async (req, res) => {
 routerAppTv.get("/obtener_hora_inicio", async (req, res) => {
     try {
         console.log(req.method)
-        const response = await ProcesoRepository.obtener_fecha_inicio_proceso()
+        const response = await SistemaRepository.get_sistema_proceso_inicioHoraProceso()
         res.json({ status: 200, message: 'Ok', data: response })
     } catch (err) {
         res.json({ status: err.status, message: err.message })
@@ -34,7 +34,7 @@ routerAppTv.get("/obtener_hora_inicio", async (req, res) => {
 
 routerAppTv.get("/set_inicio", async (req, res) => {
     try {
-        const data = await ProcesoRepository.set_hora_inicio_proceso();
+        const data = await SistemaRepository.put_sistema_proceso_inicioHoraProceso();
         res.json({ status: 200, message: 'Ok', data: data })
 
     } catch (err) {

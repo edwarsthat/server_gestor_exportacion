@@ -58,15 +58,15 @@ class FormulariosCalidadRepository {
             return formularios
 
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
+            throw new ConnectionDBError(522, `Error obteniendo formularios ${err.message}`);
         }
     }
-    static async get_calidad_formularios_higienePersonal_numeroElementos() {
+    static async get_calidad_formulario_limpiezaDiaria_numeroElementos() {
         try {
             const count = await db.LimpiezaDiaria.countDocuments();
             return count;
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
+            throw new ConnectionDBError(524, `Error obteniendo formularios ${err.message}`);
         }
     }
     static async get_formularios_calidad_limpieza_mensual(options = {}) {
@@ -93,7 +93,7 @@ class FormulariosCalidadRepository {
             return formularios
 
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
+            throw new ConnectionDBError(522, `Error obteniendo formularios ${err.message}`);
         }
     }
     static async get_calidad_formularios_limpiezaMensual_numeroElementos() {
@@ -101,7 +101,7 @@ class FormulariosCalidadRepository {
             const count = await db.LimpiezaMensual.countDocuments();
             return count;
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
+            throw new ConnectionDBError(524, `Error obteniendo formularios ${err.message}`);
         }
     }
     static async get_formularios_calidad_control_plagas(options = {}) {
@@ -128,7 +128,7 @@ class FormulariosCalidadRepository {
             return formularios
 
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
+            throw new ConnectionDBError(522, `Error obteniendo formularios ${err.message}`);
         }
     }
     static async get_calidad_formularios_controlPlagas_numeroElementos() {
@@ -136,7 +136,7 @@ class FormulariosCalidadRepository {
             const count = await db.ControlPlagas.countDocuments();
             return count;
         } catch (err) {
-            throw new ConnectionDBError(408, `Error obteniendo formularios ${err.message}`);
+            throw new ConnectionDBError(524, `Error obteniendo formularios ${err.message}`);
         }
     }
 
@@ -158,7 +158,7 @@ class FormulariosCalidadRepository {
             await db.LimpiezaDiaria.findOneAndUpdate({ _id: id, }, query, { new: true });
 
         } catch (err) {
-            throw new PutError(414, `Error al modificar el dato  ${err.name}`);
+            throw new PutError(523, `Error formularios limpieza diaria  ${err.name}`);
         } finally {
             bussyIds.delete(id);
         }
@@ -181,7 +181,7 @@ class FormulariosCalidadRepository {
             await db.LimpiezaMensual.findOneAndUpdate({ _id: id, }, query, { new: true });
 
         } catch (err) {
-            throw new PutError(414, `Error al modificar el dato  ${err.name}`);
+            throw new PutError(523, `Error formularios limpieza mensual  ${err.name}`);
         } finally {
             bussyIds.delete(id);
         }
@@ -204,7 +204,7 @@ class FormulariosCalidadRepository {
             await db.ControlPlagas.findOneAndUpdate({ _id: id, }, query, { new: true });
 
         } catch (err) {
-            throw new PutError(414, `Error al modificar el dato  ${err.name}`);
+            throw new PutError(523, `Error al modificar control plagas  ${err.name}`);
         } finally {
             bussyIds.delete(id);
         }

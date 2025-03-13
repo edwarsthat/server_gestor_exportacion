@@ -4,6 +4,7 @@ const { RecordLotesRepository } = require("../archive/ArchiveLotes");
 const { ContenedoresRepository } = require("../Class/Contenedores");
 const { DespachoDescartesRepository } = require("../Class/DespachoDescarte");
 const { FrutaDescompuestaRepository } = require("../Class/FrutaDescompuesta");
+const { InsumosRepository } = require("../Class/Insumos");
 const { LotesRepository } = require("../Class/Lotes");
 const { PreciosRepository } = require("../Class/Precios");
 const { ProveedoresRepository } = require("../Class/Proveedores");
@@ -675,6 +676,12 @@ class InventariosRepository {
             const { data, user } = req;
             const { data: datos } = data
             let enf
+            if (Number(datos.canastillas) === 0) throw new Error(`Las canastillas no pueden ser cero`)
+            if (Number(datos.kilos) === 0) throw new Error(`Los kilos no pueden ser cero`)
+            if (Number(datos.kilos) === 0) throw new Error(`Los kilos no pueden ser cero`)
+
+            if (Number(datos.promedio) < 17 || Number(datos.promedio) > 22)
+                throw new Error(` Los kilos no corresponden a las canastillas`)
 
             if (!datos.ef || datos.ef.startsWith('EF1')) {
                 enf = await VariablesDelSistema.generarEF1(datos.fecha_estimada_llegada)
@@ -728,7 +735,7 @@ class InventariosRepository {
             if (err.status === 521) {
                 throw err
             }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+            throw new InventariosLogicError(470, err.message)
 
         }
 
@@ -780,7 +787,87 @@ class InventariosRepository {
         }
     }
     //#endregion
+    //#region insumos
+    static async get_inventarios_insumos() {
+        try {
+            const insumos = await InsumosRepository.get_insumos()
+            return insumos
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_inventarios_insumos(req) {
+        try {
+            const { data: datos, user } = req
 
+            const { data, action } = datos
+            await InsumosRepository.modificar_insumo(
+                data._id,
+                data,
+                action,
+                user,
+            )
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async post_inventarios_insumos_tipoInsumo(req) {
+        try {
+            const { data: datos, user } = req
+            const { data } = datos;
+            await InsumosRepository.add_tipo_insumo(data, user.user)
+        } catch (err) {
+            if (err.status === 521) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_inventarios_insumos_contenedores() {
+        try {
+            const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                select: { numeroContenedor: 1, infoContenedor: 1, insumosData: 1, __v: 1 },
+                query: {
+                    'infoContenedor.cerrado': true,
+                    insumosData: { $exists: true },
+                    $or: [
+                        { 'insumosData.flagInsumos': false }, // Contenedores con flagInsumos en false
+                        { 'insumosData.flagInsumos': { $exists: false } } // O contenedores donde no exista flagInsumos
+                    ]
+                }
+            });
+            return contenedores
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_inventarios_insumos_contenedores(req) {
+        try {
+            const { data: datos, user } = req
+            const { action, data, _id, __v } = datos
+            const query = {
+                insumosData: data
+            }
+            await ContenedoresRepository.modificar_contenedor(
+                _id, query, user.user, action, __v
+            );
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    //endregion
 }
 
 

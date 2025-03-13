@@ -160,7 +160,7 @@ class UsuariosRepository {
         } catch (err) {
             await session.commitTransaction();
             session.endSession();
-            throw new PostError(409, `Error agregando usuario ${err.message}`);
+            throw new PostError(521, `Error agregando usuario ${err.message}`);
         }
     }
     static async modificar_usuario(id, query, action, user, __v) {
@@ -317,7 +317,7 @@ class UsuariosRepository {
 
         } catch (err) {
             console.log(err)
-            throw new ConnectionDBError(408, `Error obteniendo formularios higiene personal ${err.message}`);
+            throw new ConnectionDBError(522, `Error obteniendo formularios higiene personal ${err.message}`);
         }
     }
     static async obtener_cantidad_usuarios() {
