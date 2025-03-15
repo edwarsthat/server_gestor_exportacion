@@ -169,6 +169,9 @@ class SistemaRepository {
         }
     }
     //#endregion
+
+
+
     static async check_mobile_version() {
         const apkLatest = path.join(__dirname, '..', '..', 'updates', 'mobile', 'latest.yml');
         const fileContents = fs.readFileSync(apkLatest, 'utf8');

@@ -1,0 +1,53 @@
+const { ProcesoRepository } = require("../../api/Proceso")
+const { successResponseRoutes } = require("../helpers/responses")
+
+const apiSocketProceso = {
+    //#region aplicaciones
+    post_proceso_aplicaciones_fotoCalidad: async (data) => {
+        await ProcesoRepository.post_proceso_aplicaciones_fotoCalidad(data)
+        return successResponseRoutes()
+    },
+    get_proceso_aplicaciones_fotoCalidad: async () => {
+        const response = await ProcesoRepository.get_proceso_aplicaciones_fotoCalidad();
+        return successResponseRoutes(response)
+    },
+    get_proceso_aplicaciones_descarteLavado: async () => {
+        const response = await ProcesoRepository.get_proceso_aplicaciones_descarteLavado()
+        return successResponseRoutes(response)
+    },
+    put_proceso_aplicaciones_descarteLavado: async (data) => {
+        await ProcesoRepository.put_proceso_aplicaciones_descarteLavado(data)
+        return successResponseRoutes()
+    },
+    put_proceso_aplicaciones_descarteEncerado: async (data) => {
+        await ProcesoRepository.put_proceso_aplicaciones_descarteEncerado(data)
+        return successResponseRoutes()
+    },
+
+    get_proceso_aplicaciones_listaEmpaque_contenedores: async () => {
+        const response = await ProcesoRepository.get_proceso_aplicaciones_listaEmpaque_contenedores()
+        return successResponseRoutes(response)
+    },
+    get_proceso_aplicaciones_listaEmpaque_lotes: async () => {
+        const response = await ProcesoRepository.get_proceso_aplicaciones_listaEmpaque_lotes();
+        return successResponseRoutes(response)
+    },
+    put_proceso_aplicaciones_listaEmpaque_agregarItem: async (data) => {
+        const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_agregarItem(data);
+        return successResponseRoutes(response)
+    },
+    //!
+    put_proceso_aplicaciones_listaEmpaque_modificarItem: async (data) => {
+        const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_modificarItem(data);
+        return successResponseRoutes(response)
+    },
+    put_proceso_aplicaciones_listaEmpaque_Cerrar: async (data) => {
+        await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_Cerrar(data);
+        return successResponseRoutes()
+    },
+
+
+    //#endregion
+}
+
+module.exports.apiSocketProceso = apiSocketProceso

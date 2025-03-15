@@ -831,32 +831,7 @@ class CalidadRepository {
         const formulario = await ConstantesDelSistema.get_info_formulario_inspeccion_fruta()
         return formulario
     }
-    static async obtener_lotes_fotos_calidad() {
-        const haceUnMes = new Date();
-        const hoy = new Date();
-        haceUnMes.setMonth(haceUnMes.getMonth() - 1);
-        const hoyAM = hoy.setHours(0, 0, 0, 0);
-        const hoyPM = hoy.setHours(23, 59, 59, 999);
-        const lotes = await LotesRepository.getLotes({
-            query: {
-                $and: [
-                    {
-                        $or: [
-                            { 'calidad.fotosCalidad': { $exists: false } },
-                            { 'calidad.fotosCalidad.fechaIngreso': { $gte: new Date(hoyAM), $lt: new Date(hoyPM) } }
-                        ]
-                    },
-                    { enf: { $regex: '^E', $options: 'i' } },
-                ],
-                $or: [
-                    { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
-                    { fechaIngreso: { $gte: new Date(haceUnMes) } }
-                ]
-            },
-            select: { enf: 1 }
-        });
-        return lotes
-    }
+
     //!numero de elementos
 
     static async get_calidad_formularios_higienePersonal_numeroElementos() {

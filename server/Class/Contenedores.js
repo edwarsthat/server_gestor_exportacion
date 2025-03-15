@@ -684,7 +684,7 @@ class ContenedoresRepository {
             })
             await record.save();
         } catch (err) {
-            throw new ConnectionDBError(408, `Error cerrando el contenedor ${err.message}`);
+            throw new ConnectionDBError(523, `Error cerrando el contenedor ${err.message}`);
         } finally {
             bussyIds.delete(id);
         }
@@ -727,6 +727,7 @@ class ContenedoresRepository {
             this.unlockItem(id, "pallets", pallet)
         }
     }
+
     static async modificar_contenedor(id, query, user, action, __v) {
         /**
          * Modifica un contenedor en la base de datos de MongoDB.
@@ -781,6 +782,7 @@ class ContenedoresRepository {
             this.unlockItem(id, "Contenedor", "general")
         }
     }
+
     static async obtener_cantidad_contenedores(filtro = {}) {
         try {
             const count = await db.Contenedores.countDocuments(filtro);
@@ -797,6 +799,40 @@ class ContenedoresRepository {
          */
         if (bussyIds.has(id)) throw new ItemBussyError(413, "Elemento no disponible por el momento");
         bussyIds.add(id)
+    }
+
+
+
+    static async actualizar_contenedor(filter, update, options = {}, session = null) {
+        /**
+         * Función genérica para actualizar documentos en MongoDB usando Mongoose
+         *
+         * @param {Model} model - Modelo Mongoose (db.Contenedores, etc.)
+         * @param {Object} filter - Objeto de filtrado para encontrar el documento
+         * @param {Object} update - Objeto con los campos a actualizar
+         * @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
+         * @param {ClientSession} session - Sesión de transacción (opcional)
+         * @returns Documento actualizado
+         */
+        const defaultOptions = { new: true }; // retorna el documento actualizado
+        const finalOptions = session
+            ? { ...defaultOptions, ...options, session }
+            : { ...defaultOptions, ...options };
+
+        try {
+            const documentoActualizado = await db.Contenedores.findOneAndUpdate(
+                filter,
+                update,
+                finalOptions
+            );
+
+
+
+            return documentoActualizado;
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
+
+        }
     }
 }
 

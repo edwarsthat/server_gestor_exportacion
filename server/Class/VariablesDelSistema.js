@@ -104,7 +104,7 @@ class VariablesDelSistema {
       const predioData = await cliente.hGetAll("predioProcesandoDescartes");
       return predioData
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis ${err.name}`)
+      throw new ConnectRedisError(531, `Error obtenerEF1 descartes ${err.type}`)
     }
   }
   static async obtener_EF1_listaDeEmpaque() {
@@ -904,7 +904,7 @@ class VariablesDelSistema {
       }
       return kilosProcesados;
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis sumando kilosProcesados: ${err.name}`)
+      throw new ConnectRedisError(532, `Error con la conexion con redis sumando kilosProcesados: ${err.name}`)
 
     } finally {
       if (cliente) {
@@ -948,7 +948,7 @@ class VariablesDelSistema {
     } catch (err) {
       console.error("Error socket: ", err);
       throw new ConnectRedisError(
-        419,
+        532,
         `Error con la conexión con Redis sumando kilos procesados: ${err.message}`
       );
     } finally {

@@ -7,7 +7,9 @@ const { apiSocket } = require("../../server/desktop/reduce");
 const { socketMobileRepository } = require("../../server/mobile/socket");
 const { apiSocketCalidad } = require("../../server/routes/sockets/calidad");
 const { apiSocketComercial } = require("../../server/routes/sockets/comercial");
+const { apiSockectIndicadores } = require("../../server/routes/sockets/indicadores");
 const { apiSocketInventarios } = require("../../server/routes/sockets/inventarios");
+const { apiSocketProceso } = require("../../server/routes/sockets/proceso");
 const { apiSocketSistema } = require("../../server/routes/sockets/sistema");
 
 
@@ -110,8 +112,11 @@ function initSockets(io) {
                 handleRequest(data, callback, apiSocketCalidad);
             } else if (dominio === "sistema") {
                 handleRequest(data, callback, apiSocketSistema);
+            } else if (dominio === "indicadores") {
+                handleRequest(data, callback, apiSockectIndicadores);
+            } else if (dominio === "proceso") {
+                handleRequest(data, callback, apiSocketProceso);
             }
-
             else {
                 handleRequest(data, callback, apiSocket);
             }

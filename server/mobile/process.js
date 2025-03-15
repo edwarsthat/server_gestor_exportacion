@@ -3,7 +3,6 @@ const { UserRepository } = require("../auth/users");
 const { ProcesoRepository } = require("../api/Proceso");
 const { VariablesDelSistema } = require('../Class/VariablesDelSistema');
 const { AccessError } = require('../../Error/ValidationErrors');
-const { CalidadRepository } = require('../api/Calidad');
 const routerProceso = express.Router();
 
 
@@ -15,9 +14,12 @@ routerProceso.put("/ingresar_descarte_lavado", async (req, res) => {
 
         await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
 
-        const data = req.body
+        const data = {
+            data: req.body,
+            user: user
+        }
 
-        await ProcesoRepository.ingresar_descarte_lavado(data, user.user)
+        await ProcesoRepository.put_proceso_aplicaciones_descarteLavado(data)
 
 
         res.send({ status: 200, message: 'Ok' })
@@ -35,9 +37,12 @@ routerProceso.put("/ingresar_descarte_encerado", async (req, res) => {
         const user = await UserRepository.authenticateToken(token);
         await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
 
-        const data = req.body
+        const data = {
+            data: req.body,
+            user: user
+        }
 
-        await ProcesoRepository.ingresar_descarte_encerado(data, user.user)
+        await ProcesoRepository.put_proceso_aplicaciones_descarteEncerado(data)
 
 
         res.send({ status: 200, message: 'Ok' })
@@ -54,9 +59,12 @@ routerProceso.put("/add-fotos-calidad", async (req, res) => {
 
         await UserRepository.autentificacionPermisosHttps(user.cargo, "ingresar_foto_calidad")
 
-        const data = req.body
+        const data = {
+            data: req.body,
+            user: user
+        }
 
-        await ProcesoRepository.ingresar_foto_calidad(data, user.user)
+        await ProcesoRepository.post_proceso_aplicaciones_fotoCalidad(data)
 
         res.json({ status: 200, message: 'Ok' })
 
@@ -105,7 +113,7 @@ routerProceso.get("/data_historial_descarte_encerado_proceso", async (req, res) 
 
 routerProceso.get("/lotes-fotos-calidad", async (req, res) => {
     try {
-        const response = await CalidadRepository.obtener_lotes_fotos_calidad();
+        const response = await ProcesoRepository.get_proceso_aplicaciones_fotoCalidad();
         res.json({ data: response, status: 200, message: 'Ok' })
     } catch (err) {
         console.log(`Code ${err.status}: ${err.message}`)

@@ -18,10 +18,7 @@ const apiSocket = {
         return { status: 200, message: 'Ok', data: data }
     },
 
-    get_predio_Proceso_Descarte: async () => {
-        const response = await ProcesoRepository.get_predio_Proceso_Descarte()
-        return { data: response, status: 200, message: 'Ok' }
-    },
+
     obtener_precio_proveedores: async (req) => {
         const { data } = req
         const response = await ComercialRepository.obtener_precio_proveedores(data)
@@ -100,14 +97,6 @@ const apiSocket = {
         return { status: 200, message: 'Ok', data: response }
     },
 
-    obtener_contenedores_listaDeEmpaque: async () => {
-        const contenedores = await ProcesoRepository.obtener_contenedores_listaDeEmpaque()
-        return { status: 200, message: 'Ok', data: contenedores }
-    },
-    obtener_predio_listaDeEmpaque: async () => {
-        const response = await VariablesDelSistema.obtener_EF1_listaDeEmpaque();
-        return { status: 200, message: 'Ok', data: response }
-    },
 
     obtener_historial_decarte_lavado_proceso: async () => {
         // const { user } = req
@@ -118,11 +107,6 @@ const apiSocket = {
         // const { user } = req
         const registros = await ProcesoRepository.obtener_historial_decarte_encerado_proceso("");
         return { status: 200, message: 'Ok', data: registros }
-    },
-
-    obtener_lotes_fotos_calidad: async () => {
-        const lotes = await CalidadRepository.obtener_lotes_fotos_calidad();
-        return { status: 200, message: 'Ok', data: lotes }
     },
 
 
@@ -175,26 +159,8 @@ const apiSocket = {
         return { status: 200, message: 'Ok', data: response }
     },
 
-    get_indicadores_eficiencia_operativa_elementos: async (req) => {
-        const { data } = req;
-        const response = await IndicadoresAPIRepository.get_indicadores_eficiencia_operativa_elementos(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
-    get_indicadores_operaciones_registros: async (req) => {
-        const { data } = req;
-        const response = await IndicadoresAPIRepository.get_indicadores_operaciones_registros(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
-    get_indicaores_operaciones_lotes: async (req) => {
-        const { data } = req;
-        const response = await IndicadoresAPIRepository.get_indicaores_operaciones_lotes(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
-    get_indicadores_operaciones_noCalidad: async (req) => {
-        const { data } = req;
-        const response = await IndicadoresAPIRepository.get_indicadores_operaciones_noCalidad(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
+
+
     get_comercial_precios_registros_precios_proveedor: async (req) => {
         //Obtiene los proveedores
         const { data } = req;
@@ -363,16 +329,7 @@ const apiSocket = {
     },
 
 
-    ingresar_descarte_lavado: async (req) => {
-        const { data, user } = req;
-        await ProcesoRepository.ingresar_descarte_lavado(data, user)
-        return { status: 200, message: 'Ok' }
-    },
-    ingresar_descarte_encerado: async (req) => {
-        const { data, user } = req;
-        await ProcesoRepository.ingresar_descarte_encerado(data, user)
-        return { status: 200, message: 'Ok' }
-    },
+
 
 
     inactivar_Proveesdor: async (req) => {
@@ -418,11 +375,7 @@ const apiSocket = {
 
         return { status: 200, message: 'Ok', data: contenedores }
     },
-    actualizar_pallet_contenedor: async (req) => {
-        const { data, user } = req;
-        const contenedores = await ProcesoRepository.actualizar_pallet_contenedor(data, user.user);
-        return { status: 200, message: 'Ok', data: contenedores }
-    },
+
     eliminar_item_lista_empaque: async (req) => {
         const { data, user } = req;
         const contenedores = await ProcesoRepository.eliminar_item_lista_empaque(data, user.user);
@@ -438,17 +391,8 @@ const apiSocket = {
         await ProcesoRepository.liberar_pallets_lista_empaque(data, user.user);
         return { status: 200, message: 'Ok' }
     },
-    cerrar_contenedor: async (req) => {
-        const { data, user } = req;
-        await ProcesoRepository.cerrar_contenedor(data, user.user);
-        return { status: 200, message: 'Ok' }
-    },
 
-    ingresar_foto_calidad: async (req) => {
-        const { data, user } = req
-        await ProcesoRepository.ingresar_foto_calidad(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
+
 
 
 
@@ -485,11 +429,7 @@ const apiSocket = {
         await ProcesoRepository.put_inventarios_registros_fruta_descompuesta(data, user)
         return { status: 200, message: 'Ok' }
     },
-    put_indicadores_eficiencia_operativa_modificar: async (req) => {
-        const { data, user } = req
-        await IndicadoresAPIRepository.put_indicadores_eficiencia_operativa_modificar(data, user)
-        return { status: 200, message: 'Ok' }
-    },
+
 
 
     //#endregion
