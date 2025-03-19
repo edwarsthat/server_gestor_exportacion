@@ -15,7 +15,7 @@ const { SistemaRepository } = require("../../server/api/Sistema");
 const { UserRepository } = require("../../server/auth/users");
 const { middleWareHandleErrors } = require("../middleware/errorHandler");
 const { formsAPI } = require("../../server/routes/public/forms");
-const { routerCalidad } = require("../../server/routes/https/calidad");
+const { routerCalidad } = require("../../server/routes/https/Calidad");
 
 const app = express();
 
