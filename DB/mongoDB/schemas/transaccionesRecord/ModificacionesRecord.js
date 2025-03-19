@@ -11,11 +11,12 @@ const defineModificarElemento = async (conn) => {
             user: { type: String, required: true },
         },
 
-        documentoAfectado: {
+        documentosAfectados: [{
             modelo: { type: String, required: true },
-            documentoId: { type: Schema.Types.ObjectId, required: true, refPath: 'documentoAfectado.modelo' },
+            documentoId: { type: Schema.Types.ObjectId, required: true, refPath: 'documentosAfectados.modelo' },
             descripcion: { type: String },
-        },
+        }],
+
 
         cambios: {
             antes: { type: Schema.Types.Mixed, required: true },

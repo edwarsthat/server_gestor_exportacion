@@ -76,7 +76,6 @@ class InsumosRepository {
             await record.save();
             return saveInsumo
         } catch (err) {
-            console.log(err)
             throw new PostError(521, `Error agregando insumo ${err.message}`);
         }
     }

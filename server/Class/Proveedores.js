@@ -14,7 +14,6 @@ class ProveedoresRepository {
                 return { status: 200, message: "OK", data: proveedores };
             }
         } catch (err) {
-            // console.log(data);
             throw new ConnectionDBError(408, `Error obteniendo predio ${err.message}`);
         }
     }
@@ -83,7 +82,6 @@ class ProveedoresRepository {
 
 
         } catch (err) {
-            console.log(err)
             throw new PutError(522, `Error al modificando los proveedores ${err.essage}`);
         }
     }

@@ -7,7 +7,6 @@ const { routerProceso } = require("../../server/mobile/process");
 const { routerProceso2 } = require("../../server/routes/Proceso");
 const { routerIndicadores } = require("../../server/routes/indicadores");
 const { routerComercial } = require("../../server/routes/comercial");
-const { routerCalidad } = require("../../server/mobile/calidad");
 const { routerSistema } = require("../../server/mobile/sistema");
 const { routerAppTv } = require("../../server/routes/appTv");
 const { sp32 } = require("../../server/mobile/sp32");
@@ -16,6 +15,7 @@ const { SistemaRepository } = require("../../server/api/Sistema");
 const { UserRepository } = require("../../server/auth/users");
 const { middleWareHandleErrors } = require("../middleware/errorHandler");
 const { formsAPI } = require("../../server/routes/public/forms");
+const { routerCalidad } = require("../../server/routes/https/calidad");
 
 const app = express();
 
@@ -40,7 +40,6 @@ app.use("/sp32", sp32)
 app.use("/API", routerAPI)
 app.use("/forms", formsAPI)
 app.get("/", (req, res) => {
-    console.log("entra aqui")
     res.sendFile(path.join(
         __dirname,
         '..', '..',
@@ -65,7 +64,6 @@ app.get("/latest.yml", async (req, res, next) => {
 //Envia los archivos para actualizar la aplicacion de escritorio 
 app.get('/:filename', async (req, res, next) => {
     try {
-        console.log("filename")
 
         let { filename } = req.params;
 

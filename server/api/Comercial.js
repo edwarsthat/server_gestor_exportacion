@@ -280,7 +280,6 @@ class ComercialRepository {
                 select: { predio: 1, precio: 1, tipoFruta: 1, fecha_ingreso_patio: 1 }
             })
 
-            console.log(lotes)
             const fecha = new Date(lotes[0].fecha_ingreso_patio);
             const year = fecha.getFullYear();
             const week = getISOWeek(fecha);

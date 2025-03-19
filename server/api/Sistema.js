@@ -296,7 +296,6 @@ class SistemaRepository {
         return usuario[0]
     }
     static async modificar_mi_password(req, user) {
-        console.log(req)
         const { data, action } = req
         const { _id } = user
         const hashedPassword = await bcrypt.hash(data, 10);

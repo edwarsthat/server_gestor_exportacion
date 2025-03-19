@@ -24,6 +24,7 @@ const apiSocketProceso = {
         return successResponseRoutes()
     },
 
+    //lista de empaque
     get_proceso_aplicaciones_listaEmpaque_contenedores: async () => {
         const response = await ProcesoRepository.get_proceso_aplicaciones_listaEmpaque_contenedores()
         return successResponseRoutes(response)
@@ -36,16 +37,42 @@ const apiSocketProceso = {
         const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_agregarItem(data);
         return successResponseRoutes(response)
     },
-    //!
-    put_proceso_aplicaciones_listaEmpaque_modificarItem: async (data) => {
-        const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_modificarItem(data);
+    put_proceso_aplicaciones_listaEmpaque_addSettings: async (data) => {
+        const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_addSettings(data);
+        return successResponseRoutes(response)
+    },
+    put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop: async (data) => {
+        const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop(data);
+        return successResponseRoutes(response)
+    },
+    put_proceso_aplicaciones_listaEmpaque_eliminarItem_desktop: async (data) => {
+        const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_eliminarItem_desktop(data);
         return successResponseRoutes(response)
     },
     put_proceso_aplicaciones_listaEmpaque_Cerrar: async (data) => {
         await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_Cerrar(data);
         return successResponseRoutes()
     },
-
+    put_proceso_aplicaciones_listaEmpaque_eliminarItems: async (data) => {
+        const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_eliminarItems(data);
+        return successResponseRoutes(response)
+    },
+    put_proceso_aplicaciones_listaEmpaque_restarItem: async (data) => {
+        const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_restarItem(data);
+        return successResponseRoutes(response)
+    },
+    put_proceso_aplicaciones_listaEmpaque_moverItems: async (data) => {
+        await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_moverItems(data);
+        return successResponseRoutes()
+    },
+    put_proceso_aplicaciones_listaEmpaque_liberarPallet: async (data) => {
+        const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_liberarPallet(data);
+        return successResponseRoutes(response)
+    },
+    put_proceso_aplicaciones_listaEmpaque_modificarItems: async (data) => {
+        await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_modificarItems(data)
+        return successResponseRoutes()
+    }
 
     //#endregion
 }

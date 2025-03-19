@@ -4,7 +4,6 @@ const { AccessError } = require("../../Error/ValidationErrors");
 const { procesoEventEmitter } = require("../../events/eventos");
 const { UserRepository } = require("../../server/auth/users");
 const { apiSocket } = require("../../server/desktop/reduce");
-const { socketMobileRepository } = require("../../server/mobile/socket");
 const { apiSocketCalidad } = require("../../server/routes/sockets/calidad");
 const { apiSocketComercial } = require("../../server/routes/sockets/comercial");
 const { apiSockectIndicadores } = require("../../server/routes/sockets/indicadores");
@@ -122,12 +121,6 @@ function initSockets(io) {
             }
         })
 
-        socket.on("Mobile", async (data, callback) => {
-            if (!data || !data.data || !data.data.action) {
-                return callback(new ErrorUndefinedData(425, "Petición inválida: falta 'action'"));
-            }
-            handleRequest(data, callback, socketMobileRepository);
-        })
     });
 }
 

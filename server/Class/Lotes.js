@@ -237,6 +237,14 @@ class LotesRepository {
             throw new ConnectionDBError(524, `Error obteniendo cantidad lotes ${filtro} --- ${err.message}`);
         }
     }
+    static async bulkWrite(operations) {
+        try {
+            const result = await db.Lotes.bulkWrite(operations)
+            return result;
+        } catch (error) {
+            throw new ConnectionDBError(523, `Error performing bulkWrite ${error.message} `);
+        }
+    }
     static descarteTotal(descarte) {
         /**
          * Funcion que suma los descartes 

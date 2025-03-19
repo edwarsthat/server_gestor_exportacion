@@ -311,7 +311,6 @@ class CalidadRepository {
             const lote = await LotesRepository.getLotes({ ids: [_id] })
 
             const query = { flag_balin_free: !lote[0].flag_balin_free };
-            console.log(query)
 
             await LotesRepository.modificar_lote_proceso(
                 _id, query, action, user
@@ -560,7 +559,6 @@ class CalidadRepository {
         try {
             const { user } = req
             const { data } = req.data
-
             const higienePersonal = {
                 ...data,
                 responsable: user._id

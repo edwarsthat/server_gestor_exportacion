@@ -1,6 +1,5 @@
 
 function have_lote_GGN_export(predio, contenedor, item) {
-    console.log(item)
     try {
         if (!("GGN" in predio)) return false;
         if (predio.GGN === undefined || predio.GGN === '') return false;
@@ -29,7 +28,6 @@ function have_lote_GGN_export(predio, contenedor, item) {
 
         return true;
     } catch (err) {
-        console.log(err)
         return false
     }
 }

@@ -211,7 +211,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -534,8 +533,7 @@ class VariablesDelSistema {
       fs.writeFileSync(ordenVaceoPath, newOrdenVaceoJSON);
 
     } catch (err) {
-      console.log(err)
-      throw new ProcessError(410, "Error Obteniendo datos de la orden de vaceo")
+      throw new ProcessError(410, "Error Obteniendo datos de la orden de vaceo" + err.message)
     } finally {
       ordenVaceoFlag = false
     }
@@ -854,7 +852,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -876,7 +873,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -909,7 +905,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -922,7 +917,6 @@ class VariablesDelSistema {
 
       // Obtener los kilos procesados de Redis
       let kilosProcesados = await cliente.get(key);
-      console.log("Fruta procesada antes de sumar:", kilosProcesados);
 
       // Si no existe, inicializar como un objeto vacío
       if (kilosProcesados === null) {
@@ -932,7 +926,6 @@ class VariablesDelSistema {
         kilosProcesados = JSON.parse(kilosProcesados);
       }
 
-      console.log("Fruta procesada antes de sumar:", kilosProcesados);
 
       // Convertir el valor a número o inicializar si es null
       kilosProcesados[tipoFruta] = kilosProcesados[tipoFruta] ? parseInt(kilosProcesados[tipoFruta], 10) : 0;
@@ -946,7 +939,6 @@ class VariablesDelSistema {
       return kilosProcesados;
 
     } catch (err) {
-      console.error("Error socket: ", err);
       throw new ConnectRedisError(
         532,
         `Error con la conexión con Redis sumando kilos procesados: ${err.message}`
@@ -954,7 +946,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         cliente.quit();
-        console.log("Cerrando la conexión con Redis...");
       }
     }
   }
@@ -993,7 +984,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         cliente.quit();
-        console.log("Cerrando la conexión con Redis...");
       }
     }
   }
@@ -1040,7 +1030,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -1053,7 +1042,6 @@ class VariablesDelSistema {
 
       // Obtener los kilos procesados de Redis
       let kilosProcesados = await cliente.get(key);
-      console.log("Fruta procesada antes de sumar:", kilosProcesados);
 
       // Si no existe, inicializar como un objeto vacío
       if (kilosProcesados === null) {
@@ -1063,7 +1051,6 @@ class VariablesDelSistema {
         kilosProcesados = JSON.parse(kilosProcesados);
       }
 
-      console.log("Fruta procesada antes de sumar:", kilosProcesados);
 
       // Convertir el valor a número o inicializar si es null
       kilosProcesados[tipoFruta] = kilosProcesados[tipoFruta] ? parseInt(kilosProcesados[tipoFruta], 10) : 0;
@@ -1085,7 +1072,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         cliente.quit();
-        console.log("Cerrando la conexión con Redis...");
       }
     }
   }
@@ -1118,7 +1104,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -1143,7 +1128,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -1168,7 +1152,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         await cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -1192,7 +1175,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         await cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -1217,7 +1199,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         await cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -1236,11 +1217,9 @@ class VariablesDelSistema {
         horaFin: { $exists: false }
       };
       const turno = await TurnoDatarepository.find_turno({ query: query });
-      console.log(turno)
       if (!turno || turno.length === 0) {
         throw new Error("No se encontró el elemento");
       }
-      console.log(turno)
       //se obtiene el tiempo trabajado en segundos
       const lenPausas = turno[0].pausaProceso.length;
       if (lenPausas === 0) {
@@ -1274,7 +1253,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         await cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -1324,7 +1302,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         await cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -1344,7 +1321,6 @@ class VariablesDelSistema {
       if (turno.length === 0) {
         throw new Error("No se encontro elemento")
       }
-      console.log("aqui paso")
 
       let totalsegundos
       let fechaInicio
@@ -1383,7 +1359,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         await cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
     }
   }
@@ -1415,7 +1390,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         await cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
 
     }
@@ -1448,7 +1422,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         await cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
 
     }
@@ -1477,7 +1450,6 @@ class VariablesDelSistema {
     } finally {
       if (cliente) {
         await cliente.quit();
-        console.log('Cerrando la conexión con Redis...');
       }
 
     }

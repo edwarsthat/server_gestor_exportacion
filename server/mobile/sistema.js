@@ -1,7 +1,6 @@
 const express = require('express');
 const yaml = require("js-yaml");
 const { SistemaRepository } = require('../api/Sistema');
-const { UserRepository } = require('../auth/users');
 const routerSistema = express.Router();
 
 routerSistema.get("/", (req, res) => {
@@ -57,40 +56,8 @@ routerSistema.get("/check_desktopApp/:name", async (req, res) => {
     }
 })
 
-routerSistema.get("/obtener_operarios_higiene", async (req, res) => {
-    try {
-        const token = req.headers['authorization'];
-
-        const user = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisosHttps(user.cargo, 'obtener_operarios_higiene')
-
-        const data = req.body
-
-        const operarios = await SistemaRepository.obtener_operarios_higiene(data, user.user)
 
 
-        res.send({ status: 200, message: 'Ok', data: operarios })
-    } catch (err) {
-        console.log(`Code ${err.status}: ${err.message}`)
-        res.json({ status: err.status, message: err.message })
-    }
-})
 
-routerSistema.post("/add_higiene_personal", async (req, res) => {
-    try {
-        const token = req.headers['authorization'];
-        const user = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisosHttps(user.cargo, "add_higiene_personal")
-
-        const data = req.body
-
-        await SistemaRepository.add_higiene_personal(data, user)
-
-        res.json({ status: 200, message: 'Ok' })
-
-    } catch (err) {
-        res.json({ status: err.status, message: err.message })
-    }
-})
 
 module.exports = { routerSistema };

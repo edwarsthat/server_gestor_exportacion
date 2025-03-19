@@ -13,7 +13,6 @@ class ContenedoresRepository {
             throw new ItemBussyError(413, 'El elemento ya está bloqueado');
         }
         lockedItems.set(key, Date.now());
-        console.log(lockedItems)
     }
     static unlockItem(_id, elemento, pallet = 0) {
         const key = `${_id}:${elemento}:${pallet}`
@@ -140,53 +139,7 @@ class ContenedoresRepository {
             throw new ConnectionDBError(522, `Error contenedores ${err.message}`);
         }
     }
-    static async agregar_settings_pallet(id, pallet, settings, action, user) {
-        /**
-         * Función que agrega o actualiza la configuración de un pallet en un contenedor.
-         *
-         * @param {string} id - ID del contenedor en el que se va a actualizar el pallet.
-         * @param {string} pallet - Identificador del pallet dentro del contenedor.
-         * @param {Object} settings - Objeto con los ajustes del pallet.
-         * @param {string} settings.tipoCaja - Tipo de caja del pallet.
-         * @param {string} settings.calidad - Calidad del pallet.
-         * @param {string} settings.calibre - Calibre del pallet.
-         * @param {string} action - Acción realizada para registrar en el historial.
-         * @param {string} user - Usuario que realiza la acción.
-         * @returns {Promise<void>} - Promesa que se resuelve cuando la operación se completa.
-         * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al actualizar el pallet.
-         */
-        try {
-            this.lockItem(id, "pallets", pallet)
 
-            const contenedor = await db.Contenedores.findById({ _id: id });
-            if (!contenedor) throw new ConnectionDBError(407, "La busqueda de contenedores retorna null")
-
-            contenedor.pallets[pallet].get("settings").tipoCaja = settings.tipoCaja;
-            contenedor.pallets[pallet].get("settings").calidad = settings.calidad;
-            contenedor.pallets[pallet].get("settings").calibre = settings.calibre;
-            await db.Contenedores.updateOne({ _id: id }, {
-                $set: { [`pallets.${pallet}`]: contenedor.pallets[pallet] }
-            });
-
-
-            let record = new db.recordContenedores({
-                operacionRealizada: action,
-                user: user,
-                documento: {
-                    contenedor: id,
-                    pallet: pallet,
-                    settings: settings
-                }
-            })
-            await record.save();
-            return contenedor
-
-        } catch (err) {
-            throw new ConnectionDBError(408, `Error guardando la configuracion del pallet ${err.message}`);
-        } finally {
-            this.unlockItem(id, "pallets", pallet)
-        }
-    }
     static async actualizar_pallet_contenedor(id, pallet, item, action, user) {
         /**
          * Función que actualiza un pallet en un contenedor agregando un nuevo item.
@@ -534,7 +487,6 @@ class ContenedoresRepository {
                 { $set: { [`pallets.${pallet1}`]: contenedor.pallets[pallet1] } }
             );
 
-            console.log(itemRecord)
             pilaFunciones.push({
                 funcion: "borrar_item_pallet",
                 datos: {
@@ -825,13 +777,19 @@ class ContenedoresRepository {
                 update,
                 finalOptions
             );
-
-
-
             return documentoActualizado;
         } catch (err) {
             throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
 
+        }
+    }
+
+    static async bulkWrite(operations) {
+        try {
+            const result = await db.Contenedores.bulkWrite(operations)
+            return result;
+        } catch (error) {
+            throw new ConnectionDBError(523, `Error performing bulkWrite ${error.message} `);
         }
     }
 }

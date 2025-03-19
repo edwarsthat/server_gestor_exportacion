@@ -6,21 +6,19 @@ class RecordModificacionesRepository {
     static async post_record_contenedor_modification(
         action,
         user,
-        modelo,
-        id,
-        descripcion,
+        documentosAfectados, // Ahora se espera un array de documentos afectados
         oldData,
-        data,
+        newData,
         detalles
     ) {
         /**
-         * Registra una modificación sobre un documento en cualquier colección de la base de datos.
+         * Registra una modificación sobre uno o varios documentos en la base de datos.
          * 
          * @param {String} action - Tipo de acción realizada (ej: ACTUALIZACION, CREACION, ELIMINACION).
          * @param {Object} user - Objeto del usuario que realiza la modificación.
-         * @param {String} modelo - Nombre del modelo (colección) del documento afectado.
-         * @param {mongoose.ObjectId} id - ID del documento afectado.
-         * @param {String} descripcion - Descripción breve sobre la operación o documento afectado.
+         * @param {String} modelo - Nombre del modelo (colección) de los documentos afectados.
+         * @param {Array} documentosAfectados - Array de objetos que describen cada documento afectado.
+         *        Cada objeto debe contener: modelo, documentoId y descripción.
          * @param {Object} oldData - Estado anterior del documento (antes de la modificación).
          * @param {Object} newData - Estado actualizado del documento (después de la modificación).
          * @param {Object} detalles - Detalles adicionales específicos sobre la operación realizada.
@@ -29,19 +27,15 @@ class RecordModificacionesRepository {
          */
         try {
             let record = new db.RecordModificacion({
-                accion: action,  // Ejemplo: "ACTUALIZACION_PALET_EF1"
+                accion: action,  // Ejemplo: "ACTUALIZACION_MULTIPLE_LOTES"
                 usuario: {
                     id: user._id,
                     user: user.user
                 },
-                documentoAfectado: {
-                    modelo: modelo,
-                    documentoId: id,
-                    descripcion: descripcion,
-                },
+                documentosAfectados: documentosAfectados,
                 cambios: {
                     antes: oldData,
-                    despues: data
+                    despues: newData
                 },
                 detallesOperacion: detalles
             });
@@ -51,6 +45,7 @@ class RecordModificacionesRepository {
             throw new ConnectionDBError(610, `Err${err.name} ${err.message}`);
         }
     }
+
 }
 
 module.exports.RecordModificacionesRepository = RecordModificacionesRepository
