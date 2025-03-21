@@ -20,23 +20,24 @@ class ContenedoresRepository {
     }
 
 
-    static async crearContenedor(data) {
+    static async crearContenedor(data, user) {
         /**
          * Función que crea un nuevo contenedor en la base de datos de MongoDB.
          *
-         * @param {Object} data - Objeto que contiene la información del contenedor y del usuario.
-         * @param {Object} data.data - Información del contenedor a crear.
-         * @param {Object} data.user - Información del usuario que realiza la operación.
+         * @param {Object} data - Información del contenedor a crear.
+         * @param {Object} user - Información del usuario que realiza la operación.
          * @returns {Promise<void>} - Promesa que se resuelve cuando el contenedor ha sido creado y registrado.
          * @throws {ProcessError} - Lanza un error si ocurre un problema al crear el contenedor.
          */
         try {
-            const contenedor = new db.Contenedores(data.data.data);
+            const contenedor = new db.Contenedores(data);
             const contenedorGuardado = await contenedor.save();
 
-            let record = new db.recordContenedores({ operacionRealizada: 'crearContenedor', user: data.user.user, documento: contenedorGuardado })
+            let record = new db.recordContenedores({
+                operacionRealizada: 'crearContenedor', user: user, documento: contenedorGuardado
+            })
             await record.save();
-
+            return contenedorGuardado
         } catch (err) {
             throw new ProcessError(421, `Error creando contenedor: ${err.name}`);
 

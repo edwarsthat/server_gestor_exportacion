@@ -1,5 +1,9 @@
+const { ComercialLogicError } = require("../../Error/logicLayerError");
 const { ProcessError } = require("../../Error/ProcessError");
+const { RecordCreacionesRepository } = require("../archive/ArchiveCreaciones");
+const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
 const { ClientesRepository } = require("../Class/Clientes");
+const { ContenedoresRepository } = require("../Class/Contenedores");
 const { LotesRepository } = require("../Class/Lotes");
 const { PreciosRepository } = require("../Class/Precios");
 const { ProveedoresRepository } = require("../Class/Proveedores");
@@ -13,9 +17,7 @@ class ComercialRepository {
     static async get_sys_proveedores(data) {
         let query
         try {
-
             ComercialValidationsRepository.val_get_sys_proveedores(data)
-
             if (data === 'activos') {
                 query = {
                     query: { activo: true },
@@ -36,7 +38,7 @@ class ComercialRepository {
             if (err.status === 522) {
                 throw err
             }
-            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
     static async get_comercial_proveedores_elementos(req) {
@@ -78,12 +80,11 @@ class ComercialRepository {
             if (err.status === 522) {
                 throw err
             }
-            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
     static async get_comercial_precios_proveedores_registros() {
         try {
-
             const query = {
                 limit: 'all'
             }
@@ -95,7 +96,7 @@ class ComercialRepository {
             if (err.status === 522) {
                 throw err
             }
-            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
     static async get_comercial_proveedores_numero_elementos(req) {
@@ -122,7 +123,7 @@ class ComercialRepository {
             if (err.status === 522) {
                 throw err
             }
-            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
     static async put_comercial_proveedores_modify_proveedor(req) {
@@ -132,33 +133,32 @@ class ComercialRepository {
 
             ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data)
 
-            await ProveedoresRepository.modificar_proveedores(
-                _id,
-                data,
+            const proveedorOld = await ProveedoresRepository.get_proveedores({
+                ids: [_id]
+            })
+            const newProveedor = await ProveedoresRepository.actualizar_proveedor(
+                { _id },
+                data
+            );
+            // Registrar modificación Clientes
+            await RecordModificacionesRepository.post_record_modification(
                 action,
-                user.user
-            )
+                user,
+                {
+                    modelo: "Proveedor",
+                    documentoId: newProveedor._id,
+                    descripcion: `Se modifico el proveedor `,
+                },
+                proveedorOld[0],
+                newProveedor,
+                { _id, data, action }
+            );
         } catch (err) {
-
-            if (err.status === 521) {
+            if (err.status === 523 || err.status === 522) {
                 throw err
             }
-            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
-    }
-    static async inactivar_Proveedor(data, user) {
-        const { _id, action } = data
-        const query = [{
-            $set: {
-                activo: { $not: "$activo" }
-            }
-        }]
-        await ProveedoresRepository.modificar_proveedores(
-            _id,
-            query,
-            action,
-            user
-        )
     }
     static async post_comercial_proveedores_add_proveedor(req) {
         try {
@@ -177,19 +177,173 @@ class ComercialRepository {
             }
 
             // Se crea el registro
-            await ProveedoresRepository.addProveedor(nuevoPredioConPrecio, user._id);
+            const proveedor = await ProveedoresRepository.addProveedor(nuevoPredioConPrecio, user._id);
+
+            const documento = {
+                modelo: "Proveedor",
+                _id: proveedor._id,
+            }
+
+            await RecordCreacionesRepository.post_record_creaciones(
+                "post_comercial_proveedores_add_proveedor",
+                user,
+                documento,
+                proveedor,
+                "Creacion de proveedor"
+            )
 
         } catch (err) {
 
             if (err.status === 521) {
                 throw err
             }
-            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-
-
     //#region Precios
+    //#region clientes
+    static async get_comercial_clientes() {
+        try {
+            return await ClientesRepository.get_clientes();
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async post_comercial_clientes(req) {
+        try {
+            const { user } = req
+            const { data } = req.data
+            const cliente = await ClientesRepository.post_cliente(data, user)
+
+            const documento = {
+                modelo: "Cliente",
+                _id: cliente._id,
+            }
+            await RecordCreacionesRepository.post_record_creaciones(
+                "post_comercial_clientes",
+                user,
+                documento,
+                cliente,
+                "Creacion de cliente"
+            )
+        } catch (err) {
+            console.log(err)
+            if (err.status === 521) {
+                throw err
+            }
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_comercial_clientes(req) {
+        try {
+            const { user } = req
+            const { _id, data, action } = req.data
+            delete data._id
+            const clienteOld = await ClientesRepository.get_clientes({
+                ids: [_id]
+            })
+
+            const newCliente = await ClientesRepository.actualizar_cliente(
+                { _id },
+                data
+            );
+            // Registrar modificación Clientes
+            const modificado = Object.keys(data).reduce((acu, item) => acu += item + " - ", "")
+
+            await RecordModificacionesRepository.post_record_modification(
+                action,
+                user,
+                {
+                    modelo: "Cliente",
+                    documentoId: newCliente._id,
+                    descripcion: `Se modifico ${modificado} `,
+                },
+                clienteOld[0],
+                newCliente,
+                { _id, data, action }
+            );
+
+        } catch (err) {
+            if (err.status === 521) {
+                throw err
+            }
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_comercial_clientes_estado(req) {
+        try {
+            const { user } = req
+            const { _id, action } = req.data
+
+            const clienteOld = await ClientesRepository.get_clientes({
+                ids: [_id]
+            })
+
+            const newCliente = await ClientesRepository.actualizar_cliente(
+                { _id },
+                {
+                    $set: {
+                        activo: clienteOld[0].activo ? false : true
+                    }
+                }
+            );
+
+            await RecordModificacionesRepository.post_record_modification(
+                action,
+                user,
+                {
+                    modelo: "Cliente",
+                    documentoId: newCliente._id,
+                    descripcion: `Se modifico el estado del cliente`,
+                },
+                clienteOld[0],
+                newCliente,
+                { _id, action }
+            );
+
+        } catch (err) {
+            if (err.status === 521) {
+                throw err
+            }
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    //#regionend
+    //#region ingresos
+    static async post_comercial_contenedor(req) {
+        try {
+            const { data: datos, user } = req
+            const { data, action } = datos
+
+            const newCont = await ContenedoresRepository.crearContenedor(data, user._id);
+
+            console.log(newCont)
+
+            const documento = {
+                modelo: "Cliente",
+                _id: newCont._id,
+            }
+
+            await RecordCreacionesRepository.post_record_creaciones(
+                action,
+                user,
+                documento,
+                newCont,
+                `Creacion de contenedor ${newCont.numeroContenedor}`
+            )
+
+        } catch (err) {
+            console.log(err)
+            if (err.status === 521) {
+                throw err
+            }
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    //#endregion
     static async post_comercial_precios_add_precio(req) {
         try {
             const { data: datos, user } = req;
@@ -336,7 +490,7 @@ class ComercialRepository {
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_comercial_precios_registros_precios_proveedor(req, user) {
+    static async get_comercial_precios_registros_precios_proveedor(req) {
         try {
             const { page, filtro } = req || {}
             const resultsPerPage = 50;
@@ -349,12 +503,12 @@ class ComercialRepository {
                 filter = ComercialValidationsRepository
                     .query_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
 
-                if (user.Rol > 2) {
-                    filter = {
-                        ...filter,
-                        activo: true
-                    }
-                }
+                // if (user.Rol > 2) {
+                //     filter = {
+                //         ...filter,
+                //         activo: true
+                //     }
+                // }
 
                 query = {
                     skip: (page - 1) * resultsPerPage,
@@ -378,12 +532,45 @@ class ComercialRepository {
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async put_comercial_registroPrecios_proveedores_comentario(req) {
+        try {
+            const { data, user } = req
+            const { _id, comentario, action } = data
+
+            const precio = await PreciosRepository.get_precios({
+                ids: [_id]
+            })
+
+            const newPrecio = await PreciosRepository.actualizar_precio(
+                { _id },
+                { $set: { comentario } }
+            )
+
+            // Registrar modificación Contenedores
+            await RecordModificacionesRepository.post_record_contenedor_modification(
+                action,
+                user,
+                {
+                    modelo: "precio",
+                    documentoId: _id,
+                    descripcion: `Se modifico el comentario del precio`,
+                },
+                precio[0],
+                newPrecio,
+                { _id, comentario, action }
+            );
+
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
     static async get_comercial_precios_registros_precios_proveedores(req) {
         try {
-            const { data: datos } = req;
 
-            const { data } = datos;
-            const { page = 1, filtro } = data || {}
+            const { page = 1, filtro } = req.data || {}
             const resultsPerPage = 50;
             const skip = (page - 1) * resultsPerPage;
 
@@ -394,6 +581,7 @@ class ComercialRepository {
             let queryNumber = {}
 
             if (filtro) {
+
                 let filter = {};
                 // Actualiza filter con el manejo de fechas.
 
@@ -418,17 +606,16 @@ class ComercialRepository {
 
             return { registros: registros, numeroRegistros: response }
         } catch (err) {
+            console.log(err)
             if (err.status === 522) {
                 throw err
             }
-            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+            throw new ProcessError(480, `${err.type}: ${err.message}`)
         }
     }
 
 
-    static async get_clientes() {
-        return await ClientesRepository.get_clientes();
-    }
+
     static async obtener_clientes_historial_contenedores() {
         try {
             return await ClientesRepository.get_clientes({
@@ -461,34 +648,7 @@ class ComercialRepository {
         }
         await ProveedoresRepository.modificar_varios_proveedores({}, { $set: info }, action, user)
     }
-    static async modificar_estado_cliente(data, user) {
-        const { _id, action } = data
-        const query = [{
-            $set: {
-                activo: { $not: "$activo" }
-            }
-        }]
-        await ClientesRepository.modificar_cliente(
-            _id,
-            query,
-            action,
-            user
-        )
-    }
-    static async modificar_info_cliente(req, user) {
-        const { _id, data, action } = req
-        delete data._id
-        await ClientesRepository.put_cliente(
-            _id,
-            data,
-            action,
-            user
-        )
-    }
-    static async add_cliente(req, user) {
-        const { data } = req
-        await ClientesRepository.post_cliente(data, user)
-    }
+
     static async lote_caso_favorita(req, user) {
         try {
             const { _id, query, action } = req

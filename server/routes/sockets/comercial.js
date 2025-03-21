@@ -23,6 +23,10 @@ const apiSocketComercial = {
         await ComercialRepository.put_comercial_precios_precioLotes(data)
         return successResponseRoutes()
     },
+    put_comercial_registroPrecios_proveedores_comentario: async (data) => {
+        await ComercialRepository.put_comercial_registroPrecios_proveedores_comentario(data)
+        return successResponseRoutes()
+    },
     //#endregion
     //#region proveedores
     get_comercial_proveedores_elementos: async (data) => {
@@ -39,6 +43,30 @@ const apiSocketComercial = {
     },
     post_comercial_proveedores_add_proveedor: async (data) => {
         await ComercialRepository.post_comercial_proveedores_add_proveedor(data)
+        return successResponseRoutes()
+    },
+    //#endregion
+    //#region clientes
+    get_comercial_clientes: async () => {
+        const response = await ComercialRepository.get_comercial_clientes();
+        return successResponseRoutes(response)
+    },
+    post_comercial_clientes: async (data) => {
+        await ComercialRepository.post_comercial_clientes(data)
+        return successResponseRoutes()
+    },
+    put_comercial_clientes: async (data) => {
+        await ComercialRepository.put_comercial_clientes(data)
+        return successResponseRoutes()
+    },
+    put_comercial_clientes_estado: async (req) => {
+        await ComercialRepository.put_comercial_clientes_estado(req)
+        return successResponseRoutes()
+    },
+    //#endregion
+    //#region ingresos contendores
+    post_comercial_contenedor: async (data) => {
+        await ComercialRepository.post_comercial_contenedor(data)
         return successResponseRoutes()
     },
     //#endregion

@@ -186,20 +186,7 @@ class SistemaRepository {
         }
         return apkPath;
     }
-    static async get_cargos(user) {
-        const cargo = await UsuariosRepository.get_cargos({
-            ids: [user.cargo]
-        })
-        const cargos = await UsuariosRepository.get_cargos({
-            query: {
-                Rol: {
-                    $gt: cargo[0].Rol
-                }
-            }
-        });
-        return [...cargo, ...cargos]
 
-    }
     static async add_cargo(req, user) {
         const cargo = await UsuariosRepository.get_cargos({
             ids: [user.cargo],
@@ -209,16 +196,8 @@ class SistemaRepository {
         const data = { ...req, Rol: (cargo[0].Rol + 1) }
         await UsuariosRepository.add_cargo(data, user)
     }
-    static async modificar_cargo(data, user) {
-        const { action, cargo } = data;
-        const { _id } = cargo;
-        cargo.__v += 1
-        await UsuariosRepository.modificar_cargo(_id, cargo, action, user.user)
-    }
-    static async eliminar_cargo(req, user) {
-        const { _id } = req
-        await UsuariosRepository.eliminar_cargo(_id, user.user)
-    }
+
+
     static async get_users(req, user) {
         const cargo = await UsuariosRepository.get_cargos({
             ids: [user.cargo]

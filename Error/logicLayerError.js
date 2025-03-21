@@ -24,8 +24,40 @@ class SistemaLogicError extends Error {
     }
 }
 
+
+class ComercialLogicError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Logica comercial error"
+        this.status = code
+        this.message = message
+    }
+}
+
+class DataLogicError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Logica data error"
+        this.status = code
+        this.message = message
+    }
+}
+
+class GestionCuentasLogicError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Logica gestion de cuentas error"
+        this.status = code
+        this.message = message
+    }
+}
+
+
 module.exports = {
     InventariosLogicError,
     CalidadLogicError,
-    SistemaLogicError
+    SistemaLogicError,
+    ComercialLogicError,
+    DataLogicError,
+    GestionCuentasLogicError
 }

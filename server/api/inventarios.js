@@ -680,7 +680,7 @@ class InventariosRepository {
             if (Number(datos.kilos) === 0) throw new Error(`Los kilos no pueden ser cero`)
             if (Number(datos.kilos) === 0) throw new Error(`Los kilos no pueden ser cero`)
 
-            if (Number(datos.promedio) < 17 || Number(datos.promedio) > 22)
+            if (Number(datos.promedio) < 17 || Number(datos.promedio) > 23)
                 throw new Error(` Los kilos no corresponden a las canastillas`)
 
             if (!datos.ef || datos.ef.startsWith('EF1')) {

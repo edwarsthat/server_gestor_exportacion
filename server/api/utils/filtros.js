@@ -78,9 +78,9 @@ function filtroPorSemana(fechaInicio, fechaFin, filter = {}, year = 'year', week
             weekFinish = getISOWeek(defaultDate);
         }
 
-        filter.$or = [
+        filter.$and = [
             { $and: [{ [year]: yearInit }, { [week]: { $gte: weekInit } }] },
-            { [year]: { $gt: yearInit, $lt: yearFinish } },
+            { [year]: { $gte: yearInit, $lte: yearFinish } },
             { $and: [{ [year]: yearFinish }, { [week]: { $lte: weekFinish } }] }
         ]
 

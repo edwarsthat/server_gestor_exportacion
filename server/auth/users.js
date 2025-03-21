@@ -37,7 +37,8 @@ const permisos_generales = [
     "Get_info_update_app_desktop",
 
     //obtener los proveedores para desplegables
-    "get_sys_proveedores"
+    "get_sys_proveedores",
+    "get_data_clientes"
 ]
 
 class UserRepository {

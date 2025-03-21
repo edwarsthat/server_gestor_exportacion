@@ -30,6 +30,8 @@ const { defineRecordLotes } = require('../schemas/lotes/schemaRecordLotes');
 const { defineIndicadores } = require('../schemas/indicadores/schemaIndicadoresProceso');
 const { definePrecios } = require('../schemas/precios/schemaPrecios');
 const { defineModificarElemento } = require('../schemas/transaccionesRecord/ModificacionesRecord');
+const { defineCrearElemento } = require('../schemas/transaccionesRecord/AddsRecord');
+const { defineDeleteRecords } = require('../schemas/transaccionesRecord/DeleteRecord');
 const db = {};
 
 const checkMongoDBRunning = async () => {
@@ -122,6 +124,8 @@ const defineSchemasProceso = async (sysConn) => {
         db.TurnoData = await defineTurnoData(sysConn);
         db.Indicadores = await defineIndicadores(sysConn);
         db.RecordModificacion = await defineModificarElemento(sysConn)
+        db.RecordCreacion = await defineCrearElemento(sysConn)
+        db.RecordDelete = await defineDeleteRecords(sysConn)
 
     } catch (error) {
         console.error("Error durante la inicialización de MongoDB: creando los schemas", error);

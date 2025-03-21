@@ -77,7 +77,6 @@ class ComercialValidationsRepository {
             "contacto_finca",
             "telefono_predio",
         ];
-        console.log(data)
 
         requiredFields.forEach((field) => {
             if (!data[field] || data[field] === "") {

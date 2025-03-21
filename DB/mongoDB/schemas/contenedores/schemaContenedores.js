@@ -40,7 +40,8 @@ const defineContenedores = async (conn) => {
     calibre: Number,
     calidad: Number,
     fecha: Date,
-    tipoFruta: String
+    tipoFruta: String,
+    SISPAP: Boolean
   });
 
   const subSchema = new Schema(

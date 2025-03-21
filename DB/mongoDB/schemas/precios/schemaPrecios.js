@@ -15,7 +15,8 @@ const definePrecios = async (conn) => {
         descarte: { type: Number, default: 0 },
         predios: [String],
         week: Number,
-        year: Number
+        year: Number,
+        comentario: String
     })
 
     const Precios = conn.model("precio", PreciosSchema);

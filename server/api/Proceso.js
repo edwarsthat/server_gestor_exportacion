@@ -340,6 +340,7 @@ class ProcesoRepository {
 
             if (item.calidad === '') throw new Error("El item debe tener una calidad")
 
+            //se obtienen los datos
             const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 ids: [_id],
                 select: { infoContenedor: 1, pallets: 1 },
@@ -348,6 +349,11 @@ class ProcesoRepository {
                     select: 'CLIENTE PAIS_DESTINO',
                 }
             })
+            //se obtiene el lote
+            const lotes = await LotesRepository.getLotes({
+                ids: [lote]
+            });
+
 
             // Crear copia profunda de los pallets
             const palletsModificados = JSON.parse(JSON.stringify(contenedor[0].pallets));
@@ -363,7 +369,11 @@ class ProcesoRepository {
 
             // Actualizar contenedor con pallets modificados
             if (index === -1) {
-                palletSeleccionado.push(item)
+                const itemnuevo = {
+                    ...item,
+                    SISPAP: lotes[0].predio.SISPAP
+                }
+                palletSeleccionado.push(itemnuevo)
                 await ContenedoresRepository.actualizar_contenedor(
                     { _id },
                     {
@@ -395,10 +405,7 @@ class ProcesoRepository {
             );
 
             //modificar el predio
-            //se obtiene el lote
-            const lotes = await LotesRepository.getLotes({
-                ids: [lote]
-            });
+
 
             const loteModificado = JSON.parse(JSON.stringify(lotes[0]));
 
@@ -410,7 +417,7 @@ class ProcesoRepository {
                 deshidratacion: loteModificado.deshidratacion,
                 rendimiento: loteModificado.rendimiento,
             }
-
+            loteModificado[calidadFile[calidad]] += kilos
             loteModificado.deshidratacion = await deshidratacionLote(loteModificado)
             loteModificado.rendimiento = await rendimientoLote(loteModificado)
 
@@ -468,6 +475,7 @@ class ProcesoRepository {
             procesoEventEmitter.emit("listaempaque_update");
 
         } catch (err) {
+            console.log(err)
             if (
                 err.status === 610 ||
                 err.status === 523
@@ -969,6 +977,7 @@ class ProcesoRepository {
 
             const kilos = Number(copiaItemSeleccionado.tipoCaja.split("-")[1].replace(",", ".")) * cajas;
 
+            lote[calidadFile[copiaItemSeleccionado.calidad]] -= kilos
             lote.deshidratacion = await deshidratacionLote(lote)
             lote.rendimiento = await rendimientoLote(lote)
 

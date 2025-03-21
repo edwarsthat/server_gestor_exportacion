@@ -1,4 +1,3 @@
-const { ContenedoresRepository } = require("../Class/Contenedores");
 const { LotesRepository } = require("../Class/Lotes");
 const { ProcesoRepository } = require("../api/Proceso");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
@@ -56,14 +55,8 @@ const apiSocket = {
 
 
     },
-    get_clientes: async () => {
-        const clientes = await ComercialRepository.get_clientes();
-        return { status: 200, message: 'Ok', data: clientes }
-    },
-    getClientes: async () => {
-        const clientes = await ComercialRepository.get_clientes();
-        return { status: 200, message: 'Ok', data: clientes }
-    },
+
+
     // obtener_clientes_historial_contenedores: async () => {
     //     const clientes = await ComercialRepository.obtener_clientes_historial_contenedores();
     //     return { status: 200, message: 'Ok', data: clientes }
@@ -86,11 +79,7 @@ const apiSocket = {
         return { status: 200, message: 'Ok', data: lotes }
     },
 
-    get_cargos: async (req) => {
-        const { user } = req
-        const response = await SistemaRepository.get_cargos(user)
-        return { status: 200, message: 'Ok', data: response }
-    },
+
     get_users: async (req) => {
         const { data, user } = req
         const response = await SistemaRepository.get_users(data, user)
@@ -269,10 +258,7 @@ const apiSocket = {
 
         return { status: 200, message: 'Ok' }
     },
-    crearContenedor: async (data) => {
-        await ContenedoresRepository.crearContenedor(data)
-        return { status: 200, message: 'Ok' }
-    },
+
     add_cargo: async (req) => {
         const { data, user } = req
         await SistemaRepository.add_cargo(data.data, user)
@@ -285,11 +271,6 @@ const apiSocket = {
     },
 
 
-    add_cliente: async (req) => {
-        const { data, user } = req
-        await ComercialRepository.add_cliente(data, user)
-        return { status: 200, message: 'Ok' }
-    },
 
 
 
@@ -328,16 +309,6 @@ const apiSocket = {
         return { status: 200, message: 'Ok' }
     },
 
-
-
-
-
-    inactivar_Proveesdor: async (req) => {
-        const { data, user } = req
-        await ComercialRepository.inactivar_Proveedor(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
-
     desactivar_user: async (req) => {
         const { data, user } = req;
         await SistemaRepository.desactivar_user(data, user);
@@ -348,27 +319,10 @@ const apiSocket = {
         await SistemaRepository.modificar_usuario(data, user);
         return { status: 200, message: 'Ok' }
     },
-    eliminar_cargo: async (req) => {
-        const { data, user } = req;
-        await SistemaRepository.eliminar_cargo(data, user)
-        return { status: 200, message: 'Ok' }
-    },
-    modificar_cargo: async (req) => {
-        const { data, user } = req;
-        await SistemaRepository.modificar_cargo(data, user);
-        return { status: 200, message: 'Ok' }
-    },
 
-    modificar_estado_cliente: async (req) => {
-        const user = req.user.user;
-        await ComercialRepository.modificar_estado_cliente(req.data, user)
-        return { status: 200, message: 'Ok' }
-    },
-    modificar_info_cliente: async (req) => {
-        const { user, data } = req
-        await ComercialRepository.modificar_info_cliente(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
+
+
+
     add_settings_pallet: async (req) => {
         const { data, user } = req;
         const contenedores = await ProcesoRepository.add_settings_pallet(data, user.user);

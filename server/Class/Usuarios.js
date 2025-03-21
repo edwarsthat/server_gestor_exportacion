@@ -92,28 +92,28 @@ class UsuariosRepository {
             throw new PostError(409, `Error agregando cargo ${err.message}`);
         }
     }
-    static async eliminar_cargo(_id, user) {
-        const session = await db.Cargo.startSession();
-        session.startTransaction();
-        try {
-            const cargo = await db.Cargo.findByIdAndDelete(_id)
-            const cargoObj = new Object(cargo.toObject());
-            let record = new db.recordCargo({
-                operacionRealizada: 'Eliminar cargo',
-                user: user.user,
-                documento: cargoObj
-            })
-            await record.save();
+    // static async eliminar_cargo(_id, user) {
+    //     const session = await db.Cargo.startSession();
+    //     session.startTransaction();
+    //     try {
+    //         const cargo = await db.Cargo.findByIdAndDelete(_id)
+    //         const cargoObj = new Object(cargo.toObject());
+    //         let record = new db.recordCargo({
+    //             operacionRealizada: 'Eliminar cargo',
+    //             user: user.user,
+    //             documento: cargoObj
+    //         })
+    //         await record.save();
 
-            await session.commitTransaction();
-            session.endSession();
-            return cargo
-        } catch (err) {
-            await session.abortTransaction();
-            session.endSession();
-            throw new PostError(409, `Error eliminando cargo ${err.message}`);
-        }
-    }
+    //         await session.commitTransaction();
+    //         session.endSession();
+    //         return cargo
+    //     } catch (err) {
+    //         await session.abortTransaction();
+    //         session.endSession();
+    //         throw new PostError(409, `Error eliminando cargo ${err.message}`);
+    //     }
+    // }
     static async modificar_cargo(id, query, action, user) {
         this.validateBussyCargoIds(id)
         const session = await db.Cargo.startSession();
@@ -139,6 +139,63 @@ class UsuariosRepository {
             bussyIdsCargo.delete(id);
         }
     }
+    static async actualizar_cargo(filter, update, options = {}, session = null) {
+        /**
+         * Función genérica para actualizar documentos en MongoDB usando Mongoose
+         *
+         * @param {Model} model - Modelo Mongoose (db.cargos, etc.)
+         * @param {Object} filter - Objeto de filtrado para encontrar el documento
+         * @param {Object} update - Objeto con los campos a actualizar
+         * @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
+         * @param {ClientSession} session - Sesión de transacción (opcional)
+         * @returns Documento actualizado
+         */
+        const defaultOptions = { new: true }; // retorna el documento actualizado
+        const finalOptions = session
+            ? { ...defaultOptions, ...options, session }
+            : { ...defaultOptions, ...options };
+
+        try {
+            const documentoActualizado = await db.Cargo.findOneAndUpdate(
+                filter,
+                update,
+                finalOptions
+            );
+            return documentoActualizado;
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
+
+        }
+    }
+    static async eliminar_cargo(filter, options = {}, session = null) {
+        /**
+         * Función genérica para eliminar documentos en MongoDB usando Mongoose
+         *
+         * @param {Object} filter - Objeto de filtrado para encontrar el documento
+         * @param {Object} options - Opciones adicionales de findOneAndDelete (opcional)
+         * @param {ClientSession} session - Sesión de transacción (opcional)
+         * @returns Documento eliminado
+         */
+        const finalOptions = session
+            ? { ...options, session }
+            : { ...options };
+
+        try {
+            const documentoEliminado = await db.Cargo.findOneAndDelete(
+                filter,
+                finalOptions
+            );
+            return documentoEliminado;
+        } catch (err) {
+            throw new ConnectionDBError(527, `Error eliminando el documento: ${err.message}`);
+        }
+    }
+
+
+
+
+
+
     static async add_user(data, user) {
         const session = await db.Usuarios.startSession();
         session.startTransaction();

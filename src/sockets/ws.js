@@ -6,6 +6,8 @@ const { UserRepository } = require("../../server/auth/users");
 const { apiSocket } = require("../../server/desktop/reduce");
 const { apiSocketCalidad } = require("../../server/routes/sockets/calidad");
 const { apiSocketComercial } = require("../../server/routes/sockets/comercial");
+const { apiSocketData } = require("../../server/routes/sockets/data");
+const { apiSocketGestionCuentas } = require("../../server/routes/sockets/gestionCuentas");
 const { apiSockectIndicadores } = require("../../server/routes/sockets/indicadores");
 const { apiSocketInventarios } = require("../../server/routes/sockets/inventarios");
 const { apiSocketProceso } = require("../../server/routes/sockets/proceso");
@@ -115,6 +117,10 @@ function initSockets(io) {
                 handleRequest(data, callback, apiSockectIndicadores);
             } else if (dominio === "proceso") {
                 handleRequest(data, callback, apiSocketProceso);
+            } else if (dominio === "data") {
+                handleRequest(data, callback, apiSocketData);
+            } else if (dominio === "gestionCuentas") {
+                handleRequest(data, callback, apiSocketGestionCuentas);
             }
             else {
                 handleRequest(data, callback, apiSocket);
