@@ -12,6 +12,7 @@ const { apiSockectIndicadores } = require("../../server/routes/sockets/indicador
 const { apiSocketInventarios } = require("../../server/routes/sockets/inventarios");
 const { apiSocketProceso } = require("../../server/routes/sockets/proceso");
 const { apiSocketSistema } = require("../../server/routes/sockets/sistema");
+const { apiSocketTransporte } = require("../../server/routes/sockets/transporte");
 
 
 
@@ -121,6 +122,8 @@ function initSockets(io) {
                 handleRequest(data, callback, apiSocketData);
             } else if (dominio === "gestionCuentas") {
                 handleRequest(data, callback, apiSocketGestionCuentas);
+            } else if (dominio === "transporte") {
+                handleRequest(data, callback, apiSocketTransporte);
             }
             else {
                 handleRequest(data, callback, apiSocket);

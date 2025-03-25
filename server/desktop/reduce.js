@@ -5,7 +5,6 @@ const { CalidadRepository } = require("../api/Calidad");
 const { ComercialRepository } = require("../api/Comercial");
 const { SistemaRepository } = require("../api/Sistema");
 const { ContabilidadRepository } = require("../api/Contabilidad");
-const { TransporteRepository } = require("../api/Transporte");
 const { ConstantesDelSistema } = require("../Class/ConstantesDelSistema");
 const { Get_info_update_app_desktop } = require("./docs/getDocs");
 const { IndicadoresAPIRepository } = require("../api/IndicadoresAPI");
@@ -80,13 +79,6 @@ const apiSocket = {
     },
 
 
-    get_users: async (req) => {
-        const { data, user } = req
-        const response = await SistemaRepository.get_users(data, user)
-        return { status: 200, message: 'Ok', data: response }
-    },
-
-
     obtener_historial_decarte_lavado_proceso: async () => {
         // const { user } = req
         const registros = await ProcesoRepository.obtener_historial_decarte_lavado_proceso("");
@@ -121,10 +113,6 @@ const apiSocket = {
     },
 
 
-    get_transporte_formulario_contenedores: async () => {
-        const data = await TransporteRepository.get_transporte_formulario_contenedores();
-        return { status: 200, message: 'Ok', data: data }
-    },
 
     obtener_lotes_contabilidad_informes_calidad: async (req) => {
         const { data } = req
@@ -175,22 +163,6 @@ const apiSocket = {
         const response = await ProcesoRepository.obtener_cantidad_historial_ingreso_inventario()
         return { status: 200, message: 'Ok', data: response }
     },
-    get_transporte_registros_exportacion_numeroElementos: async () => {
-        const data = await TransporteRepository.get_transporte_registros_exportacion_numeroElementos()
-        return { status: 200, message: 'Ok', data: data }
-    },
-    get_transporte_registros_programacion_mula_numeroElementos: async () => {
-        const data = await TransporteRepository.get_transporte_registros_programacion_mula_numeroElementos()
-        return { status: 200, message: 'Ok', data: data }
-    },
-    get_transporte_registros_inspeccionMula_numeroElementos: async () => {
-        const data = await TransporteRepository.get_transporte_registros_inspeccionMula_numeroElementos()
-        return { status: 200, message: 'Ok', data: data }
-    },
-    get_transporte_documentos_programacionMulas_numeroElementos: async () => {
-        const data = await TransporteRepository.get_transporte_documentos_programacionMulas_numeroElementos()
-        return { status: 200, message: 'Ok', data: data }
-    },
 
     get_indicadores_proceso_numero_items: async () => {
         const data = await IndicadoresAPIRepository.get_indicadores_proceso_numero_items()
@@ -216,34 +188,7 @@ const apiSocket = {
     },
 
     //! transporte
-    get_transporte_exportacion_contenedores: async () => {
-        const data = await TransporteRepository.get_transporte_exportacion_contenedores()
-        return { status: 200, message: 'Ok', data: data }
-    },
-    get_transporte_registro_exportacion: async (req) => {
-        const { data } = req;
-        const response = await TransporteRepository.get_transporte_registro_exportacion(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
-    get_transporte_mula_contenedores: async () => {
-        const data = await TransporteRepository.get_transporte_mula_contenedores()
-        return { status: 200, message: 'Ok', data: data }
-    },
-    get_transporte_registro_programacion_mula: async (req) => {
-        const { data } = req;
-        const response = await TransporteRepository.get_transporte_registro_programacion_mula(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
-    get_transporte_registro_formularios_inspeccion: async (req) => {
-        const { data } = req;
-        const response = await TransporteRepository.get_transporte_registro_formularios_inspeccion(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
-    get_transporte_documentos_programacionMula_contenedores: async (req) => {
-        const { data } = req;
-        const response = await TransporteRepository.get_transporte_documentos_programacionMula_contenedores(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
+
 
     //#endregion
     //#region POST
@@ -259,48 +204,10 @@ const apiSocket = {
         return { status: 200, message: 'Ok' }
     },
 
-    add_cargo: async (req) => {
-        const { data, user } = req
-        await SistemaRepository.add_cargo(data.data, user)
-        return { status: 200, message: 'Ok' }
-    },
-    add_user: async (req) => {
-        const { data, user } = req
-        await SistemaRepository.add_user(data.data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
-
-
-
-
-
 
     //! transporte
-    post_transporte_programacion_exportacion: async (req) => {
-        const { data, user } = req
-        await TransporteRepository.post_transporte_programacion_exportacion(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
-    post_transporte_programacion_exportacion_modificar: async (req) => {
-        const { data, user } = req
-        await TransporteRepository.post_transporte_programacion_exportacion_modificar(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
-    post_transporte_programacion_mula: async (req) => {
-        const { data, user } = req
-        await TransporteRepository.post_transporte_programacion_mula(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
-    post_transporte_programacion_mula_modificar: async (req) => {
-        const { data, user } = req
-        await TransporteRepository.post_transporte_programacion_mula_modificar(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
-    post_transporte_registros_inspeccionMula_modificar: async (req) => {
-        const { data, user } = req
-        await TransporteRepository.post_transporte_registros_inspeccionMula_modificar(data, user.user)
-        return { status: 200, message: 'Ok' }
-    },
+
+
     //#endregion
     //#region PUT
     desverdizado: async (data) => {
@@ -308,19 +215,6 @@ const apiSocket = {
         await ProcesoRepository.desverdizado(data.data, user)
         return { status: 200, message: 'Ok' }
     },
-
-    desactivar_user: async (req) => {
-        const { data, user } = req;
-        await SistemaRepository.desactivar_user(data, user);
-        return { status: 200, message: 'Ok' }
-    },
-    modificar_usuario: async (req) => {
-        const { data, user } = req;
-        await SistemaRepository.modificar_usuario(data, user);
-        return { status: 200, message: 'Ok' }
-    },
-
-
 
 
     add_settings_pallet: async (req) => {
@@ -356,11 +250,7 @@ const apiSocket = {
         return { status: 200, message: 'Ok' }
     },
 
-    post_transporte_formulario_inspeccion_mula: async (req) => {
-        const { data, user } = req
-        await TransporteRepository.post_transporte_formulario_inspeccion_mula(data, user)
-        return { status: 200, message: 'Ok' }
-    },
+
 
     lote_no_pagar_balin: async (req) => {
         const { data, user } = req

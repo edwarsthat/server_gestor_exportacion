@@ -741,7 +741,7 @@ class ContenedoresRepository {
             const count = await db.Contenedores.countDocuments(filtro);
             return count;
         } catch (err) {
-            throw new ConnectionDBError(520, `Error obteniendo cantidad contenedores ${filtro} --- ${err.message}`);
+            throw new ConnectionDBError(524, `Error obteniendo cantidad contenedores ${filtro} --- ${err.message}`);
         }
     }
     static validateBussyIds(id) {

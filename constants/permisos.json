@@ -604,7 +604,7 @@
                 "titulo": "Crear cargo",
                 "permisos": {
                     "Ver cargos": "get_gestionCuentas_cargos",
-                    "Crear cargo": "add_cargo",
+                    "Crear cargo": "post_gestionCuentas_cargo",
                     "Eliminar Cargo": "delete_gestionCuentas_cargos",
                     "Modificar cargos": "put_gestionCuentas_cargos"
                 },
@@ -615,7 +615,7 @@
             "Usuarios": {
                 "titulo": "Donde se gestionan los usuarios del sistema",
                 "permisos": {
-                    "Ver usuarios": "get_users",
+                    "Ver usuarios": "get_gestionCuentas_usuarios",
                     "Crear usuarios": "add_user",
                     "Desactivar cuenta": "desactivar_user",
                     "Modificar Usuario": "modificar_usuario"

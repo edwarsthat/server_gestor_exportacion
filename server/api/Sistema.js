@@ -187,60 +187,13 @@ class SistemaRepository {
         return apkPath;
     }
 
-    static async add_cargo(req, user) {
-        const cargo = await UsuariosRepository.get_cargos({
-            ids: [user.cargo],
-            select: { Rol: 1 }
-        })
-
-        const data = { ...req, Rol: (cargo[0].Rol + 1) }
-        await UsuariosRepository.add_cargo(data, user)
-    }
 
 
-    static async get_users(req, user) {
-        const cargo = await UsuariosRepository.get_cargos({
-            ids: [user.cargo]
-        })
-        const { page, cargoFilter } = req
-        const resultsPerPage = 50;
 
-        const query = {
-            skip: (page - 1) * resultsPerPage,
-            limit: resultsPerPage,
-            sort: { createdAt: -1 }
-        }
 
-        if (cargoFilter !== '') {
-            query.query = {
-                cargo: cargoFilter
-            }
-        }
 
-        const usuarios = await UsuariosRepository.get_users(query);
-        const resultado = usuarios.filter(usuario => usuario.cargo.Rol > cargo[0].Rol)
-        return resultado
-    }
-    static async add_user(req, user) {
-        const hashedPassword = await bcrypt.hash(req.password, 10);
-        req.password = hashedPassword
-        await UsuariosRepository.add_user(req, user)
-    }
-    static async desactivar_user(data, user) {
-        const { _id, __v, action } = data;
-        const query =
-            [{
-                $set: {
-                    estado: { $not: "$estado" }
-                }
-            }]
 
-        await UsuariosRepository.modificar_usuario(_id, query, action, user.user, __v);
-    }
-    static async modificar_usuario(req, user) {
-        const { action, data, _id, __v } = req
-        await UsuariosRepository.modificar_usuario(_id, data, action, user.user, __v);
-    }
+
     static async login2(data) {
         await UserRepository.validate_userName(data);
         await UserRepository.validate_password(data);

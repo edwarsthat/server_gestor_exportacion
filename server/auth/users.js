@@ -38,7 +38,8 @@ const permisos_generales = [
 
     //obtener los proveedores para desplegables
     "get_sys_proveedores",
-    "get_data_clientes"
+    "get_data_clientes",
+    "get_data_cargos"
 ]
 
 class UserRepository {

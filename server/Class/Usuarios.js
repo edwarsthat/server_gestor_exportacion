@@ -69,27 +69,22 @@ class UsuariosRepository {
             throw new ConnectionDBError(522, `Error get user ${err.message}`);
         }
     }
-    static async add_cargo(data, user) {
-        const session = await db.Cargo.startSession();
-        session.startTransaction();
+    static async add_cargo(data) {
         try {
             const cargo = new db.Cargo(data);
             const saveCargo = await cargo.save();
-            let record = new db.recordCargo({
-                operacionRealizada: 'crearCargo',
-                user: user.user,
-                documento: saveCargo
-            })
-            await record.save();
+            // let record = new db.recordCargo({
+            //     operacionRealizada: 'crearCargo',
+            //     user: user.user,
+            //     documento: saveCargo
+            // })
+            // await record.save();
 
-            await session.commitTransaction();
-            session.endSession();
+
 
             return saveCargo
         } catch (err) {
-            await session.abortTransaction();
-            session.endSession();
-            throw new PostError(409, `Error agregando cargo ${err.message}`);
+            throw new PostError(521, `Error agregando cargo ${err.message}`);
         }
     }
     // static async eliminar_cargo(_id, user) {
@@ -196,27 +191,20 @@ class UsuariosRepository {
 
 
 
-    static async add_user(data, user) {
-        const session = await db.Usuarios.startSession();
-        session.startTransaction();
+    static async add_user(data) {
         try {
-
             const usuario = new db.Usuarios(data);
             const saveUsuario = await usuario.save();
-            let record = new db.recordUsuario({
-                operacionRealizada: 'crearUsuario',
-                user: user,
-                documento: saveUsuario
-            })
-            await record.save();
-
-            await session.commitTransaction();
-            session.endSession();
+            // let record = new db.recordUsuario({
+            //     operacionRealizada: 'crearUsuario',
+            //     user: user,
+            //     documento: saveUsuario
+            // })
+            // await record.save();
 
             return saveUsuario
         } catch (err) {
-            await session.commitTransaction();
-            session.endSession();
+
             throw new PostError(521, `Error agregando usuario ${err.message}`);
         }
     }
@@ -265,6 +253,34 @@ class UsuariosRepository {
             throw new PutError(414, `Error al modificar el dato ${id} => ${err.name}`);
         } finally {
             bussyIdsUsuario.delete(id);
+        }
+    }
+    static async actualizar_usuario(filter, update, options = {}, session = null) {
+        /**
+         * Función genérica para actualizar documentos en MongoDB usando Mongoose
+         *
+         * @param {Model} model - Modelo Mongoose (db.cargos, etc.)
+         * @param {Object} filter - Objeto de filtrado para encontrar el documento
+         * @param {Object} update - Objeto con los campos a actualizar
+         * @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
+         * @param {ClientSession} session - Sesión de transacción (opcional)
+         * @returns Documento actualizado
+         */
+        const defaultOptions = { new: true }; // retorna el documento actualizado
+        const finalOptions = session
+            ? { ...defaultOptions, ...options, session }
+            : { ...defaultOptions, ...options };
+
+        try {
+            const documentoActualizado = await db.Usuarios.findOneAndUpdate(
+                filter,
+                update,
+                finalOptions
+            );
+            return documentoActualizado;
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
+
         }
     }
     static async add_volante_calidad(data) {
