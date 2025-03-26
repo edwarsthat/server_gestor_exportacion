@@ -490,7 +490,7 @@ class ProcesoRepository {
         const { user } = req
         try {
             const { _id, pallet, seleccion, data, action } = req.data
-            const { calidad, calibre, cajas, tipoCaja } = data
+            const { calidad, calibre, cajas, tipoCaja, tipoFruta } = data
 
             //se obtiene  el contenedor a modifiar
             const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
@@ -598,6 +598,13 @@ class ProcesoRepository {
                 newData,
                 { _id, pallet, seleccion, data }
             );
+
+            // await VariablesDelSistema.ingresar_exportacion(kilos, lote.tipoFruta)
+            await VariablesDelSistema.ingresar_kilos_procesados2(-oldKilos, tipoFruta)
+            await VariablesDelSistema.ingresar_exportacion2(-oldKilos, tipoFruta)
+
+            await VariablesDelSistema.ingresar_kilos_procesados2(newKilos, tipoFruta)
+            await VariablesDelSistema.ingresar_exportacion2(newKilos, tipoFruta)
 
             procesoEventEmitter.emit("server_event", {
                 action: "lista_empaque_update",
@@ -713,6 +720,11 @@ class ProcesoRepository {
                 newDataRegistro,
                 { _id, pallet, seleccion, action }
             );
+
+            // await VariablesDelSistema.ingresar_exportacion(kilos, lote.tipoFruta)
+            await VariablesDelSistema.ingresar_kilos_procesados2(-kilos, lote[0].tipoFruta)
+            await VariablesDelSistema.ingresar_exportacion2(-kilos, lote[0].tipoFruta)
+
 
             procesoEventEmitter.emit("server_event", {
                 action: "lista_empaque_update",

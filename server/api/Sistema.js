@@ -154,8 +154,8 @@ class SistemaRepository {
     static async get_sistema_proceso_dataProceso() {
         try {
             const predio = await VariablesDelSistema.obtenerEF1proceso();
-            const kilosProcesadosHoy = await VariablesDelSistema.get_kilos_procesados_hoy();
-            const kilosExportacionHoy = await VariablesDelSistema.get_kilos_exportacion_hoy();
+            const kilosProcesadosHoy = await VariablesDelSistema.get_kilos_procesados_hoy2();
+            const kilosExportacionHoy = await VariablesDelSistema.get_kilos_exportacion_hoy2();
             return {
                 predio: predio,
                 kilosProcesadosHoy: kilosProcesadosHoy,
@@ -186,12 +186,6 @@ class SistemaRepository {
         }
         return apkPath;
     }
-
-
-
-
-
-
 
 
     static async login2(data) {

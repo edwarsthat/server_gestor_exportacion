@@ -5,6 +5,7 @@ const { SistemaRepository } = require('../api/Sistema');
 const routerAppTv = express.Router();
 
 routerAppTv.get("/", (req, res) => {
+    console.log("asdasd")
     res.sendFile(path.join(
         __dirname,
         '..', '..',
@@ -15,7 +16,6 @@ routerAppTv.get("/", (req, res) => {
 
 routerAppTv.get("/get_data_proceso", async (req, res) => {
     try {
-        console.log(req.method)
         const response = await SistemaRepository.get_sistema_proceso_dataProceso()
         res.json({ status: 200, message: 'Ok', data: response })
     } catch (err) {
