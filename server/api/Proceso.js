@@ -1803,7 +1803,6 @@ class ProcesoRepository {
         }
     }
 
-
     //#endregion
 
 
@@ -2286,7 +2285,6 @@ class ProcesoRepository {
             await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString())
 
             await VariablesDelSistema.ingresar_kilos_vaciados(kilosVaciados);
-
 
             //para lista de empaque
             procesoEventEmitter.emit("predio_vaciado", {

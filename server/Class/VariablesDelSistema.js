@@ -1092,6 +1092,8 @@ class VariablesDelSistema {
       await cliente.set("kilosProcesadosHoyNaranja", "0");
       await cliente.set("kilosExportacionHoyLimon", "0");
       await cliente.set("kilosExportacionHoyNaranja", "0");
+
+      await cliente.set("kilosVaciadosHoy", "0");
       await cliente.set("fechaInicioProceso", '');
       await cliente.set("statusProceso", 'off');
       await cliente.set("statusProceso", 'off');
