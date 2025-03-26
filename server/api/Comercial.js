@@ -320,8 +320,6 @@ class ComercialRepository {
 
             const newCont = await ContenedoresRepository.crearContenedor(data, user._id);
 
-            console.log(newCont)
-
             const documento = {
                 modelo: "Cliente",
                 _id: newCont._id,
@@ -336,7 +334,6 @@ class ComercialRepository {
             )
 
         } catch (err) {
-            console.log(err)
             if (err.status === 521) {
                 throw err
             }
@@ -344,6 +341,40 @@ class ComercialRepository {
         }
     }
     //#endregion
+    //#region formularios
+    static async put_comercial_reclamacionCalidad_contenedor(req) {
+        try {
+            const { form, paths } = req
+            const { contenedor } = form
+            //se obtiene  el contenedor a modifiar
+            const foundContenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                query: { numeroContenedor: Number(contenedor) },
+                select: { infoContenedor: 1 },
+            });
+
+            if (foundContenedor.length <= 0) throw new Error("Contenedor no encontrado")
+
+            // Actualizar contenedor con pallets modificados
+            await ContenedoresRepository.actualizar_contenedor(
+                { _id: foundContenedor[0]._id },
+                {
+                    reclamacionCalidad: {
+                        ...form,
+                        archivosSubidos: paths
+                    }
+                }
+            );
+
+
+        } catch (err) {
+            if (err.status === 521) {
+                throw err
+            }
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    //#endregion
+
     static async post_comercial_precios_add_precio(req) {
         try {
             const { data: datos, user } = req;
@@ -637,32 +668,6 @@ class ComercialRepository {
         })
         return response
     }
-    static async ingresar_precio_fruta(req, user) {
-        const { action, data } = req
-        const { precio, tipoFruta } = data
-        const keys = Object.keys(precio);
-        const info = {};
-        for (let i = 0; i < keys.length; i++) {
-            let key2 = `precio.${tipoFruta}.${keys[i]}`
-            info[key2] = precio[keys[i]]
-        }
-        await ProveedoresRepository.modificar_varios_proveedores({}, { $set: info }, action, user)
-    }
-
-    static async lote_caso_favorita(req, user) {
-        try {
-            const { _id, query, action } = req
-
-
-            await LotesRepository.modificar_lote_proceso(
-                _id, query, action, user
-            )
-        } catch (err) {
-            throw new Error(`Code ${err.code}: ${err.message}`);
-
-        }
-    }
-
 
 }
 

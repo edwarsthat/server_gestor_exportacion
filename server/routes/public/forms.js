@@ -2,6 +2,7 @@
 const express = require('express');
 const path = require('path');
 const multer = require('multer');
+const { ComercialRepository } = require('../../api/Comercial');
 
 
 const formsAPI = express.Router();
@@ -47,18 +48,25 @@ formsAPI.get("/reclamaciones_calidad", (req, res) => {
     });
 });
 
-formsAPI.post("/reclamaciones_calidad", upload.array('documentos'), (req, res) => {
-    // req.body contendrá los campos de texto enviados
-    console.log("Campos de texto:", req.body);
+formsAPI.post("/reclamaciones_calidad", upload.array('documentos'), async (req, res) => {
+    try {
+        const paths = req.files.map(item => item.path);
+        const data = {
+            form: req.body,
+            paths
+        };
 
-    // req.files contendrá la info de los archivos subidos (si tu input se llama 'documentos')
-    console.log("Archivos subidos:", req.files);
-
-    res.send({
-        message: 'Formulario y archivos recibidos correctamente.',
-        body: req.body,
-        files: req.files
-    });
+        const response = await ComercialRepository.put_comercial_reclamacionCalidad_contenedor(data);
+        // Envía la respuesta exitosa
+        res.status(200).json(response);
+    } catch (error) {
+        // Maneja el error y reenvíalo como consideres apropiado
+        console.error('Error al crear la reclamación de calidad:', error);
+        res.status(500).json({
+            message: 'Ocurrió un error al procesar la solicitud.',
+            error: error.message || error
+        });
+    }
 });
 
 
