@@ -490,7 +490,7 @@ class ProcesoRepository {
         const { user } = req
         try {
             const { _id, pallet, seleccion, data, action } = req.data
-            const { calidad, calibre, cajas, tipoCaja, tipoFruta } = data
+            const { calidad, calibre, cajas, tipoCaja } = data
 
             //se obtiene  el contenedor a modifiar
             const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
@@ -599,12 +599,25 @@ class ProcesoRepository {
                 { _id, pallet, seleccion, data }
             );
 
-            // await VariablesDelSistema.ingresar_exportacion(kilos, lote.tipoFruta)
-            await VariablesDelSistema.ingresar_kilos_procesados2(-oldKilos, tipoFruta)
-            await VariablesDelSistema.ingresar_exportacion2(-oldKilos, tipoFruta)
+            //se mira si es fruta de hoy para restar de las variables del proceso
+            const fechaSeleccionada = new Date(palletSeleccionado.fecha)
+            const hoy = new Date()
+            // Ajustamos la fecha seleccionada restando 5 horas:
+            fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
 
-            await VariablesDelSistema.ingresar_kilos_procesados2(newKilos, tipoFruta)
-            await VariablesDelSistema.ingresar_exportacion2(newKilos, tipoFruta)
+            // Ahora comparamos solo día, mes y año:
+            if (
+                fechaSeleccionada.getFullYear() === hoy.getFullYear() &&
+                fechaSeleccionada.getMonth() === hoy.getMonth() &&
+                fechaSeleccionada.getDate() === hoy.getDate()
+            ) {
+                await VariablesDelSistema.ingresar_kilos_procesados2(-oldKilos, palletSeleccionado.tipoFruta)
+                await VariablesDelSistema.ingresar_exportacion2(-oldKilos, palletSeleccionado.tipoFruta)
+
+                await VariablesDelSistema.ingresar_kilos_procesados2(newKilos, palletSeleccionado.tipoFruta)
+                await VariablesDelSistema.ingresar_exportacion2(newKilos, palletSeleccionado.tipoFruta)
+            }
+
 
             procesoEventEmitter.emit("server_event", {
                 action: "lista_empaque_update",
@@ -721,10 +734,21 @@ class ProcesoRepository {
                 { _id, pallet, seleccion, action }
             );
 
-            // await VariablesDelSistema.ingresar_exportacion(kilos, lote.tipoFruta)
-            await VariablesDelSistema.ingresar_kilos_procesados2(-kilos, lote[0].tipoFruta)
-            await VariablesDelSistema.ingresar_exportacion2(-kilos, lote[0].tipoFruta)
+            //se mira si es fruta de hoy para restar de las variables del proceso
+            const fechaSeleccionada = new Date(copiaPalletSeleccionado.fecha)
+            const hoy = new Date()
+            // Ajustamos la fecha seleccionada restando 5 horas:
+            fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
 
+            // Ahora comparamos solo día, mes y año:
+            if (
+                fechaSeleccionada.getFullYear() === hoy.getFullYear() &&
+                fechaSeleccionada.getMonth() === hoy.getMonth() &&
+                fechaSeleccionada.getDate() === hoy.getDate()
+            ) {
+                await VariablesDelSistema.ingresar_kilos_procesados2(-kilos, copiaPalletSeleccionado.tipoFruta)
+                await VariablesDelSistema.ingresar_exportacion2(-kilos, copiaPalletSeleccionado.tipoFruta)
+            }
 
             procesoEventEmitter.emit("server_event", {
                 action: "lista_empaque_update",
@@ -747,7 +771,6 @@ class ProcesoRepository {
             const { _id, pallet, seleccion, action } = req.data;
 
             let lotesIds = [];
-            let kilosTotal = {};
             //se ordenan los items seleccionados
             const seleccionOrdenado = seleccion.sort((a, b) => b - a);
             //se obtiene el contenedor a eliminar los datos 
@@ -822,23 +845,13 @@ class ProcesoRepository {
             })
 
             //se recorren para restar los kilos en los lotes
+            const hoy = new Date()
             for (let i = 0; i < itemsDelete.length; i++) {
                 const { lote, calidad, tipoCaja, cajas, fecha, tipoFruta } = itemsDelete[i]
                 const calidadItem = calidadFile[calidad]
 
                 const mult = Number(tipoCaja.split("-")[1].replace(",", "."))
                 const kilos = cajas * mult;
-
-                //para restar a kilos exportados hoy
-                const diaItem = new Date(fecha).getDate();
-                const hoy = new Date().getDate();
-                if (diaItem === hoy) {
-                    if (!Object.prototype.hasOwnProperty.call(kilosTotal, tipoFruta))
-                        kilosTotal[tipoFruta] = 0
-
-                    kilosTotal[tipoFruta] += kilos;
-
-                }
 
                 //se le restan los kilos a el lote correspondiente
                 const loteIndex = lotes.findIndex(item => item._id.toString() === lote)
@@ -851,6 +864,26 @@ class ProcesoRepository {
 
                 lotes[loteIndex].deshidratacion = await deshidratacionLote(lotes[loteIndex].toObject())
                 lotes[loteIndex].rendimiento = await rendimientoLote(lotes[loteIndex].toObject())
+
+
+                //se mira si es fruta de hoy para restar de las variables del proceso
+                const fechaSeleccionada = new Date(fecha)
+
+                // Ajustamos la fecha seleccionada restando 5 horas:
+                fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
+
+                // Ahora comparamos solo día, mes y año:
+                if (
+                    fechaSeleccionada.getFullYear() === hoy.getFullYear() &&
+                    fechaSeleccionada.getMonth() === hoy.getMonth() &&
+                    fechaSeleccionada.getDate() === hoy.getDate()
+                ) {
+                    await VariablesDelSistema.ingresar_kilos_procesados2(-kilos, tipoFruta)
+                    await VariablesDelSistema.ingresar_exportacion2(-kilos, tipoFruta)
+                }
+
+
+
 
             }
 
@@ -908,6 +941,7 @@ class ProcesoRepository {
 
 
         } catch (err) {
+            console.log(err)
             if (
                 err.status === 610 ||
                 err.status === 523 ||
@@ -1034,8 +1068,23 @@ class ProcesoRepository {
                 { action, _id, pallet, seleccion, cajas }
             );
 
-            await VariablesDelSistema.ingresar_kilos_procesados2(-kilos, newData.tipoFruta)
-            await VariablesDelSistema.ingresar_exportacion2(-kilos, newData.tipoFruta)
+            //se mira si es fruta de hoy para restar de las variables del proceso
+            const fechaSeleccionada = new Date(itemSeleccionado.fecha);
+            const hoy = new Date();
+
+            // Ajustamos la fecha seleccionada restando 5 horas:
+            fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
+
+            // Ahora comparamos solo día, mes y año:
+            if (
+                fechaSeleccionada.getFullYear() === hoy.getFullYear() &&
+                fechaSeleccionada.getMonth() === hoy.getMonth() &&
+                fechaSeleccionada.getDate() === hoy.getDate()
+            ) {
+                await VariablesDelSistema.ingresar_kilos_procesados2(-kilos, lote.tipoFruta)
+                await VariablesDelSistema.ingresar_exportacion2(-kilos, lote.tipoFruta)
+            }
+
 
             procesoEventEmitter.emit("proceso_event", {});
             procesoEventEmitter.emit("listaempaque_update");
