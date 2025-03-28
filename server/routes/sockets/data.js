@@ -10,6 +10,10 @@ const apiSocketData = {
         const response = await dataRepository.get_data_cargos(req)
         return successResponseRoutes(response)
     },
+    get_data_tipoFruta: async () => {
+        const response = await dataRepository.get_data_tipoFruta()
+        return successResponseRoutes(response)
+    }
 }
 
 module.exports.apiSocketData = apiSocketData

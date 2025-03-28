@@ -70,6 +70,20 @@ const apiSocketComercial = {
         return successResponseRoutes()
     },
     //#endregion
+    //#region formularios clientes
+    get_comercial_formularios_reclamacionesCalidad_numeroElementos: async () => {
+        const response = await ComercialRepository.get_comercial_formularios_reclamacionesCalidad_numeroElementos()
+        return successResponseRoutes(response)
+    },
+    get_comercial_formularios_reclamacionesCalidad_contenedores: async (data) => {
+        const response = await ComercialRepository.get_comercial_formularios_reclamacionesCalidad_contenedores(data)
+        return successResponseRoutes(response)
+    },
+    get_comercial_formularios_reclamacionCalidad_archivo: async (data) => {
+        const response = await ComercialRepository.get_comercial_formularios_reclamacionCalidad_archivo(data)
+        return successResponseRoutes(response)
+    }
+    //#endregion
 }
 
 module.exports.apiSocketComercial = apiSocketComercial

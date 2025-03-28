@@ -1,23 +1,13 @@
 
 function have_lote_GGN_export(predio, contenedor, item) {
     try {
-        if (!("GGN" in predio)) return false;
-        if (predio.GGN === undefined || predio.GGN === '') return false;
-        if (!("paises" in predio.GGN)) return false;
 
-        //se verifica si el GGN tiene tipo de fruta
-        if (!("tipo_fruta" in predio.GGN)) return false;
-
+        // se verifica que tenga GGN 
+        if (predio.GGN === undefined || predio.GGN === '' || predio.GGN === 'undefined') return false;
         if (predio.GGN.paises.length < 1) return false
-
-        if (predio.GGN.tipo_fruta.length === undefined) return false
-
         if (predio.GGN.tipo_fruta.length < 1) return false
 
         //Verificar los datos del contenedor
-        if (!("clienteInfo" in contenedor.infoContenedor)) return false;
-
-        if (!("PAIS_DESTINO" in contenedor.infoContenedor.clienteInfo)) return false;
         if (!predio.GGN.paises.some(
             element => contenedor.infoContenedor.clienteInfo.PAIS_DESTINO.includes(element)
         )) return false;
@@ -28,6 +18,7 @@ function have_lote_GGN_export(predio, contenedor, item) {
 
         return true;
     } catch (err) {
+        console.log("validacion es GGN ", err)
         return false
     }
 }

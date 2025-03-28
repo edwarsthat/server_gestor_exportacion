@@ -1,5 +1,6 @@
 const { DataLogicError } = require("../../Error/logicLayerError")
 const { ClientesRepository } = require("../Class/Clientes")
+const { ConstantesDelSistema } = require("../Class/ConstantesDelSistema")
 const { UsuariosRepository } = require("../Class/Usuarios")
 
 
@@ -40,6 +41,20 @@ class dataRepository {
             }
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
         }
+    }
+    static async get_data_tipoFruta() {
+        try {
+            const tipoFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas()
+            return tipoFrutas
+        } catch (err) {
+            if (
+                err.status === 522
+            ) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+
     }
 }
 

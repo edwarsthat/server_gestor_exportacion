@@ -10,6 +10,7 @@ const { ProveedoresRepository } = require("../Class/Proveedores");
 const { ComercialValidationsRepository } = require("../validations/Comercial");
 const { filtroFechaInicioFin, filtroPorSemana } = require("./utils/filtros");
 const { getISOWeek } = require('date-fns')
+// const nodemailer = require('nodemailer');
 
 class ComercialRepository {
 
@@ -366,8 +367,92 @@ class ComercialRepository {
             );
 
 
+            // // Configura el transporte con los datos de Mailgun
+            // let transporter = nodemailer.createTransport({
+            //     host: 'smtp.mailgun.org',
+            //     port: 587,
+            //     secure: false, // true para 465, false para otros puertos
+            //     auth: {
+            //         user: 'transformaciondigital@celifrut.com', // Reemplaza con tu usuario (por ejemplo, postmaster@tudominio.com)
+            //         pass: '9b3e963d53b2d229acbf58a9b6c9eb8e-f6202374-0579cebf' // Reemplaza con tu API key de Mailgun
+            //     }
+            // });
+
+            // // Define los detalles del correo
+            // let mailOptions = {
+            //     from: '"Tu Nombre" <transformaciondigital@celifrut.com>', // Remitente
+            //     to: correo, // Destinatario
+            //     subject: 'Correo enviado con Mailgun y Node.js',
+            //     text: 'Este es un correo de prueba enviado usando Mailgun SMTP en Node.js.'
+            // };
+
+            // // Envía el correo
+            // transporter.sendMail(mailOptions, (error, info) => {
+            //     if (error) {
+            //         return console.error('Error al enviar el correo:', error);
+            //     }
+            //     console.log('Correo enviado:', info.response);
+            // });
+
+
+            // transporter.sendMail(mailOptions, (error, info) => {
+            //     if (error) {
+            //         return console.log('Error al enviar el correo: ', error);
+            //     }
+            //     console.log('Correo enviado: %s', info.messageId);
+            // });
+
+
         } catch (err) {
             if (err.status === 521) {
+                throw err
+            }
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    //#endregion
+    //#region formularios
+    static async get_comercial_formularios_reclamacionesCalidad_numeroElementos() {
+        try {
+            const contenedores = await ContenedoresRepository.obtener_cantidad_contenedores({
+                reclamacionCalidad: { $exists: true }
+            })
+            return contenedores
+        } catch (err) {
+            if (err.status === 524) {
+                throw err
+            }
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_comercial_formularios_reclamacionesCalidad_contenedores(req) {
+        try {
+            const { page } = req.data
+            const resultsPerPage = 25
+            const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                query: {
+                    reclamacionCalidad: { $exists: true }
+                },
+                skip: (page - 1) * resultsPerPage,
+                limit: resultsPerPage,
+                select: { numeroContenedor: 1, infoContenedor: 1, reclamacionCalidad: 1 }
+            })
+            return contenedores
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_comercial_formularios_reclamacionCalidad_archivo(req) {
+        try {
+            const { path } = req.data
+            const response = ContenedoresRepository.obtener_archivos_contenedores(path)
+            return response
+        }
+        catch (err) {
+            if (err.status === 522) {
                 throw err
             }
             throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)

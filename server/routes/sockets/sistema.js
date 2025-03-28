@@ -35,6 +35,32 @@ const apiSocketSistema = {
         return successResponseRoutes(response)
     },
 
+    //#region modificar seriales
+    get_sistema_parametros_configuracionSeriales_EF1: async () => {
+        const response = await SistemaRepository.get_sistema_parametros_configuracionSeriales_EF1();
+        return successResponseRoutes(response)
+    },
+    put_sistema_parametros_configuracionSeriales_EF1: async (data) => {
+        await SistemaRepository.put_sistema_parametros_configuracionSeriales_EF1(data);
+        return successResponseRoutes()
+    },
+    get_sistema_parametros_configuracionSeriales_EF8: async () => {
+        const response = await SistemaRepository.get_sistema_parametros_configuracionSeriales_EF8();
+        return successResponseRoutes(response)
+    },
+    put_sistema_parametros_configuracionSeriales_EF8: async (data) => {
+        await SistemaRepository.put_sistema_parametros_configuracionSeriales_EF8(data);
+        return successResponseRoutes()
+    },
+    get_sistema_parametros_configuracionSeriales_Celifrut: async () => {
+        const response = await SistemaRepository.get_sistema_parametros_configuracionSeriales_Celifrut();
+        return successResponseRoutes(response)
+    },
+    put_sistema_parametros_configuracionSeriales_Celifrut: async (data) => {
+        await SistemaRepository.put_sistema_parametros_configuracionSeriales_Celifrut(data);
+        return successResponseRoutes()
+    },
+    //#endregion
 
 }
 

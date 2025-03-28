@@ -16,6 +16,7 @@ const { UserRepository } = require("../../server/auth/users");
 const { middleWareHandleErrors } = require("../middleware/errorHandler");
 const { formsAPI } = require("../../server/routes/public/forms");
 const { routerCalidad } = require("../../server/routes/https/Calidad");
+const { routerDataSys } = require("../../server/routes/https/data");
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use(express.text());
 app.use(express.static(path.join(__dirname, '..', '..', 'public')));
 
 app.use("/data", routerPythonData)
+app.use("/dataSys", routerDataSys)
 app.use("/variablesDeProceso", routerVariablesdelSistema);
 app.use("/proceso", routerProceso);
 app.use("/proceso2", routerProceso2);

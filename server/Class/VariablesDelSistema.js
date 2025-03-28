@@ -45,6 +45,18 @@ class VariablesDelSistema {
       throw new ProcessError(506, `Error creando la EF1: ${e.message}`)
     }
   }
+  static async incrementarEF1() {
+    try {
+      const idsJSON = fs.readFileSync(pathIDs);
+      const ids = JSON.parse(idsJSON);
+      ids.enf += 1;
+      const newidsJSON = JSON.stringify(ids);
+      fs.writeFileSync(pathIDs, newidsJSON);
+    } catch (err) {
+      throw new ProcessError(523, `Error incrementando el EF1 ${err.message}`)
+    }
+  }
+
   static async generarEF8(fecha_ingreso = new Date()) {
     try {
 
@@ -65,6 +77,32 @@ class VariablesDelSistema {
       throw new ProcessError(506, `Error creando la EF1: ${e.message}`)
     }
   }
+  static async incrementarEF8() {
+    try {
+      const idsJSON = fs.readFileSync(pathIDs);
+      const ids = JSON.parse(idsJSON);
+      ids.ef8 += 1;
+      const newidsJSON = JSON.stringify(ids);
+      fs.writeFileSync(pathIDs, newidsJSON);
+    } catch (err) {
+      throw new ProcessError(411, `Error incrementando el EF1 ${err.message}`)
+    }
+  }
+
+  static async modificar_serial(enf, key) {
+    try {
+      const idsJSON = fs.readFileSync(pathIDs);
+      const ids = JSON.parse(idsJSON);
+      ids[key] = enf;
+      const newidsJSON = JSON.stringify(ids);
+      fs.writeFileSync(pathIDs, newidsJSON);
+    } catch (err) {
+      throw new ProcessError(523, `Error modificando el ${key} ${err.message}`)
+    }
+  }
+
+
+
   static async procesarEF1(lote) {
     try {
       const cliente = await clientePromise;
@@ -122,29 +160,8 @@ class VariablesDelSistema {
       throw new ConnectRedisError(419, `Error con la conexion con redis ${err.name}`)
     }
   }
-  static async incrementarEF1() {
-    try {
-      const idsJSON = fs.readFileSync(pathIDs);
-      const ids = JSON.parse(idsJSON);
-      ids.enf += 1;
-      const newidsJSON = JSON.stringify(ids);
-      fs.writeFileSync(pathIDs, newidsJSON);
-    } catch (err) {
-      throw new ProcessError(411, `Error incrementando el EF1 ${err.message}`)
-    }
-  }
-  static async incrementarEF8() {
 
-    try {
-      const idsJSON = fs.readFileSync(pathIDs);
-      const ids = JSON.parse(idsJSON);
-      ids.ef8 += 1;
-      const newidsJSON = JSON.stringify(ids);
-      fs.writeFileSync(pathIDs, newidsJSON);
-    } catch (err) {
-      throw new ProcessError(411, `Error incrementando el EF1 ${err.message}`)
-    }
-  }
+
   static async incrementar_codigo_celifrut() {
     /**
    * Funcion que aumenta en 1 el serial del codigo idCelifrut que esta almacenado en el archivo json

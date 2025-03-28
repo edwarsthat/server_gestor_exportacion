@@ -4,7 +4,8 @@ const { ProcessError, ItemBussyError } = require("../../Error/ProcessError");
 const { oobtener_datos_lotes_to_listaEmpaque } = require("../mobile/utils/contenedoresLotes");
 let bussyIds = new Set();
 let lockedItems = new Map();
-
+const fs = require('fs')
+const path = require("path");
 class ContenedoresRepository {
 
     static lockItem(_id, elemento, pallet = -1) {
@@ -784,13 +785,42 @@ class ContenedoresRepository {
 
         }
     }
-
     static async bulkWrite(operations) {
         try {
             const result = await db.Contenedores.bulkWrite(operations)
             return result;
         } catch (error) {
             throw new ConnectionDBError(523, `Error performing bulkWrite ${error.message} `);
+        }
+    }
+    static async obtener_archivos_contenedores(url) {
+        try {
+            const data = fs.readFileSync(url)
+            const extension = path.extname(url).toLowerCase();
+
+            // 3. Según la extensión, decide el mimeType
+            let mimeType = "application/octet-stream"; // por defecto
+            let fileName = "archivo";
+
+            if (extension === ".pdf") {
+                mimeType = "application/pdf";
+                fileName = "documento.pdf";
+            } else if (extension === ".png") {
+                mimeType = "image/png";
+                fileName = "imagen.png";
+            } else if (extension === ".jpg" || extension === ".jpeg") {
+                mimeType = "image/jpeg";
+                fileName = "imagen.jpg";
+            }
+
+            const base64 = data.toString('base64');
+            return {
+                documento: base64,
+                mimeType,
+                fileName
+            }
+        } catch (err) {
+            throw new ProcessError(525, `Error obteniendo la imagen ${err.message}`);
         }
     }
 }

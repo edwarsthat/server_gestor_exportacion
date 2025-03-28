@@ -13,7 +13,7 @@ const permisos_generales = [
     "obtener_cantidad_historial_espera_descargue",
     "obtener_cantidad_historial_ingreso_inventario",
     "get_comercial_precios_cantidad_registros",
-
+    "get_comercial_formularios_reclamacionesCalidad_numeroElementos",
 
     "get_info_formulario_inspeccion_fruta",
     "get_transporte_registros_programacion_mula_numeroElementos",
@@ -38,6 +38,7 @@ const permisos_generales = [
 
     //obtener los proveedores para desplegables
     "get_sys_proveedores",
+    "get_data_tipoFruta",
     "get_data_clientes",
     "get_data_cargos"
 ]

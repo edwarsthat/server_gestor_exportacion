@@ -169,6 +169,75 @@ class SistemaRepository {
         }
     }
     //#endregion
+    //#region modificar seriales
+    static async get_sistema_parametros_configuracionSeriales_EF1() {
+        try {
+            const enf = await VariablesDelSistema.generarEF1()
+            return enf
+        } catch (err) {
+            if (err.status === 506) {
+                throw err
+            }
+            throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_sistema_parametros_configuracionSeriales_EF1(req) {
+        try {
+            const { serial } = req.data
+            await VariablesDelSistema.modificar_serial(serial, "enf")
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_sistema_parametros_configuracionSeriales_EF8() {
+        try {
+            const enf = await VariablesDelSistema.generarEF8()
+            return enf
+        } catch (err) {
+            if (err.status === 506) {
+                throw err
+            }
+            throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_sistema_parametros_configuracionSeriales_EF8(req) {
+        try {
+            const { serial } = req.data
+            await VariablesDelSistema.modificar_serial(serial, "ef8")
+
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_sistema_parametros_configuracionSeriales_Celifrut() {
+        try {
+            const enf = await VariablesDelSistema.generar_codigo_celifrut()
+            return enf
+        } catch (err) {
+            if (err.status === 506) {
+                throw err
+            }
+            throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_sistema_parametros_configuracionSeriales_Celifrut(req) {
+        try {
+            const { serial } = req.data
+            await VariablesDelSistema.modificar_serial(serial, "idCelifrut")
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    //#endregion
 
 
 
@@ -237,7 +306,7 @@ class SistemaRepository {
         return cantidad
     }
 
-    //#region get
+
     static async get_constantes_sistema_tipo_frutas() {
         try {
             const response = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas();

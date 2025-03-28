@@ -432,7 +432,7 @@ class ProcesoRepository {
             }
 
             //se mira si se deben sumar kilosGNN
-            if (have_lote_GGN_export(loteModificado.predio, contenedor[0]), item) {
+            if (have_lote_GGN_export(loteModificado.predio, contenedor[0], item)) {
                 query.$inc.kilosGGN = kilos
                 antes.kilosGGN = loteModificado.kilosGGN
             }
@@ -567,7 +567,7 @@ class ProcesoRepository {
             }
 
             //se mira si se deben sumar kilosGNN
-            if (have_lote_GGN_export(lote[0].predio, contenedor[0]), oldData) {
+            if (have_lote_GGN_export(lote[0].predio, contenedor[0], oldData)) {
                 const total = newKilos - oldKilos
                 query.$inc.kilosGGN = total
                 antes.kilosGGN = lote[0].kilosGGN
@@ -698,7 +698,7 @@ class ProcesoRepository {
             }
 
             //se mira si se deben sumar kilosGNN
-            if (have_lote_GGN_export(lote[0].predio, contenedor[0]), copiaPalletSeleccionado) {
+            if (have_lote_GGN_export(lote[0].predio, contenedor[0], copiaPalletSeleccionado)) {
                 query.$inc.kilosGGN = -kilos
                 oldDataRegistro.kilosGGN = lote[0].kilosGGN
             }
@@ -1646,6 +1646,7 @@ class ProcesoRepository {
                 }
             }));
 
+
             await LotesRepository.bulkWrite(operations);
 
             // Registrar modificación de los lotes
@@ -1686,63 +1687,14 @@ class ProcesoRepository {
 
         } catch (err) {
             console.log(err)
-            // for (let i = pilaFunciones.length - 1; i >= 0; i--) {
-            //     const value = pilaFunciones[i];
-            //     if (value.funcion === "modificar_items_pallet") {
-            //         const { _id, pallet, seleccion, oldData } = value.datos
-            //         await ContenedoresRepository
-            //             .modificar_items_pallet(_id, pallet, seleccion, oldData, "rectificando fallo", user);
-
-            //     } else if (value.funcion === "Cambiar tipo de exportacion") {
-            //         const { query, id } = value.datos;
-            //         for (const calidad of Object.keys(query.$inc)) {
-            //             query.$inc[calidad] = query.$inc[calidad] * -1
-            //         }
-
-            //         await LotesRepository.modificar_lote_proceso(
-            //             id,
-            //             query,
-            //             "rectificando fallo",
-            //             user
-            //         )
-            //     } else if (value.funcion === "Cambiar cajas de exportacion") {
-            //         const { query, id } = value.datos;
-            //         for (const calidad of Object.keys(query.$inc)) {
-            //             query.$inc[calidad] = - query.$inc[calidad]
-            //         }
-            //         await LotesRepository.modificar_lote_proceso(
-            //             id,
-            //             query,
-            //             "rectificando fallo",
-            //             user
-            //         )
-            //     } else if (value.funcion === "Cambiar cajas de exportacion GGN") {
-            //         const { query, id } = value.datos;
-
-            //         query.$inc.kilosGGN = query.$inc.kilosGGN * -1
-
-            //         await LotesRepository.modificar_lote_proceso(
-            //             id,
-            //             query,
-            //             "rectificando fallo",
-            //             user
-            //         )
-            //     } else if (value.funcion === 'Cambiar kilosprocesados') {
-            //         await VariablesDelSistema.ingresar_kilos_procesados2(
-            //             -(value.datos.kilosNuevos), value.datos.tipoFruta
-            //         )
-            //         await VariablesDelSistema.ingresar_exportacion2(
-            //             -(value.datos.kilosNuevos), value.datos.tipoFruta
-            //         )
-
-
-            //     }
-            // }
-
-            procesoEventEmitter.emit("proceso_event", {});
-            procesoEventEmitter.emit("listaempaque_update");
-
-            throw new Error(`Code ${err.status}: ${err.message}`);
+            if (
+                err.status === 610 ||
+                err.status === 523 ||
+                err.status === 522
+            ) {
+                throw err
+            }
+            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
 
         }
     }
