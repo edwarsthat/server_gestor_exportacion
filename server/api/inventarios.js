@@ -511,9 +511,16 @@ class InventariosRepository {
         try {
             const { data: datos, user } = req
             const { action, data, _idLote, _idRecord, __v } = datos
+
             await LotesRepository.modificar_lote_proceso(
                 _idLote,
-                data,
+                {
+                    ...data,
+                    fecha_ingreso_patio: data.fecha_estimada_llegada,
+                    fecha_salida_patio: data.fecha_estimada_llegada,
+                    fecha_ingreso_inventario: data.fecha_estimada_llegada,
+
+                },
                 action,
                 user
             )
@@ -521,6 +528,10 @@ class InventariosRepository {
             Object.keys(data).forEach(item => {
                 query[`documento.${item}`] = data[item]
             })
+            query[`documento.fecha_ingreso_patio`] = data.fecha_estimada_llegada
+            query[`documento.fecha_salida_patio`] = data.fecha_estimada_llegada
+            query[`documento.fecha_ingreso_inventario`] = data.fecha_estimada_llegada
+
             await RecordLotesRepository.modificarRecord(
                 _idRecord,
                 query,

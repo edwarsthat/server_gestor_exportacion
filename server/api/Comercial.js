@@ -23,12 +23,12 @@ class ComercialRepository {
                 query = {
                     query: { activo: true },
                     limit: 'all',
-                    select: { PREDIO: 1, 'ICA.code': 1, SISPAP: 1, GGN: 1 }
+                    select: { PREDIO: 1, 'ICA.code': 1, SISPAP: 1, GGN: 1, "CODIGO INTERNO": 1 }
                 }
             } else if (data === 'all') {
                 query = {
                     limit: 'all',
-                    select: { PREDIO: 1, 'ICA.code': 1, SISPAP: 1, GGN: 1 }
+                    select: { PREDIO: 1, 'ICA.code': 1, SISPAP: 1, GGN: 1, "CODIGO INTERNO": 1 }
                 }
             } else {
                 throw new Error("Error en los parametros de busqueda")

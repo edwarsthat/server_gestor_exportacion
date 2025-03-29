@@ -61,7 +61,9 @@ class ComercialValidationsRepository {
             "telefono_predio",
             "tipo_fruta",
             "activo",
-            "SISPAP"
+            "SISPAP",
+            "departamento",
+            "municipio"
         ];
         const requiredFields = [
             "CODIGO INTERNO",

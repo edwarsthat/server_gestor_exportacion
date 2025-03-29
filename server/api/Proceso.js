@@ -1609,7 +1609,8 @@ class ProcesoRepository {
                 const itemSeleccionadoOld = copiaPallets[pallet].EF1[seleccion[i]];
                 const itemSeleccionadoNew = palletsModificados[pallet].EF1[seleccion[i]];
 
-                if (itemSeleccionadoOld.tipoCaja !== itemSeleccionadoNew.tipoCaja) {
+                if (itemSeleccionadoOld.tipoCaja !== itemSeleccionadoNew.tipoCaja ||
+                    itemSeleccionadoOld.calidad !== itemSeleccionadoNew.calidad) {
                     const oldKilos = itemSeleccionadoOld.cajas * Number(itemSeleccionadoOld.tipoCaja.split("-")[1].replace(",", "."));
                     const newKilos = itemSeleccionadoNew.cajas * Number(itemSeleccionadoNew.tipoCaja.split("-")[1].replace(",", "."));
 

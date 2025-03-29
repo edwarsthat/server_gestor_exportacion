@@ -61,6 +61,8 @@ const defineproveedores = async (conn) => {
     razon_social: String,
     nit_facturar: String,
     precioFijo: Boolean,
+    departamento: String,
+    municipio: String,
 
   });
 
