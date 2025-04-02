@@ -8,7 +8,7 @@ class dataRepository {
     static async get_data_clientes() {
         try {
             const clientes = await ClientesRepository.get_clientes({
-                select: { CLIENTE: 1 }
+                select: { CLIENTE: 1, CODIGO: 1 }
             })
             return clientes
         } catch (err) {

@@ -11,7 +11,6 @@ const { initCronJobs } = require('./src/cron/jobs');
 (async () => {
     try {
         await initMongoDB();
-
         //Configurar Socket.IO
         const io = new Server(server);
         initSockets(io);

@@ -7,6 +7,7 @@ const routerAPI = express.Router();
 
 routerAPI.get("/get_data_lotes", async (req, res) => {
     try {
+        console.log(req.body)
         const data = req.body
 
         const user = { user: data.data.user, password: data.data.password }

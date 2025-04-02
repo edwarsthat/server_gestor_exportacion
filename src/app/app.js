@@ -1,6 +1,8 @@
 const express = require("express");
 const { corsMiddle } = require("../middleware/inputHandler");
 const path = require('path');
+const fs = require('fs');
+
 const { routerPythonData } = require("../../server/routes/pythonServer");
 const { routerVariablesdelSistema } = require("../../server/mobile/variablesDelSistema");
 const { routerProceso } = require("../../server/mobile/process");
@@ -19,7 +21,6 @@ const { routerCalidad } = require("../../server/routes/https/Calidad");
 const { routerDataSys } = require("../../server/routes/https/data");
 
 const app = express();
-
 
 app.use((req, res, next) => corsMiddle(req, res, next));
 app.use(express.json({ limit: '10mb' }));
@@ -66,21 +67,20 @@ app.get("/latest.yml", async (req, res, next) => {
 //Envia los archivos para actualizar la aplicacion de escritorio 
 app.get('/:filename', async (req, res, next) => {
     try {
-
         let { filename } = req.params;
-
-
         filename = path.basename(filename);
-        const file =
-            await SistemaRepository.getCelifrutAppFile(filename)
+        const filePath = path.join(__dirname, '..', '..', 'updates', 'desktop', filename);
 
+        // Verificar si el archivo existe
+        if (!fs.existsSync(filePath)) {
+            // Puedes enviar un 404 directamente o lanzar un error controlado
+            return res.status(404).send("Archivo no encontrado");
+        }
 
-        // Enviar el archivo como respuest
+        const file = fs.readFileSync(filePath);
         res.setHeader('Content-Type', 'application/octet-stream');
         res.end(file);
-
-    }
-    catch (err) {
+    } catch (err) {
         next(err);
     }
 })

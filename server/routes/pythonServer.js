@@ -1,30 +1,21 @@
 const express = require('express');
-const grpc = require('@grpc/grpc-js');
-const protoLoader = require('@grpc/proto-loader');
-const path = require('path');
+// const { clientGRPC } = require('../../src/config/conexionGRPC');
 
 const routerPythonData = express.Router();
-
-const protoPath = path.resolve(__dirname, '../../../service.proto');
-
-// Cargar el .proto y crear el cliente gRPC
-const packageDefinition = protoLoader.loadSync(protoPath, {});
-const serviceProto = grpc.loadPackageDefinition(packageDefinition);
-const client = new serviceProto.DataService('localhost:50051', grpc.credentials.createInsecure());
 
 
 routerPythonData.get("/python", async (req, res) => {
     try {
         console.log("📡 Enviando solicitud a Python...");
 
-        client.GetData({ input: "hola desde node" }, (error, response) => {
-            if (error) {
-                console.error("❌ Error en gRPC:", error);
-                return res.status(500).json({ status: 500, message: "Error en gRPC" });
-            }
-            console.log("✅ Datos recibidos de Python:", response);
-            return res.json({ status: 200, data: response });
-        });
+        // clientGRPC.GetData({ input: "hola desde node" }, (error, response) => {
+        //     if (error) {
+        //         console.error("❌ Error en gRPC:", error);
+        //         return res.status(500).json({ status: 500, message: "Error en gRPC" });
+        //     }
+        //     console.log("✅ Datos recibidos de Python:", response);
+        //     return res.json({ status: 200, data: response });
+        // });
 
     } catch (err) {
         console.log(`Code ${err.status}: ${err.message}`);
