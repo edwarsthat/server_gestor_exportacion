@@ -23,7 +23,14 @@ class ComercialRepository {
                 query = {
                     query: { activo: true },
                     limit: 'all',
-                    select: { PREDIO: 1, 'ICA.code': 1, SISPAP: 1, GGN: 1, "CODIGO INTERNO": 1 }
+                    select: {
+                        PREDIO: 1,
+                        'ICA.code': 1,
+                        SISPAP: 1,
+                        GGN: 1,
+                        "CODIGO INTERNO": 1,
+                        canastillas: 1
+                    }
                 }
             } else if (data === 'all') {
                 query = {
@@ -373,8 +380,8 @@ class ComercialRepository {
             //     port: 587,
             //     secure: false, // true para 465, false para otros puertos
             //     auth: {
-            //         user: 'transformaciondigital@celifrut.com', // Reemplaza con tu usuario (por ejemplo, postmaster@tudominio.com)
-            //         pass: '9b3e963d53b2d229acbf58a9b6c9eb8e-f6202374-0579cebf' // Reemplaza con tu API key de Mailgun
+            //         user: '@celifrut.com', // Reemplaza con tu usuario (por ejemplo, postmaster@tudominio.com)
+            //         pass:  // Reemplaza con tu API key de Mailgun
             //     }
             // });
 

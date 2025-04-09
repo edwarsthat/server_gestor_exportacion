@@ -1,26 +1,33 @@
-// const { clientGRPC } = require("../../../src/config/conexionGRPC");
-const RustRcp = require("../../../config/grpcRust");
+
+
+const { rustRcpClient } = require("../../../config/grpcRust");
+const { dataRepository } = require("../../api/data");
 const { successResponseRoutes } = require("../helpers/responses");
-// const { routerPythonData } = require("../pythonServer");
-const RustRcpClient = new RustRcp("0.0.0.0", 5000);
+const { cleanForRust } = require("./utils/cleanData");
 
 const apiSocketPython = {
     get_python_data_porcentageExportacion: async (req) => {
-        const { data } = req
-        // clientGRPC.GetData(data, (error, response) => {
-        //     if (error) {
-        //         console.error("❌ Error en gRPC:", error);
-        //         throw new routerPythonData(700, "Error en gRPC" + error.meesage)
-        //     }
-        //     console.log(response.values)
-        // });
-        await RustRcpClient.connect();
 
-        const responseStr = await RustRcpClient.sendData({ ...data, server: "python" });
-        const response = JSON.parse(responseStr)
+        const { data } = req;
 
-        return successResponseRoutes(response)
+        const predictionData = await dataRepository.get_data_historicos_para_modelo_python(req);
 
+        const dataReq = {
+            userInput: data,
+            predictionData
+        };
+
+        const payload = {
+            data: JSON.stringify(cleanForRust(dataReq)),
+            server: "python",
+            action: "get_python_data_porcentageExportacion"
+        };
+
+        const responseStr = await rustRcpClient.sendData(payload);
+        const response = JSON.parse(responseStr);
+        console.log(response)
+
+        return successResponseRoutes(response);
     }
 }
 

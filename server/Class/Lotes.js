@@ -66,6 +66,44 @@ class LotesRepository {
             throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
         }
     }
+    static async get_Lotes_strict(options = {}) {
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { fecha_creacion: -1, fechaIngreso: -1 },
+            limit = 50,
+            skip = 0,
+            populate = { path: 'predio', select: 'PREDIO ICA GGN SISPAP' }
+        } = options;
+        try {
+            let lotesQuery = { ...query };
+
+            if (ids.length > 0) {
+                lotesQuery._id = { $in: ids };
+            }
+
+            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
+
+            const lotes = await db.Lotes.find(lotesQuery)
+                .select(select)
+                .sort(sort)
+                .limit(limitToUse)
+                .skip(skip)
+                .populate(populate)
+                .lean()
+                .exec();
+
+
+            return lotes
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
+        }
+    }
+
+
+
     static async modificar_lote(id, query, action, user, __v = 0) {
         /**
          * Modifica un lote en la base de datos de MongoDB.

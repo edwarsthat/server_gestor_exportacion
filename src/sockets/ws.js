@@ -76,6 +76,7 @@ function initSockets(io) {
 
     io.on("connection", socket => {
         console.log("an user has connected");
+        console.log("Conexiones activas:", io.engine.clientsCount);
 
         const handleRequest = async (data, callback, repository) => {
             try {
@@ -132,6 +133,11 @@ function initSockets(io) {
                 handleRequest(data, callback, apiSocket);
             }
         })
+
+        socket.on("disconnect", () => {
+            console.log("Un usuario se ha desconectado.");
+            console.log("Conexiones activas:", io.engine.clientsCount);
+        });
 
     });
 }

@@ -92,6 +92,57 @@ class ContenedoresRepository {
             throw new ConnectionDBError(522, `Error obteniendo contenedores ${options} --- ${err.message}`);
         }
     }
+    static async get_Contenedores_sin_lotes_strict(options = {}) {
+        /**
+         * Función que obtiene contenedores de la base de datos de MongoDB.
+         *
+         * @param {Object} options - Objeto de configuración para obtener los contenedores.
+         * @param {Array<string>} [options.ids=[]] - Array de IDs de los contenedores a obtener.
+         * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
+         * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
+         * @param {Object} [options.sort={ 'infoContenedor.fechaCreacion': -1 }] - Criterios de ordenación para los resultados.
+         * @param {number} [options.limit=50] - Número máximo de documentos a obtener.
+         * @param {number} [options.skip=0] - Número de documentos a omitir desde el inicio.
+         * @param {Object} [options.populate={ path: 'infoContenedor.clienteInfo', select: 'CLIENTE' }] - Configuración para la población de referencias.
+         * @returns {Promise<Array>} - Promesa que resuelve a un array de contenedores obtenidos.
+         * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al obtener los contenedores.
+         */
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { 'infoContenedor.fechaCreacion': -1 },
+            limit = 50,
+            skip = 0,
+            populate = {
+                path: 'infoContenedor.clienteInfo',
+                select: 'CLIENTE',
+            },
+        } = options;
+        try {
+            let contenedorQuery = { ...query };
+
+            if (ids.length > 0) {
+                contenedorQuery._id = { $in: ids };
+            }
+            const contenedores = await db.Contenedores.find(contenedorQuery)
+                .select(select)
+                .populate(populate)
+                .sort(sort)
+                .limit(limit)
+                .skip(skip)
+                .lean()
+                .exec();
+
+
+            return contenedores
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo contenedores ${options} --- ${err.message}`);
+        }
+    }
+
+
     static async getContenedores(options = {}) {
         /**
          * Función que obtiene contenedores de la base de datos de MongoDB.

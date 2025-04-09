@@ -32,22 +32,27 @@ const { definePrecios } = require('../schemas/precios/schemaPrecios');
 const { defineModificarElemento } = require('../schemas/transaccionesRecord/ModificacionesRecord');
 const { defineCrearElemento } = require('../schemas/transaccionesRecord/AddsRecord');
 const { defineDeleteRecords } = require('../schemas/transaccionesRecord/DeleteRecord');
+const { defineRegistroCanastillas } = require('../schemas/canastillas/canastillasRegistrosSchema');
 const db = {};
 
 const checkMongoDBRunning = async () => {
-
     try {
-        // Intentar conectarse a la base de datos
+        console.log("🧪 Probando conexión con MongoDB...");
+
         const db = mongoose.createConnection(process.env.MONGODB_SISTEMA, {
-            serverSelectionTimeoutMS: 2000, // Esperar un máximo de 2 segundos
+            serverSelectionTimeoutMS: 2000, // Tiempo máximo de espera
         });
 
-        console.log("Conexión exitosa a la base de datos.");
-        await db.close(); // Cerrar la conexión después de verificar
-        return true; // La base de datos está corriendo
+        // Esperamos a que se conecte, para evitar mentirle al usuario
+        await db.asPromise();
+        console.log("✅ MongoDB respondió. Está vivito y coleando.");
+
+        await db.close(); // Cerramos porque somos civilizados
+        return true;
     } catch (error) {
-        console.error("Error conectando a la base de datos:", error.message);
-        return false; // No se pudo conectar a la base de datos
+        console.log("❌ No se pudo establecer conexión con MongoDB.");
+        console.error(`🔍 Detalle del error: ${error.message || "Sin mensaje. Aún más misterioso."}`);
+        return false;
     }
 };
 
@@ -77,30 +82,41 @@ const waitForMongoDB = () => {
     });
 };
 
-
 const initMongoDB = async () => {
     try {
+        console.log("🔍 Verificando estado de MongoDB...");
+
         const isMongoDBRunning = await checkMongoDBRunning();
-        console.log("Probando MongoDB:", isMongoDBRunning);
+        console.log(`⚙️  MongoDB en ejecución: ${isMongoDBRunning ? "✅ Sí" : "❌ No"}`);
 
         if (!isMongoDBRunning) {
-            console.log("MongoDB no está en ejecución. Intentando iniciar...");
+            console.log("🚫 MongoDB no está activo.");
+            console.log("🛠️  Intentando iniciar MongoDB...");
             await startMongoDB();
-            console.log("Esperando a que MongoDB esté listo...");
+            console.log("⏳ Esperando a que MongoDB esté listo para recibir conexiones...");
             await waitForMongoDB();
         }
 
-        console.log("Conectando a las bases de datos...");
+        console.log("🔗 Iniciando conexión a las bases de datos...");
+
         const procesoDB = await connectProcesoDB();
         const sistemaDb = await connectSistemaDB();
 
-        await defineSchemasSistema(sistemaDb)
-        await defineSchemasProceso(procesoDB)
-        console.log("Conexiones establecidas con éxito.");
+        console.log("🧬 Definiendo esquemas para cada base de datos...");
+        await defineSchemasSistema(sistemaDb);
+        console.log("📦 Esquemas definidos para *Sistema*.");
 
-        return [procesoDB, sistemaDb]
+        await defineSchemasProceso(procesoDB);
+        console.log("📦 Esquemas definidos para *Proceso*.");
+
+        console.log("🎉 Conexiones establecidas con éxito. MongoDB está listo para causar caos (o al menos guardar datos).");
+
+        return [procesoDB, sistemaDb];
+
     } catch (error) {
-        console.error("Error durante la inicialización de MongoDB:", error);
+        console.error("💥 Error durante la inicialización de MongoDB:");
+        console.error(error);
+        console.log("💀 Y así termina otra gloriosa sesión de inicialización fallida.");
     }
 };
 
@@ -123,6 +139,8 @@ const defineSchemasProceso = async (sysConn) => {
         db.historialDespachoDescarte = await defineHistorialDespachoDescarte(sysConn);
         db.TurnoData = await defineTurnoData(sysConn);
         db.Indicadores = await defineIndicadores(sysConn);
+        db.RegistrosCanastillas = await defineRegistroCanastillas(sysConn)
+
         db.RecordModificacion = await defineModificarElemento(sysConn)
         db.RecordCreacion = await defineCrearElemento(sysConn)
         db.RecordDelete = await defineDeleteRecords(sysConn)

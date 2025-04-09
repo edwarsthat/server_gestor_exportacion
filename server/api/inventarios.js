@@ -1,6 +1,7 @@
 const { InventariosLogicError } = require("../../Error/logicLayerError");
 const { procesoEventEmitter } = require("../../events/eventos");
 const { RecordLotesRepository } = require("../archive/ArchiveLotes");
+const { CanastillasRepository } = require("../Class/CanastillasRegistros");
 const { ContenedoresRepository } = require("../Class/Contenedores");
 const { DespachoDescartesRepository } = require("../Class/DespachoDescarte");
 const { FrutaDescompuestaRepository } = require("../Class/FrutaDescompuesta");
@@ -10,6 +11,10 @@ const { PreciosRepository } = require("../Class/Precios");
 const { ProveedoresRepository } = require("../Class/Proveedores");
 const { UsuariosRepository } = require("../Class/Usuarios");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
+const { InventariosValidations } = require("../validations/inventarios");
+const { modificarInventarioCanastillas } = require("./helper/inventarios");
+const { ajustarCanastillasProveedor } = require("./services/inventarios");
+const { obtenerEstadoDesdeAccionCanastillasInventario } = require("./utils/diccionarios");
 const { filtroFechaInicioFin } = require("./utils/filtros");
 const { transformObjectInventarioDescarte } = require("./utils/objectsTransforms");
 
@@ -267,6 +272,107 @@ class InventariosRepository {
                 }
             }
             if (err.status === 521 || err.status === 518) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_inventarios_canastillas_canastillasCelifrut() {
+        try {
+            const response = await VariablesDelSistema.obtener_canastillas_inventario()
+            return response
+        } catch (err) {
+            if (err.status === 518 || err.status === 413) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_inventarios_canastillas_celifrut(req) {
+        try {
+            const { canastillasPrestadas, canastillas } = req.data
+            if (canastillas) {
+                await VariablesDelSistema.set_canastillas_inventario(canastillas, "canastillas")
+            }
+            if (canastillasPrestadas) {
+                await VariablesDelSistema.set_canastillas_inventario(canastillasPrestadas, "canastillasPrestadas")
+            }
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async post_inventarios_canastillas_registro(req) {
+        try {
+            const { user } = req
+            const { data } = req.data
+
+            const {
+                destino,
+                origen,
+                observaciones,
+                fecha,
+                canastillas,
+                canastillasPrestadas,
+                accion,
+                remitente,
+                destinatario
+            } = data
+            InventariosValidations.post_inventarios_canastillas_registro(data);
+
+            //Se crean los datos del registro de canastillas
+            const dataRegistro = {
+                fecha: new Date(fecha),
+                destino: destino,
+                origen: origen,
+                cantidad: {
+                    propias: canastillas,
+                    // Se deja como array porque en el futuro se manejarán varios propietarios
+                    prestadas: [
+                        {
+                            cantidad: canastillasPrestadas,
+                            propietario: ""
+                        }
+                    ]
+                },
+                observaciones: observaciones,
+                referencia: "C1",
+                tipoMovimiento: accion,
+                estado: accion,
+                usuario: {
+                    id: user._id,
+                    user: user.user
+                },
+                remitente: remitente,
+                destinatario: destinatario
+            }
+
+            dataRegistro.estado = obtenerEstadoDesdeAccionCanastillasInventario(accion)
+
+            if (accion === "ingreso") {
+
+                await ajustarCanastillasProveedor(origen, -(canastillas + canastillasPrestadas));
+                await modificarInventarioCanastillas(canastillas, canastillasPrestadas);
+
+            } else if (accion === "salida") {
+
+                await ajustarCanastillasProveedor(destino, canastillas + canastillasPrestadas);
+                await modificarInventarioCanastillas(-canastillas, -canastillasPrestadas);
+
+            } else if (accion === 'traslado') {
+
+                await ajustarCanastillasProveedor(origen, -(canastillas + canastillasPrestadas));
+                await ajustarCanastillasProveedor(destino, canastillas + canastillasPrestadas);
+
+            }
+
+            await CanastillasRepository.post_registro(dataRegistro)
+
+        } catch (err) {
+            console.log(err)
+            if (err.status === 521 || err.status === 523) {
                 throw err
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
@@ -685,7 +791,7 @@ class InventariosRepository {
     static async post_inventarios_ingreso_lote(req) {
         try {
             const { data, user } = req;
-            const { data: datos } = data
+            const { dataLote: datos, dataCanastillas } = data
             let enf
             if (Number(datos.canastillas) === 0) throw new Error(`Las canastillas no pueden ser cero`)
             if (Number(datos.kilos) === 0) throw new Error(`Los kilos no pueden ser cero`)
@@ -706,7 +812,7 @@ class InventariosRepository {
 
             const proveedor = await ProveedoresRepository.get_proveedores({
                 ids: [datos.predio],
-                select: { precio: 1 }
+                select: { precio: 1, PREDIO: 1 }
             })
 
             const precio = await PreciosRepository.get_precios({
@@ -727,6 +833,34 @@ class InventariosRepository {
             const lote = await LotesRepository.addLote(query, user);
 
             await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
+
+            //Se crean los datos del registro de canastillas
+            const dataRegistro = {
+                fecha: new Date(),
+                destino: "Celifrut",
+                origen: lote.predio.PREDIO,
+                cantidad: {
+                    propias: dataCanastillas.canastillasPropias,
+                    prestadas: [
+                        {
+                            cantidad: dataCanastillas.canastillasPrestadas,
+                            propietario: proveedor[0].PREDIO
+                        }
+                    ]
+                },
+                observaciones: `Ingreso lote ${lote.enf}`,
+                referencia: "C1",
+                tipoMovimiento: "Ingreso",
+                estado: "En planta",
+                usuario: {
+                    id: user._id,
+                    user: user.user
+                }
+            }
+            await CanastillasRepository.post_registro(dataRegistro)
+
+            await VariablesDelSistema.modificar_canastillas_inventario(dataCanastillas.canastillasPropias, "canastillas")
+            await VariablesDelSistema.modificar_canastillas_inventario(dataCanastillas.canastillasPrestadas, "canastillasPrestadas")
 
             if (datos.ef.startsWith('EF1')) {
                 await VariablesDelSistema.incrementarEF1();

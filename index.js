@@ -7,15 +7,15 @@ const server = http.createServer(app);
 const { initMongoDB } = require('./DB/mongoDB/config/init');
 const { initSockets } = require('./src/sockets/ws');
 const { initCronJobs } = require('./src/cron/jobs');
-
+const { initRustRcp } = require('./config/grpcRust');
 (async () => {
     try {
         await initMongoDB();
-        //Configurar Socket.IO
+        initRustRcp().catch(() => {
+            console.warn('⚠️ No se pudo conectar al servidor Rust inicialmente. Se intentará reconectar en segundo plano.');
+        });
         const io = new Server(server);
         initSockets(io);
-
-
         initCronJobs();
 
         server.listen(PORT, HOST, () => {

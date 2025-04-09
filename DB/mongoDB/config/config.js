@@ -17,7 +17,8 @@ const connectProcesoDB = async (url = '') => {
 
     db.on("error", () => console.error("connection error:"));
     db.once("open", function () {
-      console.log(`¡Conexión exitosa! se connecto como ${tipoBaseDatos}`);
+      console.log(`✅ Conectado a la base de datos ${tipoBaseDatos}.`);
+
     });
     return db;
   } catch (error) {
@@ -35,7 +36,7 @@ const connectSistemaDB = async () => {
 
     db.on("error", () => console.error("connection error:"));
     db.once("open", function () {
-      console.log(`¡Conexión exitosa! se connecto como ${tipoBaseDatos}`);
+      console.log(`✅ Conectado a la base de datos ${tipoBaseDatos}.`);
     });
     return db;
   } catch (error) {

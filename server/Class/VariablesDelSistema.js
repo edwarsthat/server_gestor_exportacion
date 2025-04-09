@@ -3,7 +3,6 @@ const path = require('path');
 const { ProcessError } = require('../../Error/ProcessError');
 const { iniciarRedisDB } = require('../../DB/redis/init');
 const { ConnectRedisError } = require('../../Error/ConnectionErrors');
-// const { obtener_datos_lotes_listaEmpaque_cajasSinPallet } = require('../mobile/utils/contenedoresLotes');
 const { TurnoDatarepository } = require('./TurnoData');
 
 const pathIDs = path.join(__dirname, '..', '..', 'inventory', 'seriales.json');
@@ -11,15 +10,14 @@ const inventarioPath = path.join(__dirname, '..', '..', 'inventory', 'inventario
 const inventarioDesverdizadoPath = path.join(__dirname, '..', '..', 'inventory', 'inventarioDesverdizado.json');
 const ordenVaceoPath = path.join(__dirname, '..', '..', 'inventory', 'OrdenDeVaceo.json');
 const inventarioDescartesPath = path.join(__dirname, '..', '..', 'inventory', 'inventariodescarte.json');
-// const cajasSinPalletPath = path.join(__dirname, '..', '..', 'inventory', 'cajasSinPallet.json');
 const observacionesCalidadPath = path.join(__dirname, '..', '..', 'constants', 'observacionesCalidad.json');
+const canastillasPath = path.join(__dirname, '..', '..', 'inventory', 'canastillas.json');
 
 
 let inventarioFleg = false; // bandera que indica que el inventario se esta escribiendo
 let inventarioDesFleg = false; // bandera que indica que el inventarioDesverdizado se esta escribiendo
 let ordenVaceoFlag = false; //bandera que indica que la orden de vaceo se esta escribiendo
 let inventarioDescarteFlag = false; // bandera que indica que el inventario descarte se está escribiendo
-// let cajasSinPalletFlag = false;
 
 const clientePromise = iniciarRedisDB();
 
@@ -1483,6 +1481,52 @@ class VariablesDelSistema {
       return observaciones;
     } catch (err) {
       throw new ProcessError(522, `Error Obteniendo observaciones calidad ${err.name}`)
+    }
+  }
+
+  //canastillas
+  static async obtener_canastillas_inventario() {
+    try {
+      const canastillasJSON = fs.readFileSync(canastillasPath);
+      const canastillas = JSON.parse(canastillasJSON);
+      return canastillas;
+    } catch (err) {
+      throw new ProcessError(522, `Error Obteniendo inventario canastillas ${err.name}`)
+    }
+  }
+  static async modificar_canastillas_inventario(nCanastillas, tipo) {
+    try {
+      const canastillasJSON = fs.readFileSync(canastillasPath);
+      const canastillas = JSON.parse(canastillasJSON);
+      const canastillasActual = canastillas[tipo] ?? 0;
+
+      if (!["canastillas", "canastillasPrestadas"].includes(tipo)) {
+        throw new ProcessError(400, `Tipo inválido de canastillas: ${tipo}`);
+      }
+      if (!Number.isInteger(nCanastillas)) {
+        throw new ProcessError(400, `La cantidad debe ser un número entero.`);
+      }
+      if (canastillasActual + nCanastillas < 0) {
+        throw new ProcessError(523, `Error modificando el inventario canastillas, no hay suficientes canastillas ${tipo}`)
+      }
+
+
+      canastillas[tipo] += nCanastillas;
+      const newCanastillasJSON = JSON.stringify(canastillas);
+      fs.writeFileSync(canastillasPath, newCanastillasJSON);
+    } catch (err) {
+      throw new ProcessError(523, `Error modificando el inventario canastillas ${err.message}`)
+    }
+  }
+  static async set_canastillas_inventario(nCanastillas, tipo) {
+    try {
+      const canastillasJSON = fs.readFileSync(canastillasPath);
+      const canastillas = JSON.parse(canastillasJSON);
+      canastillas[tipo] = nCanastillas;
+      const newCanastillasJSON = JSON.stringify(canastillas);
+      fs.writeFileSync(canastillasPath, newCanastillasJSON);
+    } catch (err) {
+      throw new ProcessError(523, `Error modificando el inventario canastillas ${err.message}`)
     }
   }
 }

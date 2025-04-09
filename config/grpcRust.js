@@ -1,4 +1,3 @@
-// tcpClient.js
 const net = require("net");
 
 class RustRcp {
@@ -7,63 +6,78 @@ class RustRcp {
         this.port = port;
         this.client = null;
         this.isConnected = false;
+        this.reconnectInterval = 15000; // 15 seconds
+        this.retryTimer = null;
     }
 
-    // Método para crear la conexión
     connect() {
         return new Promise((resolve, reject) => {
             this.client = net.createConnection({ host: this.host, port: this.port }, () => {
-                console.log("Conectado al servidor");
+                console.log("✅ Conectado al servidor Rust");
                 this.isConnected = true;
+                if (this.retryTimer) {
+                    clearInterval(this.retryTimer);
+                    this.retryTimer = null;
+                }
                 resolve();
             });
 
-            this.client.once("data", (data) => {
-                console.log("Datos recibidos:", data.toString());
-            });
-
             this.client.on("error", (err) => {
-                console.error("Error en la conexión:", err);
+                console.error("❌ Error en la conexión:", err);
+                this.isConnected = false;
+                this.startReconnectLoop();
                 reject(err);
             });
 
             this.client.on("end", () => {
-                console.log("Desconectado del servidor");
+                console.log("⚠️ Desconectado del servidor");
                 this.isConnected = false;
+                this.startReconnectLoop();
+
             });
         });
     }
 
-    // Método para enviar datos con el formato { action: "asda", data: [...] }
+    startReconnectLoop() {
+        if (this.retryTimer) return; // Already trying
+
+        console.log("🔁 Iniciando intento de reconexión cada 15s...");
+
+        this.retryTimer = setInterval(() => {
+            if (!this.isConnected) {
+                console.log("🔍 Intentando reconectar al servidor Rust...");
+                this.connect().catch(() => { }); // Don't spam errors
+            }
+        }, this.reconnectInterval);
+    }
+
     sendData(data) {
         return new Promise((resolve, reject) => {
             if (!this.isConnected) {
-                reject("No estás conectado al servidor");
-                return;
+                return reject("⛔ No estás conectado al servidor");
             }
 
             const dataToSend = JSON.stringify(data);
-
-            // Usamos once para que solo se escuche el primer evento "data"
             this.client.once("data", (data) => {
-                // Se resuelve la promesa cuando se recibe la respuesta
                 resolve(data.toString());
             });
 
             this.client.write(dataToSend, (err) => {
-                if (err) {
-                    reject("Error al enviar los datos: " + err);
-                }
+                if (err) reject("💥 Error al enviar los datos: " + err);
             });
         });
     }
 
-    // Método para desconectar
     disconnect() {
-        if (this.client) {
-            this.client.end();
-        }
+        if (this.client) this.client.end();
     }
 }
 
-module.exports = RustRcp;
+// Creamos una sola instancia global
+const rustRcpClient = new RustRcp("127.0.0.1", 5000);
+
+// Exportamos la instancia y un método para inicializar
+module.exports = {
+    rustRcpClient,
+    initRustRcp: () => rustRcpClient.connect()
+};

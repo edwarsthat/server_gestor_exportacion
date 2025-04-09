@@ -63,6 +63,7 @@ const defineproveedores = async (conn) => {
     precioFijo: Boolean,
     departamento: String,
     municipio: String,
+    canastillas: Number
 
   });
 

@@ -109,7 +109,6 @@ class ProveedoresRepository {
          * @param {ClientSession} session - Sesión de transacción (opcional)
          * @returns Documento actualizado
          */
-        console.log(filter)
         const defaultOptions = { new: true }; // retorna el documento actualizado
         const finalOptions = session
             ? { ...defaultOptions, ...options, session }
