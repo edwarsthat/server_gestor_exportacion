@@ -238,6 +238,7 @@ class CalidadRepository {
 
 
             const exportacion = {}
+            const lote = await LotesRepository.getLotes({ ids: [_id] })
             const contenedoresData = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 ids: contenedores,
             })
@@ -283,6 +284,7 @@ class CalidadRepository {
                 }
             }
 
+            let setCont = new Set()
             Object.keys(exportacion).forEach(cont => {
                 Object.keys(exportacion[cont]).forEach(calidad => {
                     let llave = calidad
@@ -290,9 +292,13 @@ class CalidadRepository {
                         llave = "15"
                     }
                     query[`exportacionDetallada.any.${cont}.${llave}`] = exportacion[cont][calidad]
-
+                    setCont.add(cont)
                 })
             })
+            const contArr = [...setCont]
+
+            const arrayDelete = contArr.filter(cont => lote[0].contenedores.includes(cont))
+            query.contenedores = arrayDelete
 
             await LotesRepository.modificar_lote_proceso(_id, query, action, user)
         } catch (err) {
