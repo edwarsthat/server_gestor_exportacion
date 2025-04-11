@@ -69,6 +69,10 @@ const apiSocketComercial = {
         await ComercialRepository.post_comercial_contenedor(data)
         return successResponseRoutes()
     },
+    post_comercial_clienteNacional: async (data) => {
+        await ComercialRepository.post_comercial_clienteNacional(data)
+        return successResponseRoutes()
+    },
     //#endregion
     //#region formularios clientes
     get_comercial_formularios_reclamacionesCalidad_numeroElementos: async () => {

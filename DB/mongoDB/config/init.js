@@ -33,6 +33,7 @@ const { defineModificarElemento } = require('../schemas/transaccionesRecord/Modi
 const { defineCrearElemento } = require('../schemas/transaccionesRecord/AddsRecord');
 const { defineDeleteRecords } = require('../schemas/transaccionesRecord/DeleteRecord');
 const { defineRegistroCanastillas } = require('../schemas/canastillas/canastillasRegistrosSchema');
+const { defineClientesNacionales } = require('../schemas/clientes/schemaClientesNacionales');
 const db = {};
 
 const checkMongoDBRunning = async () => {
@@ -140,6 +141,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.TurnoData = await defineTurnoData(sysConn);
         db.Indicadores = await defineIndicadores(sysConn);
         db.RegistrosCanastillas = await defineRegistroCanastillas(sysConn)
+        db.ClientesNacionales = await defineClientesNacionales(sysConn);
 
         db.RecordModificacion = await defineModificarElemento(sysConn)
         db.RecordCreacion = await defineCrearElemento(sysConn)

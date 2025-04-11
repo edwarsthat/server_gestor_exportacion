@@ -1,4 +1,4 @@
-
+const { z } = require('zod')
 class ComercialValidationsRepository {
     static val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro) {
         // 1) Verificar que solo contenga llaves válidas
@@ -146,7 +146,14 @@ class ComercialValidationsRepository {
 
         }
     }
-
+    static val_post_comercial_clienteNacional() {
+        return z.object({
+            cliente: z.string().min(1, "El nombre del cliente es obligatorio.")
+                .regex(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s]+$/, "Solo se permiten letras y números."),
+            ubicacion: z.string().min(1, "La ubicación es obligatoria.")
+                .regex(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s]+$/, "Solo se permiten letras y números.")
+        })
+    }
 }
 
 module.exports.ComercialValidationsRepository = ComercialValidationsRepository

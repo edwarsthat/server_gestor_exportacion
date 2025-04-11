@@ -66,6 +66,51 @@ class InventariosValidations {
 
         return true; // Si pasa todas las validaciones
     }
+    static validarFiltroBusquedaFechaPaginacion(data) {
+        const { filtro, page } = data;
+        const { fechaInicio, fechaFin } = filtro
+
+        // Validar que page exista y sea un entero >= 1
+        if (!Number.isInteger(page) || page < 1) {
+            throw new Error('El número de página debe ser un entero mayor o igual a 1.');
+        }
+
+        // Validar que fechaInicio y fechaFin (si existen) sean strings válidos y representen fechas
+        if (fechaInicio !== undefined) {
+            if (typeof fechaInicio !== 'string' || fechaInicio.trim() === '') {
+                throw new Error('fechaInicio debe ser una cadena de texto no vacía si se proporciona.');
+            }
+
+            const fechaValida = new Date(fechaInicio);
+            if (isNaN(fechaValida.getTime())) {
+                throw new Error('fechaInicio no tiene un formato de fecha válido.');
+            }
+        }
+
+        if (fechaFin !== undefined) {
+            if (typeof fechaFin !== 'string' || fechaFin.trim() === '') {
+                throw new Error('fechaFin debe ser una cadena de texto no vacía si se proporciona.');
+            }
+
+            const fechaValida = new Date(fechaFin);
+            if (isNaN(fechaValida.getTime())) {
+                throw new Error('fechaFin no tiene un formato de fecha válido.');
+            }
+        }
+
+        // Validar que fechaInicio no sea posterior a fechaFin (si ambos existen)
+        if (fechaInicio && fechaFin) {
+            const inicio = new Date(fechaInicio);
+            const fin = new Date(fechaFin);
+
+            if (inicio > fin) {
+                throw new Error('fechaInicio no puede ser posterior a fechaFin.');
+            }
+        }
+
+        return true; // Si llega hasta acá, está limpio como el historial de un político recién electo.
+    }
+
 
 }
 

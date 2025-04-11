@@ -763,6 +763,56 @@ class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async get_inventarios_historiales_numeroCanastillas_registros(req) {
+        try {
+
+            const { filtro } = req.data || {}
+            let query = {}
+
+            if (filtro) {
+                const { fechaInicio, fechaFin } = filtro
+                InventariosValidations.validarFiltroBusquedaFechaPaginacion(req.data)
+                query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "createdAt") // no pases `query` si no lo necesita
+            }
+            const registros = await CanastillasRepository.get_numero_registros(query)
+
+            return registros
+
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(
+                470,
+                `Error ${err?.type || 'desconocido'}: ${err?.message || 'sin mensaje'}`
+            )
+        }
+    }
+    static async get_inventarios_historiales_canastillas_registros(req) {
+        try {
+
+            const { page = 1, filtro } = req.data || {}
+            const resultsPerPage = 50;
+            let query = {}
+            let skip = (page - 1) * resultsPerPage
+
+            if (filtro) {
+                InventariosValidations.validarFiltroBusquedaFechaPaginacion(req.data)
+                const { fechaInicio, fechaFin } = filtro
+                query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "createdAt") // no pases `query` si no lo necesita
+            }
+
+            const registros = await CanastillasRepository.get_registros_canastillas({ query: query, skip })
+
+            return registros
+
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
     //#endregion
     //#region ingresos
     static async get_inventarios_ingresos_ef1() {

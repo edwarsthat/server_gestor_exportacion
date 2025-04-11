@@ -5,6 +5,7 @@ const { ItemBussyError } = require("../../Error/ProcessError");
 let bussyIds = new Set();
 
 class ClientesRepository {
+    //clientes internacionales
     static async get_clientes(options = {}) {
         try {
             const {
@@ -56,7 +57,6 @@ class ClientesRepository {
             throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
         }
     }
-
     static async put_cliente(id, query, action, user) {
         this.validateBussyIds(id)
         try {
@@ -79,7 +79,7 @@ class ClientesRepository {
             await record.save();
             return saveProveedor
         } catch (err) {
-            throw new PostError(409, `Error agregando lote ${err.message}`);
+            throw new PostError(521, `Error agregando clinete ${err.message}`);
         }
     }
     static validateBussyIds(id) {
@@ -92,6 +92,40 @@ class ClientesRepository {
         bussyIds.add(id)
     }
 
+    //clientes nacionales
+    static async post_cliente_nacional(data) {
+        try {
+            const cliente = await db.ClientesNacionales.create(data);
+            return cliente.toObject({ versionKey: false });
+        } catch (err) {
+            if (err.code === 11000) {
+                throw new PostError(521, 'Ya existe un cliente con ese identificador.')
+            }
+            throw new PostError(521, `Error agregando cliente nacional ${err.message}`)
+        }
+    }
+    static async get_clientesNacionales(options = {}) {
+        try {
+            const {
+                ids = [],
+                query = {},
+                select = {}
+            } = options;
+            let Query = { ...query };
+
+            if (ids.length > 0) {
+                Query._id = { $in: ids };
+            }
+
+            const clientes = await db.ClientesNacionales.find(Query)
+                .select(select)
+                .exec();
+
+            return clientes
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo el cliente ${err.message}`);
+        }
+    }
 }
 
 module.exports.ClientesRepository = ClientesRepository

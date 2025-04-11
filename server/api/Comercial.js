@@ -348,6 +348,36 @@ class ComercialRepository {
             throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async post_comercial_clienteNacional(req) {
+        try {
+            const { user } = req
+            const { data, action } = req.data
+
+            console.log(req)
+            const parsedData = ComercialValidationsRepository.val_post_comercial_clienteNacional().parse(data);
+            const cliente = await ClientesRepository.post_cliente_nacional(parsedData);
+
+            const documento = {
+                modelo: "Cliente nacional",
+                _id: cliente._id,
+            }
+
+            await RecordCreacionesRepository.post_record_creaciones(
+                action,
+                user,
+                documento,
+                cliente,
+                `Creación de cliente nacional: ${cliente.cliente || cliente._id}`
+            )
+
+        } catch (err) {
+            console.log(err)
+            if (err.status === 521) {
+                throw err
+            }
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
     //#endregion
     //#region formularios
     static async put_comercial_reclamacionCalidad_contenedor(req) {
@@ -466,6 +496,7 @@ class ComercialRepository {
         }
     }
     //#endregion
+
 
     static async post_comercial_precios_add_precio(req) {
         try {

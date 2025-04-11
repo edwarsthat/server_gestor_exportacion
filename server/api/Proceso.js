@@ -1185,9 +1185,6 @@ class ProcesoRepository {
 
             await ContenedoresRepository.bulkWrite(operations);
 
-
-            await ContenedoresRepository.bulkWrite(operations)
-
             const documentosAfectados = [
                 {
                     modelo: "Contenedor",
@@ -1223,57 +1220,59 @@ class ProcesoRepository {
             const lotesSet = new Set(lotesIds);
             const lotesIdsArr = [...lotesSet];
 
-            const lotes = await LotesRepository.getLotes({
-                ids: lotesIdsArr,
-                limit: 'all'
-            })
+            if (lotesIdsArr.length > 0) {
 
-            const oldLotes = lotes.map(i => {
-                return {
-                    _id: i._id,
-                    enf: i.enf,
-                    contenedores: i.contenedores,
-                }
-            })
+                const lotes = await LotesRepository.getLotes({
+                    ids: lotesIdsArr,
+                    limit: 'all'
+                })
 
-
-            //se modifican los lotes, agregando el contenedor si se mueve a un contenedor que no haya en el set antiguo
-            const operationsLotes = lotes.map(loteDoc => ({
-                updateOne: {
-                    filter: { _id: loteDoc._id },
-                    update: {
-                        $addToSet: { contenedores: id2 },
+                const oldLotes = lotes.map(i => {
+                    return {
+                        _id: i._id,
+                        enf: i.enf,
+                        contenedores: i.contenedores,
                     }
-                }
-            }));
-
-            await LotesRepository.bulkWrite(operationsLotes);
+                })
 
 
-            const newLotes = lotes.map(i => {
-                return {
-                    _id: i._id,
-                    enf: i.enf,
-                    contenedores: contenedores[index2].numeroContenedor,
-                }
-            })
+                //se modifican los lotes, agregando el contenedor si se mueve a un contenedor que no haya en el set antiguo
+                const operationsLotes = lotes.map(loteDoc => ({
+                    updateOne: {
+                        filter: { _id: loteDoc._id },
+                        update: {
+                            $addToSet: { contenedores: id2 },
+                        }
+                    }
+                }));
 
-            // Registrar modificación de los lotes
-            const documentosAfectadosLotes = newLotes.map(l => ({
-                modelo: "Lote", // o el nombre del modelo que estés utilizando
-                documentoId: l._id,
-                descripcion: `Se agrego nuevo contenedor en el enf ${l.enf}`,
-            }));
+                await LotesRepository.bulkWrite(operationsLotes);
 
-            await RecordModificacionesRepository.post_record_contenedor_modification(
-                action,
-                user,
-                documentosAfectadosLotes, // aquí pasas el array de documentos afectados
-                oldLotes,
-                newLotes,
-                { contenedor1, contenedor2, action, user }
-            );
 
+                const newLotes = lotes.map(i => {
+                    return {
+                        _id: i._id,
+                        enf: i.enf,
+                        contenedores: contenedores[index2].numeroContenedor,
+                    }
+                })
+
+                // Registrar modificación de los lotes
+                const documentosAfectadosLotes = newLotes.map(l => ({
+                    modelo: "Lote", // o el nombre del modelo que estés utilizando
+                    documentoId: l._id,
+                    descripcion: `Se agrego nuevo contenedor en el enf ${l.enf}`,
+                }));
+
+                await RecordModificacionesRepository.post_record_contenedor_modification(
+                    action,
+                    user,
+                    documentosAfectadosLotes, // aquí pasas el array de documentos afectados
+                    oldLotes,
+                    newLotes,
+                    { contenedor1, contenedor2, action, user }
+                );
+            }
             procesoEventEmitter.emit("server_event", {
                 action: "lista_empaque_update",
             });
@@ -1417,57 +1416,60 @@ class ProcesoRepository {
 
             const lotesSet = new Set(lotesIds);
             const lotesIdsArr = [...lotesSet];
+            console.log("los lotes a modificar", lotesIdsArr)
 
-            const lotes = await LotesRepository.getLotes({
-                ids: lotesIdsArr,
-                limit: 'all'
-            })
+            if (lotesIdsArr.length > 0) {
 
-            const oldLotes = lotes.map(i => {
-                return {
-                    _id: i._id,
-                    enf: i.enf,
-                    contenedores: i.contenedores,
-                }
-            })
+                const lotes = await LotesRepository.getLotes({
+                    ids: lotesIdsArr,
+                    limit: 'all'
+                })
 
-
-            //se modifican los lotes, agregando el contenedor si se mueve a un contenedor que no haya en el set antiguo
-            const operationsLotes = lotes.map(loteDoc => ({
-                updateOne: {
-                    filter: { _id: loteDoc._id },
-                    update: {
-                        $addToSet: { contenedores: id2 },
+                console.log("entra aqui")
+                const oldLotes = lotes.map(i => {
+                    return {
+                        _id: i._id,
+                        enf: i.enf,
+                        contenedores: i.contenedores,
                     }
-                }
-            }));
+                })
 
-            await LotesRepository.bulkWrite(operationsLotes);
+                //se modifican los lotes, agregando el contenedor si se mueve a un contenedor que no haya en el set antiguo
+                const operationsLotes = lotes.map(loteDoc => ({
+                    updateOne: {
+                        filter: { _id: loteDoc._id },
+                        update: {
+                            $addToSet: { contenedores: id2 },
+                        }
+                    }
+                }));
 
+                await LotesRepository.bulkWrite(operationsLotes);
 
-            const newLotes = lotes.map(i => {
-                return {
-                    _id: i._id,
-                    enf: i.enf,
-                    contenedores: contenedores[index2].numeroContenedor,
-                }
-            })
+                const newLotes = lotes.map(i => {
+                    return {
+                        _id: i._id,
+                        enf: i.enf,
+                        contenedores: contenedores[index2].numeroContenedor,
+                    }
+                })
 
-            // Registrar modificación de los lotes
-            const documentosAfectadosLotes = newLotes.map(l => ({
-                modelo: "Lote", // o el nombre del modelo que estés utilizando
-                documentoId: l._id,
-                descripcion: `Se agrego nuevo contenedor en el enf ${l.enf}`,
-            }));
+                // Registrar modificación de los lotes
+                const documentosAfectadosLotes = newLotes.map(l => ({
+                    modelo: "Lote", // o el nombre del modelo que estés utilizando
+                    documentoId: l._id,
+                    descripcion: `Se agrego nuevo contenedor en el enf ${l.enf}`,
+                }));
 
-            await RecordModificacionesRepository.post_record_contenedor_modification(
-                action,
-                user,
-                documentosAfectadosLotes, // aquí pasas el array de documentos afectados
-                oldLotes,
-                newLotes,
-                { contenedor1, contenedor2, action, user }
-            );
+                await RecordModificacionesRepository.post_record_contenedor_modification(
+                    action,
+                    user,
+                    documentosAfectadosLotes, // aquí pasas el array de documentos afectados
+                    oldLotes,
+                    newLotes,
+                    { contenedor1, contenedor2, action, user }
+                );
+            }
 
             procesoEventEmitter.emit("server_event", {
                 action: "lista_empaque_update",

@@ -162,8 +162,16 @@ const apiSocketInventarios = {
         return successResponseRoutes(response)
     },
     get_inventarios_numero_registros_fruta_descompuesta: async () => {
-        const data = await InventariosRepository.get_inventarios_numero_registros_fruta_descompuesta()
-        return { status: 200, message: 'Ok', data: data }
+        const response = await InventariosRepository.get_inventarios_numero_registros_fruta_descompuesta()
+        return successResponseRoutes(response)
+    },
+    get_inventarios_historiales_canastillas_registros: async (data) => {
+        const response = await InventariosRepository.get_inventarios_historiales_canastillas_registros(data)
+        return successResponseRoutes(response)
+    },
+    get_inventarios_historiales_numeroCanastillas_registros: async (data) => {
+        const response = await InventariosRepository.get_inventarios_historiales_numeroCanastillas_registros(data)
+        return successResponseRoutes(response)
     },
     //#endregion
     //#region ingresoInventario

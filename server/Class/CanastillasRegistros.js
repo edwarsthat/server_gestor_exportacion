@@ -12,6 +12,45 @@ class CanastillasRepository {
             throw new ConnectionDBError(521, `Canastillas -> ${err.message}`);
         }
     }
+    static async get_numero_registros(filtro = {}) {
+        try {
+            const count = await db.RegistrosCanastillas.countDocuments(filtro);
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(524, `Canastillas -> ${err.message}`);
+        }
+    }
+    static async get_registros_canastillas(options = {}) {
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { createdAt: -1 },
+            limit = 50,
+            skip = 0,
+        } = options;
+        try {
+            let queryFinal = { ...query };
+
+            if (ids.length > 0) {
+                queryFinal._id = { $in: ids };
+            }
+
+            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
+
+            const lotes = await db.RegistrosCanastillas.find(queryFinal)
+                .select(select)
+                .sort(sort)
+                .limit(limitToUse)
+                .skip(skip)
+                .exec();
+
+            return lotes
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo canastillas ${err.message}`);
+        }
+    }
 }
 
 module.exports.CanastillasRepository = CanastillasRepository 

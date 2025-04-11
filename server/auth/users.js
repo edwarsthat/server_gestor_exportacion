@@ -14,6 +14,7 @@ const permisos_generales = [
     "obtener_cantidad_historial_ingreso_inventario",
     "get_comercial_precios_cantidad_registros",
     "get_comercial_formularios_reclamacionesCalidad_numeroElementos",
+    "get_inventarios_historiales_numeroCanastillas_registros",
 
     "get_info_formulario_inspeccion_fruta",
     "get_transporte_registros_programacion_mula_numeroElementos",
