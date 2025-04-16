@@ -113,6 +113,7 @@ const defineLotes = async (conn) => {
   const dataSchema = new Schema({
 
     aprobacionComercial: { type: Boolean, default: false }, //es la aprobacion antes de enviarlo a contabilidad
+    aprobacionProduccion: { type: Boolean, default: false }, //es la aprobacion antes de aprobacion comercial
     calidad: calidadSchema,
     calidad1: { type: Number, default: 0 },
     calidad15: { type: Number, default: 0 },
@@ -136,6 +137,8 @@ const defineLotes = async (conn) => {
     fecha_ingreso_inventario: { type: Date },
     fechaProceso: { type: Date },
     fecha_finalizado_proceso: { type: Date },
+    fecha_aprobacion_produccion: { type: Date },
+    fecha_aprobacion_comercial: { type: Date },
     frutaNacional: { type: Number, default: 0 },
     flag_balin_free: { type: Boolean, default: true },
     historialDescarte: mongoose.Types.ObjectId,

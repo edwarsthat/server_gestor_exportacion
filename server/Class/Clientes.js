@@ -1,3 +1,4 @@
+const { isValidObjectId } = require("mongoose");
 const { db } = require("../../DB/mongoDB/config/init");
 const { ConnectionDBError, PutError, PostError } = require("../../Error/ConnectionErrors");
 const { ItemBussyError } = require("../../Error/ProcessError");
@@ -114,7 +115,12 @@ class ClientesRepository {
             let Query = { ...query };
 
             if (ids.length > 0) {
-                Query._id = { $in: ids };
+                const validIds = ids.filter(id => isValidObjectId(id))
+                if (validIds.length !== ids.length) {
+                    throw new Error("Se encontraron IDs inválidos en la solicitud.");
+                }
+
+                Query._id = { $in: validIds };
             }
 
             const clientes = await db.ClientesNacionales.find(Query)
@@ -124,6 +130,42 @@ class ClientesRepository {
             return clientes
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo el cliente ${err.message}`);
+        }
+    }
+    static async get_numero_clientesNacionales() {
+        try {
+            const count = await db.ClientesNacionales.countDocuments();
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(524, `Error obteniendo cantidad clientes ${err.mess}`);
+        }
+    }
+    static async actualizar_clienteNacional(filter, update, options = {}, session = null) {
+        /**
+         * Función genérica para actualizar documentos en MongoDB usando Mongoose
+         *
+         * @param {Model} model - Modelo Mongoose (db.clientes, etc.)
+         * @param {Object} filter - Objeto de filtrado para encontrar el documento
+         * @param {Object} update - Objeto con los campos a actualizar
+         * @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
+         * @param {ClientSession} session - Sesión de transacción (opcional)
+         * @returns Documento actualizado
+         */
+
+        const defaultOptions = { new: true }; // retorna el documento actualizado
+        const finalOptions = session
+            ? { ...defaultOptions, ...options, session }
+            : { ...defaultOptions, ...options };
+
+        try {
+            const documentoActualizado = await db.ClientesNacionales.findOneAndUpdate(
+                filter,
+                update,
+                finalOptions
+            );
+            return documentoActualizado;
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
         }
     }
 }

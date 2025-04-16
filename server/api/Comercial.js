@@ -10,6 +10,8 @@ const { ProveedoresRepository } = require("../Class/Proveedores");
 const { ComercialValidationsRepository } = require("../validations/Comercial");
 const { filtroFechaInicioFin, filtroPorSemana } = require("./utils/filtros");
 const { getISOWeek } = require('date-fns')
+const { z } = require('zod')
+
 // const nodemailer = require('nodemailer');
 
 class ComercialRepository {
@@ -318,6 +320,76 @@ class ComercialRepository {
             }
             throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
+    }
+    static async get_comercial_clientesNacionales() {
+        try {
+            const clientes = await ClientesRepository.get_clientesNacionales()
+            const numeroClientes = await ClientesRepository.get_numero_clientesNacionales()
+            return {
+                clientes,
+                cantidad: numeroClientes
+            }
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_comercial_clientes_clienteNacional(req) {
+        try {
+            const { user } = req
+            const { data, action } = req.data
+
+            ComercialValidationsRepository.put_comercial_clientes_clienteNacional().parse(data)
+            const clienteOld = await ClientesRepository.get_clientesNacionales({
+                ids: [data._id]
+            })
+
+            if (!clienteOld || clienteOld.length === 0) {
+                throw new ComercialLogicError(404, "Cliente nacional no encontrado")
+            }
+
+            const newCliente = await ClientesRepository.actualizar_clienteNacional(
+                { _id: data._id },
+                {
+                    $set: {
+                        cliente: data.cliente,
+                        ubicacion: data.ubicacion,
+                        canastillas: data.canastillas
+                    }
+                }
+            );
+
+            await RecordModificacionesRepository.post_record_modification(
+                action,
+                user,
+                {
+                    modelo: "ClienteNacional",
+                    documentoId: newCliente._id,
+                    descripcion: `Se modificaron los datos del cliente nacional`,
+                },
+                clienteOld[0],
+                newCliente,
+                { data, action }
+            );
+
+        } catch (err) {
+            // ZodError: errores de validación con mensaje claro
+            if (err instanceof z.ZodError) {
+                const errores = err.errors.map(e => `${e.path[0]}: ${e.message}`).join(" | ")
+                throw new ComercialLogicError(480, `Error de validación: ${errores}`)
+            }
+
+            // Error conocido con status custom
+            if (err.status === 521) {
+                throw err
+            }
+
+            // Error genérico
+            throw new ComercialLogicError(480, `Error ${err.type ?? "desconocido"}: ${err.message}`)
+        }
+
     }
     //#regionend
     //#region ingresos

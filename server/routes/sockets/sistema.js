@@ -34,6 +34,14 @@ const apiSocketSistema = {
         const response = await SistemaRepository.get_sistema_proceso_dataProceso();
         return successResponseRoutes(response)
     },
+    get_sistema_habilitarInstancias_lotes: async () => {
+        const response = await SistemaRepository.get_sistema_habilitarInstancias_lotes();
+        return successResponseRoutes(response)
+    },
+    put_sistema_habilitarInstancias_habilitarPredio: async (data) => {
+        const response = await SistemaRepository.put_sistema_habilitarInstancias_habilitarPredio(data);
+        return successResponseRoutes(response)
+    },
 
     //#region modificar seriales
     get_sistema_parametros_configuracionSeriales_EF1: async () => {

@@ -63,6 +63,14 @@ const apiSocketComercial = {
         await ComercialRepository.put_comercial_clientes_estado(req)
         return successResponseRoutes()
     },
+    get_comercial_clientesNacionales: async (data) => {
+        const proveedores = await ComercialRepository.get_comercial_clientesNacionales(data);
+        return successResponseRoutes(proveedores)
+    },
+    put_comercial_clientes_clienteNacional: async (data) => {
+        const proveedores = await ComercialRepository.put_comercial_clientes_clienteNacional(data);
+        return successResponseRoutes(proveedores)
+    },
     //#endregion
     //#region ingresos contendores
     post_comercial_contenedor: async (data) => {

@@ -13,6 +13,10 @@ const apiSocketData = {
     get_data_tipoFruta: async () => {
         const response = await dataRepository.get_data_tipoFruta()
         return successResponseRoutes(response)
+    },
+    get_data_clientesNacionales: async () => {
+        const response = await dataRepository.get_data_clientesNacionales()
+        return successResponseRoutes(response)
     }
 }
 

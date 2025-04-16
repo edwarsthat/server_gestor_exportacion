@@ -5,7 +5,8 @@ const { Schema } = mongoose;
 const defineClientesNacionales = async (conn) => {
 
     const ClienteNacionalSchema = new Schema({
-        cliente: { type: String, unique: true },
+        codigo: { type: Number, unique: true, required: true },
+        cliente: { type: String, unique: true, required: true },
         ubicacion: String,
         canastillas: Number,
         createdAt: { type: Date, default: () => new Date() }

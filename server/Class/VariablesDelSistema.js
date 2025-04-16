@@ -1518,11 +1518,11 @@ class VariablesDelSistema {
       throw new ProcessError(523, `Error modificando el inventario canastillas ${err.message}`)
     }
   }
-  static async set_canastillas_inventario(nCanastillas, tipo) {
+  static async set_canastillas_inventario(nCanastillas) {
     try {
       const canastillasJSON = fs.readFileSync(canastillasPath);
       const canastillas = JSON.parse(canastillasJSON);
-      canastillas[tipo] = nCanastillas;
+      canastillas["canastillasPrestadas"] = nCanastillas;
       const newCanastillasJSON = JSON.stringify(canastillas);
       fs.writeFileSync(canastillasPath, newCanastillasJSON);
     } catch (err) {

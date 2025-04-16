@@ -781,8 +781,7 @@ class ContenedoresRepository {
             }
             return contenedor_obj;
         } catch (err) {
-            console.error(err)
-            throw new PutError(523, `Error contenedores ${id} -- query ${query} `);
+            throw new PutError(523, `Error contenedores ${id} -- query ${err} `);
         } finally {
             this.unlockItem(id, "Contenedor", "general")
         }

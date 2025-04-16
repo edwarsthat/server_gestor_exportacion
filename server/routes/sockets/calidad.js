@@ -49,6 +49,10 @@ const apiSocketCalidad = {
         await CalidadRepository.put_calidad_informes_loteFinalizarInforme(data)
         return successResponseRoutes()
     },
+    put_calidad_informes_aprobacionComercial: async (data) => {
+        await CalidadRepository.put_calidad_informes_aprobacionComercial(data)
+        return successResponseRoutes()
+    },
     put_calidad_informe_noPagarBalinLote: async (data) => {
         await CalidadRepository.put_calidad_informe_noPagarBalinLote(data)
         return successResponseRoutes()

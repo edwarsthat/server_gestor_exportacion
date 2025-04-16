@@ -10,6 +10,7 @@ const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
 const fs = require('fs')
 const path = require('path');
 const { filtroFechaInicioFin } = require("./utils/filtros");
+const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
 
 const tipoFormulariosCalidadPath = path.join(__dirname, '../../constants/formularios_calidad.json')
 class CalidadRepository {
@@ -153,6 +154,7 @@ class CalidadRepository {
                     fecha_estimada_llegada: 1,
                     precio: 1,
                     aprobacionComercial: 1,
+                    aprobacionProduccion: 1,
                     exportacionDetallada: 1,
                     observaciones: 1,
                     flag_is_favorita: 1,
@@ -274,12 +276,12 @@ class CalidadRepository {
             if (typeof precio === 'object') {
                 query = {
                     precio: precio,
-                    aprobacionComercial: true,
+                    aprobacionProduccion: true,
                     fecha_finalizado_proceso: new Date()
                 }
             } else {
                 query = {
-                    aprobacionComercial: true,
+                    aprobacionProduccion: true,
                     fecha_finalizado_proceso: new Date()
                 }
             }
@@ -308,6 +310,58 @@ class CalidadRepository {
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
 
+    }
+    static async put_calidad_informes_aprobacionComercial(req) {
+        try {
+            const { data, user } = req;
+            const { _id, action } = data;
+
+            const lote = await LotesRepository.getLotes({ ids: [_id] })
+
+            if (!lote || lote.length === 0) {
+                throw new CalidadLogicError(404, "Lote no encontrado.");
+            }
+
+            const newLote = lote[0].toObject();
+            newLote.aprobacionComercial = true
+            newLote.fecha_aprobacion_comercial = new Date()
+            // Actualizar contenedor con pallets modificados
+            await LotesRepository.actualizar_lote(
+                { _id },
+                {
+                    $set: {
+                        aprobacionComercial: true,
+                        fecha_aprobacion_comercial: new Date()
+                    }
+
+                }
+            );
+
+            // Registrar modificación Contenedores
+            await RecordModificacionesRepository.post_record_contenedor_modification(
+                action,
+                user,
+                {
+                    modelo: "Lotes",
+                    documentoId: _id,
+                    descripcion: `Se dio aprobacion comercial`,
+                },
+                lote[0],
+                newLote,
+                { _id, action }
+            );
+
+            return true
+
+        } catch (err) {
+            console.log(err)
+            if (err.status === 523 || err.status === 522) {
+                throw err
+            }
+            const mensaje = err && err.message ? err.message : JSON.stringify(err);
+            throw new CalidadLogicError(471, `Error al aprobar comercialmente: ${mensaje}`);
+
+        }
     }
     static async put_calidad_informe_noPagarBalinLote(req) {
         try {

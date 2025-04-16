@@ -15,6 +15,7 @@ const { filtroFechaInicioFin } = require('./utils/filtros');
 const { RecordLotesRepository } = require('../archive/ArchiveLotes');
 const { LotesRepository } = require('../Class/Lotes');
 const { procesoEventEmitter } = require('../../events/eventos');
+const { db } = require('../../DB/mongoDB/config/init');
 
 
 class SistemaRepository {
@@ -168,6 +169,44 @@ class SistemaRepository {
             throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async get_sistema_habilitarInstancias_lotes() {
+        try {
+            const lotes = await LotesRepository.getLotes({
+                sort: { fechaProceso: -1 },
+                select: { enf: 1 },
+                limit: 200
+            })
+            return lotes
+        } catch (err) {
+            if (err.status === 531) {
+                throw err
+            }
+            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_sistema_habilitarInstancias_habilitarPredio(req) {
+        try {
+            const { user } = req
+            const { data } = req.data
+            let record = new db.recordLotes({
+                operacionRealizada: "vaciarLote",
+                user: user,
+                documento: {
+                    $inc: {
+                        kilosVaciados: 100,
+                    },
+                    fechaProceso: new Date(),
+                    _id: data
+                }
+            })
+            await record.save()
+        } catch (err) {
+            if (err.status === 531) {
+                throw err
+            }
+            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
     //#endregion
     //#region modificar seriales
     static async get_sistema_parametros_configuracionSeriales_EF1() {
@@ -239,8 +278,6 @@ class SistemaRepository {
     }
     //#endregion
 
-
-
     static async check_mobile_version() {
         const apkLatest = path.join(__dirname, '..', '..', 'updates', 'mobile', 'latest.yml');
         const fileContents = fs.readFileSync(apkLatest, 'utf8');
@@ -305,8 +342,6 @@ class SistemaRepository {
         const cantidad = await UsuariosRepository.obtener_cantidad_usuarios()
         return cantidad
     }
-
-
     static async get_constantes_sistema_tipo_frutas() {
         try {
             const response = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas();

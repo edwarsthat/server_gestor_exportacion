@@ -1,0 +1,163 @@
+const { obtenerEstadoDesdeAccionCanastillasInventario } = require("../api/utils/diccionarios");
+const { ClientesRepository } = require("../Class/Clientes");
+const { PreciosRepository } = require("../Class/Precios");
+const { ProveedoresRepository } = require("../Class/Proveedores");
+const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
+
+class InventariosService {
+
+    static async obtenerPrecioProveedor(predioId, tipoFruta) {
+        const proveedor = await ProveedoresRepository.get_proveedores({
+            ids: [predioId],
+            select: { precio: 1, PREDIO: 1 }
+        });
+
+        if (!proveedor || proveedor.length === 0) {
+            throw new Error("Proveedor no encontrado");
+        }
+
+        const idPrecio = proveedor[0].precio[tipoFruta];
+        if (!idPrecio) {
+            throw new Error(`No hay precio para la fruta ${tipoFruta}`);
+        }
+
+        const precio = await PreciosRepository.get_precios({ ids: [idPrecio] });
+        if (!precio || precio.length === 0) {
+            throw new Error("Precio inválido");
+        }
+
+        return precio[0]._id;
+
+    }
+    static async construirQueryIngresoLote(datos, enf, precioId) {
+        const fecha = new Date(datos.fecha_estimada_llegada);
+
+        return {
+            ...datos,
+            precio: precioId,
+            enf,
+            fecha_salida_patio: fecha,
+            fecha_ingreso_patio: fecha,
+            fecha_ingreso_inventario: fecha,
+        };
+    }
+    static async incrementarEF(ef) {
+        if (ef.startsWith("EF1")) return VariablesDelSistema.incrementarEF1();
+        if (ef.startsWith("EF8")) return VariablesDelSistema.incrementarEF8();
+        throw new Error(`Código EF no válido para incrementar: ${ef}`);
+    }
+    static async crearRegistroInventarioCanastillas(
+        {
+            origen = '',
+            destino = '',
+            accion = '',
+            canastillas = 0,
+            canastillasPrestadas = 0,
+            remitente = "",
+            destinatario = "",
+            user,
+            fecha = '',
+            observaciones = '',
+            duenio = ''
+        }
+    ) {
+        const estado = obtenerEstadoDesdeAccionCanastillasInventario(accion)
+        return {
+            fecha: new Date(fecha),
+            destino: destino,
+            origen: origen,
+            cantidad: {
+                propias: canastillas,
+                // Se deja como array porque en el futuro se manejarán varios propietarios
+                prestadas: [
+                    {
+                        cantidad: canastillasPrestadas,
+                        propietario: duenio
+                    }
+                ]
+            },
+            observaciones: observaciones,
+            referencia: "C1",
+            tipoMovimiento: accion,
+            estado: estado,
+            usuario: {
+                id: user._id,
+                user: user.user
+            },
+            remitente: remitente,
+            destinatario: destinatario
+        }
+    }
+    static async ajustarCanastillasProveedorCliente(_id, cantidad) {
+        if (!_id || cantidad === 0) return;
+
+        const proveedores = await ProveedoresRepository.get_proveedores({
+            ids: [_id],
+            select: { canastillas: 1 }
+        });
+
+        const clientes = await ClientesRepository.get_clientesNacionales({
+            ids: [_id],
+            select: { canastillas: 1 }
+        })
+
+        if (proveedores.length > 0) {
+            const proveedor = proveedores[0];
+            const cantidadActual = Number(proveedor.canastillas ?? 0);
+            const newCanastillas = cantidadActual + cantidad;
+            await ProveedoresRepository.modificar_proveedores(
+                { _id: proveedor._id },
+                { $set: { canastillas: newCanastillas } }
+            );
+        } else if (clientes.length > 0) {
+            const cliente = clientes[0];
+            const cantidadActual = Number(cliente.canastillas ?? 0);
+            const newCanastillas = cantidadActual + cantidad;
+            await ClientesRepository.actualizar_clienteNacional(
+                { _id: cliente._id },
+                { canastillas: newCanastillas }
+            );
+        }
+    }
+    static async encontrarDestinoOrigenRegistroCanastillas(registros) {
+        const destinosArr = registros.map(registro => registro.destino);
+        const origenesArr = registros.map(registro => registro.origen);
+
+        const ids = [...new Set([...destinosArr, ...origenesArr])];
+
+        const proveedores = await ProveedoresRepository.get_proveedores({
+            ids: ids
+        })
+        const clientes = await ClientesRepository.get_clientesNacionales({
+            ids: ids
+        })
+
+        const proveedorMap = new Map(proveedores.map(p => [p._id.toString(), p]));
+        const clienteMap = new Map(clientes.map(c => [c._id.toString(), c]));
+
+        const newRegistros = []
+
+        for (let i = 0; i < registros.length; i++) {
+            const registro = registros[i].toObject()
+
+            const proveedorOrigen = proveedorMap.get(registro.origen);
+            const clienteOrigen = clienteMap.get(registro.origen);
+
+            const proveedorDestino = proveedorMap.get(registro.destino);
+            const clienteDestino = clienteMap.get(registro.destino);
+
+            const newOrigen = proveedorOrigen?.PREDIO || clienteOrigen?.cliente || registro.origen;
+            const newDestino = proveedorDestino?.PREDIO || clienteDestino?.cliente || registro.destino;
+
+            newRegistros.push({
+                ...registro,
+                origen: newOrigen,
+                destino: newDestino
+            })
+        }
+        return newRegistros
+    }
+
+}
+
+module.exports.InventariosService = InventariosService

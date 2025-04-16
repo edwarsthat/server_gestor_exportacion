@@ -154,6 +154,18 @@ class ComercialValidationsRepository {
                 .regex(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s]+$/, "Solo se permiten letras y números.")
         })
     }
+    static put_comercial_clientes_clienteNacional() {
+        return z.object({
+            cliente: z.string()
+                .min(1, "El nombre del cliente es obligatorio.")
+                .regex(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s]+$/, "Solo se permiten letras y números."),
+            ubicacion: z.string()
+                .min(1, "La ubicación es obligatoria.")
+                .regex(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s]+$/, "Solo se permiten letras y números."),
+            canastillas: z.coerce.number().min(1, "La cantidad de canastillas debe ser mayor a 0.")
+
+        })
+    }
 }
 
 module.exports.ComercialValidationsRepository = ComercialValidationsRepository

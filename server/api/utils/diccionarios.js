@@ -1,3 +1,4 @@
+const { VariablesDelSistema } = require("../../Class/VariablesDelSistema");
 
 const obtenerEstadoDesdeAccionCanastillasInventario = (accion) => {
     const ESTADOS = {
@@ -18,6 +19,12 @@ const obtenerEstadoDesdeAccionCanastillasInventario = (accion) => {
     return estado;
 };
 
+const generadoresEF = {
+    EF1: VariablesDelSistema.generarEF1,
+    EF8: VariablesDelSistema.generarEF8
+}
+
 module.exports = {
-    obtenerEstadoDesdeAccionCanastillasInventario
+    obtenerEstadoDesdeAccionCanastillasInventario,
+    generadoresEF
 }

@@ -54,7 +54,11 @@ class dataRepository {
             ) {
                 throw err
             }
-            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+
+            const type = err?.type || "desconocido";
+            const message = err?.message || "Error inesperado";
+
+            throw new DataLogicError(480, `Error ${type}: ${message}`);
         }
 
     }
@@ -107,6 +111,25 @@ class dataRepository {
                 throw err
             }
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_data_clientesNacionales() {
+        try {
+            const clientesNacionales = await ClientesRepository.get_clientesNacionales({
+                select: { cliente: 1, canastillas: 1 }
+            })
+            return clientesNacionales
+        } catch (err) {
+            if (
+                err.status === 522
+            ) {
+                throw err
+            }
+
+            const type = err?.type || "desconocido";
+            const message = err?.message || "Error inesperado";
+
+            throw new DataLogicError(480, `Error ${type}: ${message}`);
         }
     }
 }

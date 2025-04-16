@@ -175,12 +175,8 @@ const apiSocketInventarios = {
     },
     //#endregion
     //#region ingresoInventario
-    get_inventarios_ingresos_ef1: async () => {
-        const response = await InventariosRepository.get_inventarios_ingresos_ef1()
-        return successResponseRoutes(response)
-    },
-    get_inventarios_ingresos_ef8: async () => {
-        const response = await InventariosRepository.get_inventarios_ingresos_ef8()
+    get_inventarios_ingresos_ef: async () => {
+        const response = await InventariosRepository.get_inventarios_ingresos_ef()
         return successResponseRoutes(response)
     },
     post_inventarios_ingreso_lote: async (data) => {
