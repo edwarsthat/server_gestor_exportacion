@@ -120,18 +120,18 @@ class ProcesoRepository {
 
             const lote = await LotesRepository.modificar_lote_proceso(_id, query, action, user._id);
             await LotesRepository.deshidratacion(lote);
-            const is_finish = await is_finish_lote(lote);
-            if (is_finish) {
-                const query_fecha = {
-                    fecha_finalizado_proceso: new Date()
-                }
-                await LotesRepository.modificar_lote_proceso(
-                    lote._id,
-                    query_fecha,
-                    "lote_finalizado",
-                    user._id
-                );
-            }
+            // const is_finish = await is_finish_lote(lote);
+            // if (is_finish) {
+            //     const query_fecha = {
+            //         fecha_finalizado_proceso: new Date()
+            //     }
+            //     await LotesRepository.modificar_lote_proceso(
+            //         lote._id,
+            //         query_fecha,
+            //         "lote_finalizado",
+            //         user._id
+            //     );
+            // }
 
             await VariablesDelSistema.modificar_inventario_descarte(_id, data, "descarteLavado", lote);
             await VariablesDelSistema.ingresar_kilos_procesados(kilos, lote.tipoFruta);
@@ -143,6 +143,7 @@ class ProcesoRepository {
                 data: {}
             });
         } catch (err) {
+            console.log(err)
             if (err.status === 523 ||
                 err.status === 515 ||
                 err.status === 518 ||

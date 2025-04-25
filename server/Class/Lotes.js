@@ -195,8 +195,8 @@ class LotesRepository {
         try {
             const kilosTotal = data.kilos;
             if (kilosTotal === 0) return 0;
-            const descarteLavado = this.descarteTotal(data.descarteLavado);
-            const descarteEncerado = this.descarteTotal(data.descarteEncerado);
+            const descarteLavado = data.descarteLavado ? this.descarteTotal(data.descarteLavado) : 0;
+            const descarteEncerado = data.descarteEncerado ? this.descarteTotal(data.descarteEncerado) : 0;
             const frutaNacional = data.frutaNacional;
             const directoNacional = data.directoNacional;
             const calidad1 = data.calidad1;
