@@ -846,6 +846,7 @@ class InventariosRepository {
                 canastillas: dataCanastillas.canastillasPropias,
                 canastillasPrestadas: dataCanastillas.canastillasPrestadas,
                 accion: "ingreso",
+                placa: datos.placa,
                 user
             })
 

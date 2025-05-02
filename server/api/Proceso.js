@@ -11,7 +11,7 @@ const { InsumosRepository } = require("../Class/Insumos");
 const path = require('path');
 const fs = require("fs");
 
-const { have_lote_GGN_export, is_finish_lote } = require("../controllers/validations");
+const { have_lote_GGN_export } = require("../controllers/validations");
 const { FrutaDescompuestaRepository } = require("../Class/FrutaDescompuesta");
 const { filtroFechaInicioFin } = require("./utils/filtros");
 const { InventariosLogicError } = require("../../Error/logicLayerError");
