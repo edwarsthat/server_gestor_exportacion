@@ -372,7 +372,7 @@ class ProcesoRepository {
             if (index === -1) {
                 const itemnuevo = {
                     ...item,
-                    SISPAP: lotes[0].predio.SISPAP
+                    SISPAP: lotes[0].predio.SISPAP,
                 }
                 palletSeleccionado.push(itemnuevo)
                 await ContenedoresRepository.actualizar_contenedor(
