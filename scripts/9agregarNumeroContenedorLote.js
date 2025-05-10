@@ -5,7 +5,7 @@ const {
 const { defineLotes } = require("../DB/mongoDB/schemas/lotes/schemaLotes");
 
 async function modificar_lotes_contenedores() {
-    const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/sistema?authSource=admin")
+    const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/proceso?authSource=admin")
         // const db = await connectProcesoDB("mongodb://localhost:27017/proceso")
 
     try {
