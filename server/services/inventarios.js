@@ -31,7 +31,7 @@ class InventariosService {
     }
     static async construirQueryIngresoLote(datos, enf, precioId) {
         const fecha = new Date(datos.fecha_estimada_llegada);
-
+        
         return {
             ...datos,
             precio: precioId,

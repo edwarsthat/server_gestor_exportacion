@@ -833,11 +833,12 @@ class InventariosRepository {
             const enf = await generarCodigoEF(datos.ef, datos.fecha_estimada_llegada)
             const precioId = await InventariosService.obtenerPrecioProveedor(datos.predio, datos.tipoFruta)
             const query = await InventariosService.construirQueryIngresoLote(datosValidados, enf, precioId);
-
+            console.log(query)
             const lote = await LotesRepository.addLote(query, user);
             await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
 
             //Se crean los datos del registro de canastillas
+
             const dataRegistro = await InventariosService.crearRegistroInventarioCanastillas({
                 destino: "65c27f3870dd4b7f03ed9857",
                 origen: datos.predio,
@@ -846,7 +847,6 @@ class InventariosRepository {
                 canastillas: dataCanastillas.canastillasPropias,
                 canastillasPrestadas: dataCanastillas.canastillasPrestadas,
                 accion: "ingreso",
-                placa: datos.placa,
                 user
             })
 

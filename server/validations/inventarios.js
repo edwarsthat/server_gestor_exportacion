@@ -2,16 +2,37 @@ const { z } = require('zod')
 
 const ACCIONES_VALIDAS = ["ingreso", "salida", "traslado", "retiro", "cancelado"];
 
+// Función auxiliar para validar strings seguros
+const safeString = (fieldName) =>
+    z.string()
+        .refine(val =>
+            typeof val === 'string' &&
+            !val.includes('$') &&
+            !val.includes('{') &&
+            !val.includes('}') &&
+            !val.includes('<script'),
+            `El campo ${fieldName} contiene caracteres no permitidos.`
+        );
+
+// Función auxiliar para validar strings opcionales seguros
+const optionalSafeString = (campo) =>
+    z.string()
+        .optional()
+        .refine(val => {
+            // si viene como string vacío, lo ignoramos
+            if (val === undefined || val.trim() === '') return true;
+            return !val.includes('$') && !val.includes('{') && !val.includes('}') && !val.includes('<script');
+        }, {
+            message: `El ${campo} debe ser una cadena de texto válida y no contener caracteres especiales.`
+        });
+
 class InventariosValidations {
     static post_inventarios_canastillas_registro() {
         return z.object({
             destino: safeString("destino"),
             origen: safeString("origen"),
-            observaciones: z.string().optional().refine(
-                val => val === undefined || (typeof val === 'string' && val.length < 500 && !val.includes('<script')),
-                'Las observaciones no deben contener scripts maliciosos.'
-            ),
-            fecha: z.string().refine(
+            observaciones: optionalSafeString("observaciones"),
+            fecha: safeString("fecha").refine(
                 fecha => !isNaN(new Date(fecha).getTime()),
                 'La fecha no tiene un formato válido.'
             ),
@@ -25,7 +46,7 @@ class InventariosValidations {
                 .transform(val => Number(val))
                 .refine(val => !isNaN(val), { message: "Las canastillas prestadas deben ser un numero valido" })
                 .refine(val => val >= 0, { message: "Las canastillas prestadas deben ser positivas" }),
-            accion: z.string()
+            accion: safeString("accion")
                 .transform(accion => accion.trim().toLowerCase())
                 .refine(
                     accion => ACCIONES_VALIDAS.includes(accion),
@@ -37,6 +58,7 @@ class InventariosValidations {
             destinatario: optionalSafeString("destinatario"),
         });
     }
+
     static validarFiltroBusquedaFechaPaginacion(data) {
         const { filtro, page } = data;
         const { fechaInicio, fechaFin } = filtro
@@ -79,17 +101,17 @@ class InventariosValidations {
             }
         }
 
-        return true; // Si llega hasta acá, está limpio como el historial de un político recién electo.
+        return true;
     }
+
     static post_inventarios_ingreso_lote() {
         return z.object({
-            ef: z.string()
-                .min(1, "EF es obligatorio")
+            ef: safeString("ef")
                 .refine(val => val.startsWith("EF1") || val.startsWith("EF8"), {
                     message: "EF debe comenzar con EF1 o EF8"
                 }),
 
-            fecha_estimada_llegada: z.string()
+            fecha_estimada_llegada: safeString("fecha_estimada_llegada")
                 .refine(val => !isNaN(Date.parse(val)), {
                     message: "La fecha estimada de llegada no es válida"
                 }),
@@ -98,7 +120,6 @@ class InventariosValidations {
                 .gt(0, "Los kilos no pueden ser cero")
                 .transform(val => Number(val)),
 
-
             canastillas: z.coerce.number()
                 .gt(0, "Las canastillas no pueden ser cero"),
 
@@ -106,35 +127,22 @@ class InventariosValidations {
                 .min(17, "Los kilos no corersponden a las canastillas")
                 .max(25, "Los kilos no corersponden a las canastillas"),
 
-            tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
+            tipoFruta: safeString("tipoFruta"),
 
-            predio: z.string().min(1, "El predio es obligatorio"),
+            predio: safeString("predio"),
 
-            // otros campos opcionales o ignorados por ahora
+            observaciones: optionalSafeString("observaciones"),
+
+            placa: z.string()
+                .length(6, "La placa debe tener exactamente 6 caracteres")
+                .transform(val => val.toUpperCase())
+                .refine(
+                    val => /^[A-Z]{3}[0-9]{3}$/.test(val),
+                    "La placa debe tener 3 letras seguidas de 3 números"
+                )
+                .pipe(safeString("placa")),
         })
     }
 }
-
-const safeString = (fieldName) =>
-    z.string()
-        .refine(val =>
-            typeof val === 'string' &&
-            !val.includes('$') &&
-            !val.includes('{') &&
-            !val.includes('}') &&
-            !val.includes('<script'),
-            `El campo ${fieldName} contiene caracteres no permitidos.`
-        );
-const optionalSafeString = (campo) =>
-    z.string()
-        .optional()
-        .refine(val => {
-            // si viene como string vacío, lo ignoramos
-            if (val === undefined || val.trim() === '') return true;
-            return !val.includes('$') && !val.includes('{');
-        }, {
-            message: `El ${campo} debe ser una cadena de texto válida y no contener caracteres especiales.`
-        })
-
 
 module.exports.InventariosValidations = InventariosValidations
