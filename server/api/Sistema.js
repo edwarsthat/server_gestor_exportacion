@@ -193,7 +193,7 @@ class SistemaRepository {
                 user: user,
                 documento: {
                     $inc: {
-                        kilosVaciados: 100,
+                        kilosVaciados: 0,
                     },
                     fechaProceso: new Date(),
                     _id: data
