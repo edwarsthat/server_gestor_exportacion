@@ -94,7 +94,6 @@ class ProcesoService {
 
         return { query, antes, kilos: kilos }
     }
-
 }
 
-module.exports.ProcesoService = ProcesoService;
+module.exports.ProcesoService = ProcesoService; 

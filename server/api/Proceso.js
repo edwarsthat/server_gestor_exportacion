@@ -338,7 +338,6 @@ class ProcesoRepository {
         const { user } = req;
 
         try {
-            console.log(req.data)
             await ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_agregarItem(req.data)
 
             const { _id, pallet, item, action } = req.data;
@@ -419,7 +418,6 @@ class ProcesoRepository {
             procesoEventEmitter.emit("listaempaque_update");
 
         } catch (err) {
-            console.log(err)
             if (
                 err.status === 610 ||
                 err.status === 523
