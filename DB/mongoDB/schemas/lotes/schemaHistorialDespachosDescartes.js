@@ -23,7 +23,7 @@ const defineHistorialDespachoDescarte = async (conn) => {
     });
 
     const RegistroSchema = new Schema({
-        fecha: { type: Date, default: Date.now() },
+        fecha: { type: Date, default: () => new Date()},
         cliente: String,
         placa: String,
         nombreConductor: String,

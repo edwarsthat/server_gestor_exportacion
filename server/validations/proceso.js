@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const tiposFruta = require('../../constants/tipo_fruta.json');
+const { getErrorMessages, safeString, optionalSafeString } = require('./utils/validationFunctions');
 
 class ProcesoValidations {
     static async put_proceso_aplicaciones_listaEmpaque_agregarItem(data) {
@@ -22,9 +23,9 @@ class ProcesoValidations {
             pallet: z.number().int().nonnegative(), // Número entero positivo o cero
             action: z.literal('put_proceso_aplicaciones_listaEmpaque_agregarItem'), // Valor exacto
             item: itemSchema // Schema anidado para el item
-        }); try {
-            console.log('Tipos de fruta permitidos:', tiposFruta);
-            console.log('Datos recibidos:', data);
+        }); 
+        
+        try {
             return schema.parse(data);
         } catch (error) {
             // Transformar errores de Zod en un formato más amigable
@@ -33,16 +34,31 @@ class ProcesoValidations {
             throw new Error(`Validation error: ${JSON.stringify(formattedErrors)}`);
         }
     }
-}
 
+    static async put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop(req) {
+        const dataSchema = z.object({
+            calidad: safeString('calidad').min(1),  // calidad es requerido y debe ser seguro
+            calibre: optionalSafeString('calibre'),  // calibre es opcional pero debe ser seguro
+            cajas: z.number().int().positive(),
+            tipoCaja: safeString('tipo de caja')  // tipoCaja es requerido y debe ser seguro
+        });
 
-const getErrorMessages = (zodError) => {
-    const errors = {}
-    zodError.errors.forEach(err => {
-        const path = err.path[0]
-        errors[path] = err.message
-    })
-    return errors
+        const schema = z.object({
+            _id: z.string().regex(/^[0-9a-fA-F]{24}$/),  // Validar ObjectId de MongoDB
+            pallet: z.number().int().nonnegative(),
+            seleccion: z.number().int().nonnegative(),
+            data: dataSchema,
+            action: z.literal('put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop')
+        });
+        
+        try {
+            return schema.parse(req.data);
+        } catch (error) {
+            // Transformar errores de Zod en un formato más amigable
+            const formattedErrors = getErrorMessages(error);
+            throw new Error(`Validation error: ${JSON.stringify(formattedErrors)}`);
+        }
+    }
 }
 
 module.exports = ProcesoValidations;

@@ -431,6 +431,8 @@ class ProcesoRepository {
         // const pilaFunciones = [];
         const { user } = req
         try {
+            await ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop(req.data)
+
             const { _id, pallet, seleccion, data, action } = req.data
             const { calidad, calibre, cajas, tipoCaja } = data
 

@@ -1,30 +1,7 @@
-const { z } = require('zod')
+const { z } = require('zod');
+const { safeString, optionalSafeString } = require('./utils/validationFunctions');
 
 const ACCIONES_VALIDAS = ["ingreso", "salida", "traslado", "retiro", "cancelado"];
-
-// Función auxiliar para validar strings seguros
-const safeString = (fieldName) =>
-    z.string()
-        .refine(val =>
-            typeof val === 'string' &&
-            !val.includes('$') &&
-            !val.includes('{') &&
-            !val.includes('}') &&
-            !val.includes('<script'),
-            `El campo ${fieldName} contiene caracteres no permitidos.`
-        );
-
-// Función auxiliar para validar strings opcionales seguros
-const optionalSafeString = (campo) =>
-    z.string()
-        .optional()
-        .refine(val => {
-            // si viene como string vacío, lo ignoramos
-            if (val === undefined || val.trim() === '') return true;
-            return !val.includes('$') && !val.includes('{') && !val.includes('}') && !val.includes('<script');
-        }, {
-            message: `El ${campo} debe ser una cadena de texto válida y no contener caracteres especiales.`
-        });
 
 class InventariosValidations {
     static post_inventarios_canastillas_registro() {
