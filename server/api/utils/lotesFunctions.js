@@ -46,8 +46,8 @@ async function deshidratacionLote(data) {
 
         if (kilosTotal === 0) return 0;
 
-        const totalDescarteLavado = descarteTotal(descarteLavado);
-        const totalDescarteEncerado = descarteTotal(descarteEncerado);
+        const totalDescarteLavado = descarteLavado ? descarteTotal(descarteLavado) : 0;
+        const totalDescarteEncerado = descarteEncerado ? descarteTotal(descarteEncerado) : 0;
 
         const totalProcesado =
             calidad1 +

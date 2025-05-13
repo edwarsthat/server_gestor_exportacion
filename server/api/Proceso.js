@@ -17,6 +17,8 @@ const { filtroFechaInicioFin } = require("./utils/filtros");
 const { InventariosLogicError } = require("../../Error/logicLayerError");
 const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
 const { deshidratacionLote, rendimientoLote } = require("./utils/lotesFunctions");
+const ProcesoValidations = require("../validations/proceso");
+const { ProcesoService } = require("../services/proceso");
 
 
 class ProcesoRepository {
@@ -336,60 +338,31 @@ class ProcesoRepository {
         const { user } = req;
 
         try {
+            console.log(req.data)
+            await ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_agregarItem(req.data)
+
             const { _id, pallet, item, action } = req.data;
-            const { cajas, lote, calidad, calibre, tipoFruta } = item
+            const { cajas, lote, calidad, tipoFruta } = item
 
-            if (item.calidad === '') throw new Error("El item debe tener una calidad")
-
-            //se obtienen los datos
-            const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                ids: [_id],
-                select: { infoContenedor: 1, pallets: 1 },
-                populate: {
-                    path: 'infoContenedor.clienteInfo',
-                    select: 'CLIENTE PAIS_DESTINO',
-                }
-            })
-            //se obtiene el lote
-            const lotes = await LotesRepository.getLotes({
-                ids: [lote]
-            });
-
+            const { contenedor, lotes } = await ProcesoService.getContenedorAndLote(lote, _id);
 
             // Crear copia profunda de los pallets
             const palletsModificados = JSON.parse(JSON.stringify(contenedor[0].pallets));
             const palletSeleccionado = palletsModificados[pallet].EF1;
+            const loteModificado = JSON.parse(JSON.stringify(lotes[0]));
 
+            //copia del original
             const copiaPallets = JSON.parse(JSON.stringify(contenedor[0].pallets));
 
-            const index = palletSeleccionado.findIndex(data =>
-                data.lote === lote &&
-                data.calidad === calidad &&
-                data.calibre === calibre
-            )
-
             // Actualizar contenedor con pallets modificados
-            if (index === -1) {
-                const itemnuevo = {
-                    ...item,
-                    SISPAP: lotes[0].predio.SISPAP,
+            await ProcesoService.modificarSumarItemCopiaPallet(palletSeleccionado, item, lotes)
+
+            await ContenedoresRepository.actualizar_contenedor(
+                { _id },
+                {
+                    $set: { [`pallets.${pallet}.EF1`]: palletSeleccionado }
                 }
-                palletSeleccionado.push(itemnuevo)
-                await ContenedoresRepository.actualizar_contenedor(
-                    { _id },
-                    {
-                        $set: { [`pallets.${pallet}.EF1`]: palletSeleccionado }
-                    }
-                );
-            } else {
-                palletSeleccionado[index].cajas += cajas
-                await ContenedoresRepository.actualizar_contenedor(
-                    { _id },
-                    {
-                        $set: { [`pallets.${pallet}.EF1`]: palletSeleccionado }
-                    }
-                );
-            }
+            );
 
             // Registrar modificación Contenedores
             await RecordModificacionesRepository.post_record_contenedor_modification(
@@ -406,37 +379,7 @@ class ProcesoRepository {
             );
 
             //modificar el predio
-
-
-            const loteModificado = JSON.parse(JSON.stringify(lotes[0]));
-
-            const kilos = Number(item.tipoCaja.split('-')[1].replace(",", ".")) * cajas
-
-            //se guarda el registro
-            const antes = {
-                [calidadFile[calidad]]: loteModificado[calidadFile[calidad]],
-                deshidratacion: loteModificado.deshidratacion,
-                rendimiento: loteModificado.rendimiento,
-            }
-            loteModificado[calidadFile[calidad]] += kilos
-            loteModificado.deshidratacion = await deshidratacionLote(loteModificado)
-            loteModificado.rendimiento = await rendimientoLote(loteModificado)
-
-            //el objeto de modificacion de lotes
-            const query = {
-                $inc: {
-                    [calidadFile[calidad]]: kilos,
-                },
-                $addToSet: { contenedores: _id },
-                deshidratacion: loteModificado.deshidratacion,
-                rendimiento: loteModificado.rendimiento,
-            }
-
-            //se mira si se deben sumar kilosGNN
-            if (have_lote_GGN_export(loteModificado.predio, contenedor[0], item)) {
-                query.$inc.kilosGGN = kilos
-                antes.kilosGGN = loteModificado.kilosGGN
-            }
+            const { query, antes, kilos } = await ProcesoService.crearQueryLoteIngresoItemListaEmpaque(item, loteModificado, _id, contenedor)
 
             const newLote = await LotesRepository.modificar_lote_proceso(
                 lote,
@@ -445,13 +388,13 @@ class ProcesoRepository {
                 user._id
             )
 
+            // Registrar modificación
             const newData = {
                 [calidadFile[calidad]]: newLote[calidadFile[calidad]],
                 kilosGGN: newLote.kilosGGN,
                 deshidratacion: newLote.deshidratacion,
                 rendimiento: newLote.rendimiento,
             }
-            // Registrar modificación
 
             await RecordModificacionesRepository.post_record_contenedor_modification(
                 action,

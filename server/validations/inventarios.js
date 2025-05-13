@@ -58,7 +58,6 @@ class InventariosValidations {
             destinatario: optionalSafeString("destinatario"),
         });
     }
-
     static validarFiltroBusquedaFechaPaginacion(data) {
         const { filtro, page } = data;
         const { fechaInicio, fechaFin } = filtro
@@ -103,7 +102,6 @@ class InventariosValidations {
 
         return true;
     }
-
     static post_inventarios_ingreso_lote() {
         return z.object({
             ef: safeString("ef")
