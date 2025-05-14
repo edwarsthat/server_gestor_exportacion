@@ -141,6 +141,7 @@ const defineLotes = async (conn) => {
     fecha_aprobacion_comercial: { type: Date },
     frutaNacional: { type: Number, default: 0 },
     flag_balin_free: { type: Boolean, default: true },
+    GGN: { type: Boolean, default: false },
     historialDescarte: mongoose.Types.ObjectId,
     informeEnviado: { type: Boolean, default: false },
     infoSalidaDirectoNacional: salidaDirectoNacionalSchema,

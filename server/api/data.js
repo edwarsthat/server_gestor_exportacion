@@ -3,6 +3,7 @@ const { ClientesRepository } = require("../Class/Clientes")
 const { ConstantesDelSistema } = require("../Class/ConstantesDelSistema")
 // const { ContenedoresRepository } = require("../Class/Contenedores")
 const { LotesRepository } = require("../Class/Lotes")
+const { ProveedoresRepository } = require("../Class/Proveedores")
 const { UsuariosRepository } = require("../Class/Usuarios")
 
 
@@ -130,6 +131,41 @@ class dataRepository {
             const message = err?.message || "Error inesperado";
 
             throw new DataLogicError(480, `Error ${type}: ${message}`);
+        }
+    }
+    static async get_data_proveedores(req) {
+        const { data } = req.data;
+        let query
+        try {
+
+            if (data === 'activos') {
+                query = {
+                    query: { activo: true },
+                    limit: 'all',
+                    select: {
+                        PREDIO: 1,
+                        'ICA.code': 1,
+                        SISPAP: 1,
+                        GGN: 1,
+                        "CODIGO INTERNO": 1,
+                        canastillas: 1
+                    }
+                }
+            } else if (data === 'all') {
+                query = {
+                    limit: 'all',
+                    select: { PREDIO: 1, 'ICA.code': 1, SISPAP: 1, GGN: 1, "CODIGO INTERNO": 1 }
+                }
+            } else {
+                throw new Error("Error en los parametros de busqueda")
+            }
+
+            return await ProveedoresRepository.get_proveedores(query);
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
 }

@@ -149,24 +149,21 @@ class InventariosRepository {
             const { data } = req
             const { _id, query, inventario } = data;
             const { descarteLavado, descarteEncerado } = inventario;
-            const kilosDescarteLavado =
-                descarteLavado === undefined ? 0 :
-                    Object.values(descarteLavado).reduce((acu, item) => acu -= item, 0)
-            const kilosDescarteEncerado =
-                descarteEncerado === undefined ? 0 :
-                    Object.values(descarteEncerado).reduce((acu, item) => acu -= item, 0)
+            //se validan los datos
+            InventariosValidations.put_inventarios_frutaDescarte_reprocesarFruta().parse(data);
+            //se calculan los kilos totales
+            const kilosTotal = InventariosService.calcularDescartesReprocesoPredio(descarteLavado, descarteEncerado);
 
-            const kilosTotal = kilosDescarteLavado + kilosDescarteEncerado;
             await LotesRepository.modificar_lote_proceso(
                 _id,
                 { ...query, $inc: { kilosReprocesados: kilosTotal } },
                 "vaciarLote",
                 user);
+
             const lote = await LotesRepository.getLotes({ ids: [_id] });
-            if (descarteLavado)
-                await VariablesDelSistema.modificar_inventario_descarte(_id, descarteLavado, 'descarteLavado');
-            if (descarteEncerado)
-                await VariablesDelSistema.modificar_inventario_descarte(_id, descarteEncerado, 'descarteEncerado');
+            //se modifica los inventarios
+            InventariosValidations.modificarInventariosDescarteReprocesoPredio(_id, descarteLavado, descarteEncerado);
+            //se reprocesa el predio, para que salga nuevamente en la aplicacion de descarte
             await VariablesDelSistema.reprocesar_predio(lote[0], kilosTotal);
         } catch (err) {
             if (err.status === 518 || err.status === 413) {
@@ -831,10 +828,14 @@ class InventariosRepository {
             const datosValidados = InventariosValidations.post_inventarios_ingreso_lote().parse(datos)
 
             const enf = await generarCodigoEF(datos.ef, datos.fecha_estimada_llegada)
-            const precioId = await InventariosService.obtenerPrecioProveedor(datos.predio, datos.tipoFruta)
+            const { precioId, proveedor } = await InventariosService.obtenerPrecioProveedor(datos.predio, datos.tipoFruta)
+
+            if(datos.GGN)
+                await InventariosService.validarGGN(proveedor, datos.tipoFruta)
+            
             const query = await InventariosService.construirQueryIngresoLote(datosValidados, enf, precioId);
-            console.log(query)
             const lote = await LotesRepository.addLote(query, user);
+
             await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
 
             //Se crean los datos del registro de canastillas

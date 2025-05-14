@@ -2,6 +2,7 @@ const { z } = require('zod');
 const { safeString, optionalSafeString } = require('./utils/validationFunctions');
 
 const ACCIONES_VALIDAS = ["ingreso", "salida", "traslado", "retiro", "cancelado"];
+const validKeyRegex = /^(descarteEncerado|descarteLavado|frutaNacional).*/;
 
 class InventariosValidations {
     static post_inventarios_canastillas_registro() {
@@ -104,6 +105,8 @@ class InventariosValidations {
 
             tipoFruta: safeString("tipoFruta"),
 
+            GGN: z.boolean("estado GGN faltante"),
+
             predio: safeString("predio"),
 
             observaciones: optionalSafeString("observaciones"),
@@ -117,6 +120,32 @@ class InventariosValidations {
                 )
                 .pipe(safeString("placa")),
         })
+    }
+    static put_inventarios_frutaDescarte_reprocesarFruta() {
+        return z.object({
+            _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
+            query: z.record(
+                z.string().regex(validKeyRegex, "La llave debe empezar con 'descarteEncerado', 'descarteLavado' o 'frutaNacional'."), // Schema para la LLAVE
+                z.number()
+            ),
+            inventario: z.object({
+                descarteEncerado: z.object({
+                    balin: z.number().lte(0).optional(),
+                    descarteGeneral: z.number().lte(0).optional(),
+                    extra: z.number().lte(0).optional(),
+                    frutaNacional: z.number().lte(0).optional(),
+                    pareja: z.number().lte(0).optional(),
+                    suelo: z.number().lte(0).optional(),
+                }).refine(data => data.balin !== undefined || data.descarteGeneral !== undefined || data.extra !== undefined || data.frutaNacional !== undefined || data.pareja !== undefined || data.suelo !== undefined, "El objeto 'inventario' debe contener al menos 'balin', 'descarteGeneral', 'extra', 'frutaNacional', 'pareja' o 'suelo'."),
+                descarteLavado: z.object({
+                    balin: z.number().lte(0).optional(),
+                    descarteGeneral: z.number().lte(0).optional(),
+                    pareja: z.number().lte(0).optional(),
+                }).refine(data => data.balin !== undefined || data.descarteGeneral !== undefined || data.pareja !== undefined, "El objeto 'inventario' debe contener al menos 'balin', 'descarteGeneral' o 'pareja'."),
+            }).refine(data => data.descarteEncerado !== undefined || data.descarteLavado !== undefined, "El objeto 'inventario' debe contener al menos 'descarteEncerado' o 'descarteLavado'."),
+
+        })
+
     }
 }
 

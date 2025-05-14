@@ -9,7 +9,7 @@ class InventariosService {
     static async obtenerPrecioProveedor(predioId, tipoFruta) {
         const proveedor = await ProveedoresRepository.get_proveedores({
             ids: [predioId],
-            select: { precio: 1, PREDIO: 1 }
+            select: { precio: 1, PREDIO: 1, GGN: 1}
         });
 
         if (!proveedor || proveedor.length === 0) {
@@ -26,12 +26,12 @@ class InventariosService {
             throw new Error("Precio inválido");
         }
 
-        return precio[0]._id;
+        return { precioId: precio[0]._id, proveedor: proveedor };
 
     }
     static async construirQueryIngresoLote(datos, enf, precioId) {
         const fecha = new Date(datos.fecha_estimada_llegada);
-        
+
         return {
             ...datos,
             precio: precioId,
@@ -157,7 +157,31 @@ class InventariosService {
         }
         return newRegistros
     }
+    static async calcularDescartesReprocesoPredio(descarteLavado, descarteEncerado) {
+        const kilosDescarteLavado =
+            descarteLavado === undefined ? 0 :
+                Object.values(descarteLavado).reduce((acu, item) => acu -= item, 0)
+        const kilosDescarteEncerado =
+            descarteEncerado === undefined ? 0 :
+                Object.values(descarteEncerado).reduce((acu, item) => acu -= item, 0)
 
+        return kilosDescarteLavado + kilosDescarteEncerado;
+    }
+    static async modificarInventariosDescarteReprocesoPredio(_id, descarteLavado, descarteEncerado) {
+        if (descarteLavado)
+            await VariablesDelSistema.modificar_inventario_descarte(_id, descarteLavado, 'descarteLavado');
+        if (descarteEncerado)
+            await VariablesDelSistema.modificar_inventario_descarte(_id, descarteEncerado, 'descarteEncerado');
+    }
+    static async validarGGN(proveedor, tipoFruta) {
+        if(
+            proveedor && 
+            proveedor[0].GGN && 
+            proveedor[0].GGN.code && 
+            proveedor[0].GGN.tipo_fruta.includes(tipoFruta)
+        ) return true
+        throw new Error("El proveedor no tiene GGN para ese tipo de fruta")
+    }
 }
 
 module.exports.InventariosService = InventariosService

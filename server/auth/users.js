@@ -42,7 +42,8 @@ const permisos_generales = [
     "get_data_tipoFruta",
     "get_data_clientes",
     "get_data_cargos",
-    "get_data_clientesNacionales"
+    "get_data_clientesNacionales",
+    "get_data_proveedores",
 ]
 
 class UserRepository {

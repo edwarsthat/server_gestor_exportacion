@@ -17,7 +17,11 @@ const apiSocketData = {
     get_data_clientesNacionales: async () => {
         const response = await dataRepository.get_data_clientesNacionales()
         return successResponseRoutes(response)
-    }
+    },
+    get_data_proveedores: async (req) => {
+        const response = await dataRepository.get_data_proveedores(req)
+        return successResponseRoutes(response)
+    },
 }
 
 module.exports.apiSocketData = apiSocketData
