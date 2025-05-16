@@ -13,7 +13,7 @@ const defineModificarElemento = async (conn) => {
 
         documentosAfectados: [{
             modelo: { type: String, required: true },
-            documentoId: { type: Schema.Types.ObjectId, required: true, refPath: 'documentosAfectados.modelo' },
+            documentoId: { type: Schema.Types.ObjectId, refPath: 'documentosAfectados.modelo' },
             descripcion: { type: String },
         }],
 

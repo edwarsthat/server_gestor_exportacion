@@ -147,6 +147,32 @@ class InventariosValidations {
         })
 
     }
+    static get_inventarios_historialProcesado_frutaProcesada() {
+        return z.object({
+            action: z.literal('get_inventarios_historialProcesado_frutaProcesada'),
+            fechaInicio: z.union([
+                z.literal(''),
+                z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'El formato de fecha debe ser YYYY-MM-DD'),
+            ]),
+            fechaFin: z.union([
+                z.literal(''),
+                z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'El formato de fecha debe ser YYYY-MM-DD'),
+            ]),
+        })
+    }
+    static put_inventarios_historialProcesado_modificarHistorial() {
+        return z.object({
+            action: z.literal("put_inventarios_historialProcesado_modificarHistorial"),
+            kilosVaciados: z.number().lt(0),
+            inventario: z.number().gt(0),
+            _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
+            historialLote: z.object({
+                kilosHistorial: z.number({ invalid_type_error: "kilosHistorial debe ser un número" }).lt(0, "el numero debe ser negativo"),
+                __vHistorial: z.number().gte(0),
+                _idRecord: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
+            })
+        })
+    }
 }
 
 module.exports.InventariosValidations = InventariosValidations

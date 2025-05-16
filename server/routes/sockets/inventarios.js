@@ -12,7 +12,7 @@ const { successResponseRoutes } = require("../helpers/responses");
 const apiSocketInventarios = {
     //#region inventarios
     get_inventarios_frutaSinProcesar_frutaEnInventario: async () => {
-        const data = await ProcesoRepository.getInventario();
+        const data = await InventariosRepository.get_inventarios_frutaSinProcesar_frutaEnInventario();
         return successResponseRoutes(data)
     },
     put_inventarios_frutaSinProcesar_directoNacional: async (data) => {
@@ -60,7 +60,7 @@ const apiSocketInventarios = {
         return successResponseRoutes()
     },
     get_inventarios_frutaDesverdizando_lotes: async () => {
-        const response = await ProcesoRepository.getInventarioDesverdizado()
+        const response = await InventariosRepository.get_inventarios_frutaDesverdizando_lotes()
         return successResponseRoutes(response)
     },
     put_inventarios_frutaDesverdizando_parametros: async (data) => {

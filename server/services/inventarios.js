@@ -1,5 +1,7 @@
 const { obtenerEstadoDesdeAccionCanastillasInventario } = require("../api/utils/diccionarios");
+const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
 const { ClientesRepository } = require("../Class/Clientes");
+const { LotesRepository } = require("../Class/Lotes");
 const { PreciosRepository } = require("../Class/Precios");
 const { ProveedoresRepository } = require("../Class/Proveedores");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
@@ -9,7 +11,7 @@ class InventariosService {
     static async obtenerPrecioProveedor(predioId, tipoFruta) {
         const proveedor = await ProveedoresRepository.get_proveedores({
             ids: [predioId],
-            select: { precio: 1, PREDIO: 1, GGN: 1}
+            select: { precio: 1, PREDIO: 1, GGN: 1 }
         });
 
         if (!proveedor || proveedor.length === 0) {
@@ -173,14 +175,85 @@ class InventariosService {
         if (descarteEncerado)
             await VariablesDelSistema.modificar_inventario_descarte(_id, descarteEncerado, 'descarteEncerado');
     }
-    static async validarGGN(proveedor, tipoFruta) {
-        if(
-            proveedor && 
-            proveedor[0].GGN && 
-            proveedor[0].GGN.code && 
+    static async validarGGN(proveedor, tipoFruta, user) {
+        if (!(proveedor && proveedor[0].GGN && proveedor[0].GGN.fechaVencimiento)) { throw new Error("El predio no tiene GGN") }
+
+        const fecha = new Date(proveedor[0].GGN.fechaVencimiento)
+        const anio = fecha.getFullYear()
+        const mes = fecha.getMonth()
+        const fechaActual = new Date()
+        const anioActual = fechaActual.getFullYear()
+        const mesActual = fechaActual.getMonth()
+
+        if (anioActual === anio && mesActual === mes) {
+            if (user.Rol > 2) {
+                throw new Error("La fecha de vencimiento esta cercana")
+            }
+        }
+
+        if (
+            proveedor[0].GGN.code &&
             proveedor[0].GGN.tipo_fruta.includes(tipoFruta)
         ) return true
+
+
+
+        //poner filtro de la fecha
         throw new Error("El proveedor no tiene GGN para ese tipo de fruta")
+    }
+    static async modificarLote_regresoHistorialFrutaProcesada(_id, queryLote, user, action, kilosVaciados) {
+
+        const lote = await LotesRepository.getLotes({ ids: [_id], select: { desverdizado: 1, kilosVaciados: 1 } })
+
+        const newLote = await LotesRepository.modificar_lote_proceso(
+            _id,
+            queryLote,
+            "Regreso de fruta procesada",
+            user.user
+        )
+
+        await RecordModificacionesRepository.post_record_contenedor_modification(
+            action,
+            user,
+            {
+                modelo: "Lote",
+                documentoId: lote[0]._id,
+                descripcion: `Kilos procesados ${lote[0].kilosVaciados} se le restaron ${kilosVaciados}`,
+            },
+            lote,
+            newLote,
+            { _id, action, kilosVaciados }
+        );
+
+        return lote
+    }
+    static async modificarInventario_regresoHistorialFrutaProcesada(lote, inventario, action, user) {
+        let inventarioOld
+        let newInventario
+        //modificar inventario
+        if (lote[0].desverdizado) {
+            inventarioOld = await VariablesDelSistema.getInventarioDesverdizado()
+            await VariablesDelSistema.modificarInventario_desverdizado(lote[0]._id, -inventario)
+            newInventario = await VariablesDelSistema.getInventarioDesverdizado()
+
+        } else {
+            inventarioOld = await VariablesDelSistema.getInventario()
+            await VariablesDelSistema.modificarInventario(lote[0]._id, -inventario);
+            newInventario = await VariablesDelSistema.getInventario()
+
+        }
+        await RecordModificacionesRepository.post_record_contenedor_modification(
+            action,
+            user,
+            {
+                modelo: "Inventario",
+                descripcion: `Inventario modificado`,
+            },
+            inventarioOld,
+            newInventario,
+            { inventario }
+        );
+
     }
 }
 

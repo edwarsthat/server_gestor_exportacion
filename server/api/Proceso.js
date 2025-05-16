@@ -1771,6 +1771,8 @@ class ProcesoRepository {
 
         return [...resultado, ...lotes_camino]
     }
+
+    
     static async getInventario_orden_vaceo() {
         //JS
         //se obtiene los datos del inventario
@@ -1830,27 +1832,6 @@ class ProcesoRepository {
         }).filter(item => item !== null);
         return resultado
 
-    }
-    static async getInventarioDesverdizado() {
-        const InvDes = await VariablesDelSistema.getInventarioDesverdizado();
-        const InvDesKeys = Object.keys(InvDes);
-        const lotes = await LotesRepository.getLotes({
-            ids: InvDesKeys,
-            select: { promedio: 1, enf: 1, desverdizado: 1, kilosVaciados: 1, __v: 1 },
-            sort: { "desverdizado.fechaIngreso": -1 }
-        });
-        //se agrega las canastillas en inventario
-        const resultado = InvDesKeys.map(id => {
-            const lote = lotes.find(lote => lote._id.toString() === id.toString());
-            if (lote) {
-                return {
-                    ...lote.toObject(),
-                    inventarioDesverdizado: InvDes[id]
-                }
-            }
-            return null
-        }).filter(item => item !== null);
-        return resultado
     }
 
 

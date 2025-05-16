@@ -360,11 +360,98 @@ class InventariosRepository {
             throw new InventariosLogicError(470, err.message)
         }
     }
+    static async get_inventarios_frutaSinProcesar_frutaEnInventario() {
+
+        const inventario = await VariablesDelSistema.getInventario();
+        const inventarioKeys = Object.keys(inventario)
+
+        const lotes = await LotesRepository.getLotes({
+            ids: inventarioKeys,
+            select: {
+                __v: 1,
+                clasificacionCalidad: 1,
+                nombrePredio: 1,
+                fecha_ingreso_patio: 1,
+                fecha_salida_patio: 1,
+                fecha_ingreso_inventario: 1,
+                fecha_creacion: 1,
+                fecha_estimada_llegada: 1,
+                observaciones: 1,
+                tipoFruta: 1,
+                promedio: 1,
+                enf: 1,
+                kilosVaciados: 1,
+                not_pass: 1,
+                GGN: 1
+            }
+        });
+
+        // se agrega las canastillas en inventario
+        const resultado = inventarioKeys.map(id => {
+            const lote = lotes.find(lote => lote._id.toString() === id.toString());
+
+            if (lote) {
+                return {
+                    ...lote.toObject(),
+                    inventario: inventario[id]
+                }
+            }
+            return null
+        }).filter(item => item !== null);
+
+        const query_lotes_camino = {
+            fecha_ingreso_inventario: { $exists: false },
+            fechaIngreso: { $exists: false },
+        }
+
+        const lotes_camino = await LotesRepository.getLotes({
+            query: query_lotes_camino,
+            select: {
+                fecha_ingreso_patio: 1,
+                fecha_salida_patio: 1,
+                fecha_ingreso_inventario: 1,
+                fecha_creacion: 1,
+                fecha_estimada_llegada: 1,
+                __v: 1,
+                clasificacionCalidad: 1,
+                nombrePredio: 1,
+                observaciones: 1,
+                tipoFruta: 1,
+                kilosVaciados: 1,
+                kilos_estimados: 1,
+                canastillas_estimadas: 1
+            }
+        })
+
+        return [...resultado, ...lotes_camino]
+    }
+    static async get_inventarios_frutaDesverdizando_lotes() {
+        const InvDes = await VariablesDelSistema.getInventarioDesverdizado();
+        const InvDesKeys = Object.keys(InvDes);
+        const lotes = await LotesRepository.getLotes({
+            ids: InvDesKeys,
+            select: { promedio: 1, enf: 1, desverdizado: 1, kilosVaciados: 1, __v: 1, GGN: 1 },
+            sort: { "desverdizado.fechaIngreso": -1 }
+        });
+        //se agrega las canastillas en inventario
+        const resultado = InvDesKeys.map(id => {
+            const lote = lotes.find(lote => lote._id.toString() === id.toString());
+            if (lote) {
+                return {
+                    ...lote.toObject(),
+                    inventarioDesverdizado: InvDes[id]
+                }
+            }
+            return null
+        }).filter(item => item !== null);
+        return resultado
+    }
+
     //#endregion
     //#region Historiales
     static async get_inventarios_historialProcesado_frutaProcesada(data) {
         try {
-
+            InventariosValidations.get_inventarios_historialProcesado_frutaProcesada(data.data)
             const { fechaInicio, fechaFin } = data.data
             let query = {
                 operacionRealizada: 'vaciarLote'
@@ -378,7 +465,7 @@ class InventariosRepository {
             const lotes = await LotesRepository.getLotes({
                 ids: lotesIds,
                 limit: recordLotes.length,
-                select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1 }
+                select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1, GGN: 1 }
             });
             const resultado = recordLotes.map(item => {
                 const lote = lotes.find(lote => lote._id.toString() === item.documento._id);
@@ -403,29 +490,38 @@ class InventariosRepository {
     }
     static async put_inventarios_historialProcesado_modificarHistorial(req) {
         try {
-            const { user } = req.user;
+            const { user } = req;
             const { data } = req;
 
-            const { _id, kilosVaciados, inventario, __v, action, historialLote } = data;
+            InventariosValidations.put_inventarios_historialProcesado_modificarHistorial().parse(data)
+
+            const { _id, kilosVaciados, inventario, action, historialLote } = data;
             const { _idRecord, kilosHistorial, __vHistorial } = historialLote;
+
+            //modificar Lote
             const queryLote = {
                 $inc: {
                     kilosVaciados: kilosVaciados,
                     __v: 1
                 }
             }
+
+            //se modifica el lote
+            const lote = await InventariosService.modificarLote_regresoHistorialFrutaProcesada(
+                _id, queryLote, user, action, kilosVaciados
+            ) 
+
+            // modifica el inventario
+            await InventariosService.modificarInventario_regresoHistorialFrutaProcesada(lote, inventario, action, user)
+
+            //se modifica el registro
             const queryRecord = {
                 $inc: {
                     "documento.$inc.kilosVaciados": kilosHistorial,
                     __v: 1
                 }
             }
-            //se modifica el lote y el inventario
-            await VariablesDelSistema.modificarInventario(_id, -inventario);
-            await LotesRepository.modificar_lote(_id, queryLote, action, user, __v);
-            //se modifica el registro
             await RecordLotesRepository.modificarRecord(_idRecord, queryRecord, __vHistorial);
-
             await VariablesDelSistema.ingresar_kilos_vaciados(kilosVaciados);
 
 
@@ -433,13 +529,19 @@ class InventariosRepository {
                 action: "modificar_historial_fruta_procesada",
                 data: {}
             });
+
         } catch (err) {
-            if (err.status === 518 || err.status === 523 || err.status === 419) {
-                throw err
+            const erroresPermitidos = new Set([518, 523, 419]);
+
+            if (erroresPermitidos.has(err.status)) {
+                throw err;
+            }
+            if (err instanceof ZodError) {
+                const mensajeLindo = err.errors[0]?.path + err.errors[0]?.message || "Error desconocido en los datos del lote";
+                throw new InventariosLogicError(470, mensajeLindo);
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
-
     }
     static async put_inventarios_historialDirectoNacional_registros(req) {
         try {
@@ -819,7 +921,6 @@ class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-
     static async post_inventarios_ingreso_lote(req) {
         try {
             const { data, user } = req;
@@ -830,9 +931,9 @@ class InventariosRepository {
             const enf = await generarCodigoEF(datos.ef, datos.fecha_estimada_llegada)
             const { precioId, proveedor } = await InventariosService.obtenerPrecioProveedor(datos.predio, datos.tipoFruta)
 
-            if(datos.GGN)
-                await InventariosService.validarGGN(proveedor, datos.tipoFruta)
-            
+            if (datos.GGN)
+                await InventariosService.validarGGN(proveedor, datos.tipoFruta, user)
+
             const query = await InventariosService.construirQueryIngresoLote(datosValidados, enf, precioId);
             const lote = await LotesRepository.addLote(query, user);
 
