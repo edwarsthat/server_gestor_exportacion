@@ -3,7 +3,6 @@ const { ComercialRepository } = require("../../api/Comercial");
 const { InventariosRepository } = require("../../api/inventarios");
 const { ModificarRepository } = require("../../api/ModificarData");
 const { ProcesoRepository } = require("../../api/Proceso");
-const { ViewsRepository } = require("../../api/Views");
 const { VariablesDelSistema } = require("../../Class/VariablesDelSistema");
 const { successResponseRoutes } = require("../helpers/responses");
 
@@ -122,7 +121,7 @@ const apiSocketInventarios = {
         return successResponseRoutes()
     },
     get_inventarios_lotes_infoLotes: async (data) => {
-        const response = await ViewsRepository.view_lotes(data)
+        const response = await InventariosRepository.get_inventarios_lotes_infoLotes(data)
         return successResponseRoutes(response)
     },
     get_inventarios_historiales_ingresoFruta_numeroElementos: async () => {

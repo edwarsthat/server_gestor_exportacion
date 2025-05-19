@@ -1,4 +1,5 @@
 const { obtenerEstadoDesdeAccionCanastillasInventario } = require("../api/utils/diccionarios");
+const { RecordLotesRepository } = require("../archive/ArchiveLotes");
 const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
 const { ClientesRepository } = require("../Class/Clientes");
 const { LotesRepository } = require("../Class/Lotes");
@@ -254,6 +255,47 @@ class InventariosService {
             { inventario }
         );
 
+    }
+    static async modificarLote_regresoHistorialFrutaIngreso(_id, queryLote, user, action) {
+
+        const lote = await LotesRepository.getLotes({ ids: [_id] })
+
+        const newLote = await LotesRepository.modificar_lote_proceso(
+            _id,
+            queryLote,
+            "Modificacion ingreso fruta",
+            user.user
+        )
+
+        await RecordModificacionesRepository.post_record_contenedor_modification(
+            action,
+            user,
+            {
+                modelo: "Lote",
+                documentoId: lote[0]._id,
+                descripcion: `Modificacion de ingreso de lote`,
+            },
+            lote,
+            newLote,
+            { _id, action, queryLote }
+        );
+
+        return lote
+    }
+    static async modificarRecordLote_regresoHistorialFrutaIngreso(_id, __v, data) {
+        const query = {}
+        Object.keys(data).forEach(item => {
+            query[`documento.${item}`] = data[item]
+        })
+        query[`documento.fecha_ingreso_patio`] = data.fecha_ingreso_inventario
+        query[`documento.fecha_salida_patio`] = data.fecha_ingreso_inventario
+        query[`documento.fecha_estimada_llegada`] = data.fecha_ingreso_inventario
+
+        await RecordLotesRepository.modificarRecord(
+            _id,
+            query,
+            __v
+        )
     }
 }
 

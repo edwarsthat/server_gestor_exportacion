@@ -509,7 +509,7 @@ class InventariosRepository {
             //se modifica el lote
             const lote = await InventariosService.modificarLote_regresoHistorialFrutaProcesada(
                 _id, queryLote, user, action, kilosVaciados
-            ) 
+            )
 
             // modifica el inventario
             await InventariosService.modificarInventario_regresoHistorialFrutaProcesada(lote, inventario, action, user)
@@ -684,6 +684,7 @@ class InventariosRepository {
                     delete lote.documento.predio0;
                     lote.documento.predio = {};
                     lote.documento.predio.PREDIO = proveedor.PREDIO;
+                    lote.documento.predio.GGN = proveedor.GGN;
                     lote.documento.predio._id = proveedor._id;
                     lote.user = usuario.nombre + " " + usuario.apellido;
                 }
@@ -702,31 +703,23 @@ class InventariosRepository {
             const { data: datos, user } = req
             const { action, data, _idLote, _idRecord, __v } = datos
 
-            await LotesRepository.modificar_lote_proceso(
-                _idLote,
-                {
-                    ...data,
-                    fecha_ingreso_patio: data.fecha_estimada_llegada,
-                    fecha_salida_patio: data.fecha_estimada_llegada,
-                    fecha_ingreso_inventario: data.fecha_estimada_llegada,
+            InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar(datos)
 
-                },
-                action,
-                user
-            )
-            const query = {}
-            Object.keys(data).forEach(item => {
-                query[`documento.${item}`] = data[item]
-            })
-            query[`documento.fecha_ingreso_patio`] = data.fecha_estimada_llegada
-            query[`documento.fecha_salida_patio`] = data.fecha_estimada_llegada
-            query[`documento.fecha_ingreso_inventario`] = data.fecha_estimada_llegada
+            const queryLote = {
+                ...data,
+                fecha_ingreso_patio: data.fecha_ingreso_inventario,
+                fecha_salida_patio: data.fecha_ingreso_inventario,
+                fecha_estimada_llegada: data.fecha_ingreso_inventario,
+            }
 
-            await RecordLotesRepository.modificarRecord(
-                _idRecord,
-                query,
-                __v
+            await InventariosService.modificarLote_regresoHistorialFrutaIngreso(
+                _idLote, queryLote, user, action
             )
+
+            await InventariosService.modificarRecordLote_regresoHistorialFrutaIngreso(
+                _idRecord, __v, data
+            )
+
         } catch (err) {
             if (err.status === 523) {
                 throw err
@@ -895,7 +888,6 @@ class InventariosRepository {
             return newRegistros
 
         } catch (err) {
-            console.log(err)
             if (err.status === 522) {
                 throw err
             }
@@ -905,6 +897,68 @@ class InventariosRepository {
 
             throw new InventariosLogicError(470, `Error ${tipoError}: ${mensaje}`);
         }
+    }
+    static async get_inventarios_lotes_infoLotes(req) {
+        try {
+            const { data } = req
+
+            InventariosValidations.get_inventarios_lotes_infoLotes().parse(data)
+            const {
+                EF,
+                GGN,
+                all,
+                fechaFin,
+                fechaInicio,
+                proveedor,
+                tipoFecha,
+                tipoFruta
+            } = data;
+            let query = {}
+            let sort
+            if (tipoFecha === 'fecha_creacion') {
+                sort = { [`${tipoFecha}`]: -1 };
+            }
+            if (tipoFruta) query.tipoFruta = tipoFruta;
+            if (proveedor) query.predio = proveedor;
+            if (GGN) query.GGN = GGN;
+            if (EF) query.enf = EF;
+            else query.enf = { $regex: '^E', $options: 'i' }
+
+            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, tipoFecha)
+
+            const lotes = await LotesRepository.getLotes({
+                query: query,
+                limit: all ? 'all' : 50,
+                sort: sort
+            });
+            const contenedoresArr = []
+
+            lotes.forEach(element => {
+                element.contenedores.forEach(contenedor => contenedoresArr.push(contenedor))
+            })
+            const contenedoresSet = new Set(contenedoresArr)
+            const cont = [...contenedoresSet]
+
+            const contenedores = await ContenedoresRepository.getContenedores({
+                ids: cont,
+                select: { numeroContenedor: 1, pallets: 1 }
+            });
+
+            return { lotes: lotes, contenedores: contenedores }
+
+        } catch (err) {
+            const erroresPermitidos = new Set([518, 523, 419]);
+
+            if (erroresPermitidos.has(err.status)) {
+                throw err;
+            }
+            if (err instanceof ZodError) {
+                const mensajeLindo = err.errors[0]?.path + err.errors[0]?.message || "Error desconocido en los datos del lote";
+                throw new InventariosLogicError(470, mensajeLindo);
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+
     }
     //#endregion
     //#region ingresos

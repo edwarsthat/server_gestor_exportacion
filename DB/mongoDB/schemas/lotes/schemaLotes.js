@@ -118,7 +118,7 @@ const defineLotes = async (conn) => {
     calidad1: { type: Number, default: 0 },
     calidad15: { type: Number, default: 0 },
     calidad2: { type: Number, default: 0 },
-    canastillas: String,
+    canastillas: { type: Number, default:0},
     canastillas_estimadas: Number,
     clasificacionCalidad: { type: String, default: "N/A" },
     contenedores: [String],
