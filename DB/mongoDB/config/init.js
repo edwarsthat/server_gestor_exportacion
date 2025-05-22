@@ -1,3 +1,27 @@
+/**
+ * @file Configuración e inicialización de la base de datos MongoDB para el sistema.
+ *
+ * @summary
+ * Este módulo centraliza la lógica para:<br>
+ * - Verificar y arrancar el servicio de MongoDB si es necesario.<br>
+ * - Establecer conexiones independientes a las bases de datos <b>'proceso'</b> y <b>'sistema'</b>.<br>
+ * - Registrar y definir todos los esquemas de Mongoose para cada base de datos.<br>
+ * - Exponer la función principal <code>initMongoDB</code> para inicializar todo el sistema de base de datos.
+ *
+ * @description
+ * <h3>Estructura principal del módulo</h3>
+ * <ul>
+ *   <li><b>checkMongoDBRunning</b>: Verifica si MongoDB responde.</li>
+ *   <li><b>startMongoDB</b>: Intenta iniciar el servicio de MongoDB.</li>
+ *   <li><b>waitForMongoDB</b>: Espera hasta que MongoDB esté listo.</li>
+ *   <li><b>initMongoDB</b>: Orquesta la verificación, arranque y conexión a las bases de datos y define los esquemas.</li>
+ *   <li><b>defineSchemasProceso</b> / <b>defineSchemasSistema</b>: Registra los modelos de Mongoose para cada base de datos.</li>
+ * </ul>
+ *
+ * @module DB/mongoDB/config/init
+ */
+
+
 require('dotenv').config('.');
 
 const { exec } = require('child_process');
@@ -36,6 +60,17 @@ const { defineRegistroCanastillas } = require('../schemas/canastillas/canastilla
 const { defineClientesNacionales } = require('../schemas/clientes/schemaClientesNacionales');
 const db = {};
 
+ /**
+ * Verifica si el servicio de MongoDB está corriendo y responde a conexiones.
+ *
+ * Intenta establecer una conexión temporal a la base de datos definida en la variable de entorno `MONGODB_SISTEMA`.
+ * Si la conexión es exitosa, la cierra inmediatamente y retorna `true`. Si falla, retorna `false`.
+ *
+ * @async
+ * @function checkMongoDBRunning
+ * @memberof module:DB/mongoDB/config/init
+ * @returns {Promise<boolean>} Retorna `true` si MongoDB responde, `false` si no es posible conectarse.
+ */
 const checkMongoDBRunning = async () => {
     try {
         console.log("🧪 Probando conexión con MongoDB...");
@@ -57,6 +92,15 @@ const checkMongoDBRunning = async () => {
     }
 };
 
+/**
+ * Intenta iniciar el servicio de MongoDB ejecutando el comando `mongod` en el puerto 27017.
+ *
+ * Utiliza el módulo `child_process` para lanzar el proceso y retorna una promesa que se resuelve o rechaza según el resultado.
+ *
+ * @function startMongoDB
+ * @memberof module:DB/mongoDB/config/init
+ * @returns {Promise<string>} Promesa que se resuelve con el mensaje de inicio o se rechaza con el error correspondiente.
+ */
 const startMongoDB = () => {
     return new Promise((resolve, reject) => {
         exec("mongod --port 27017", (error, stdout, stderr) => {
@@ -71,6 +115,15 @@ const startMongoDB = () => {
     });
 };
 
+/**
+ * Espera de forma activa hasta que el servicio de MongoDB esté listo para aceptar conexiones.
+ *
+ * Llama periódicamente a `checkMongoDBRunning` cada segundo hasta que la base de datos responda.
+ *
+ * @function waitForMongoDB
+ * @memberof module:DB/mongoDB/config/init
+ * @returns {Promise<void>} Promesa que se resuelve cuando MongoDB está listo.
+ */
 const waitForMongoDB = () => {
     return new Promise((resolve) => {
         const checkInterval = setInterval(async () => {
@@ -83,7 +136,20 @@ const waitForMongoDB = () => {
     });
 };
 
-const initMongoDB = async () => {
+/**
+ * Inicializa la conexión a MongoDB, verifica el estado del servicio, lo arranca si es necesario,
+ * y define todos los esquemas de la base de datos para el sistema y los procesos.
+ *
+ * @async
+ * @function initMongoDB
+ * @memberof module:DB/mongoDB/config/init
+ * @returns {Promise<Array>} Retorna un array con las conexiones a las bases de datos [procesoDB, sistemaDb].
+ *
+ * @example
+ * // Inicializar MongoDB y obtener las conexiones
+ * const [procesoDB, sistemaDb] = await initMongoDB();
+ */
+async function initMongoDB() {
     try {
         console.log("🔍 Verificando estado de MongoDB...");
 
@@ -105,7 +171,7 @@ const initMongoDB = async () => {
 
         console.log("🧬 Definiendo esquemas para cada base de datos...");
         await defineSchemasSistema(sistemaDb);
-        console.log("📦 Esquemas definidos para *Sistema*.");
+        console.log("📦 Esquemas definidos para *Sistema*." );
 
         await defineSchemasProceso(procesoDB);
         console.log("📦 Esquemas definidos para *Proceso*.");
@@ -121,6 +187,22 @@ const initMongoDB = async () => {
     }
 };
 
+/**
+ * @typedef {Object} MongooseConnection
+ * @see https://mongoosejs.com/docs/api/connection.html
+ */
+
+/**
+ * Registra y define todos los esquemas de Mongoose para la base de datos de procesos.
+ *
+ * @async
+ * @function defineSchemasProceso
+ * @memberof module:DB/mongoDB/config/init
+ * @param {Object} sysConn - Conexión activa a la base de datos de procesos (Mongoose Connection).
+ * @returns {Promise<void>} Promesa que se resuelve cuando todos los esquemas han sido definidos.
+ *
+ * @throws {Error} Si ocurre un error durante la definición de los esquemas.
+ */
 const defineSchemasProceso = async (sysConn) => {
     try {
 
@@ -152,6 +234,17 @@ const defineSchemasProceso = async (sysConn) => {
     }
 }
 
+/**
+ * Registra y define todos los esquemas de Mongoose para la base de datos del sistema.
+ *
+ * @async
+ * @function defineSchemasSistema
+ * @memberof module:DB/mongoDB/config/init
+ * @param {Object} sysConn - Conexión activa a la base de datos del sistema (Mongoose Connection).
+ * @returns {Promise<void>} Promesa que se resuelve cuando todos los esquemas han sido definidos.
+ *
+ * @throws {Error} Si ocurre un error durante la definición de los esquemas.
+ */
 const defineSchemasSistema = async (sysConn) => {
     try {
 
@@ -171,6 +264,7 @@ const defineSchemasSistema = async (sysConn) => {
     }
 }
 
+/** @exports DB/mongoDB/config/init */
 module.exports = {
     initMongoDB,
     db

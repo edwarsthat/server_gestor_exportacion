@@ -1,6 +1,33 @@
+/**
+ * @file Esquema y modelo de datos para los lotes de fruta en MongoDB (Celifrut).
+ *
+ * @summary
+ * Este módulo define el modelo de datos de los lotes, centralizando toda la información relevante para la trazabilidad,
+ * control de calidad, descartes, fechas, contenedores, aprobaciones y parámetros de procesamiento de cada lote.
+ *
+ * @description
+ * Incluye subesquemas para calidad interna, inspección, descartes, desverdizado, exportación detallada y más.
+ * El modelo resultante permite registrar, consultar y auditar el ciclo de vida completo de un lote desde su ingreso hasta su salida.
+ *
+ * @module DB/mongoDB/schemas/lotes/schemaLotes
+ */
+
+
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
+/**
+ * Define el modelo de datos para los lotes en el sistema.
+ *
+ * Este esquema centraliza toda la información relevante de un lote, incluyendo calidad, descartes, fechas, contenedores asociados,
+ * aprobaciones, parámetros de desverdizado, exportación detallada, historial y más. Permite el registro y trazabilidad completa
+ * de cada lote desde su ingreso hasta su procesamiento y salida.
+ *
+ * @param {Object} conn - Conexión activa de Mongoose donde se registrará el modelo.
+ * @returns {Object} Modelo de Lote registrado en la conexión proporcionada.
+ *
+ * @see https://mongoosejs.com/docs/models.html
+ */
 const defineLotes = async (conn) => {
 
   const calidadInternaSchema = new Schema({
@@ -167,4 +194,5 @@ const defineLotes = async (conn) => {
   return Lotes;
 
 }
+
 module.exports.defineLotes = defineLotes;

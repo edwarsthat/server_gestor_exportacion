@@ -1,7 +1,9 @@
 const express = require("express");
-const { corsMiddle } = require("../middleware/inputHandler");
+const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 const { routerPythonData } = require("../../server/routes/pythonServer");
 const { routerVariablesdelSistema } = require("../../server/mobile/variablesDelSistema");
@@ -22,7 +24,17 @@ const { routerDataSys } = require("../../server/routes/https/data");
 
 const app = express();
 
-app.use((req, res, next) => corsMiddle(req, res, next));
+app.use((req, res, next) => {
+    console.log('IP detectada:', req.ip);
+    next();
+});
+
+app.use(helmet());
+app.use(cors({
+    origin: '*', // En producción, ¡especifica tus dominios permitidos!
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.text());
 
@@ -49,6 +61,16 @@ app.get("/", (req, res) => {
         'public',
         'web',
         'index.html'));
+});
+
+app.set('trust proxy', 1);
+
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 15, // máximo 5 peticiones
+    message: 'Demasiados intentos de inicio de sesión. Intenta más tarde.',
+    standardHeaders: true, // Devuelve los headers RateLimit
+    legacyHeaders: false,
 });
 
 //se envia el archivo ymal para actualizar la aplicacion de ecritorio
@@ -85,7 +107,7 @@ app.get('/:filename', async (req, res, next) => {
     }
 })
 
-app.post('/login2', async (req, res, next) => {
+app.post('/login2', loginLimiter, async (req, res, next) => {
     try {
         const user = { user: req.body.user, password: req.body.password }
 
@@ -107,6 +129,7 @@ app.post('/login2', async (req, res, next) => {
 
         })
     } catch (err) {
+        // console.log(err)
         next(err);
     }
 });

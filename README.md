@@ -1,275 +1,92 @@
-# Instrucciones de Instalación del Servidor
+# Servidor de Gestión de Empaque y Exportación
 
-Este documento proporciona los pasos necesarios para instalar y configurar el servidor.
+**Autor:** Edwar Stheven Ariza Torres
 
-## Requisitos previos
+> **Aviso Legal y Licencia**
+>
+> Este software es propiedad intelectual de Edwar Stheven Ariza Torres y se desarrolla para uso exclusivo de la empresa **Celifrut**. Todos los derechos de explotación, uso y distribución corresponden únicamente a Celifrut, pero el derecho de autor intelectual permanece en cabeza del desarrollador original.
+>
+> Queda prohibida la copia, distribución o uso fuera de la empresa sin autorización expresa y por escrito del autor y de Celifrut.
 
-- Sistema operativo Ubuntu (preferiblemente Ubuntu 22.04 Jammy Jellyfish)
-- Acceso de superusuario (sudo)
+Este proyecto es un servidor Node.js para la gestión de procesos de empaque, exportación y control de inventarios en una planta de frutas. Permite manejar lotes, contenedores, pallets, calidad, descartes y reportes, integrando diferentes módulos y servicios.
 
-## Pasos de instalación
+## Características principales
+- Gestión de lotes y contenedores
+- Control de pallets y cajas
+- Registro de calidad y descartes
+- Reportes y auditoría de cambios
+- Integración con base de datos MongoDB y Redis
 
-### 1. Descargar e instalar Node.js
+## Estructura del proyecto
 
+```
+server/
+├── api/           # Lógica principal de la API y procesos
+├── archive/       # Archivos históricos y registros
+├── auth/          # Autenticación de usuarios
+├── Class/         # Clases de negocio (Lotes, Contenedores, etc.)
+├── constants/     # Archivos JSON de constantes y catálogos
+├── controllers/   # Controladores y validaciones
+├── DB/            # Conexión y utilidades de base de datos
+├── events/        # Eventos y notificaciones internas
+├── functions/     # Funciones auxiliares
+├── inventory/     # Archivos de inventario y datos estáticos
+├── mobile/        # Lógica específica para dispositivos móviles
+├── public/        # Archivos públicos y recursos web
+├── scripts/       # Scripts de mantenimiento y migración
+├── services/      # Servicios auxiliares y lógica compartida
+├── validations/   # Validaciones de datos y reglas de negocio
+├── index.js       # Punto de entrada del servidor
+├── package.json   # Dependencias y scripts de npm
+└── README.md      # Documentación principal
+```
+
+## Instalación
+1. Clona el repositorio o copia la carpeta `server/`.
+2. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+3. Configura las variables de entorno en un archivo `.env` en la raíz del proyecto.
+
+## Ejecución
+Para iniciar el servidor:
 ```bash
-sudo apt-get update
-sudo apt-get upgrade
-sudo apt-get install curl
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
-. ~/.bashrc
-nvm --version
-nvm install 20
-nvm use 20
-node -v
-npm -v
+npm start
 ```
 
-### 2. Instalar MongoDB
+## Documentación del código
+- El código fuente está documentado con comentarios y JSDoc en los archivos principales.
+- Puedes generar documentación automática usando herramientas como [jsdoc](https://jsdoc.app/).
 
-```bash
-cat /etc/lsb-release
-sudo apt-get install gnupg curl
-curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
-sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg \
---dearmor
-echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-sudo apt-get update
-sudo apt-get install -y mongodb-org
-```
+## Contribución
+1. Haz un fork o crea una rama.
+2. Realiza tus cambios y documenta el código nuevo.
+3. Haz un pull request.
 
-### 3. Instalar Redis
+## Contacto
+Para soporte o dudas, contacta al desarrollador principal.
 
-Instala Redis versión 7.4 o superior. (Los pasos específicos no fueron proporcionados)
+## Agradecimientos
 
-### 4. Inicializar el inventario
+Este proyecto utiliza y agradece a las siguientes librerías y tecnologías de código abierto:
 
-Ejecuta el script `InicializarInventario` que se encuentra en la carpeta `scripts`. Esto creará los archivos JSON necesarios.
+- [Express](https://expressjs.com/) para la creación del servidor web y API REST.
+- [Mongoose](https://mongoosejs.com/) para la gestión de la base de datos MongoDB.
+- [Redis](https://redis.io/) y [node-redis](https://github.com/redis/node-redis) para almacenamiento en caché y comunicación entre procesos.
+- [Socket.io](https://socket.io/) para comunicación en tiempo real.
+- [ExcelJS](https://github.com/exceljs/exceljs) para la generación y manipulación de archivos Excel.
+- [dotenv](https://github.com/motdotla/dotenv) para la gestión de variables de entorno.
+- [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) para autenticación basada en tokens JWT.
+- [bcrypt](https://github.com/kelektiv/node.bcrypt.js) para el cifrado de contraseñas.
+- [multer](https://github.com/expressjs/multer) para la gestión de archivos subidos.
+- [date-fns](https://date-fns.org/) y [date-fns-tz](https://github.com/marnusw/date-fns-tz) para manejo de fechas y zonas horarias.
+- [nodemailer](https://nodemailer.com/) para el envío de correos electrónicos.
+- [chalk](https://github.com/chalk/chalk) para mejorar la salida de logs en consola.
+- [js-yaml](https://github.com/nodeca/js-yaml) para el manejo de archivos YAML.
+- [zod](https://zod.dev/) para validaciones de datos.
 
-**Nota importante**: Algunos archivos necesitan ser modificados manualmente:
-- Cajas sin pallet: `[]`
-- inventariodescarte: `[]`
-- ordenVaceo: `[]`
-- Dentro de seriales, agregar: `{"idCelifrut":38,"enf":1241}`
+Y a todas las demás librerías de la comunidad Node.js.
 
-### 5. Configurar el archivo .env
-
-Crea un archivo `.env` en la raíz del proyecto con el siguiente contenido:
-
-```
-# HOST
-HOST = "La direccion ip"
-
-# Celifrut app port
-PORT = "El puerto del servidor"
-MONGO_PORT = "EL puerto donde esta el servicio de mongo"
-
-# direccion mongoDB se debe cambiar el puerto por el puerto de mongo
-MONGODB_PROCESO = "mongodb://localhost:27017/proceso"
-MONGODB_SISTEMA = "mongodb://localhost:27017/sistema"
-
-# acces token
-ACCES_TOKEN = 65fa5383a192707f19c3d50fad26604d24f8fce15725caa8c2c3390385cc5004f45910d9e08b624a5fd41c107880bc19b0182a504e7943d158bee8b9f400320b
-REFRESH_TOKEN = e57d4ca7be0fb32467ca36ff851978fe5e64d9c1aea3154783bb08ec8dd56f442f2d891e2dbbff8aa2cfc5f7e7fbd9b7172992f06d6d2a02231ff8c36e645e07
-
-# salt
-SALT_ROUNDS = 10
-
-# Salt AES_SECRET = 0ae245e2d7a589914b9725e714a2a8fb9149096f173dc0e9cddd7530a6cfa6ad
-```
-
-### 6. Modificar la configuración de MongoDB
-
-En el archivo `DB/mongoDB/config/init.js`, modifica la función `startMongoDB`. Ajusta el `exec` con el puerto correspondiente.
-
-### 7. Iniciar el servidor
-
-Ejecuta el servidor con:
-
-```bash
-node index.js
-```
-
-Se recomienda usar una librería como pm2 para gestionar el proceso del servidor.
-
-## Notas adicionales
-
-- Asegúrate de tener todos los permisos necesarios antes de ejecutar los comandos.
-- Verifica que todas las dependencias estén correctamente instaladas antes de iniciar el servidor.
-- Para cualquier problema durante la instalación, consulta la documentación oficial de cada tecnología o contacta al equipo de soporte.
-
-```
-server
-├─ .git
-│  ├─ COMMIT_EDITMSG
-│  ├─ config
-│  ├─ description
-│  ├─ FETCH_HEAD
-│  ├─ HEAD
-│  ├─ hooks
-│  │  ├─ applypatch-msg.sample
-│  │  ├─ commit-msg.sample
-│  │  ├─ fsmonitor-watchman.sample
-│  │  ├─ post-update.sample
-│  │  ├─ pre-applypatch.sample
-│  │  ├─ pre-commit.sample
-│  │  ├─ pre-merge-commit.sample
-│  │  ├─ pre-push.sample
-│  │  ├─ pre-rebase.sample
-│  │  ├─ pre-receive.sample
-│  │  ├─ prepare-commit-msg.sample
-│  │  ├─ push-to-checkout.sample
-│  │  ├─ sendemail-validate.sample
-│  │  └─ update.sample
-│  ├─ index
-│  ├─ info
-│  │  └─ exclude
-│  ├─ logs
-│  │  ├─ HEAD
-│  │  └─ refs
-│  │     ├─ heads
-│  │     │  └─ main
-│  │     └─ remotes
-│  │        └─ origin
-│  │           └─ main
-│  ├─ objects
-│  │  ├─ info
-│  │  └─ pack
-│  │     ├─ pack-f209228a8eab5055aaf9c9ba293692aa663c7494.idx
-│  │     ├─ pack-f209228a8eab5055aaf9c9ba293692aa663c7494.pack
-│  │     └─ pack-f209228a8eab5055aaf9c9ba293692aa663c7494.rev
-│  ├─ ORIG_HEAD
-│  └─ refs
-│     ├─ heads
-│     │  └─ main
-│     ├─ remotes
-│     │  └─ origin
-│     │     └─ main
-│     └─ tags
-├─ .gitignore
-├─ constants
-│  ├─ calidad.json
-│  ├─ formularios_calidad.json
-│  ├─ insumos.json
-│  ├─ observacionesCalidad.json
-│  ├─ paisesEXP.json
-│  └─ permisosDev.json
-├─ DB
-│  ├─ controllers
-│  │  └─ proceso.js
-│  ├─ mongoDB
-│  │  ├─ config
-│  │  │  ├─ config.js
-│  │  │  └─ init.js
-│  │  └─ schemas
-│  │     ├─ calidad
-│  │     │  ├─ schemaControlPlagas.js
-│  │     │  ├─ schemaHigienePersonal.js
-│  │     │  ├─ schemaLimpiezaDiaria.js
-│  │     │  ├─ schemaLimpiezaMensual.js
-│  │     │  └─ schemaVolanteCalidad.js
-│  │     ├─ clientes
-│  │     │  ├─ schemaClientes.js
-│  │     │  └─ schemaRecordClientes.js
-│  │     ├─ contenedores
-│  │     │  ├─ schemaContenedores.js
-│  │     │  └─ schemaRecordContenedores.js
-│  │     ├─ errors
-│  │     │  └─ schemaErrores.js
-│  │     ├─ insumos
-│  │     │  ├─ RecordSchemaInsumos.js
-│  │     │  └─ schemaInsumos.js
-│  │     ├─ lotes
-│  │     │  ├─ schemaHistorialDescarte.js
-│  │     │  ├─ schemaHistorialDespachosDescartes.js
-│  │     │  ├─ schemaLotes.js
-│  │     │  └─ schemaRecordLotes.js
-│  │     ├─ proceso
-│  │     │  └─ TurnoData.js
-│  │     ├─ proveedores
-│  │     │  ├─ schemaProveedores.js
-│  │     │  └─ schemaRecordProveedores.js
-│  │     └─ usuarios
-│  │        ├─ schemaCargos.js
-│  │        ├─ schemaRecordCargos.js
-│  │        ├─ schemaRecordUsuarios.js
-│  │        └─ schemaUsuarios.js
-│  └─ redis
-│     └─ init.js
-├─ Error
-│  ├─ ConnectionErrors.js
-│  ├─ ProcessError.js
-│  ├─ recordErrors.js
-│  └─ ValidationErrors.js
-├─ eslint.config.mjs
-├─ events
-│  └─ eventos.js
-├─ generator
-│  ├─ informe_calidad.js
-│  └─ resource
-│     └─ informe_calidad
-│        ├─ FORMATO INFORME LIMON TAHITI.xlsx
-│        └─ FORMATO INFORME NARANJA.xlsx
-├─ index.js
-├─ package.json
-├─ public
-│  ├─ appTv
-│  │  ├─ assets
-│  │  │  ├─ DS-DIGI-dG6DdXEc.TTF
-│  │  │  ├─ img1-BVKzVInW.jpg
-│  │  │  ├─ img_logo-CJ2LOTjn.png
-│  │  │  ├─ index-CMqVFLm8.css
-│  │  │  ├─ index-D8OWihCD.js
-│  │  │  └─ limon-CR6hGAfI.webp
-│  │  └─ index.html
-│  └─ other
-├─ README.md
-├─ scripts
-│  ├─ InicializarInventario.js
-│  ├─ modificarClientes.js
-│  ├─ modificarListaEmpaque.js
-│  └─ subirInventarioAWS.js
-└─ server
-   ├─ api
-   │  ├─ Calidad.js
-   │  ├─ Comercial.js
-   │  ├─ Contabilidad.js
-   │  ├─ ModificarData.js
-   │  ├─ Proceso.js
-   │  ├─ Sistema.js
-   │  └─ Views.js
-   ├─ archive
-   │  ├─ ArchiveLotes.js
-   │  ├─ ArchivoListaEmpaque.js
-   │  └─ ArchivoProveedores.js
-   ├─ auth
-   │  └─ users.js
-   ├─ Class
-   │  ├─ Clientes.js
-   │  ├─ Contenedores.js
-   │  ├─ DespachoDescarte.js
-   │  ├─ FormulariosCalidad.js
-   │  ├─ Insumos.js
-   │  ├─ Lotes.js
-   │  ├─ Proveedores.js
-   │  ├─ TurnoData.js
-   │  ├─ Usuarios.js
-   │  └─ VariablesDelSistema.js
-   ├─ controllers
-   │  └─ validations.js
-   ├─ desktop
-   │  └─ reduce.js
-   ├─ functions
-   │  └─ insumos.js
-   ├─ mobile
-   │  ├─ calidad.js
-   │  ├─ comercial.js
-   │  ├─ process.js
-   │  ├─ sistema.js
-   │  ├─ socket.js
-   │  ├─ utils
-   │  │  └─ contenedoresLotes.js
-   │  └─ variablesDelSistema.js
-   └─ routes
-      └─ appTv.js
-
-```
+---
+*Este README es solo un punto de partida. Completa y adapta según las necesidades de tu proyecto.*

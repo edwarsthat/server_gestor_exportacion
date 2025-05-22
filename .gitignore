@@ -21,3 +21,6 @@ fotos_frutas/
 
 #ignora los uploads
 uploads/
+
+#ignora la documentacion
+doc/

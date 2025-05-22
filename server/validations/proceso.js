@@ -23,8 +23,8 @@ class ProcesoValidations {
             pallet: z.number().int().nonnegative(), // Número entero positivo o cero
             action: z.literal('put_proceso_aplicaciones_listaEmpaque_agregarItem'), // Valor exacto
             item: itemSchema // Schema anidado para el item
-        }); 
-        
+        });
+
         try {
             return schema.parse(data);
         } catch (error) {
@@ -34,7 +34,6 @@ class ProcesoValidations {
             throw new Error(`Validation error: ${JSON.stringify(formattedErrors)}`);
         }
     }
-
     static async put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop(req) {
         const dataSchema = z.object({
             calidad: safeString('calidad').min(1),  // calidad es requerido y debe ser seguro
@@ -50,7 +49,7 @@ class ProcesoValidations {
             data: dataSchema,
             action: z.literal('put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop')
         });
-        
+
         try {
             return schema.parse(req.data);
         } catch (error) {
@@ -58,6 +57,33 @@ class ProcesoValidations {
             const formattedErrors = getErrorMessages(error);
             throw new Error(`Validation error: ${JSON.stringify(formattedErrors)}`);
         }
+    }
+    static async put_proceso_aplicaciones_listaEmpaque_eliminarItems() {
+        return z.object({
+            _id: z.string().regex(/^[0-9a-fA-F]{24}$/),
+            pallet: z.number().int().nonnegative(),
+            seleccion: z.array(z.number().int().nonnegative()),
+        })
+    }
+    static async put_proceso_aplicaciones_listaEmpaque_restarItem() {
+        return z.object({
+            _id: z.string().regex(/^[0-9a-fA-F]{24}$/),
+            pallet: z.number().int().nonnegative(),
+            seleccion: z.number().int().nonnegative(),
+            cajas: z.number().int().positive(),
+        })
+    }
+    static async put_proceso_aplicaciones_listaEmpaque_modificarItems() {
+        return z.object({
+            _id: z.string().regex(/^[0-9a-fA-F]{24}$/),
+            pallet: z.number().int().nonnegative(),
+            seleccion: z.array(z.number().int().nonnegative()),
+            data: z.object({
+                calibre: safeString(),
+                calidad: safeString(),
+                tipoCaja: safeString(),
+            })
+        })
     }
 }
 

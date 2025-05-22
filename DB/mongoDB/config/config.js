@@ -1,6 +1,28 @@
-
+/**
+ * @module DB/mongoDB/config/config
+ * @summary Funciones utilitarias para la conexión y desconexión de bases de datos MongoDB usando Mongoose.
+ * @description
+ * Este módulo proporciona funciones para conectar y desconectar las bases de datos 'proceso' y 'sistema' del sistema,
+ * gestionando los eventos de conexión y error para facilitar el monitoreo y la estabilidad.
+ *
+ * ### Funciones principales:
+ * - {@link module:DB/mongoDB/config/config.connectProcesoDB}
+ * - {@link module:DB/mongoDB/config/config.connectSistemaDB}
+ * - {@link module:DB/mongoDB/config/config.disconnectDB}
+ *
+ * @see module:DB
+ */
 const mongoose = require("mongoose");
 
+/**
+ * Conecta a la base de datos de procesos de MongoDB.
+ *
+ * @async
+ * @function
+ * @memberof module:DB/mongoDB/config/config
+ * @param {string} [url] - URL de conexión a MongoDB. Si se omite, se utiliza la variable de entorno `MONGODB_PROCESO`.
+ * @returns {Promise<mongoose.Connection>} Conexión activa a la base de datos de procesos.
+ */
 const connectProcesoDB = async (url = '') => {
 
   let tipoBaseDatos
@@ -26,6 +48,14 @@ const connectProcesoDB = async (url = '') => {
   }
 };
 
+/**
+ * Conecta a la base de datos del sistema de MongoDB.
+ *
+ * @async
+ * @function
+ * @memberof module:DB/mongoDB/config/config
+ * @returns {Promise<mongoose.Connection>} Conexión activa a la base de datos del sistema.
+ */
 const connectSistemaDB = async () => {
 
   let tipoBaseDatos = process.env.MONGODB_SISTEMA;
@@ -44,6 +74,14 @@ const connectSistemaDB = async () => {
   }
 };
 
+/**
+ * Cierra la conexión a una base de datos MongoDB.
+ *
+ * @function
+ * @memberof module:DB/mongoDB/config/config
+ * @param {mongoose.Connection} db - Conexión activa a MongoDB que se va a cerrar.
+ * @returns {void}
+ */
 const disconnectDB = (db) => {
   db.close((err) => {
     if (err) {
