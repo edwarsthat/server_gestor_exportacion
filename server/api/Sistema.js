@@ -307,6 +307,16 @@ class SistemaRepository {
         return { usuario: user[0].usuario, cargo: user[0].cargo, _id: user[0]._id, status: 200 }
 
     }
+    static async crear_codigo_recuperacion(data) {
+        const user = await UsuariosRepository.get_users({
+            query: { usuario: data, estado: true }
+        })
+        if (!user[0]) throw new ValidationUserError(401, "Error usuario no encontrado");
+
+        const codigo = await UserRepository.generarTokenRecuperacion()
+        await VariablesDelSistema.guardar_codigo_recuperacion_password(user[0]._id, codigo)
+        return codigo
+    }
     static async isNewVersion() {
         const apkLatest = path.join(__dirname, '..', '..', 'updates', 'desktop', 'latest.yml');
         const fileContents = fs.readFileSync(apkLatest, 'utf8');
@@ -366,6 +376,7 @@ class SistemaRepository {
             throw new ProcessError(490, `Error ${err.type}: ${err.message}`)
         }
     }
+
 }
 
 module.exports.SistemaRepository = SistemaRepository

@@ -848,7 +848,6 @@ class VariablesDelSistema {
   }
 
   // #region Datos del proceso
-
   static async get_kilos_procesados_hoy() {
     let cliente
     try {
@@ -1529,6 +1528,34 @@ class VariablesDelSistema {
       throw new ProcessError(523, `Error modificando el inventario canastillas ${err.message}`)
     }
   }
+
+  //Codigos
+  static async guardar_codigo_recuperacion_password(usuario, code) {
+    let cliente;
+
+    try {
+      const clientePromise = iniciarRedisDB();
+      cliente = await clientePromise;
+      const ttl = 600; // Tiempo en segun
+
+      cliente.setEx(`${usuario}`, ttl, code, (err, reply) => {
+        if (err) {
+          console.error('Error al guardar el código en Redis:', err);
+        } else {
+          console.log('Código de verificación almacenado en Redis:', reply);
+          // Aquí puedes enviar el código al correo del usuario
+        }
+      });
+
+      } catch (err) {
+        throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
+      } finally {
+        if (cliente) {
+          await cliente.quit();
+        }
+
+      }
+    }
 }
 
 module.exports.VariablesDelSistema = VariablesDelSistema

@@ -26,6 +26,7 @@ const app = express();
 
 app.use((req, res, next) => {
     console.log('IP detectada:', req.ip);
+    console.log('URL:', req.url);
     next();
 });
 
@@ -86,26 +87,20 @@ app.get("/latest.yml", async (req, res, next) => {
         next(err);
     }
 })
-//Envia los archivos para actualizar la aplicacion de escritorio 
-app.get('/:filename', async (req, res, next) => {
+
+app.post("/password", loginLimiter, async (req, res, next) => {
     try {
-        let { filename } = req.params;
-        filename = path.basename(filename);
-        const filePath = path.join(__dirname, '..', '..', 'updates', 'desktop', filename);
-
-        // Verificar si el archivo existe
-        if (!fs.existsSync(filePath)) {
-            // Puedes enviar un 404 directamente o lanzar un error controlado
-            return res.status(404).send("Archivo no encontrado");
-        }
-
-        const file = fs.readFileSync(filePath);
-        res.setHeader('Content-Type', 'application/octet-stream');
-        res.end(file);
+        const { user } = req.body
+        const code = await SistemaRepository.crear_codigo_recuperacion(user)
+        res.json({
+            status: 200,
+            message: 'Ok',
+            data: code
+        })
     } catch (err) {
         next(err);
     }
-})
+});
 
 app.post('/login2', loginLimiter, async (req, res, next) => {
     try {
@@ -133,6 +128,29 @@ app.post('/login2', loginLimiter, async (req, res, next) => {
         next(err);
     }
 });
+
+
+
+//Envia los archivos para actualizar la aplicacion de escritorio 
+app.get('/:filename', async (req, res, next) => {
+    try {
+        let { filename } = req.params;
+        filename = path.basename(filename);
+        const filePath = path.join(__dirname, '..', '..', 'updates', 'desktop', filename);
+
+        // Verificar si el archivo existe
+        if (!fs.existsSync(filePath)) {
+            // Puedes enviar un 404 directamente o lanzar un error controlado
+            return res.status(404).send("Archivo no encontrado");
+        }
+
+        const file = fs.readFileSync(filePath);
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.end(file);
+    } catch (err) {
+        next(err);
+    }
+})
 
 app.use((err, req, res, next) => middleWareHandleErrors(err, req, res, next))
 

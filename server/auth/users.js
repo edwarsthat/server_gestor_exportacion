@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { ValidationUserError, ValidationTokenError, AccessError } = require('../../Error/ValidationErrors');
 const { UsuariosRepository } = require('../Class/Usuarios');
 const permisos_generales = [
@@ -173,6 +174,9 @@ class UserRepository {
             // throw new AccessError(412, `Accesos no autorizado ${action}`);
             console.log(err)
         }
+    }
+    static async generarTokenRecuperacion(){
+        return crypto.randomInt(0, Math.pow(10, 6)).toString().padStart(6, '0')
     }
 }
 
