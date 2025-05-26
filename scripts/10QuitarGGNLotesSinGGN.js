@@ -3,8 +3,8 @@ const { defineLotes } = require("../DB/mongoDB/schemas/lotes/schemaLotes");
 const { defineproveedores } = require("../DB/mongoDB/schemas/proveedores/schemaProveedores");
 
 async function modificar_lotes_quitar_GGN() {
-    // const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/proceso?authSource=admin")
-    const db = await connectProcesoDB("mongodb://localhost:27017/proceso")
+    const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/proceso?authSource=admin")
+    // const db = await connectProcesoDB("mongodb://localhost:27017/proceso")
 
     try {
         const LoteDB = await defineLotes(db);

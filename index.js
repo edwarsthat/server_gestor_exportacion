@@ -52,7 +52,9 @@ const { initRustRcp } = require('./config/grpcRust');
         server.listen(PORT, HOST, () => {
             console.log(`El servidor está escuchando en el puerto ${PORT} y la dirección IP ${HOST}.`);
         });
-
+        app.listen(3010, '0.0.0.0', () => {
+            console.log('Server running on port 3010');
+        });
 
     } catch (err) {
         console.error('Error al iniciar el servidor:', err);

@@ -16,7 +16,8 @@ const defineproveedores = async (conn) => {
     code: String,
     fechaVencimiento: Date,
     paises: [String],
-    tipo_fruta: [String]
+    tipo_fruta: [String],
+    activo: {type: Boolean, default: false},
   }, { _id: false, strict: false })
 
 

@@ -179,18 +179,22 @@ class InventariosService {
     static async validarGGN(proveedor, tipoFruta, user) {
         if (!(proveedor && proveedor[0].GGN && proveedor[0].GGN.fechaVencimiento)) { throw new Error("El predio no tiene GGN") }
 
-        const fecha = new Date(proveedor[0].GGN.fechaVencimiento)
-        const anio = fecha.getFullYear()
-        const mes = fecha.getMonth()
-        const fechaActual = new Date()
-        const anioActual = fechaActual.getFullYear()
-        const mesActual = fechaActual.getMonth()
+        const fechaVencimiento = new Date(proveedor[0].GGN.fechaVencimiento);
+        const hoy = new Date();
 
-        if (anioActual === anio && mesActual === mes) {
+        // Calcular la fecha de un mes después de hoy (ojo, JS hace la magia con los días)
+        const unMesDespues = new Date(hoy);
+        unMesDespues.setMonth(unMesDespues.getMonth() + 1);
+
+        // Si la fecha está entre hoy y dentro de un mes, es "cercana"
+        if (fechaVencimiento > hoy && fechaVencimiento <= unMesDespues) {
             if (user.Rol > 2) {
-                throw new Error("La fecha de vencimiento esta cercana")
+                throw new Error("La fecha de vencimiento está cercana.");
             }
+        } else if (fechaVencimiento < hoy) {
+            throw new Error("El GGN del proveedor ya expiró.");
         }
+
 
         if (
             proveedor[0].GGN.code &&

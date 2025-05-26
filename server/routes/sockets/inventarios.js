@@ -43,7 +43,7 @@ const apiSocketInventarios = {
         return successResponseRoutes()
     },
     get_inventarios_ordenVaceo_inventario: async () => {
-        const resultado = await ProcesoRepository.getInventario_orden_vaceo();
+        const resultado = await InventariosRepository.get_inventarios_ordenVaceo_inventario();
         return successResponseRoutes(resultado)
     },
     get_inventarios_ordenVaceo_ordenVaceo: async () => {

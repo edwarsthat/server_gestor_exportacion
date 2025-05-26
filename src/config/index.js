@@ -10,5 +10,7 @@ module.exports = {
     REFRESH_TOKEN: process.env.REFRESH_TOKEN,
     SALT_ROUNDS: process.env.SALT_ROUNDS,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
-    AES_SECRET: process.env.AES_SECRET
+    AES_SECRET: process.env.AES_SECRET,
+    USUARIO_PRUEBA: process.env.USUARIO_PRUEBA,
+    PASSWORD_PRUEBA: process.env.PASSWORD_PRUEBA
 };

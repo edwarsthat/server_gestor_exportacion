@@ -1486,66 +1486,7 @@ class ProcesoRepository {
     }
 
 
-    static async getInventario_orden_vaceo() {
-        //JS
-        //se obtiene los datos del inventario
-        const inventario = await VariablesDelSistema.getInventario();
-        const inventarioKeys = Object.keys(inventario)
 
-        // se obtiene el inventario de desverdizado
-        const InvDes = await VariablesDelSistema.getInventarioDesverdizado();
-        const InvDesKeys = Object.keys(InvDes);
-
-        const arrLotesKeys = inventarioKeys.concat(InvDesKeys);
-        const setLotesKeys = new Set(arrLotesKeys);
-        const lotesKeys = [...setLotesKeys];
-
-        const lotes = await LotesRepository.getLotes({
-            ids: lotesKeys,
-            query: {
-                $or: [
-                    { not_pass: false },
-                    { not_pass: { $exists: false } }
-                ]
-            },
-            select: {
-                __v: 1,
-                clasificacionCalidad: 1,
-                nombrePredio: 1,
-                fechaIngreso: 1,
-                observaciones: 1,
-                tipoFruta: 1,
-                promedio: 1,
-                enf: 1,
-                kilosVaciados: 1,
-                directoNacional: 1,
-                desverdizado: 1,
-                fecha_ingreso_inventario: 1,
-                "calidad.inspeccionIngreso": 1,
-            }
-        });
-
-        const resultado = lotesKeys.map(id => {
-            const lote = lotes.find(lote => lote._id.toString() === id.toString());
-
-            if (lote && lote.desverdizado && lote.desverdizado.fechaFinalizar) {
-                return {
-                    ...lote.toObject(),
-                    inventario: InvDes[id]
-                }
-            } else if (lote && lote.desverdizado && !lote.desverdizado.fechaFinalizar) {
-                return null
-            } else if (lote) {
-                return {
-                    ...lote.toObject(),
-                    inventario: inventario[id]
-                }
-            }
-            return null
-        }).filter(item => item !== null);
-        return resultado
-
-    }
 
 
     static async obtener_historial_decarte_lavado_proceso(user) {
