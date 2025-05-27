@@ -1759,14 +1759,7 @@ class ProcesoRepository {
     }
 
 
-    static async put_inventario_inventarios_orden_vaceo_modificar(data) {
 
-        await VariablesDelSistema.put_inventario_inventarios_orden_vaceo_modificar(data.data.data)
-        procesoEventEmitter.emit("server_event", {
-            action: "modificar_orden_vaceo",
-            data: {}
-        });
-    }
     static async vaciarLote(req) {
         const { user: user1, data } = req
         const { user } = user1;

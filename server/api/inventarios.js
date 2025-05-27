@@ -1021,6 +1021,14 @@ class InventariosRepository {
         }
 
     }
+    static async put_inventarios_ordenVaceo_modificar(data) {
+
+        await VariablesDelSistema.put_inventario_inventarios_orden_vaceo_modificar(data.data.data)
+        procesoEventEmitter.emit("server_event", {
+            action: "modificar_orden_vaceo",
+            data: {}
+        });
+    }
     //#endregion
     //#region ingresos
     static async get_inventarios_ingresos_ef() {
