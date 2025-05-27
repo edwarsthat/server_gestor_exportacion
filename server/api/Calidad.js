@@ -11,6 +11,8 @@ const fs = require('fs')
 const path = require('path');
 const { filtroFechaInicioFin } = require("./utils/filtros");
 const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
+const { CalidadValidationsRepository } = require("../validations/calidad");
+const { z } = require("zod");
 
 const tipoFormulariosCalidadPath = path.join(__dirname, '../../constants/formularios_calidad.json')
 class CalidadRepository {
@@ -409,6 +411,7 @@ class CalidadRepository {
     }
     static async put_calidad_ingresos_clasificacionDescarte(req) {
         try {
+            CalidadValidationsRepository.put_calidad_ingresos_clasificacionDescarte().parse(req.data);
             const user = req.user._id;
             const { action, data, _id } = req.data;
             const query = {
@@ -422,6 +425,10 @@ class CalidadRepository {
         } catch (err) {
             if (err.status === 523 || err.status === 522) {
                 throw err
+            }
+            if (err instanceof z.ZodError) {
+                const errores = err.errors.map(e => `${e.path[0]}: ${e.message}`).join(" | ")
+                throw new CalidadLogicError(480, `Error de validación: ${errores}`)
             }
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
