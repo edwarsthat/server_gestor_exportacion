@@ -2,7 +2,7 @@ const { z } = require('zod');
 const { safeString, optionalSafeString } = require('./utils/validationFunctions');
 
 const ACCIONES_VALIDAS = ["ingreso", "salida", "traslado", "retiro", "cancelado"];
-const validKeyRegex = /^(descarteEncerado|descarteLavado|frutaNacional).*/;
+// const validKeyRegex = /^(descarteEncerado|descarteLavado|frutaNacional).*/;
 
 class InventariosValidations {
     static post_inventarios_canastillas_registro() {
@@ -123,27 +123,43 @@ class InventariosValidations {
     }
     static put_inventarios_frutaDescarte_reprocesarFruta() {
         return z.object({
-            _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
-            query: z.record(
-                z.string().regex(validKeyRegex, "La llave debe empezar con 'descarteEncerado', 'descarteLavado' o 'frutaNacional'."), // Schema para la LLAVE
-                z.number()
-            ),
-            inventario: z.object({
-                descarteEncerado: z.object({
-                    balin: z.number().lte(0).optional(),
-                    descarteGeneral: z.number().lte(0).optional(),
-                    extra: z.number().lte(0).optional(),
-                    frutaNacional: z.number().lte(0).optional(),
-                    pareja: z.number().lte(0).optional(),
-                    suelo: z.number().lte(0).optional(),
-                }).refine(data => data.balin !== undefined || data.descarteGeneral !== undefined || data.extra !== undefined || data.frutaNacional !== undefined || data.pareja !== undefined || data.suelo !== undefined, "El objeto 'inventario' debe contener al menos 'balin', 'descarteGeneral', 'extra', 'frutaNacional', 'pareja' o 'suelo'."),
-                descarteLavado: z.object({
-                    balin: z.number().lte(0).optional(),
-                    descarteGeneral: z.number().lte(0).optional(),
-                    pareja: z.number().lte(0).optional(),
-                }).refine(data => data.balin !== undefined || data.descarteGeneral !== undefined || data.pareja !== undefined, "El objeto 'inventario' debe contener al menos 'balin', 'descarteGeneral' o 'pareja'."),
-            }).refine(data => data.descarteEncerado !== undefined || data.descarteLavado !== undefined, "El objeto 'inventario' debe contener al menos 'descarteEncerado' o 'descarteLavado'."),
-
+            tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
+            "descarteLavado:descarteGeneral": z.string()
+                .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+            "descarteLavado:pareja": z.string()
+                .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+            "descarteLavado:balin": z.string()
+                .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+            "descarteEncerado:descarteGeneral": z.string()
+                .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+            "descarteEncerado:pareja": z.string()
+                .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+            "descarteEncerado:balin": z.string()
+                .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+            "descarteEncerado:extra": z.string()
+                .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+            "descarteEncerado:suelo": z.string()
+                .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+            "descarteEncerado:frutaNacional": z.string()
+                .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
         })
 
     }
@@ -217,6 +233,120 @@ class InventariosValidations {
                         message: "La fecha no es válida",
                     }).optional(),
                 GGN: z.string().min(1, "El GGN es obligatorio").transform(val => val === "true").optional(),
+            })
+        })
+    }
+    static put_inventarios_frutaDescarte_despachoDescarte() {
+        return z.object({
+            data: z.object({
+                cliente: z.string().min(1, "El nombre del cliente es obligatorio"),
+                placa: z.string()
+                    .length(6, "La placa debe tener exactamente 6 caracteres")
+                    .regex(/^[A-Z]{3}[0-9]{3}$/, "La placa debe tener 3 letras seguidas de 3 números"),
+                nombreConductor: z.string().min(1, "El nombre del conductor es obligatorio"),
+                telefono: z.string().min(1, "El teléfono es obligatorio"),
+                cedula: z.string().min(1, "La cédula es obligatoria"),
+                remision: z.string().min(1, "La remisión es obligatoria"),
+                kilos: z.number().min(1, "Los kilos deben ser mayores a 0"),
+            }),
+            inventario: z.object({
+                tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
+                "descarteLavado:descarteGeneral": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteLavado:pareja": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteLavado:balin": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteEncerado:descarteGeneral": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteEncerado:pareja": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteEncerado:balin": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteEncerado:extra": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteEncerado:suelo": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteEncerado:frutaNacional": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+            })
+        })
+    }
+    static post_inventarios_frutaDescarte_frutaDescompuesta() {
+        return z.object({
+            data: z.object({
+                razon: z.string()
+                    .min(1, "La razón es obligatoria")
+                    .max(1000, "La razón no puede exceder los 1000 caracteres")
+                    .refine(
+                        (val) => !/[<>$]|javascript:|data:|vbscript:/.test(val),
+                        "El texto contiene caracteres no permitidos"
+                    ),
+                comentario_adicional: z.string()
+                    .max(1000, "El comentario no puede exceder los 1000 caracteres")
+                    .refine(
+                        (val) => !/[<>$]|javascript:|data:|vbscript:/.test(val),
+                        "El texto contiene caracteres no permitidos"
+                    )
+                    .optional()
+                    .default("")
+            }),
+            inventario: z.object({
+                tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
+                "descarteLavado:descarteGeneral": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteLavado:pareja": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteLavado:balin": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteEncerado:descarteGeneral": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteEncerado:pareja": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteEncerado:balin": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteEncerado:extra": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteEncerado:suelo": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                "descarteEncerado:frutaNacional": z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
             })
         })
     }

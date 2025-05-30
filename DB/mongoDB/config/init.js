@@ -58,6 +58,7 @@ const { defineCrearElemento } = require('../schemas/transaccionesRecord/AddsReco
 const { defineDeleteRecords } = require('../schemas/transaccionesRecord/DeleteRecord');
 const { defineRegistroCanastillas } = require('../schemas/canastillas/canastillasRegistrosSchema');
 const { defineClientesNacionales } = require('../schemas/clientes/schemaClientesNacionales');
+const { defineAuditLogs } = require('../schemas/audit/AuditLogSchema');
 const db = {};
 
  /**
@@ -206,20 +207,22 @@ async function initMongoDB() {
 const defineSchemasProceso = async (sysConn) => {
     try {
 
+        const AuditLog = await defineAuditLogs(sysConn)
+
         db.Precios = await definePrecios(sysConn)
         db.Insumos = await defineInsumos(sysConn);
         db.RecordTipoInsumos = await defineRecordTipoInsumos(sysConn);
-        db.frutaDescompuesta = await defineFrutaDescompuesta(sysConn);
+        db.frutaDescompuesta = await defineFrutaDescompuesta(sysConn, AuditLog);
         db.Clientes = await defineClientes(sysConn);
         db.recordClientes = await defineRecordClientes(sysConn);
         db.Proveedores = await defineproveedores(sysConn);
         db.recordProveedor = await defineRecordProveedor(sysConn);
         db.recordContenedores = await defineRecordContenedores(sysConn);
-        db.Lotes = await defineLotes(sysConn);
+        db.Lotes = await defineLotes(sysConn, AuditLog);
         db.recordLotes = await defineRecordLotes(sysConn);
         db.Contenedores = await defineContenedores(sysConn);
         db.historialDescarte = await defineHistorialDescarte(sysConn);
-        db.historialDespachoDescarte = await defineHistorialDespachoDescarte(sysConn);
+        db.historialDespachoDescarte = await defineHistorialDespachoDescarte(sysConn, AuditLog);
         db.TurnoData = await defineTurnoData(sysConn);
         db.Indicadores = await defineIndicadores(sysConn);
         db.RegistrosCanastillas = await defineRegistroCanastillas(sysConn)

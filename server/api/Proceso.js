@@ -19,6 +19,8 @@ const { RecordModificacionesRepository } = require("../archive/ArchivoModificaci
 const { deshidratacionLote, rendimientoLote } = require("./utils/lotesFunctions");
 const ProcesoValidations = require("../validations/proceso");
 const { ProcesoService } = require("../services/proceso");
+const { z } = require("zod");
+const { RedisRepository } = require("../Class/RedisData");
 
 
 class ProcesoRepository {
@@ -96,6 +98,7 @@ class ProcesoRepository {
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
         }
     }
+
     static async get_proceso_aplicaciones_descarteLavado() {
         try {
             const data = await VariablesDelSistema.obtenerEF1Descartes();
@@ -107,8 +110,25 @@ class ProcesoRepository {
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
         }
     }
+    /**
+     * Actualiza el descarte por lavado de un lote.
+     * 
+     * Este método incrementa los valores de descarteLavado en el lote correspondiente según los datos recibidos,
+     * actualiza la versión del documento, realiza la deshidratación del lote, modifica el inventario de descarte,
+     * y registra los kilos procesados en las variables del sistema. Finalmente, emite un evento de proceso.
+     * 
+     * @async
+     * @param {Object} req - Objeto de solicitud que contiene la información del usuario y los datos a actualizar.
+     * @param {Object} req.user - Usuario que realiza la acción.
+     * @param {Object} req.data - Datos de la operación.
+     * @param {string} req.data._id - ID del lote a modificar.
+     * @param {Object} req.data.data - Objeto con los valores a incrementar en descarteLavado.
+     * @param {string} req.data.action - Descripción de la acción para auditoría.
+     * @throws {ProcessError} Si ocurre un error durante el proceso.
+     */
     static async put_proceso_aplicaciones_descarteLavado(req) {
         try {
+            ProcesoValidations.put_proceso_aplicaciones_descarteLavado().parse(req.data)
             const { user } = req;
             const { _id, data, action } = req.data;
             const keys = Object.keys(data);
@@ -118,49 +138,55 @@ class ProcesoRepository {
                 query.$inc[`descarteLavado.${keys[i]}`] = Math.round(data[keys[i]]);
                 kilos += Math.round(data[keys[i]]);
             }
-            query.$inc.__v = 1;
 
-            const lote = await LotesRepository.modificar_lote_proceso(_id, query, action, user._id);
-            await LotesRepository.deshidratacion(lote);
-            // const is_finish = await is_finish_lote(lote);
-            // if (is_finish) {
-            //     const query_fecha = {
-            //         fecha_finalizado_proceso: new Date()
-            //     }
-            //     await LotesRepository.modificar_lote_proceso(
-            //         lote._id,
-            //         query_fecha,
-            //         "lote_finalizado",
-            //         user._id
-            //     );
-            // }
-
-            await VariablesDelSistema.modificar_inventario_descarte(_id, data, "descarteLavado", lote);
+            const lote = await LotesRepository.actualizar_lote(
+                { _id: _id },
+                query,
+                { user: user._id, action: action }
+            )
+            await RedisRepository.put_inventarioDescarte(data, 'descarteLavado:', lote.tipoFruta)
             await VariablesDelSistema.ingresar_kilos_procesados(kilos, lote.tipoFruta);
             await VariablesDelSistema.ingresar_kilos_procesados2(kilos, lote.tipoFruta);
 
 
             procesoEventEmitter.emit("server_event", {
-                action: "put_descarte",
+                action: "descarte_change",
                 data: {}
             });
         } catch (err) {
-            console.log(err)
-            if (err.status === 523 ||
-                err.status === 515 ||
-                err.status === 518 ||
-                err.status === 532
-            ) {
-                throw err
+            const criticalStatus = new Set([523, 515, 518, 532]);
+            if (err && criticalStatus.has(err.status)) {
+                throw err;
+            }
+            if (err instanceof z.ZodError) {
+                const errores = err.errors.map(e => `${e.path[0]}: ${e.message}`).join(" | ")
+                throw new ProcessError(470, `Error de validación: ${errores}`)
             }
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
         }
-
     }
+    /**
+     * Actualiza el descarte por Encerado de un lote.
+     * 
+     * Este método incrementa los valores de descarteEncerado en el lote correspondiente según los datos recibidos,
+     * actualiza la versión del documento, realiza la deshidratación del lote, modifica el inventario de descarte,
+     * y registra los kilos procesados en las variables del sistema. Finalmente, emite un evento de proceso.
+     * 
+     * @async
+     * @param {Object} req - Objeto de solicitud que contiene la información del usuario y los datos a actualizar.
+     * @param {Object} req.user - Usuario que realiza la acción.
+     * @param {Object} req.data - Datos de la operación.
+     * @param {string} req.data._id - ID del lote a modificar.
+     * @param {Object} req.data.data - Objeto con los valores a incrementar en descarteEncerado.
+     * @param {string} req.data.action - Descripción de la acción para auditoría.
+     * @throws {ProcessError} Si ocurre un error durante el proceso.
+     */
     static async put_proceso_aplicaciones_descarteEncerado(req) {
         try {
             const { user } = req;
+            ProcesoValidations.put_proceso_aplicaciones_descarteEncerado().parse(req.data)
             const { _id, data, action } = req.data;
+
             const keys = Object.keys(data);
             const query = { $inc: {} };
             let kilos = 0;
@@ -173,19 +199,20 @@ class ProcesoRepository {
                     query.$inc[`descarteEncerado.${keys[i]}`] = Math.round(data[keys[i]]);
                     kilos += Math.round(data[keys[i]]);
                 }
-
             }
-            query.$inc.__v = 1;
 
-            const lote = await LotesRepository.modificar_lote_proceso(_id, query, action, user);
-            await LotesRepository.deshidratacion(lote);
+            const lote = await LotesRepository.actualizar_lote(
+                { _id: _id },
+                query,
+                { user: user._id, action: action }
+            )
 
-            await VariablesDelSistema.modificar_inventario_descarte(_id, data, "descarteEncerado", lote);
+            await RedisRepository.put_inventarioDescarte(data, 'descarteEncerado:', lote.tipoFruta)
             await VariablesDelSistema.ingresar_kilos_procesados(kilos, lote.tipoFruta);
             await VariablesDelSistema.ingresar_kilos_procesados2(kilos, lote.tipoFruta);
 
             procesoEventEmitter.emit("server_event", {
-                action: "put_descarte",
+                action: "descarte_change",
                 data: {}
             });
         } catch (err) {
@@ -757,7 +784,6 @@ class ProcesoRepository {
 
 
         } catch (err) {
-            console.log(err)
             if (
                 err.status === 610 ||
                 err.status === 523 ||

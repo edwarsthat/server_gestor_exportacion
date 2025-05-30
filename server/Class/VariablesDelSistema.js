@@ -794,9 +794,7 @@ class VariablesDelSistema {
       throw new ProcessError(418, `Error modificando las variables del sistema: ${err.name}`)
     }
   }
-  static async reprocesar_predio_celifrut(lote, kilosTotal) {
-    try {
-      /**
+  /**
      * Función que reprocesa un lote de tipo celifrutm lo envia a las aplicacion de descarte y lista de empaque.
      *
      * @param {Object} lote - El lote a reprocesar.
@@ -804,6 +802,9 @@ class VariablesDelSistema {
      * @returns {Promise<void>} - Promesa que se resuelve cuando el reprocesamiento ha terminado.
      * @throws {ProcessError} - Lanza un error si ocurre un problema durante el reprocesamiento.
      */
+  static async reprocesar_predio_celifrut(lote, kilosTotal) {
+    try {
+
       const cliente = await clientePromise;
       const kilosReprocesadorExist = await cliente.exists("kilosReprocesadorHoy");
       if (kilosReprocesadorExist !== 1) {
@@ -827,20 +828,20 @@ class VariablesDelSistema {
         nombrePredio: "Celifrut",
         tipoFruta: lote.tipoFruta,
       });
-      await cliente.hSet("predioProcesando", {
-        _id: lote._id.toString(),
-        enf: lote.enf,
-        predio: "Celifrut",
-        nombrePredio: "Celifrut",
-        tipoFruta: lote.tipoFruta,
-      });
-      await cliente.hSet("predioProcesandoListaEmpaque", {
-        _id: lote._id.toString(),
-        enf: lote.enf,
-        predio: "Celifrut",
-        nombrePredio: "Celifrut",
-        tipoFruta: lote.tipoFruta,
-      });
+      // await cliente.hSet("predioProcesando", {
+      //   _id: lote._id.toString(),
+      //   enf: lote.enf,
+      //   predio: "Celifrut",
+      //   nombrePredio: "Celifrut",
+      //   tipoFruta: lote.tipoFruta,
+      // });
+      // await cliente.hSet("predioProcesandoListaEmpaque", {
+      //   _id: lote._id.toString(),
+      //   enf: lote.enf,
+      //   predio: "Celifrut",
+      //   nombrePredio: "Celifrut",
+      //   tipoFruta: lote.tipoFruta,
+      // });
 
     } catch (err) {
       throw new ProcessError(518, `Error modificando las variables del sistema: ${err.name}`)

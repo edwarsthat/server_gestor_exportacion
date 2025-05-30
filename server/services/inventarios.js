@@ -301,6 +301,109 @@ class InventariosService {
             __v
         )
     }
+    /**
+         * Procesa los datos del formulario de inventario de descarte, separando y transformando
+         * los campos en objetos estructurados para descarte de lavado y encerado.
+         * @param {Object} data - Datos del formulario
+         * @param {string} data.tipoFruta - Tipo de fruta (ignorado en el procesamiento)
+         * @param {Object.<string, string>} data - Pares clave-valor donde las claves tienen formato 'tipo:subtipo'
+         * @returns {Object} Objeto con los descartes procesados
+         * @returns {Object.<string, number>} return.descarteLavado - Objeto con los valores de descarte de lavado
+         * @returns {Object.<string, number>} return.descarteEncerado - Objeto con los valores de descarte de encerado
+         * @returns {number} return.total - Suma total de todos los valores de descarte
+         * @example
+         * // Entrada
+         * {
+         *   tipoFruta: 'Naranja',
+         *   'descarteLavado:descarteGeneral': '10',
+         *   'descarteLavado:pareja': '5',
+         *   'descarteEncerado:descarteGeneral': '8'
+         * }
+         * // Salida
+         * {
+         *   descarteLavado: { descarteGeneral: 10, pareja: 5 },
+         *   descarteEncerado: { descarteGeneral: 8 },
+         *   total: 23
+         * }
+         */
+    static async procesar_formulario_inventario_descarte(data) {
+        const descarteLavado = {};
+        const descarteEncerado = {};
+        let totalDescarte = 0;
+
+        Object.entries(data).forEach(([key, value]) => {
+            if (key === 'tipoFruta') return;
+            const [tipo, subtipo] = key.split(':');
+            const valorNumerico = value === '' ? 0 : parseInt(value);
+
+            if (tipo === 'descarteLavado') {
+                descarteLavado[subtipo] = valorNumerico;
+                totalDescarte += valorNumerico;
+            } else if (tipo === 'descarteEncerado') {
+                descarteEncerado[subtipo] = valorNumerico;
+                totalDescarte += valorNumerico;
+            }
+        });
+
+        return {
+            descarteLavado,
+            descarteEncerado,
+            total: totalDescarte
+        };
+    }    
+    /**
+     * Crea un nuevo lote de reproceso para Celifrut con un código autogenerado.
+     * Este método se utiliza para registrar lotes de fruta que serán reprocesados,
+     * generando automáticamente un código ENF y registrando el lote como vaciado.
+     * 
+     * @param {string} tipoFruta - Tipo de fruta ('Naranja' o 'Limon')
+     * @param {number} kilos - Cantidad de kilos de fruta del lote
+     * @param {Object} user - Usuario que realiza la operación
+     * @param {string} user._id - ID del usuario
+     * @param {string} user.user - Nombre del usuario
+     * 
+     * @returns {Promise<Object>} El lote creado con todos sus datos
+     * @throws {Error} Si hay problemas al generar el código o crear el lote
+     * 
+     * @example
+     * const lote = await InventariosService.crear_lote_celifrut('Naranja', 1000, {
+     *   _id: '123',
+     *   user: 'Juan'
+     * });
+     */
+    static async crear_lote_celifrut(tipoFruta, kilos, user) {
+
+        const codigo = await VariablesDelSistema.generar_codigo_celifrut()
+
+        const lote = {
+            enf: codigo,
+            predio: '65c27f3870dd4b7f03ed9857',
+            canastillas: '0',
+            kilos: kilos,
+            placa: 'AAA000',
+            tipoFruta: tipoFruta,
+            observaciones: 'Reproceso',
+            promedio: Number(kilos) / (tipoFruta === 'Naranja' ? 19 : 20),
+            "fecha_estimada_llegada": new Date(),
+            "fecha_ingreso_patio": new Date(),
+            "fecha_salida_patio": new Date(),
+            "fecha_ingreso_inventario": new Date(),
+        }
+
+        const newLote = await LotesRepository.addLote(lote, user);
+
+        const query = {
+            $inc: {
+                kilosVaciados: newLote.kilos,
+                __v: 1,
+            },
+            fechaProceso: new Date()
+        }
+
+        await LotesRepository.modificar_lote(newLote._id.toString(), query, "vaciarLote", user, newLote.__v);
+        await VariablesDelSistema.incrementar_codigo_celifrut();
+        return newLote
+    }
 }
 
 module.exports.InventariosService = InventariosService

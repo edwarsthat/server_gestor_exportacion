@@ -10,6 +10,7 @@ class LotesRepository {
     static async addLote(data, user) {
         try {
             const lote = new db.Lotes(data);
+            lote._user = user;
             const saveLote = await lote.save();
             let record = new db.recordLotes({ operacionRealizada: 'crearLote', user: user, documento: saveLote })
             await record.save();
@@ -314,7 +315,7 @@ class LotesRepository {
 
     }
 
-    static async actualizar_lote(filter, update, options = {}, session = null) {
+    static async actualizar_lote(filter, update, options = {}, session = null, user = '', action = '') {
         /**
          * Función genérica para actualizar documentos en MongoDB usando Mongoose
          *
@@ -329,12 +330,15 @@ class LotesRepository {
         const finalOptions = session
             ? { ...defaultOptions, ...options, session }
             : { ...defaultOptions, ...options };
+        // finalOptions.user = user;
+        // finalOptions.action = action;
 
         try {
             const documentoActualizado = await db.Lotes.findOneAndUpdate(
                 filter,
                 update,
-                finalOptions
+                finalOptions,
+                { new: true, user: user, action: action }
             );
             return documentoActualizado;
         } catch (err) {

@@ -16,6 +16,7 @@ const { generarCodigoEF } = require("./helper/inventarios");
 const { filtroFechaInicioFin } = require("./utils/filtros");
 const { transformObjectInventarioDescarte } = require("./utils/objectsTransforms");
 const { InventariosService } = require("../services/inventarios");
+const { RedisRepository } = require("../Class/RedisData");
 
 class InventariosRepository {
     //#region inventarios
@@ -63,43 +64,46 @@ class InventariosRepository {
     }
     static async get_inventarios_frutaDescarte_fruta() {
         try {
-            const inventario = await VariablesDelSistema.obtener_inventario_descartes();
-            const ids = inventario.map(item => item._id);
-            // Obtener todos los lotes primero
-            const lotes = await LotesRepository.getLotes({
-                ids: ids,
-                select: { enf: 1, tipoFruta: 1 },
-                limit: ids.length
-            });
 
-            let resultado = [];
-            // Crear un mapa de lotes para una búsqueda más rápida
-            const lotesMap = lotes.reduce((map, lote) => {
-                map[lote._id.toString()] = lote;
-                return map;
-            }, {});
+            const inventario = await RedisRepository.get_inventarioDescarte();
 
-            // Luego, mapear el inventario utilizando los lotes completos
-            for (let i = 0; i < inventario.length; i++) {
-                const lote = lotesMap[inventario[i]._id];
+            // const inventario = await VariablesDelSistema.obtener_inventario_descartes();
+            // const ids = inventario.map(item => item._id);
+            // // Obtener todos los lotes primero
+            // const lotes = await LotesRepository.getLotes({
+            //     ids: ids,
+            //     select: { enf: 1, tipoFruta: 1 },
+            //     limit: ids.length
+            // });
 
-                let descarte;
-                if (inventario[i].descarteEncerado !== undefined) {
-                    descarte = { descarteGeneral: 0, pareja: 0, balin: 0, extra: 0, suelo: 0 };
-                }
+            // let resultado = [];
+            // // Crear un mapa de lotes para una búsqueda más rápida
+            // const lotesMap = lotes.reduce((map, lote) => {
+            //     map[lote._id.toString()] = lote;
+            //     return map;
+            // }, {});
 
-                if (inventario[i].descarteLavado !== undefined) {
-                    descarte = { descarteGeneral: 0, pareja: 0, balin: 0 };
-                }
-                resultado.push({
-                    ...lote?.toJSON(),
-                    fecha: inventario[i].fecha,
-                    descarteEncerado: inventario[i].descarteEncerado ? inventario[i].descarteEncerado : descarte,
-                    descarteLavado: inventario[i].descarteLavado ? inventario[i].descarteLavado : descarte,
-                })
-            }
+            // // Luego, mapear el inventario utilizando los lotes completos
+            // for (let i = 0; i < inventario.length; i++) {
+            //     const lote = lotesMap[inventario[i]._id];
 
-            return resultado;
+            //     let descarte;
+            //     if (inventario[i].descarteEncerado !== undefined) {
+            //         descarte = { descarteGeneral: 0, pareja: 0, balin: 0, extra: 0, suelo: 0 };
+            //     }
+
+            //     if (inventario[i].descarteLavado !== undefined) {
+            //         descarte = { descarteGeneral: 0, pareja: 0, balin: 0 };
+            //     }
+            //     resultado.push({
+            //         ...lote?.toJSON(),
+            //         fecha: inventario[i].fecha,
+            //         descarteEncerado: inventario[i].descarteEncerado ? inventario[i].descarteEncerado : descarte,
+            //         descarteLavado: inventario[i].descarteLavado ? inventario[i].descarteLavado : descarte,
+            //     })
+            // }
+
+            return inventario;
         } catch (err) {
             if (err.status === 518 || err.status === 413) {
                 throw err
@@ -107,34 +111,53 @@ class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
+    /**
+     * Maneja el despacho de fruta descartada del inventario.
+     * Este método realiza las siguientes operaciones:
+     * 1. Valida los datos del despacho
+     * 2. Crea un nuevo registro de despacho
+     * 3. Actualiza el inventario de descartes en Redis
+     * 
+     * @param {Object} req - Objeto de solicitud
+     * @param {Object} req.user - Información del usuario que realiza la operación
+     * @param {Object} req.user.user - Datos del usuario
+     * @param {Object} req.data - Datos del despacho
+     * @param {Object} req.data.data - Información específica del despacho
+     * @param {Object} req.data.inventario - Estado actual del inventario
+     * @param {string} req.data.inventario.tipoFruta - Tipo de fruta a despachar
+     * 
+     * @throws {InventariosLogicError} Si hay errores en la validación o el procesamiento
+     * @throws {Error} Si hay errores en la conexión con Redis o en la creación del despacho
+     * 
+     * @emits {server_event} Emite un evento "descarte_change" cuando se completa el despacho
+     */
     static async put_inventarios_frutaDescarte_despachoDescarte(req) {
         try {
+            InventariosValidations.put_inventarios_frutaDescarte_despachoDescarte().parse(req.data)
             const { user } = req.user;
-            const { data } = req.data;
+            const { data, inventario } = req.data;
 
-            const { clienteInfo, tipoFruta, kilos } = data;
+            //se crea el registro
+            const { tipoFruta } = inventario;
             const newDespacho = {
-                ...clienteInfo,
+                ...data,
                 tipoFruta: tipoFruta,
-                kilos: { ...kilos },
                 user: user
             }
-            const out = await VariablesDelSistema.restar_fruta_inventario_descarte(kilos, tipoFruta);
-            const ids = Object.keys(out);
-            const lotes = await LotesRepository.getLotes({
-                ids: ids,
-                select: { enf: 1 }
+
+            const { descarteLavado, descarteEncerado } = await InventariosService.procesar_formulario_inventario_descarte(inventario)
+            //se modifica el inventario
+            await Promise.all([
+                RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', inventario.tipoFruta),
+                RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', inventario.tipoFruta),
+                DespachoDescartesRepository.crear_nuevo_despacho(newDespacho, user._id)
+            ])
+
+            procesoEventEmitter.emit("server_event", {
+                action: "descarte_change",
+                data: {}
             });
 
-            const resultado = lotes.map(lote => {
-                return {
-                    ...lote._doc,
-                    descarteEncerado: out[lote._id].descarteEncerado,
-                    descarteLavado: out[lote._id].descarteLavado,
-                }
-            })
-            await DespachoDescartesRepository.crear_nuevo_despacho(newDespacho, resultado);
-            return resultado;
         } catch (err) {
             if (err.status === 518 || err.status === 413 || err.status === 521) {
                 throw err
@@ -143,28 +166,62 @@ class InventariosRepository {
         }
 
     }
+    /**
+     * Procesa la fruta descartada para su reproceso. Este método realiza tres operaciones principales:
+     * 1. Procesa los datos del formulario de descarte
+     * 2. Modifica el inventario de descarte en Redis
+     * 3. Crea un nuevo lote para el reproceso
+     * 
+     * @param {Object} req - Objeto de solicitud
+     * @param {Object} req.data - Datos de la solicitud
+     * @param {Object} req.data.data - Datos del formulario de descarte
+     * @param {string} req.data.data.tipoFruta - Tipo de fruta a reprocesar ('Naranja' o 'Limon')
+     * @param {Object} req.data.data - Campos de descarte con formato 'tipo:subtipo'
+     * @param {Object} req.user - Información del usuario que realiza la operación
+     * @throws {InventariosLogicError} Si hay errores en la validación o el procesamiento
+     * @throws {Error} Si hay errores en la conexión con Redis o en la creación del lote
+     * @emits {server_event} Emite un evento "descarte_change" cuando se completa el despacho
+     * 
+     * @example
+     * // Ejemplo de datos de entrada
+     * {
+     *   data: {
+     *     data: {
+     *       tipoFruta: 'Naranja',
+     *       'descarteLavado:general': '10',
+     *       'descarteEncerado:balin': '5'
+     *     },
+     *     user: {
+     *       _id: '123',
+     *       user: 'Juan'
+     *     }
+     *   }
+     * }
+     */
     static async put_inventarios_frutaDescarte_reprocesarFruta(req) {
         try {
+
+            const { data } = req.data
             const { user } = req.user
-            const { data } = req
-            const { _id, query, inventario } = data;
-            const { descarteLavado, descarteEncerado } = inventario;
-            //se validan los datos
-            InventariosValidations.put_inventarios_frutaDescarte_reprocesarFruta().parse(data);
-            //se calculan los kilos totales
-            const kilosTotal = InventariosService.calcularDescartesReprocesoPredio(descarteLavado, descarteEncerado);
 
-            await LotesRepository.modificar_lote_proceso(
-                _id,
-                { ...query, $inc: { kilosReprocesados: kilosTotal } },
-                "vaciarLote",
-                user);
+            InventariosValidations.put_inventarios_frutaDescarte_reprocesarFruta().parse(data)
+            const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(data)
 
-            const lote = await LotesRepository.getLotes({ ids: [_id] });
-            //se modifica los inventarios
-            InventariosValidations.modificarInventariosDescarteReprocesoPredio(_id, descarteLavado, descarteEncerado);
-            //se reprocesa el predio, para que salga nuevamente en la aplicacion de descarte
-            await VariablesDelSistema.reprocesar_predio(lote[0], kilosTotal);
+            //se modifica el inventario
+            const [, , loteCreado] = await Promise.all([
+                RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', data.tipoFruta),
+                RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', data.tipoFruta),
+                InventariosService.crear_lote_celifrut(data.tipoFruta, total, user)
+            ])
+
+            // Ahora loteCreado tiene el lote REAL
+            await VariablesDelSistema.reprocesar_predio_celifrut(loteCreado, total)
+
+            procesoEventEmitter.emit("server_event", {
+                action: "descarte_change",
+                data: {}
+            });
+
         } catch (err) {
             if (err.status === 518 || err.status === 413) {
                 throw err
@@ -235,38 +292,39 @@ class InventariosRepository {
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
-    }
+    }    
+    /**
+     * Procesa y registra la fruta descartada que se ha descompuesto.
+     * @param {Object} req - Objeto de solicitud con data (formulario e inventario) y user
+     * @throws {Error} Si el usuario intenta sacar más de 50 kilos sin autorización
+     * @throws {InventariosLogicError} Si hay errores en la validación o procesamiento
+     * @emits {server_event} Evento "descarte_change" al completar el proceso
+     */
     static async post_inventarios_frutaDescarte_frutaDescompuesta(req) {
-        const pilaFunciones = [];
         try {
-            const { user, data: datos } = req;
-            const { data, descarte } = datos;
-
-            const response = await FrutaDescompuestaRepository.post_fruta_descompuesta(data, user._id);
-
-            pilaFunciones.push({
-                funcion: "post_fruta_descompuesta",
-                datos: {
-                    response
-                }
-            })
-            if (!descarte) throw new Error("No hay descarte")
-
-            //eliminar kilos del descarte
-            VariablesDelSistema.restar_fruta_inventario_descarte(descarte, data.tipo_fruta)
+            const { data, inventario } = req.data
+            const { user } = req
+            InventariosValidations.post_inventarios_frutaDescarte_frutaDescompuesta().parse(req.data)
+            const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(inventario)
+            if(total > 50 && user.rol > 2) throw new Error("No se pueden sacar mas de 50 kilos de fruta descompuesta")
+            const query = {
+                ...data,
+                kilos_total: total,
+                user: user._id,
+                tipo_fruta: inventario.tipoFruta
+            }
+            await Promise.all([
+                FrutaDescompuestaRepository.post_fruta_descompuesta(query, user._id),
+                RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', inventario.tipoFruta),
+                RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', inventario.tipoFruta),
+            ])
 
             procesoEventEmitter.emit("server_event", {
-                action: "registro_fruta_descompuesta"
+                action: "descarte_change",
+                data: {}
             });
 
         } catch (err) {
-            if (pilaFunciones.length > 0) {
-                if (pilaFunciones[0].funcion === "post_fruta_descompuesta") {
-                    FrutaDescompuestaRepository.delete_fruta_descompuesta(
-                        pilaFunciones[0].datos.response._id
-                    )
-                }
-            }
             if (err.status === 521 || err.status === 518) {
                 throw err
             }

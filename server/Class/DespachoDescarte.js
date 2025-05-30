@@ -1,16 +1,28 @@
 const { db } = require("../../DB/mongoDB/config/init");
 const { PostError, ConnectionDBError } = require("../../Error/ConnectionErrors");
 
-class DespachoDescartesRepository {
-    static async crear_nuevo_despacho(data, lotes) {
+class DespachoDescartesRepository {    
+    /**
+     * Crea un nuevo registro de despacho de descarte en la base de datos.
+     * 
+     * @param {Object} data - Datos del despacho a crear
+     * @param {string} data.tipoFruta - Tipo de fruta que se está despachando
+     * @param {Object} data.descarteEncerado - Cantidades de descarte encerado por categoría
+     * @param {Object} data.descarteLavado - Cantidades de descarte lavado por categoría
+     * @param {string} user - ID del usuario que realiza el despacho
+     * 
+     * @returns {Promise<Object>} Retorna el documento del despacho guardado
+     * @throws {PostError} Si hay un error al guardar el despacho en la base de datos
+     * 
+     * @example
+     * const userId = '507f1f77bcf86cd799439011';
+     * const resultado = await DespachoDescartesRepository.crear_nuevo_despacho(despachoData, userId);
+     */
+    static async crear_nuevo_despacho(data, user) {
         try {
-
-            const despacho = new db.historialDespachoDescarte({
-                ...data,
-                lotesDespachados: lotes
-            });
+            const despacho = new db.historialDespachoDescarte(data);
+            despacho._user = user;
             const despachoSave = await despacho.save();
-
             return despachoSave
         } catch (err) {
             throw new PostError(521, `Error agregando el registro del despacho ${err.message}`);

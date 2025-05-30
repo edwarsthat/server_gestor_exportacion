@@ -1,29 +1,10 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-const defineHistorialDespachoDescarte = async (conn) => {
-
-    const descarteLavadoSchema = new Schema({
-        descarteGeneral: Number,
-        pareja: Number,
-        Balin: Number
-    }, { _id: false });
-
-    const descarteEnceradoSchema = new Schema({
-        descarteGeneral: Number,
-        pareja: Number,
-        Balin: Number,
-        extra: Number,
-        suelo: Number
-    }, { _id: false });
-
-    const tipoDescartesSchema = new Schema({
-        descarteLavado: descarteLavadoSchema,
-        descarteEncerado: descarteEnceradoSchema,
-    });
+const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
 
     const RegistroSchema = new Schema({
-        fecha: { type: Date, default: () => new Date()},
+        fecha: { type: Date, default: () => new Date() },
         cliente: String,
         placa: String,
         nombreConductor: String,
@@ -32,8 +13,52 @@ const defineHistorialDespachoDescarte = async (conn) => {
         remision: String,
         tipoFruta: String,
         user: String,
-        kilos: tipoDescartesSchema,
-        lotesDespachados: [Schema.Types.Mixed]
+        kilos: Number
+    });
+
+    RegistroSchema.post('save', async function (doc) {
+        try {
+            await AuditLog.create({
+                collection: 'historialDespachoDescarte',
+                documentId: doc._id,
+                operation: 'create',
+                user: doc._user,
+                action: "post_inventarios_frutaDescarte_frutaDescompuesta",
+                newValue: doc,
+                description: 'Creación de registro fruta descompuesta'
+            });
+        } catch (err) {
+            console.error('Error guardando auditoría:', err);
+        }
+    });
+
+    RegistroSchema.pre('findOneAndUpdate', async function (next) {
+        try {
+            // Guardamos el documento original (ANTES)
+            const docToUpdate = await this.model.findOne(this.getQuery());
+            this._oldValue = docToUpdate ? docToUpdate.toObject() : null;
+            next();
+        } catch (err) {
+            next(err);
+        }
+    });
+
+    RegistroSchema.post('findOneAndUpdate', async function (res) {
+        try {
+
+            await AuditLog.create({
+                collection: 'historialDespachoDescarte',
+                documentId: res?._id,
+                operation: 'update',
+                user: this.options?.user,        // Asegúrate de pasar estas options al llamar findOneAndUpdate
+                action: this.options?.action,
+                oldValue: this._oldValue,
+                newValue: res ? res.toObject() : null,
+                description: 'Actualización de historial despacho fruta descarte'
+            });
+        } catch (err) {
+            console.error('Error guardando auditoría:', err);
+        }
     });
 
     const historialDespachoDescarte = conn.model("historialDespachoDescarte", RegistroSchema);

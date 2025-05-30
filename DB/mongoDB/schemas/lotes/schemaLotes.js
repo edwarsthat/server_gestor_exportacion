@@ -28,7 +28,7 @@ const { Schema } = mongoose;
  *
  * @see https://mongoosejs.com/docs/models.html
  */
-const defineLotes = async (conn) => {
+const defineLotes = async (conn, AuditLog) => {
 
   const calidadInternaSchema = new Schema({
     acidez: Number,
@@ -145,7 +145,7 @@ const defineLotes = async (conn) => {
     calidad1: { type: Number, default: 0 },
     calidad15: { type: Number, default: 0 },
     calidad2: { type: Number, default: 0 },
-    canastillas: { type: Number, default:0},
+    canastillas: { type: Number, default: 0 },
     canastillas_estimadas: Number,
     clasificacionCalidad: { type: String, default: "N/A" },
     contenedores: [String],
@@ -189,6 +189,100 @@ const defineLotes = async (conn) => {
     tipoFruta: String,
 
   }, { versionKey: '__v' });
+
+  dataSchema.pre('findOneAndUpdate', async function (next) {
+    const update = this.getUpdate();
+    const docToUpdate = await this.model.findOne(this.getQuery());
+    this._oldValue = docToUpdate ? docToUpdate.toObject() : null;
+
+    let newKilos = 0
+    const actions = ["put_proceso_aplicaciones_descarteLavado","put_proceso_aplicaciones_descarteEncerado"]
+
+    if (actions.includes(this.options.action)) {
+      if (update.$inc) {
+        newKilos = Object.values(update.$inc).reduce((acu, item) => acu += item, 0)
+      }
+      const frutaNacional = docToUpdate.frutaNacional ?? 0;
+      const directoNacional = docToUpdate.directoNacional ?? 0;
+      const calidad1 = docToUpdate.calidad1 ?? 0;
+      const calidad15 = docToUpdate.calidad15 ?? 0;
+      const calidad2 = docToUpdate.calidad2 ?? 0;
+      const kilos = docToUpdate.kilos;
+
+      const totalDescarteLavado = docToUpdate.descarteLavado ?
+        Object.values(docToUpdate.descarteLavado._doc).reduce((acu, item) => acu += item, 0) : 0
+
+      const totalDescarteEncerado = docToUpdate.descarteEncerado ?
+        Object.values(docToUpdate.descarteEncerado._doc).reduce((acu, item) => acu += item, 0) : 0
+
+      let deshidratacion = 100;
+      if (kilos > 0) {
+        const total = calidad1 + calidad15 + calidad2 + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional + newKilos;
+        deshidratacion = 100 - (total * 100) / kilos;
+      }
+
+      // Si el update tiene operadores
+      update.deshidratacion = deshidratacion;
+    }
+    next();
+  });
+
+  dataSchema.post('findOneAndUpdate', async function (res) {
+    try {
+
+      await AuditLog.create({
+        collection: 'Lote',
+        documentId: res._id,
+        operation: 'update',
+        user: this.options.user, // Pasar el usuario como opción
+        action: this.options.action, // Pasar el usuario como opción
+        oldValue: this._oldValue,
+        newValue: res,
+        description: 'Actualización de lote'
+      });
+
+
+    } catch (err) {
+      console.error('Error guardando auditoría:', err);
+    }
+  });
+
+  dataSchema.post('save', async function (doc) {
+    try {
+      await AuditLog.create({
+        collection: 'Lote',
+        documentId: doc._id,
+        operation: 'create',
+        user: doc._user,
+        action: "crearLote",
+        newValue: doc,
+        description: 'Creación de lote'
+      });
+    } catch (err) {
+      console.error('Error guardando auditoría:', err);
+    }
+  });
+
+  dataSchema.pre('findOneAndDelete', async function (next) {
+    const docToDelete = await this.model.findOne(this.getQuery());
+    this._oldValue = docToDelete ? docToDelete.toObject() : null;
+    next();
+  });
+
+  dataSchema.post('findOneAndDelete', async function (res) {
+    try {
+      await AuditLog.create({
+        collection: 'Lote',
+        documentId: res._id,
+        operation: 'delete',
+        user: this.options.user,
+        oldValue: this._oldValue,
+        description: 'Eliminación de lote'
+      });
+    } catch (err) {
+      console.error('Error guardando auditoría:', err);
+    }
+  });
 
   const Lotes = conn.model("Lote", dataSchema);
   return Lotes;

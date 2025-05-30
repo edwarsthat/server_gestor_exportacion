@@ -85,6 +85,32 @@ class ProcesoValidations {
             })
         })
     }
+    static put_proceso_aplicaciones_descarteLavado() {
+        return z.object({
+            _id: z.string().regex(/^[0-9a-fA-F]{24}$/),
+            data: z.object({
+                descarteGeneral: z.number().nonnegative(),
+                pareja: z.number().nonnegative(),
+                descompuesta: z.number().nonnegative(),
+                piel: z.number().nonnegative(),
+                hojas: z.number().nonnegative(),
+            })
+        })
+    }
+    static put_proceso_aplicaciones_descarteEncerado() {
+        return z.object({
+            _id: z.string().regex(/^[0-9a-fA-F]{24}$/),
+            data: z.object({
+                descarteGeneral: z.number().nonnegative(),
+                pareja: z.number().nonnegative(),
+                balin: z.number().nonnegative(),
+                descompuesta: z.number().nonnegative(),
+                extra: z.number().nonnegative(),
+                suelo: z.number().nonnegative(),
+                frutaNacional: z.number().nonnegative()
+            })
+        })
+    }
 }
 
 module.exports = ProcesoValidations;
