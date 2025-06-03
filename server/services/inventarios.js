@@ -2,9 +2,11 @@ const { obtenerEstadoDesdeAccionCanastillasInventario } = require("../api/utils/
 const { RecordLotesRepository } = require("../archive/ArchiveLotes");
 const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
 const { ClientesRepository } = require("../Class/Clientes");
+const { DespachoDescartesRepository } = require("../Class/DespachoDescarte");
 const { LotesRepository } = require("../Class/Lotes");
 const { PreciosRepository } = require("../Class/Precios");
 const { ProveedoresRepository } = require("../Class/Proveedores");
+const { RedisRepository } = require("../Class/RedisData");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
 
 class InventariosService {
@@ -350,7 +352,7 @@ class InventariosService {
             descarteEncerado,
             total: totalDescarte
         };
-    }    
+    }
     /**
      * Crea un nuevo lote de reproceso para Celifrut con un código autogenerado.
      * Este método se utiliza para registrar lotes de fruta que serán reprocesados,
@@ -403,6 +405,142 @@ class InventariosService {
         await LotesRepository.modificar_lote(newLote._id.toString(), query, "vaciarLote", user, newLote.__v);
         await VariablesDelSistema.incrementar_codigo_celifrut();
         return newLote
+    }
+    static async revisar_cambio_registro_despachodescarte(_id, newData) {
+        let cambioFruta = false
+        let cambioIventario = false
+        const registro = await DespachoDescartesRepository.get_historial_descarte({
+            ids: [_id]
+        })
+
+        if (registro.length < 0) throw new Error("El id del registro no existe")
+
+        if (newData.tipoFruta !== registro[0].tipoFruta) cambioFruta = true
+
+        if (newData.kilos !== registro[0].kilos) cambioIventario = true
+
+        return { cambioFruta, cambioIventario, registro: registro[0] }
+
+    }
+    /**
+     * Procesa los datos del formulario de registro de descarte, calculando los totales
+     * para descartes de lavado y encerado.
+     * 
+     * @param {Object} data - Objeto con los datos del formulario a procesar
+     * @param {Object.<string, string|number>} data - Pares clave-valor donde las claves tienen formato 'tipo.subtipo'
+     * 
+     * @returns {Promise<Object>} Objeto con los descartes procesados
+     * @returns {Object.<string, number>} return.descarteLavado - Mapa de tipos de descarte de lavado y sus cantidades
+     * @returns {Object.<string, number>} return.descarteEncerado - Mapa de tipos de descarte de encerado y sus cantidades
+     * @returns {number} return.total - Suma total de todos los valores de descarte
+     * 
+     * @example
+     * // Entrada:
+     * {
+     *   'descarteLavado.descarteGeneral': '10',
+     *   'descarteLavado.pareja': '5',
+     *   'descarteEncerado.descarteGeneral': '8'
+     * }
+     * // Salida:
+     * {
+     *   descarteLavado: { descarteGeneral: 10, pareja: 5 },
+     *   descarteEncerado: { descarteGeneral: 8 },
+     *   total: 23
+     * }
+     */
+    static async procesar_formulario_inventario_registro_descarte(data) {
+        const descarteLavado = {};
+        const descarteEncerado = {};
+        let totalDescarte = 0;
+
+        // Procesar el objeto de entrada
+        Object.entries(data).forEach(([key, value]) => {
+            // Separar la clave por el punto para identificar tipo y subtipo
+            const [tipo, subtipo] = key.split('.');
+            const valorNumerico = value === '' ? 0 : parseInt(value);
+
+            if (tipo === 'descarteLavado') {
+                descarteLavado[subtipo] = valorNumerico;
+                totalDescarte += valorNumerico;
+            } else if (tipo === 'descarteEncerado') {
+                descarteEncerado[subtipo] = valorNumerico;
+                totalDescarte += valorNumerico;
+            }
+        });
+
+        return {
+            descarteLavado,
+            descarteEncerado,
+            total: totalDescarte
+        };
+    }
+    static async modificar_inventario_registro_cambioFruta(registro, newRegistro, descarteLavado, descarteEncerado) {
+
+        const startTime = Date.now();
+        console.info(`[INVENTARIO] Inicio modificación - Fruta: ${newRegistro.tipoFruta}, Lavado: ${JSON.stringify(descarteLavado)}, Encerado: ${JSON.stringify(descarteEncerado)}`);
+
+        //se modifica el inventario
+        const clientRedis = await RedisRepository.getClient()
+
+        await Promise.all([
+            RedisRepository.put_reprocesoDescarte_sumar(registro.descarteLavado._doc, 'descarteLavado:', registro.tipoFruta),
+            RedisRepository.put_reprocesoDescarte_sumar(registro.descarteEncerado._doc, 'descarteEncerado:', registro.tipoFruta),
+        ])
+
+        // 2️⃣ Claves a vigilar
+        const keyLavado = `inventarioDescarte:${newRegistro.tipoFruta}:descarteLavado:`;
+        const keyEncerado = `inventarioDescarte:${newRegistro.tipoFruta}:descarteEncerado:`;
+
+
+        try {
+            // 3️⃣ WATCH antes de leer
+            await clientRedis.watch(keyLavado, keyEncerado);
+
+            const inventario = await RedisRepository.get_inventarioDescarte_porTipoFruta(newRegistro.tipoFruta)
+            for (const tipoInv of Object.keys(inventario)) {
+                for (const itemKey of Object.keys(inventario[tipoInv])) {
+                    if (tipoInv === 'descarteLavado') {
+                        if (Number(descarteLavado[itemKey] || 0) > Number(inventario[tipoInv][itemKey] || 0)) {
+                            throw new Error(`Los kilos a modificar son mayores que el inventario ${tipoInv}: ${itemKey}`)
+                        }
+                    } else if (tipoInv === 'descarteEncerado') {
+                        if (Number(descarteLavado[itemKey] || 0) > Number(inventario[tipoInv][itemKey] || 0)) {
+                            throw new Error(`Los kilos a modificar son mayores que el inventario ${tipoInv}: ${itemKey}`)
+                        }
+                    }
+                }
+            }
+
+            const multi = clientRedis.multi();
+            await RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', newRegistro.tipoFruta, multi);
+            await RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', newRegistro.tipoFruta, multi);
+            const resultado = await multi.exec();
+            if (resultado === null) {
+                console.warn(`[INVENTARIO] Transacción fallida por concurrencia. Intentando rollback...`);
+                throw new Error('Transacción fallida: otro proceso modificó el inventario, reintente.');
+            }
+
+            console.info(`[INVENTARIO] Transacción exitosa. Resultado: ${JSON.stringify(resultado)}. Tiempo: ${Date.now() - startTime} ms`);
+
+
+        } catch (err) {
+            try {
+                const multi = clientRedis.multi();
+                await RedisRepository.put_reprocesoDescarte_sumar(descarteLavado, 'descarteLavado:', newRegistro.tipoFruta, multi);
+                await RedisRepository.put_reprocesoDescarte_sumar(descarteEncerado, 'descarteEncerado:', newRegistro.tipoFruta, multi);
+                const resultado = await multi.exec();
+                if (resultado === null) {
+                    throw new Error('Transacción fallida: otro proceso modificó el inventario, reintente.');
+                }
+            } catch (rollbackErr) {
+                console.error("Error durante el rollback del inventario:", rollbackErr);
+            }
+            throw new Error(err.message);
+        } finally {
+            await clientRedis.unwatch();
+            console.info(`[INVENTARIO] Fin de operación - Tiempo total: ${Date.now() - startTime} ms`);
+        }
+
     }
 }
 

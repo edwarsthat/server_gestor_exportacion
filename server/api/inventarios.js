@@ -139,13 +139,16 @@ class InventariosRepository {
 
             //se crea el registro
             const { tipoFruta } = inventario;
-            const newDespacho = {
-                ...data,
-                tipoFruta: tipoFruta,
-                user: user
-            }
 
             const { descarteLavado, descarteEncerado } = await InventariosService.procesar_formulario_inventario_descarte(inventario)
+
+            const newDespacho = {
+                ...data,
+                descarteLavado,
+                descarteEncerado,
+                tipoFruta: tipoFruta,
+                user: user.user
+            }
             //se modifica el inventario
             await Promise.all([
                 RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', inventario.tipoFruta),
@@ -159,6 +162,7 @@ class InventariosRepository {
             });
 
         } catch (err) {
+            console.log(err)
             if (err.status === 518 || err.status === 413 || err.status === 521) {
                 throw err
             }
@@ -292,7 +296,7 @@ class InventariosRepository {
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
-    }    
+    }
     /**
      * Procesa y registra la fruta descartada que se ha descompuesto.
      * @param {Object} req - Objeto de solicitud con data (formulario e inventario) y user
@@ -306,7 +310,7 @@ class InventariosRepository {
             const { user } = req
             InventariosValidations.post_inventarios_frutaDescarte_frutaDescompuesta().parse(req.data)
             const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(inventario)
-            if(total > 50 && user.rol > 2) throw new Error("No se pueden sacar mas de 50 kilos de fruta descompuesta")
+            if (total > 50 && user.rol > 2) throw new Error("No se pueden sacar mas de 50 kilos de fruta descompuesta")
             const query = {
                 ...data,
                 kilos_total: total,
@@ -847,6 +851,17 @@ class InventariosRepository {
         }
 
     }
+    static async get_inventarios_historiales_numero_DespachoDescarte() {
+        try {
+            const registros = await DespachoDescartesRepository.get_numero_despachoDescartes()
+            return registros
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
     static async get_inventarios_historiales_despachoDescarte(req) {
         try {
             const { data } = req
@@ -1086,6 +1101,88 @@ class InventariosRepository {
             action: "modificar_orden_vaceo",
             data: {}
         });
+    }
+    /**
+ * Actualiza un registro de despacho de descarte en el inventario.
+ * 
+ * @param {Object} req - Objeto de solicitud
+ * @param {Object} req.user - Información del usuario que realiza la acción
+ * @param {Object} req.data - Datos de la actualización
+ * @param {string} req.data.action - Acción que se está realizando
+ * @param {Object} req.data.data - Datos del formulario de descarte
+ * @param {string} req.data._id - ID del registro a actualizar
+ * 
+ * @throws {InventariosLogicError} 470 - Error general en la lógica del inventario
+ * @throws {Error} 521 - Error específico del proceso
+ * @throws {Error} 518 - Error específico del proceso
+ * 
+ * @fires procesoEventEmitter#descarte_change
+ * 
+ * @description
+ * Este método realiza las siguientes operaciones:
+ * 1. Valida los datos del formulario de descarte
+ * 2. Separa los datos entre inventario y registro nuevo
+ * 3. Procesa el formulario para calcular descartes y total
+ * 4. Revisa cambios en fruta e inventario
+ * 5. Modifica el inventario si hay cambios
+ * 6. Actualiza el registro con los nuevos datos
+ * 7. Emite un evento de cambio de descarte
+ */
+    static async put_inventarios_historiales_despachoDescarte(req) {
+        try {
+            let { user } = req
+            user = {
+                _id: "66b62fc3777ac9bdcc5050ed"
+            }
+            const { action, data, _id } = req.data
+            InventariosValidations.put_inventarios_historiales_despachoDescarte(data)
+
+            const inventario = {}
+            const newRegistro = {}
+            //se obtienen los datos de inventario
+            Object.keys(data).forEach(
+                key => {
+                    if (key.startsWith("descarteLavado") || key.startsWith("descarteEncerado")) {
+                        inventario[key] = data[key]
+                    } else {
+                        newRegistro[key] = data[key]
+                    }
+                }
+            );
+
+            const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_registro_descarte(inventario)
+
+            const { cambioFruta, cambioIventario, registro } = await InventariosService.revisar_cambio_registro_despachodescarte(_id, data)
+
+            if (cambioFruta || cambioIventario) {
+                await InventariosService.modificar_inventario_registro_cambioFruta(registro, data, descarteLavado, descarteEncerado)
+            }
+
+            const query = {
+                ...newRegistro,
+                kilos: total,
+                descarteEncerado,
+                descarteLavado
+            }
+
+            await DespachoDescartesRepository.actualizar_registro(
+                { _id: _id },
+                query,
+                { user: user._id, action: action }
+            )
+
+            procesoEventEmitter.emit("server_event", {
+                action: "descarte_change",
+                data: {}
+            });
+
+        } catch (err) {
+            console.log(err)
+            if (err.status === 521 || err.status === 518) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
     }
     //#endregion
     //#region ingresos

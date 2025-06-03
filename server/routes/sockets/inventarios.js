@@ -140,6 +140,10 @@ const apiSocketInventarios = {
         const response = await InventariosRepository.get_inventarios_historiales_despachoDescarte(data)
         return successResponseRoutes(response)
     },
+    get_inventarios_historiales_numero_DespachoDescarte: async () => {
+        const response = await InventariosRepository.get_inventarios_historiales_numero_DespachoDescarte()
+        return successResponseRoutes(response)
+    },
     get_inventarios_historiales_listasDeEmpaque: async (data) => {
         const response = await InventariosRepository.get_inventarios_historiales_listasDeEmpaque(data)
         return successResponseRoutes(response)
@@ -170,6 +174,10 @@ const apiSocketInventarios = {
     },
     get_inventarios_historiales_numeroCanastillas_registros: async (data) => {
         const response = await InventariosRepository.get_inventarios_historiales_numeroCanastillas_registros(data)
+        return successResponseRoutes(response)
+    },
+    put_inventarios_historiales_despachoDescarte: async (data) => {
+        const response = await InventariosRepository.put_inventarios_historiales_despachoDescarte(data)
         return successResponseRoutes(response)
     },
     //#endregion
