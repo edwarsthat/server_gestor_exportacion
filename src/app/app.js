@@ -21,6 +21,7 @@ const { middleWareHandleErrors } = require("../middleware/errorHandler");
 const { formsAPI } = require("../../server/routes/public/forms");
 const { routerCalidad } = require("../../server/routes/https/Calidad");
 const { routerDataSys } = require("../../server/routes/https/data");
+const { routerInventarios } = require("../../server/routes/https/inventarios");
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use(express.static(path.join(__dirname, '..', '..', 'public')));
 app.use("/data", routerPythonData)
 app.use("/dataSys", routerDataSys)
 app.use("/variablesDeProceso", routerVariablesdelSistema);
+app.use("/inventarios", routerInventarios)
 app.use("/proceso", routerProceso);
 app.use("/proceso2", routerProceso2);
 app.use("/indicadores", routerIndicadores);

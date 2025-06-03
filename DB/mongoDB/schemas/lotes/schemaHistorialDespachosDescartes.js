@@ -3,9 +3,24 @@ const { Schema } = mongoose;
 
 const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
 
+    const descarteLavadoSchema = new Schema({
+        descarteGeneral: { type: Number, default: 0 },
+        pareja: { type: Number, default: 0 },
+        balin: { type: Number, default: 0 },
+    }, { _id: false });
+
+    const descarteEnceradoSchema = new Schema({
+        descarteGeneral: { type: Number, default: 0 },
+        pareja: { type: Number, default: 0 },
+        balin: { type: Number, default: 0 },
+        extra: { type: Number, default: 0 },
+        suelo: { type: Number, default: 0 },
+        frutaNacional: { type: Number, default: 0 },
+    }, { _id: false });
+
     const RegistroSchema = new Schema({
         fecha: { type: Date, default: () => new Date() },
-        cliente: String,
+        cliente: { type: Schema.Types.ObjectId, ref: 'ClientesNacionale' },
         placa: String,
         nombreConductor: String,
         telefono: String,
@@ -13,8 +28,11 @@ const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
         remision: String,
         tipoFruta: String,
         user: String,
-        kilos: Number
+        kilos: Number,
+        descarteLavado: descarteLavadoSchema,
+        descarteEncerado: descarteEnceradoSchema
     });
+
 
     RegistroSchema.post('save', async function (doc) {
         try {

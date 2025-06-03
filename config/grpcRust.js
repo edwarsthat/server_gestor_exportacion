@@ -23,7 +23,7 @@ class RustRcp {
             });
 
             this.client.on("error", (err) => {
-                console.error("❌ Error en la conexión:", err);
+                // console.error("❌ Error en la conexión:", err);
                 this.isConnected = false;
                 this.startReconnectLoop();
                 reject(err);
@@ -41,11 +41,11 @@ class RustRcp {
     startReconnectLoop() {
         if (this.retryTimer) return; // Already trying
 
-        console.log("🔁 Iniciando intento de reconexión cada 15s...");
+        // console.log("🔁 Iniciando intento de reconexión cada 15s...");
 
         this.retryTimer = setInterval(() => {
             if (!this.isConnected) {
-                console.log("🔍 Intentando reconectar al servidor Rust...");
+                // console.log("🔍 Intentando reconectar al servidor Rust...");
                 this.connect().catch(() => { }); // Don't spam errors
             }
         }, this.reconnectInterval);

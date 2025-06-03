@@ -1,0 +1,33 @@
+PUT http://localhost:3010/inventarios/put_inventarios_historiales_despachoDescarte
+Content-Type: application/json
+
+{
+    "data":{
+        "data": {
+            "cliente": "67f92194ebb75c1a966e7a95",
+            "nombreConductor": "QWE",
+            "telefono": "77777",
+            "cedula": "888888",
+            "remision":"'9",
+            "tipoFruta": "Limon",
+            "descarteLavado.descarteGeneral": "0",
+            "descarteLavado.balin": "0",
+            "descarteLavado.pareja": "0",
+            "descarteEncerado.pareja": "500",
+            "descarteEncerado.descarteGeneral": "0",
+            "descarteEncerado.balin": "0",
+            "descarteEncerado.extra": "1",
+            "descarteEncerado.suelo": "0",
+            "descarteEncerado.frutaNacional": "0"
+        },
+        "action":"put_inventarios_historiales_despachoDescarte",
+        "_id":"683b156938cc1594a62a72ec"
+    }
+}
+
+### OBTENER REGISTROS DE EFICIENCIA DE LA FRUTA
+GET http://localhost:3010/inventarios/
+Content-Type: application/json
+{
+
+}

@@ -26,7 +26,7 @@ const defineRegistroCanastillas = async (conn) => {
         cantidad: cantidadSchema,
         observaciones: String,
         usuario: {
-            id: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
+            id: { type: String, required: true},
             user: { type: String, required: true },
         },
         referencia: String,

@@ -1,7 +1,7 @@
 const { db } = require("../../DB/mongoDB/config/init");
 const { PostError, ConnectionDBError } = require("../../Error/ConnectionErrors");
 
-class DespachoDescartesRepository {    
+class DespachoDescartesRepository {
     /**
      * Crea un nuevo registro de despacho de descarte en la base de datos.
      * 
@@ -50,6 +50,7 @@ class DespachoDescartesRepository {
             sort = { fecha: -1 },
             limit = 50,
             skip = 0,
+            populate = { path: 'cliente', select: 'cliente' }
         } = options;
         try {
             let historialQuery = { ...query };
@@ -62,12 +63,50 @@ class DespachoDescartesRepository {
                 .sort(sort)
                 .limit(limit)
                 .skip(skip)
+                .populate(populate)
                 .exec();
 
             return historial;
 
         } catch (err) {
             throw new ConnectionDBError(522, `Error despacho descarte ${err.message}`);
+        }
+    }
+    static async get_numero_despachoDescartes() {
+        try {
+            const count = await db.historialDespachoDescarte.countDocuments();
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo la cantidad de registros de despacho descartes ${err.message}`);
+        }
+    }
+    /**
+ * Función genérica para actualizar documentos en MongoDB usando Mongoose
+ *
+ * @param {Model} model - Modelo Mongoose (db.Lotes, etc.)
+ * @param {Object} filter - Objeto de filtrado para encontrar el documento
+ * @param {Object} update - Objeto con los campos a actualizar
+ * @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
+ * @param {ClientSession} session - Sesión de transacción (opcional)
+ * @returns Documento actualizado
+ */
+    static async actualizar_registro(filter, update, options = {}, session = null, user = '', action = '') {
+        const defaultOptions = { new: true }; // retorna el documento actualizado
+        const finalOptions = session
+            ? { ...defaultOptions, ...options, session }
+            : { ...defaultOptions, ...options };
+
+        try {
+            const documentoActualizado = await db.historialDespachoDescarte.findOneAndUpdate(
+                filter,
+                update,
+                finalOptions,
+                { new: true, user: user, action: action }
+            );
+            return documentoActualizado;
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
+
         }
     }
 }

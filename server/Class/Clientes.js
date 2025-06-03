@@ -122,7 +122,6 @@ class ClientesRepository {
 
                 Query._id = { $in: validIds };
             }
-
             const clientes = await db.ClientesNacionales.find(Query)
                 .select(select)
                 .exec();

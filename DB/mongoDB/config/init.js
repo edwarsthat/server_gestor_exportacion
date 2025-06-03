@@ -206,31 +206,104 @@ async function initMongoDB() {
  */
 const defineSchemasProceso = async (sysConn) => {
     try {
+        console.log("🔍 Iniciando definición de schemas proceso...");
 
+        // 1. Primero definimos el esquema de auditoría ya que otros lo necesitan
+        console.log("⚡ Definiendo AuditLog...");
         const AuditLog = await defineAuditLogs(sysConn)
+        console.log("✅ AuditLog definido");
 
-        db.Precios = await definePrecios(sysConn)
-        db.Insumos = await defineInsumos(sysConn);
-        db.RecordTipoInsumos = await defineRecordTipoInsumos(sysConn);
-        db.frutaDescompuesta = await defineFrutaDescompuesta(sysConn, AuditLog);
+        // 2. Esquemas relacionados con clientes (base para otras dependencias)
+        console.log("⚡ Definiendo Clientes...");
         db.Clientes = await defineClientes(sysConn);
-        db.recordClientes = await defineRecordClientes(sysConn);
-        db.Proveedores = await defineproveedores(sysConn);
-        db.recordProveedor = await defineRecordProveedor(sysConn);
-        db.recordContenedores = await defineRecordContenedores(sysConn);
-        db.Lotes = await defineLotes(sysConn, AuditLog);
-        db.recordLotes = await defineRecordLotes(sysConn);
-        db.Contenedores = await defineContenedores(sysConn);
-        db.historialDescarte = await defineHistorialDescarte(sysConn);
-        db.historialDespachoDescarte = await defineHistorialDespachoDescarte(sysConn, AuditLog);
-        db.TurnoData = await defineTurnoData(sysConn);
-        db.Indicadores = await defineIndicadores(sysConn);
-        db.RegistrosCanastillas = await defineRegistroCanastillas(sysConn)
-        db.ClientesNacionales = await defineClientesNacionales(sysConn);
+        console.log("✅ Clientes definido");
 
-        db.RecordModificacion = await defineModificarElemento(sysConn)
-        db.RecordCreacion = await defineCrearElemento(sysConn)
-        db.RecordDelete = await defineDeleteRecords(sysConn)
+        console.log("⚡ Definiendo ClientesNacionales...");
+        db.ClientesNacionales = await defineClientesNacionales(sysConn);
+        console.log("✅ ClientesNacionales definido");
+
+        console.log("⚡ Definiendo recordClientes...");
+        db.recordClientes = await defineRecordClientes(sysConn);
+        console.log("✅ recordClientes definido");
+
+        // 3. Esquemas relacionados con proveedores
+        console.log("⚡ Definiendo Proveedores...");
+        db.Proveedores = await defineproveedores(sysConn);
+        console.log("✅ Proveedores definido");
+
+        console.log("⚡ Definiendo recordProveedor...");
+        db.recordProveedor = await defineRecordProveedor(sysConn);
+        console.log("✅ recordProveedor definido");
+
+        // 4. Esquemas de descartes (dependen de clientes)
+        console.log("⚡ Definiendo historialDespachoDescarte...");
+        db.historialDespachoDescarte = await defineHistorialDespachoDescarte(sysConn, AuditLog);
+        console.log("✅ historialDespachoDescarte definido");
+
+        console.log("⚡ Definiendo historialDescarte...");
+        db.historialDescarte = await defineHistorialDescarte(sysConn);
+        console.log("✅ historialDescarte definido");
+
+        console.log("⚡ Definiendo frutaDescompuesta...");
+        db.frutaDescompuesta = await defineFrutaDescompuesta(sysConn, AuditLog);
+        console.log("✅ frutaDescompuesta definido");
+
+        // 5. Esquemas independientes
+        console.log("⚡ Definiendo Precios...");
+        db.Precios = await definePrecios(sysConn);
+        console.log("✅ Precios definido");
+
+        console.log("⚡ Definiendo Insumos...");
+        db.Insumos = await defineInsumos(sysConn);
+        console.log("✅ Insumos definido");
+
+        console.log("⚡ Definiendo RecordTipoInsumos...");
+        db.RecordTipoInsumos = await defineRecordTipoInsumos(sysConn);
+        console.log("✅ RecordTipoInsumos definido");
+
+        console.log("⚡ Definiendo TurnoData...");
+        db.TurnoData = await defineTurnoData(sysConn);
+        console.log("✅ TurnoData definido");
+
+        console.log("⚡ Definiendo Indicadores...");
+        db.Indicadores = await defineIndicadores(sysConn);
+        console.log("✅ Indicadores definido");
+
+        // 6. Esquemas relacionados con contenedores (dependen de lotes)
+        console.log("⚡ Definiendo Contenedores...");
+        db.Contenedores = await defineContenedores(sysConn);
+        console.log("✅ Contenedores definido");
+
+        console.log("⚡ Definiendo recordContenedores...");
+        db.recordContenedores = await defineRecordContenedores(sysConn);
+        console.log("✅ recordContenedores definido");        // 7. Esquemas de canastillas
+        console.log("⚡ Definiendo RegistrosCanastillas...");
+        db.RegistrosCanastillas = await defineRegistroCanastillas(sysConn);
+        console.log("✅ RegistrosCanastillas definido");
+
+        // 8. Esquemas relacionados con lotes (dependen de proveedores y descartes)
+        console.log("⚡ Definiendo Lotes...");
+        db.Lotes = await defineLotes(sysConn, AuditLog);
+        console.log("✅ Lotes definido");
+
+        console.log("⚡ Definiendo recordLotes...");
+        db.recordLotes = await defineRecordLotes(sysConn);
+        console.log("✅ recordLotes definido");
+
+        // 9. Esquemas de registro de transacciones
+        console.log("⚡ Definiendo RecordModificacion...");
+        db.RecordModificacion = await defineModificarElemento(sysConn);
+        console.log("✅ RecordModificacion definido");
+
+        console.log("⚡ Definiendo RecordCreacion...");
+        db.RecordCreacion = await defineCrearElemento(sysConn);
+        console.log("✅ RecordCreacion definido");
+
+        console.log("⚡ Definiendo RecordDelete...");
+        db.RecordDelete = await defineDeleteRecords(sysConn);
+        console.log("✅ RecordDelete definido");
+
+        console.log("🎉 Todos los schemas de proceso han sido definidos correctamente.")
 
     } catch (error) {
         console.error("Error durante la inicialización de MongoDB: creando los schemas", error);
@@ -250,17 +323,49 @@ const defineSchemasProceso = async (sysConn) => {
  */
 const defineSchemasSistema = async (sysConn) => {
     try {
+        console.log("🔍 Iniciando definición de schemas sistema...");
 
+        console.log("⚡ Definiendo Cargo...");
         db.Cargo = await defineCargo(sysConn);
+        console.log("✅ Cargo definido");
+
+        console.log("⚡ Definiendo recordCargo...");
         db.recordCargo = await defineRecordcargo(sysConn);
+        console.log("✅ recordCargo definido");
+
+        console.log("⚡ Definiendo Usuarios...");
         db.Usuarios = await defineUser(sysConn);
+        console.log("✅ Usuarios definido");
+
+        console.log("⚡ Definiendo recordUsuario...");
         db.recordUsuario = await defineRecordusuario(sysConn);
+        console.log("✅ recordUsuario definido");
+
+        console.log("⚡ Definiendo ControlPlagas...");
         db.ControlPlagas = await defineControlPlagas(sysConn);
+        console.log("✅ ControlPlagas definido");
+
+        console.log("⚡ Definiendo HigienePersonal...");
         db.HigienePersonal = await defineHigienePersonal(sysConn);
+        console.log("✅ HigienePersonal definido");
+
+        console.log("⚡ Definiendo LimpiezaDiaria...");
         db.LimpiezaDiaria = await defineLimpiezaDiaria(sysConn);
+        console.log("✅ LimpiezaDiaria definido");
+
+        console.log("⚡ Definiendo LimpiezaMensual...");
         db.LimpiezaMensual = await defineLimpiezaMensual(sysConn);
+        console.log("✅ LimpiezaMensual definido");
+
+        console.log("⚡ Definiendo VolanteCalidad...");
         db.VolanteCalidad = await defineVolanteCalidad(sysConn);
+        console.log("✅ VolanteCalidad definido");
+
+        console.log("⚡ Definiendo Errores...");
         db.Errores = await defineErrores(sysConn);
+        console.log("✅ Errores definido");
+
+        console.log("🎉 Todos los schemas de sistema han sido definidos correctamente.");
 
     } catch (error) {
         console.error("Error durante la inicialización de MongoDB: creando los schemas", error);

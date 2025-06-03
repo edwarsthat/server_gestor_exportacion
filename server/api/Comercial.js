@@ -323,8 +323,10 @@ class ComercialRepository {
     }
     static async get_comercial_clientesNacionales() {
         try {
-            const clientes = await ClientesRepository.get_clientesNacionales()
-            const numeroClientes = await ClientesRepository.get_numero_clientesNacionales()
+            const [clientes, numeroClientes] = await Promise.all([
+                ClientesRepository.get_clientesNacionales(),
+                ClientesRepository.get_numero_clientesNacionales()
+            ])
             return {
                 clientes,
                 cantidad: numeroClientes

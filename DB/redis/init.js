@@ -7,8 +7,6 @@ const iniciarRedisDB = async () => {
     await client.connect();
     const isReady = client.isReady;
     console.log("Redis is ready: ", isReady)
-    // console.log(isReady);
-    // console.log("Conexión a Redis exitosa!");
     return client;
   } catch(e){
     console.error("Error conectando redis", e);
