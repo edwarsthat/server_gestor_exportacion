@@ -32,7 +32,7 @@ const defineHistorialDescarte = async (conn) => {
   );
 
   const RegistroSchema = new Schema({
-    fecha: { type: Date, default: Date.now() },
+    fecha: { type: Date, default: () => Date.now() },
     accion: String,
     cliente: String,
     placa: String,
@@ -41,10 +41,6 @@ const defineHistorialDescarte = async (conn) => {
     cedula: String,
     remision: String,
     frutaSalida: PredioSchema,
-    // predios: {
-    //   type: Map,
-    //   of: PredioSchema,
-    // },
   });
 
   const historialDescarte = conn.model("historialDescarte", RegistroSchema);

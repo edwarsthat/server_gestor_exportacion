@@ -180,6 +180,10 @@ const apiSocketInventarios = {
         const response = await InventariosRepository.put_inventarios_historiales_despachoDescarte(data)
         return successResponseRoutes(response)
     },
+    put_inventarios_registros_fruta_descompuesta: async (data) => {
+        const response = await InventariosRepository.put_inventarios_registros_fruta_descompuesta(data)
+        return successResponseRoutes(response)
+    },
     //#endregion
     //#region ingresoInventario
     get_inventarios_ingresos_ef: async () => {

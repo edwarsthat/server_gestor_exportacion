@@ -5,7 +5,7 @@ const { Schema } = mongoose;
 const defineHigienePersonal = async (conn) => {
 
     const HigienePersonalSchema = new Schema({
-        fecha: { type: Date, default: Date.now() },
+        fecha: { type: Date, default: () => new Date() },
         operario: { type: Schema.Types.ObjectId, ref: "usuario" },
         responsable: { type: Schema.Types.ObjectId, ref: "usuario" },
         botas: Boolean,

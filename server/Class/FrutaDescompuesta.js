@@ -1,7 +1,7 @@
 const { db } = require("../../DB/mongoDB/config/init");
 const { ConnectionDBError } = require("../../Error/ConnectionErrors");
 
-class FrutaDescompuestaRepository {   
+class FrutaDescompuestaRepository {
     /**
      * Crea un nuevo registro de fruta descompuesta en la base de datos.
      * 
@@ -85,6 +85,36 @@ class FrutaDescompuestaRepository {
 
         } catch (err) {
             throw new ConnectionDBError(523, `Error al modificar el dato  ${err.message}`);
+        }
+    }
+
+/**
+* Función genérica para actualizar documentos en MongoDB usando Mongoose
+*
+* @param {Model} model - Modelo Mongoose (db.Lotes, etc.)
+* @param {Object} filter - Objeto de filtrado para encontrar el documento
+* @param {Object} update - Objeto con los campos a actualizar
+* @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
+* @param {ClientSession} session - Sesión de transacción (opcional)
+* @returns Documento actualizado
+*/
+    static async actualizar_registro(filter, update, options = {}, session = null, user = '', action = '') {
+        const defaultOptions = { new: true }; // retorna el documento actualizado
+        const finalOptions = session
+            ? { ...defaultOptions, ...options, session }
+            : { ...defaultOptions, ...options };
+
+        try {
+            const documentoActualizado = await db.frutaDescompuesta.findOneAndUpdate(
+                filter,
+                update,
+                finalOptions,
+                { new: true, user: user, action: action }
+            );
+            return documentoActualizado;
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
+
         }
     }
 }

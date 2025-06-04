@@ -8,10 +8,9 @@ describe("Prueba integración /login2", () => {
         const response = await request(`http://${HOST}:${PORT}`)
             .post('/login2')
             .send({
-                username: USUARIO_PRUEBA,
+                user: USUARIO_PRUEBA,
                 password: PASSWORD_PRUEBA
             });
-        console.log("Response:", response.body);
         expect(response.status).toBe(200);
     });
 

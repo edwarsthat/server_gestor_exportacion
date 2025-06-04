@@ -12,7 +12,6 @@ const path = require('path');
 const fs = require("fs");
 
 const { have_lote_GGN_export } = require("../controllers/validations");
-const { FrutaDescompuestaRepository } = require("../Class/FrutaDescompuesta");
 const { filtroFechaInicioFin } = require("./utils/filtros");
 const { InventariosLogicError } = require("../../Error/logicLayerError");
 const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
@@ -186,6 +185,7 @@ class ProcesoRepository {
             const { user } = req;
             ProcesoValidations.put_proceso_aplicaciones_descarteEncerado().parse(req.data)
             const { _id, data, action } = req.data;
+            console.log(data)
 
             const keys = Object.keys(data);
             const query = { $inc: {} };
@@ -2038,17 +2038,7 @@ class ProcesoRepository {
         });
     }
 
-    static async put_inventarios_registros_fruta_descompuesta(req) {
-        try {
-            const { _id, data } = req;
-            await FrutaDescompuestaRepository.put_fruta_descompuesta(_id, data);
-        } catch (err) {
-            if (err.status === 523) {
-                throw err
-            }
-            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
+
 
     //? lista de empaque
 

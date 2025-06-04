@@ -3,6 +3,7 @@ const { RecordLotesRepository } = require("../archive/ArchiveLotes");
 const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
 const { ClientesRepository } = require("../Class/Clientes");
 const { DespachoDescartesRepository } = require("../Class/DespachoDescarte");
+const { FrutaDescompuestaRepository } = require("../Class/FrutaDescompuesta");
 const { LotesRepository } = require("../Class/Lotes");
 const { PreciosRepository } = require("../Class/Precios");
 const { ProveedoresRepository } = require("../Class/Proveedores");
@@ -406,10 +407,72 @@ class InventariosService {
         await VariablesDelSistema.incrementar_codigo_celifrut();
         return newLote
     }
+    /**
+     * Revisa y compara los cambios entre un registro existente de despacho de descarte y los nuevos datos.
+     * Esta función determina si hay cambios en el tipo de fruta o en los kilos del registro.
+     * 
+     * @param {string} _id - ID del registro de despacho de descarte a revisar
+     * @param {Object} newData - Nuevos datos para comparar con el registro existente
+     * @param {string} newData.tipoFruta - Tipo de fruta del nuevo registro
+     * @param {number} newData.kilos - Cantidad de kilos del nuevo registro
+     * 
+     * @returns {Promise<Object>} Objeto con los resultados de la comparación
+     * @returns {boolean} return.cambioFruta - Indica si hubo cambio en el tipo de fruta
+     * @returns {boolean} return.cambioIventario - Indica si hubo cambio en la cantidad de kilos
+     * @returns {Object} return.registro - El registro original encontrado en la base de datos
+     * 
+     * @throws {Error} Si el ID del registro no existe en la base de datos
+     * 
+     * @example
+     * // Revisar cambios en un registro
+     * const cambios = await InventariosService.revisar_cambio_registro_despachodescarte(
+     *   '507f1f77bcf86cd799439011',
+     *   { tipoFruta: 'Naranja', kilos: 1000 }
+     * );
+     */
     static async revisar_cambio_registro_despachodescarte(_id, newData) {
         let cambioFruta = false
         let cambioIventario = false
         const registro = await DespachoDescartesRepository.get_historial_descarte({
+            ids: [_id]
+        })
+
+        if (registro.length < 0) throw new Error("El id del registro no existe")
+
+        if (newData.tipoFruta !== registro[0].tipoFruta) cambioFruta = true
+
+        if (newData.kilos !== registro[0].kilos) cambioIventario = true
+
+        return { cambioFruta, cambioIventario, registro: registro[0] }
+
+    }
+    /**
+ * Revisa y compara los cambios entre un registro existente de fruta descompuesta y los nuevos datos.
+ * Esta función determina si hay cambios en el tipo de fruta o en los kilos del registro.
+ * 
+ * @param {string} _id - ID del registro de fruta descompuesta a revisar
+ * @param {Object} newData - Nuevos datos para comparar con el registro existente
+ * @param {string} newData.tipoFruta - Tipo de fruta del nuevo registro
+ * @param {number} newData.kilos - Cantidad de kilos del nuevo registro
+ * 
+ * @returns {Promise<Object>} Objeto con los resultados de la comparación
+ * @returns {boolean} return.cambioFruta - Indica si hubo cambio en el tipo de fruta
+ * @returns {boolean} return.cambioIventario - Indica si hubo cambio en la cantidad de kilos
+ * @returns {Object} return.registro - El registro original encontrado en la base de datos
+ * 
+ * @throws {Error} Si el ID del registro no existe en la base de datos
+ * 
+ * @example
+ * // Revisar cambios en un registro
+ * const cambios = await InventariosService.revisar_cambio_registro_frutaDescompuestae(
+ *   '507f1f77bcf86cd799439011',
+ *   { tipoFruta: 'Naranja', kilos: 1000 }
+ * );
+ */
+    static async revisar_cambio_registro_frutaDescompuestae(_id, newData) {
+        let cambioFruta = false
+        let cambioIventario = false
+        const registro = await FrutaDescompuestaRepository.get_fruta_descompuesta({
             ids: [_id]
         })
 
@@ -474,6 +537,35 @@ class InventariosService {
             total: totalDescarte
         };
     }
+    /**
+     * Modifica el inventario en Redis cuando hay un cambio en el tipo de fruta de un registro de descarte.
+     * Esta función maneja una transacción atómica en Redis para asegurar la consistencia del inventario,
+     * incluyendo un mecanismo de rollback en caso de fallo.
+     * 
+     * @param {Object} registro - El registro original de descarte
+     * @param {Object} registro.descarteLavado - Objeto con los valores de descarte de lavado originales
+     * @param {Object} registro.descarteEncerado - Objeto con los valores de descarte de encerado originales
+     * @param {string} registro.tipoFruta - Tipo de fruta original
+     * @param {Object} newRegistro - El nuevo registro con los cambios
+     * @param {string} newRegistro.tipoFruta - Nuevo tipo de fruta
+     * @param {Object} descarteLavado - Objeto con los nuevos valores de descarte de lavado
+     * @param {Object} descarteEncerado - Objeto con los nuevos valores de descarte de encerado
+     * 
+     * @throws {Error} Si los kilos a modificar son mayores que el inventario disponible
+     * @throws {Error} Si la transacción falla por concurrencia
+     * 
+     * @example
+     * await InventariosService.modificar_inventario_registro_cambioFruta(
+     *   {
+     *     descarteLavado: { descarteGeneral: 10 },
+     *     descarteEncerado: { descarteGeneral: 5 },
+     *     tipoFruta: 'Naranja'
+     *   },
+     *   { tipoFruta: 'Limon' },
+     *   { descarteGeneral: 8 },
+     *   { descarteGeneral: 4 }
+     * );
+     */
     static async modificar_inventario_registro_cambioFruta(registro, newRegistro, descarteLavado, descarteEncerado) {
 
         const startTime = Date.now();
@@ -501,10 +593,13 @@ class InventariosService {
                 for (const itemKey of Object.keys(inventario[tipoInv])) {
                     if (tipoInv === 'descarteLavado') {
                         if (Number(descarteLavado[itemKey] || 0) > Number(inventario[tipoInv][itemKey] || 0)) {
+                            console.warn(`Modificacion mayor al inventario descarteLavado ${descarteLavado[itemKey]} > ${inventario[tipoInv][itemKey]}`);
                             throw new Error(`Los kilos a modificar son mayores que el inventario ${tipoInv}: ${itemKey}`)
                         }
                     } else if (tipoInv === 'descarteEncerado') {
-                        if (Number(descarteLavado[itemKey] || 0) > Number(inventario[tipoInv][itemKey] || 0)) {
+                        if (Number(descarteEncerado[itemKey] || 0) > Number(inventario[tipoInv][itemKey] || 0)) {
+                            console.warn(`Modificacion mayor al inventario descarteEncerado ${descarteEncerado[itemKey]} > ${inventario[tipoInv][itemKey]}`);
+
                             throw new Error(`Los kilos a modificar son mayores que el inventario ${tipoInv}: ${itemKey}`)
                         }
                     }
@@ -526,8 +621,8 @@ class InventariosService {
         } catch (err) {
             try {
                 const multi = clientRedis.multi();
-                await RedisRepository.put_reprocesoDescarte_sumar(descarteLavado, 'descarteLavado:', newRegistro.tipoFruta, multi);
-                await RedisRepository.put_reprocesoDescarte_sumar(descarteEncerado, 'descarteEncerado:', newRegistro.tipoFruta, multi);
+                await RedisRepository.put_reprocesoDescarte(registro.descarteLavado._doc, 'descarteLavado:', registro.tipoFruta, multi);
+                await RedisRepository.put_reprocesoDescarte(registro.descarteEncerado._doc, 'descarteEncerado:', registro.tipoFruta, multi);
                 const resultado = await multi.exec();
                 if (resultado === null) {
                     throw new Error('Transacción fallida: otro proceso modificó el inventario, reintente.');
@@ -541,6 +636,156 @@ class InventariosService {
             console.info(`[INVENTARIO] Fin de operación - Tiempo total: ${Date.now() - startTime} ms`);
         }
 
+    }
+    /**
+     * Almacena en Redis las modificaciones de inventario de descartes de fruta mediante una transacción atómica.
+     * Verifica que haya suficiente inventario disponible antes de realizar las modificaciones y
+     * maneja la concurrencia mediante el sistema de vigilancia (WATCH) de Redis.
+     * 
+     * @param {Object.<string, number>} descarteLavado - Mapa de tipos de descarte de lavado y sus cantidades
+     * @param {Object.<string, number>} descarteEncerado - Mapa de tipos de descarte de encerado y sus cantidades
+     * @param {string} tipoFruta - Tipo de fruta ('Naranja' o 'Limon')
+     * 
+     * @throws {Error} Si los kilos a modificar son mayores que el inventario disponible
+     * @throws {Error} Si la transacción falla por concurrencia con otros procesos
+     * 
+     * @example
+     * await InventariosService.frutaDescarte_despachoDescarte_redis_store(
+     *   { descarteGeneral: 10, pareja: 5 },
+     *   { descarteGeneral: 8 },
+     *   'Naranja'
+     * );
+     */
+    static async frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, tipoFruta) {
+        const startTime = Date.now();
+        console.info(`[INVENTARIO DESCARTES] Inicio modificación - Fruta: ${tipoFruta}, Lavado: ${JSON.stringify(descarteLavado)}, Encerado ${JSON.stringify(descarteEncerado)}`);
+
+        const keyLavado = `inventarioDescarte:${tipoFruta}:descarteLavado:`;
+        const keyEncerado = `inventarioDescarte:${tipoFruta}:descarteEncerado:`;
+
+        const clientRedis = await RedisRepository.getClient()
+
+        try {
+            await clientRedis.watch(keyLavado, keyEncerado);
+
+            const inventario = await RedisRepository.get_inventarioDescarte_porTipoFruta(tipoFruta)
+            for (const tipoInv of Object.keys(inventario)) {
+                for (const itemKey of Object.keys(inventario[tipoInv])) {
+                    if (tipoInv === 'descarteLavado') {
+                        if (Number(descarteLavado[itemKey] || 0) > Number(inventario[tipoInv][itemKey] || 0)) {
+                            throw new Error(`Los kilos a modificar son mayores que el inventario ${tipoInv}: ${itemKey}`)
+                        }
+                    } else if (tipoInv === 'descarteEncerado') {
+                        if (Number(descarteEncerado[itemKey] || 0) > Number(inventario[tipoInv][itemKey] || 0)) {
+                            throw new Error(`Los kilos a modificar son mayores que el inventario ${tipoInv}: ${itemKey}`)
+                        }
+                    }
+                }
+            }
+
+            const multi = clientRedis.multi();
+            await RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', tipoFruta, multi);
+            await RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', tipoFruta, multi);
+            const resultado = await multi.exec();
+
+            if (resultado === null) {
+                console.warn(`[INVENTARIO DESCARTES] Transacción fallida por concurrencia. Intentando rollback...`);
+                throw new Error('Transacción fallida: otro proceso modificó el inventario, reintente.');
+            }
+
+            console.info(`[INVENTARIO DESCARTES] Transacción exitosa. Resultado: ${JSON.stringify(resultado)}. Tiempo: ${Date.now() - startTime} ms`);
+        } catch (err) {
+            console.error(`[INVENTARIO] Error en redis_store: ${err.message}`);
+            throw err;
+
+        } finally {
+            await clientRedis.unwatch();
+            console.info(`[INVENTARIO DESCARTES] Fin de operación - Tiempo total: ${Date.now() - startTime} ms`);
+        }
+    }
+    /**
+     * Restaura el inventario en Redis después de un error o cuando se necesita revertir cambios.
+     * A diferencia de la función store, esta función suma las cantidades al inventario existente
+     * usando una transacción atómica para mantener la consistencia de los datos.
+     * 
+     * @param {Object.<string, number>} descarteLavado - Mapa de tipos de descarte de lavado y sus cantidades a restaurar
+     * @param {Object.<string, number>} descarteEncerado - Mapa de tipos de descarte de encerado y sus cantidades a restaurar
+     * @param {string} tipoFruta - Tipo de fruta ('Naranja' o 'Limon')
+     * 
+     * @throws {Error} Si la transacción falla por concurrencia con otros procesos
+     * 
+     * @example
+     * // Restaurar cantidades al inventario
+     * await InventariosService.frutaDescarte_despachoDescarte_redis_restore(
+     *   { descarteGeneral: 10, pareja: 5 },
+     *   { descarteGeneral: 8 },
+     *   'Naranja'
+     * );
+     */
+    static async frutaDescarte_despachoDescarte_redis_restore(descarteLavado, descarteEncerado, tipoFruta) {
+        const startTime = Date.now();
+        console.info(`[INVENTARIO DESCARTES][RESTORE] Inicio restauración - Fruta: ${tipoFruta}, Lavado: ${JSON.stringify(descarteLavado)}, Encerado: ${JSON.stringify(descarteEncerado)}`);
+
+        const keyLavado = `inventarioDescarte:${tipoFruta}:descarteLavado:`;
+        const keyEncerado = `inventarioDescarte:${tipoFruta}:descarteEncerado:`;
+
+        const clientRedis = await RedisRepository.getClient();
+
+        try {
+            await clientRedis.watch(keyLavado, keyEncerado);
+
+            const multi = clientRedis.multi();
+            // Aquí sumas, no restas:
+            await RedisRepository.put_reprocesoDescarte_sumar(descarteLavado, 'descarteLavado:', tipoFruta, multi);
+            await RedisRepository.put_reprocesoDescarte_sumar(descarteEncerado, 'descarteEncerado:', tipoFruta, multi);
+
+            const resultado = await multi.exec();
+
+            if (resultado === null) {
+                console.warn(`[INVENTARIO DESCARTES][RESTORE] Transacción fallida por concurrencia. Reintente si es necesario.`);
+                throw new Error('Transacción fallida: otro proceso modificó el inventario, reintente.');
+            }
+
+            console.info(`[INVENTARIO DESCARTES][RESTORE] Restauración exitosa. Resultado: ${JSON.stringify(resultado)}. Tiempo: ${Date.now() - startTime} ms`);
+        } catch (err) {
+            console.error(`[INVENTARIO DESCARTES][RESTORE] Error en redis_restore: ${err.message}`);
+            throw err;
+        } finally {
+            await clientRedis.unwatch();
+            console.info(`[INVENTARIO DESCARTES][RESTORE] Fin de restauración - Tiempo total: ${Date.now() - startTime} ms`);
+        }
+    }
+    static async set_inventario_descarte(inventario, tipoFruta) {
+        const startTime = Date.now();
+        console.info(`[INVENTARIO DESCARTES][SET] Inicio restauración - Fruta: ${tipoFruta}, Inventario: ${JSON.stringify(inventario)}`);
+
+        const keyLavado = `inventarioDescarte:${tipoFruta}:descarteLavado:`;
+        const keyEncerado = `inventarioDescarte:${tipoFruta}:descarteEncerado:`;
+
+        const clientRedis = await RedisRepository.getClient();
+
+        const { descarteLavado, descarteEncerado } = await InventariosService.procesar_formulario_inventario_descarte(inventario)
+
+        try {
+            await clientRedis.watch(keyLavado, keyEncerado);
+
+            const multi = clientRedis.multi();
+            // Aquí sumas, no restas:
+            await RedisRepository.put_reprocesoDescarte_set(descarteLavado, 'descarteLavado:', tipoFruta, multi);
+            await RedisRepository.put_reprocesoDescarte_set(descarteEncerado, 'descarteEncerado:', tipoFruta, multi);
+
+            const resultado = await multi.exec();
+
+            if (resultado === null) {
+                console.warn(`[INVENTARIO DESCARTES][RESTORE] Transacción fallida por concurrencia. Reintente si es necesario.`);
+                throw new Error('Transacción fallida: otro proceso modificó el inventario, reintente.');
+            }
+        } catch (err) {
+            console.error(err.message)
+        } finally {
+            await clientRedis.unwatch();
+            console.info(`[INVENTARIO DESCARTES][RESTORE] Fin de restauración - Tiempo total: ${Date.now() - startTime} ms`);
+        }
     }
 }
 

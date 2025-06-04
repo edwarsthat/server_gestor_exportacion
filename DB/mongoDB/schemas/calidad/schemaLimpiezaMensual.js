@@ -89,7 +89,7 @@ const defineLimpiezaMensual = async (conn) => {
     }, { _id: false })
 
     const LimpiezaMensualSchema = new Schema({
-        createdAt: { type: Date, default: Date.now() },
+        createdAt: { type: Date, default: () => new Date() },
         responsable: { type: Schema.Types.ObjectId, ref: "Usuarios" },
         fechaFin: Date,
         fechaInicio: Date,

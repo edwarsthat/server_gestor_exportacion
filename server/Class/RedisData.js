@@ -1,6 +1,7 @@
 const { iniciarRedisDB } = require("../../DB/redis/init");
 const { ConnectRedisError } = require("../../Error/ConnectionErrors");
 const tipoFrutas = require("../../constants/tipo_fruta.json")
+const tipoDescartes = require("../../constants/tipoDescartes.json")
 const clientePromise = iniciarRedisDB();
 
 
@@ -130,6 +131,48 @@ class RedisRepository {
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
     }
+        /**
+     * Ingresa los valores de descarte del inventario general cuando se realiza un reproceso.
+     * A diferencia de put_reprocesoDescarte_set, este método solo afecta al inventario acumulado
+     * 
+     * 
+     * @static
+     * @async
+     * @param {Object} data - Objeto donde cada clave es el nombre del campo de descarte y el valor es la cantidad a restar
+     * @param {string} tipoDescarte - Tipo de descarte ('descarteLavado' o 'descarteEncerado')
+     * @param {string} tipoFruta - Tipo de fruta asociada al descarte ('Naranja' o 'Limon')
+     * @throws {ConnectRedisError} Si hay un error en la comunicación con Redis
+     * 
+     * @example
+     * // Resta cantidades del inventario de descarteLavado para Naranja
+     * await put_reprocesoDescarte(
+     *   { balin: 5, descarteGeneral: 10 },
+     *   'descarteLavado',
+     *   'Naranja'
+     * );
+     */
+    static async put_reprocesoDescarte_set(data, tipoDescarte, tipoFruta, multi = null) {
+
+        const key = `inventarioDescarte:${tipoFruta}:${tipoDescarte}`;
+        let cliente;
+        try {
+            cliente = await clientePromise;
+            if (multi) {
+                // Solo agregas los comandos a la transacción, NO ejecutas nada aquí
+                for (const [campo, valor] of Object.entries(data)) {
+                    multi.hIncrBy(key, campo, valor);
+                }
+            } else {
+                const tareas = Object.entries(data)
+                    .map(([campo, valor]) => {
+                        cliente.hSetBy(`inventarioDescarte:${tipoFruta}:${tipoDescarte}`, campo, valor)
+                    });
+                await Promise.all(tareas);
+            }
+        } catch (err) {
+            throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
+        }
+    }
     /**
      * Obtiene el inventario completo de descartes para todos los tipos de fruta.
      * Recupera tanto los descartes de lavado como los de encerado para cada tipo de fruta
@@ -215,6 +258,33 @@ class RedisRepository {
             throw new ConnectRedisError(502, `Error obteniendo descarte para ${tipoFruta}: ${err}`);
         }
     }
+
+    static async sys_reiniciar_inventario_descarte() {
+        let cliente;
+        try {
+            cliente = await clientePromise;
+            const tareas = [];
+            console.log("sdasdasds")
+            tipoFrutas.forEach(fruta => {
+                Object.keys(tipoDescartes).forEach(descarte => {
+                    tipoDescartes[descarte].forEach(item => {
+                        // Empuja la promesa a tareas
+                        tareas.push(
+                            cliente.hSet(`inventarioDescarte:${fruta}:${descarte}:`, item, 0)
+                        );
+                    });
+                });
+            });
+
+            await Promise.all(tareas);
+
+            console.info('[INVENTARIO DESCARTES] Inventario de descartes reiniciado a cero.');
+
+        } catch (err) {
+            throw new ConnectRedisError(502, `Error reiniciando el inventario descartes: ${err}`);
+        }
+    }
+
 
     static async getClient() {
         return await clientePromise;

@@ -114,7 +114,7 @@ const defineLotes = async (conn, AuditLog) => {
     canastillasIngreso: { type: Number, default: 0 },
     kilosIngreso: { type: Number, default: 0 },
     cuartoDesverdizado: { type: String, default: "" },
-    fechaIngreso: { type: Date, default: new Date() },
+    fechaIngreso: { type: Date, default: () => new Date() },
     fechaFinalizar: Date,
     desverdizando: Boolean,
     canastillasSalida: { type: Number, default: 0 },

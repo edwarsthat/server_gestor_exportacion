@@ -21,13 +21,13 @@ const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
     const RegistroSchema = new Schema({
         fecha: { type: Date, default: () => new Date() },
         cliente: { type: Schema.Types.ObjectId, ref: 'ClientesNacionale' },
+        user: String,
         placa: String,
         nombreConductor: String,
         telefono: String,
         cedula: String,
         remision: String,
         tipoFruta: String,
-        user: String,
         kilos: Number,
         descarteLavado: descarteLavadoSchema,
         descarteEncerado: descarteEnceradoSchema

@@ -3,13 +3,31 @@ const { Schema } = mongoose;
 
 const defineFrutaDescompuesta = async (conn, AuditLog) => {
 
+    const descarteLavadoSchema = new Schema({
+        descarteGeneral: { type: Number, default: 0 },
+        pareja: { type: Number, default: 0 },
+        balin: { type: Number, default: 0 },
+    }, { _id: false });
+
+    const descarteEnceradoSchema = new Schema({
+        descarteGeneral: { type: Number, default: 0 },
+        pareja: { type: Number, default: 0 },
+        balin: { type: Number, default: 0 },
+        extra: { type: Number, default: 0 },
+        suelo: { type: Number, default: 0 },
+        frutaNacional: { type: Number, default: 0 },
+    }, { _id: false });
+
     const frutaDescompuestaSchema = new Schema({
-        kilos_total: Number,
+        kilos: Number,
         createdAt: { type: Date, default: () => new Date() },
         user: String,
         razon: String,
         comentario_adicional: String,
-        tipo_fruta: { type: String, required: true }
+        tipoFruta: { type: String, required: true },
+        descarteLavado: descarteLavadoSchema,
+        descarteEncerado: descarteEnceradoSchema
+
     });
 
     frutaDescompuestaSchema.post('save', async function (doc) {
@@ -19,9 +37,9 @@ const defineFrutaDescompuesta = async (conn, AuditLog) => {
                 documentId: doc._id,
                 operation: 'create',
                 user: doc._user,
-                action: "put_inventarios_frutaDescarte_despachoDescarte",
+                action: "put_inventarios_registros_fruta_descompuesta",
                 newValue: doc,
-                description: 'Creación de despacho descarte'
+                description: 'Creación de registro fruta descompuesta'
             });
         } catch (err) {
             console.error('Error guardando auditoría:', err);

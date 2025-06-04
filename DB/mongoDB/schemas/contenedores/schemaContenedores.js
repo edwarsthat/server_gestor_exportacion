@@ -170,17 +170,17 @@ const defineContenedores = async (conn) => {
   });
 
   listaEmpaqueSchema.pre("updateOne", function (next) {
-    this.set({ "infoContenedor.ultimaModificacion": new Date() });
+    this.set({ "infoContenedor.ultimaModificacion": () => new Date() });
     next();
   });
 
   listaEmpaqueSchema.pre("findOneAndUpdate", function (next) {
-    this.set({ "infoContenedor.ultimaModificacion": new Date() });
+    this.set({ "infoContenedor.ultimaModificacion": () => new Date() });
     next();
   });
 
   listaEmpaqueSchema.pre("findByIdAndUpdate", function (next) {
-    this.set({ "infoContenedor.ultimaModificacion": new Date() });
+    this.set({ "infoContenedor.ultimaModificacion": () => new Date() });
     next();
   });
 

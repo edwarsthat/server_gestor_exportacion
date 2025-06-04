@@ -106,7 +106,9 @@ app.post("/password", loginLimiter, async (req, res, next) => {
 
 app.post('/login2', loginLimiter, async (req, res, next) => {
     try {
+
         const user = { user: req.body.user, password: req.body.password }
+        console.log(user)
 
         const dataUser = await SistemaRepository.login2(user)
         const accesToken = UserRepository.generateAccessToken({

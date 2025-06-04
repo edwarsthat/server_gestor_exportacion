@@ -66,43 +66,6 @@ class InventariosRepository {
         try {
 
             const inventario = await RedisRepository.get_inventarioDescarte();
-
-            // const inventario = await VariablesDelSistema.obtener_inventario_descartes();
-            // const ids = inventario.map(item => item._id);
-            // // Obtener todos los lotes primero
-            // const lotes = await LotesRepository.getLotes({
-            //     ids: ids,
-            //     select: { enf: 1, tipoFruta: 1 },
-            //     limit: ids.length
-            // });
-
-            // let resultado = [];
-            // // Crear un mapa de lotes para una búsqueda más rápida
-            // const lotesMap = lotes.reduce((map, lote) => {
-            //     map[lote._id.toString()] = lote;
-            //     return map;
-            // }, {});
-
-            // // Luego, mapear el inventario utilizando los lotes completos
-            // for (let i = 0; i < inventario.length; i++) {
-            //     const lote = lotesMap[inventario[i]._id];
-
-            //     let descarte;
-            //     if (inventario[i].descarteEncerado !== undefined) {
-            //         descarte = { descarteGeneral: 0, pareja: 0, balin: 0, extra: 0, suelo: 0 };
-            //     }
-
-            //     if (inventario[i].descarteLavado !== undefined) {
-            //         descarte = { descarteGeneral: 0, pareja: 0, balin: 0 };
-            //     }
-            //     resultado.push({
-            //         ...lote?.toJSON(),
-            //         fecha: inventario[i].fecha,
-            //         descarteEncerado: inventario[i].descarteEncerado ? inventario[i].descarteEncerado : descarte,
-            //         descarteLavado: inventario[i].descarteLavado ? inventario[i].descarteLavado : descarte,
-            //     })
-            // }
-
             return inventario;
         } catch (err) {
             if (err.status === 518 || err.status === 413) {
@@ -132,27 +95,28 @@ class InventariosRepository {
      * @emits {server_event} Emite un evento "descarte_change" cuando se completa el despacho
      */
     static async put_inventarios_frutaDescarte_despachoDescarte(req) {
+        let descarteLavado, descarteEncerado, tipoFruta
         try {
+
             InventariosValidations.put_inventarios_frutaDescarte_despachoDescarte().parse(req.data)
-            const { user } = req.user;
+            const { user } = req;
             const { data, inventario } = req.data;
 
             //se crea el registro
-            const { tipoFruta } = inventario;
+            tipoFruta = inventario.tipoFruta;
 
-            const { descarteLavado, descarteEncerado } = await InventariosService.procesar_formulario_inventario_descarte(inventario)
+            ({ descarteLavado, descarteEncerado } = await InventariosService.procesar_formulario_inventario_descarte(inventario));
 
             const newDespacho = {
                 ...data,
                 descarteLavado,
                 descarteEncerado,
                 tipoFruta: tipoFruta,
-                user: user.user
+                user: user._id
             }
             //se modifica el inventario
-            await Promise.all([
-                RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', inventario.tipoFruta),
-                RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', inventario.tipoFruta),
+            const [, registro] = await Promise.all([
+                InventariosService.frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, inventario.tipoFruta),
                 DespachoDescartesRepository.crear_nuevo_despacho(newDespacho, user._id)
             ])
 
@@ -160,11 +124,16 @@ class InventariosRepository {
                 action: "descarte_change",
                 data: {}
             });
+            return registro
 
         } catch (err) {
-            console.log(err)
-            if (err.status === 518 || err.status === 413 || err.status === 521) {
+            console.error(`[ERROR][${new Date().toISOString()}][${tipoFruta}]`, err);
+            if (err.status === 518 || err.status === 413) {
                 throw err
+            } else if (err.status === 521) {
+                if (descarteLavado && descarteEncerado && tipoFruta) {
+                    await InventariosService.frutaDescarte_despachoDescarte_redis_restore(descarteLavado, descarteEncerado, tipoFruta);
+                }
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
@@ -204,11 +173,11 @@ class InventariosRepository {
      */
     static async put_inventarios_frutaDescarte_reprocesarFruta(req) {
         try {
-
             const { data } = req.data
             const { user } = req.user
 
             InventariosValidations.put_inventarios_frutaDescarte_reprocesarFruta().parse(data)
+
             const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(data)
 
             //se modifica el inventario
@@ -218,6 +187,7 @@ class InventariosRepository {
                 InventariosService.crear_lote_celifrut(data.tipoFruta, total, user)
             ])
 
+
             // Ahora loteCreado tiene el lote REAL
             await VariablesDelSistema.reprocesar_predio_celifrut(loteCreado, total)
 
@@ -225,6 +195,8 @@ class InventariosRepository {
                 action: "descarte_change",
                 data: {}
             });
+
+            return loteCreado._id
 
         } catch (err) {
             if (err.status === 518 || err.status === 413) {
@@ -305,22 +277,32 @@ class InventariosRepository {
      * @emits {server_event} Evento "descarte_change" al completar el proceso
      */
     static async post_inventarios_frutaDescarte_frutaDescompuesta(req) {
+        let descarteLavado, descarteEncerado, tipoFruta, total
         try {
-            const { data, inventario } = req.data
-            const { user } = req
             InventariosValidations.post_inventarios_frutaDescarte_frutaDescompuesta().parse(req.data)
-            const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(inventario)
-            if (total > 50 && user.rol > 2) throw new Error("No se pueden sacar mas de 50 kilos de fruta descompuesta")
+
+            const { user } = req;
+            const { data, inventario } = req.data;
+
+            //se crea el registro
+            tipoFruta = inventario.tipoFruta;
+
+            ({ descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(inventario));
+
+            if(total > 50 && user.Rol > 2) throw new Error("No puede crear un registro de fruta descompuesta de tantos kilos")
+
             const query = {
                 ...data,
-                kilos_total: total,
-                user: user._id,
-                tipo_fruta: inventario.tipoFruta
+                descarteLavado,
+                descarteEncerado,
+                tipoFruta: tipoFruta,
+                user: user.user,
+                kilos: total
             }
-            await Promise.all([
+            //se modifica el inventario
+            const [, registro] = await Promise.all([
+                InventariosService.frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, inventario.tipoFruta),
                 FrutaDescompuestaRepository.post_fruta_descompuesta(query, user._id),
-                RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', inventario.tipoFruta),
-                RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', inventario.tipoFruta),
             ])
 
             procesoEventEmitter.emit("server_event", {
@@ -328,9 +310,16 @@ class InventariosRepository {
                 data: {}
             });
 
+            return registro
+
         } catch (err) {
-            if (err.status === 521 || err.status === 518) {
+            console.error(`[ERROR][${new Date().toISOString()}][${tipoFruta}]`, err);
+            if (err.status === 518 || err.status === 413) {
                 throw err
+            } else if (err.status === 521) {
+                if (descarteLavado && descarteEncerado && tipoFruta) {
+                    await InventariosService.frutaDescarte_despachoDescarte_redis_restore(descarteLavado, descarteEncerado, tipoFruta);
+                }
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
@@ -568,6 +557,27 @@ class InventariosRepository {
         }).filter(item => item !== null);
         return resultado
 
+    }
+
+    //? test
+    static async sys_reiniciar_inventario_descarte() {
+        try {
+            await RedisRepository.sys_reiniciar_inventario_descarte()
+        } catch (err) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async sys_add_inventarios_descarte(req) {
+        try {
+            const { inventario, tipoFruta } = req.data
+
+            await InventariosService.set_inventario_descarte(inventario, tipoFruta)
+
+        } catch (err) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
     }
 
     //#endregion
@@ -1038,6 +1048,7 @@ class InventariosRepository {
 
             InventariosValidations.get_inventarios_lotes_infoLotes().parse(data)
             const {
+                _id,
                 EF,
                 GGN,
                 all,
@@ -1056,6 +1067,7 @@ class InventariosRepository {
             if (proveedor) query.predio = proveedor;
             if (GGN) query.GGN = GGN;
             if (EF) query.enf = EF;
+            if (_id) query._id = _id;
             else query.enf = { $regex: '^E', $options: 'i' }
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, tipoFecha)
@@ -1072,11 +1084,15 @@ class InventariosRepository {
             })
             const contenedoresSet = new Set(contenedoresArr)
             const cont = [...contenedoresSet]
-
-            const contenedores = await ContenedoresRepository.getContenedores({
-                ids: cont,
-                select: { numeroContenedor: 1, pallets: 1 }
-            });
+            let contenedores
+            if (cont.length > 0) {
+                contenedores = await ContenedoresRepository.getContenedores({
+                    ids: cont,
+                    select: { numeroContenedor: 1, pallets: 1 }
+                });
+            } else {
+                contenedores = []
+            }
 
             return { lotes: lotes, contenedores: contenedores }
 
@@ -1131,12 +1147,8 @@ class InventariosRepository {
     static async put_inventarios_historiales_despachoDescarte(req) {
         try {
             let { user } = req
-            user = {
-                _id: "66b62fc3777ac9bdcc5050ed"
-            }
             const { action, data, _id } = req.data
             InventariosValidations.put_inventarios_historiales_despachoDescarte(data)
-
             const inventario = {}
             const newRegistro = {}
             //se obtienen los datos de inventario
@@ -1149,7 +1161,6 @@ class InventariosRepository {
                     }
                 }
             );
-
             const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_registro_descarte(inventario)
 
             const { cambioFruta, cambioIventario, registro } = await InventariosService.revisar_cambio_registro_despachodescarte(_id, data)
@@ -1179,6 +1190,57 @@ class InventariosRepository {
         } catch (err) {
             console.log(err)
             if (err.status === 521 || err.status === 518) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_inventarios_registros_fruta_descompuesta(req) {
+        try {
+            let { user } = req
+            const { action, data, _id } = req.data
+
+            InventariosValidations.put_inventarios_registros_fruta_descompuesta().parse(data)
+
+            const inventario = {}
+            const newRegistro = {}
+            //se obtienen los datos de inventario
+            Object.keys(data).forEach(
+                key => {
+                    if (key.startsWith("descarteLavado") || key.startsWith("descarteEncerado")) {
+                        inventario[key] = data[key]
+                    } else {
+                        newRegistro[key] = data[key]
+                    }
+                }
+            );
+
+            const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_registro_descarte(inventario)
+            const { cambioFruta, cambioIventario, registro } = await InventariosService.revisar_cambio_registro_frutaDescompuestae(_id, data)
+
+            if (cambioFruta || cambioIventario) {
+                await InventariosService.modificar_inventario_registro_cambioFruta(registro, data, descarteLavado, descarteEncerado)
+            }
+
+            const query = {
+                ...newRegistro,
+                kilos_total: total,
+                descarteEncerado,
+                descarteLavado
+            }
+
+            await FrutaDescompuestaRepository.actualizar_registro(
+                { _id: _id },
+                query,
+                { user: user._id, action: action }
+            )
+
+            procesoEventEmitter.emit("server_event", {
+                action: "descarte_change",
+                data: {}
+            });
+        } catch (err) {
+            if (err.status === 523) {
                 throw err
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)

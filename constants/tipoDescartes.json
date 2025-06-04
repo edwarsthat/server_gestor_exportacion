@@ -1,0 +1,15 @@
+{
+    "descarteLavado": [
+        "descarteGeneral",
+        "pareja",
+        "balin"
+    ],
+    "descarteEncerado": [
+        "descarteGeneral",
+        "pareja",
+        "balin",
+        "extra",
+        "suelo",
+        "frutaNacional"
+    ]
+}
