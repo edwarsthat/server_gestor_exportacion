@@ -59,11 +59,11 @@ class UserRepository {
        * @return {void}
        */
         if (typeof user.password !== "string") throw new ValidationUserError(402, "El password debe ser texto")
-        if (user.password < 3) throw new ValidationUserError(402, "La constraseña debe tener mas de 3 caracteres de largo")
+        if (user.password.length < 3) throw new ValidationUserError(402, "La constraseña debe tener mas de 3 caracteres de largo")
     }
     static async validate_userName(user) {
         if (typeof user.user !== "string") throw new ValidationUserError(401, "El usuario debe ser texto")
-        if (user.user < 3) throw new ValidationUserError(401, "El usuario debe tener mas de 3 letras")
+        if (user.user.length < 3) throw new ValidationUserError(401, "El usuario debe tener mas de 3 letras")
     }
     static generateAccessToken(data) {
         return jwt.sign(data, process.env.ACCES_TOKEN, { expiresIn: '8h' })
