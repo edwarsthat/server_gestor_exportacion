@@ -1,9 +1,9 @@
-const express = require('express');
-const { UserRepository } = require('../auth/users');
-const { ProcesoRepository } = require('../api/Proceso.mjs');
+import express from 'express';
+import { UserRepository } from '../auth/users.js';
+import { ProcesoRepository } from '../api/Proceso.mjs';
 
 
-const routerProceso2 = express.Router();
+export const routerProceso2 = express.Router();
 
 
 //#region PUT
@@ -84,7 +84,3 @@ routerProceso2.put("/put_inventarios_registros_fruta_descompuesta", async (req, 
     }
 })
 
-
-module.exports = {
-    routerProceso2
-}

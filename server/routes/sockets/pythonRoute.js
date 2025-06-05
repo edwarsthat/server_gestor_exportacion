@@ -1,11 +1,11 @@
 
+import { rustRcpClient } from "../../../config/grpcRust.js";
+import { dataRepository } from "../../api/data.js";
+import { successResponseRoutes } from "../helpers/responses.js";
+import { cleanForRust } from "./utils/cleanData.js";
 
-const { rustRcpClient } = require("../../../config/grpcRust");
-const { dataRepository } = require("../../api/data");
-const { successResponseRoutes } = require("../helpers/responses");
-const { cleanForRust } = require("./utils/cleanData");
 
-const apiSocketPython = {
+export const apiSocketPython = {
     get_python_data_porcentageExportacion: async (req) => {
 
         const { data } = req;
@@ -30,5 +30,3 @@ const apiSocketPython = {
         return successResponseRoutes(response);
     }
 }
-
-module.exports.apiSocketPython = apiSocketPython

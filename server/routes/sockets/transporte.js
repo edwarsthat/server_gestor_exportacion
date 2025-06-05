@@ -1,7 +1,7 @@
-const { TransporteRepository } = require("../../api/Transporte")
-const { successResponseRoutes } = require("../helpers/responses")
+import { TransporteRepository } from "../../api/Transporte.js";
+import { successResponseRoutes } from "../helpers/responses.js";
 
-const apiSocketTransporte = {
+export const apiSocketTransporte = {
     //#region programaciones
     get_transporte_programaciones_mulaContenedores: async () => {
         const response = await TransporteRepository.get_transporte_programaciones_mulaContenedores()
@@ -80,5 +80,3 @@ const apiSocketTransporte = {
 
     //#endregion
 }
-
-module.exports.apiSocketTransporte = apiSocketTransporte

@@ -1,8 +1,8 @@
 
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineClientesNacionales = async (conn) => {
+export const defineClientesNacionales = async (conn) => {
 
     const ClienteNacionalSchema = new Schema({
         codigo: { type: Number, unique: true, required: true },
@@ -14,7 +14,5 @@ const defineClientesNacionales = async (conn) => {
 
     const Clientes = conn.model("ClientesNacionale", ClienteNacionalSchema);
     return Clientes
-
 }
 
-module.exports.defineClientesNacionales = defineClientesNacionales;

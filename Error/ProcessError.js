@@ -26,7 +26,7 @@ class UtilError extends Error {
 }
 
 
-module.exports = {
+export {
     ProcessError,
     ItemBussyError,
     UtilError

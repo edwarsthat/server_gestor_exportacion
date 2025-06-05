@@ -7,7 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const tiposFruta = JSON.parse(readFileSync(join(__dirname, '../../constants/tipo_fruta.json'), 'utf8'));
 import { getErrorMessages, safeString, optionalSafeString } from './utils/validationFunctions.js';
 
-class ProcesoValidations {
+export class ProcesoValidations {
     static async put_proceso_aplicaciones_listaEmpaque_agregarItem(data) {
         // Schema para validar item
         const itemSchema = z.object({
@@ -118,4 +118,3 @@ class ProcesoValidations {
     }
 }
 
-export default ProcesoValidations;

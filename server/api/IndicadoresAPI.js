@@ -1,11 +1,11 @@
-const { ProcessError } = require("../../Error/ProcessError")
-const { IndicadoresRepository } = require("../Class/Indicadores")
-const { LotesRepository } = require("../Class/Lotes")
-const { UsuariosRepository } = require("../Class/Usuarios")
-const { VariablesDelSistema } = require("../Class/VariablesDelSistema")
-const { filtroFechaInicioFin } = require("./utils/filtros")
+import { ProcessError } from "../../Error/ProcessError.js";
+import { IndicadoresRepository } from "../Class/Indicadores.js";
+import { LotesRepository } from "../Class/Lotes.js";
+import { UsuariosRepository } from "../Class/Usuarios.js";
+import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
+import { filtroFechaInicioFin } from "./utils/filtros.js";
 
-class IndicadoresAPIRepository {
+export class IndicadoresAPIRepository {
     //#region operaciones
     static async get_indicadores_operaciones_eficienciaOperativa(req) {
         try {
@@ -284,5 +284,3 @@ class IndicadoresAPIRepository {
         }
     }
 }
-
-module.exports.IndicadoresAPIRepository = IndicadoresAPIRepository

@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineCrearElemento = async (conn) => {
+export const defineCrearElemento = async (conn) => {
 
     const HistorialCreacionSchema = new Schema({
         accion: { type: String, required: true }, // Ej: "CREACION_ELEMENTO"
@@ -30,4 +30,3 @@ const defineCrearElemento = async (conn) => {
     return recordCreacion;
 };
 
-module.exports.defineCrearElemento = defineCrearElemento;

@@ -1,10 +1,11 @@
-const { db } = require("../../DB/mongoDB/config/init");
-const { ConnectionDBError, PostError, PutError } = require("../../Error/ConnectionErrors");
-const { ItemBussyError } = require("../../Error/ProcessError");
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ConnectionDBError, PostError, PutError } from "../../Error/ConnectionErrors.js";
+import { ItemBussyError } from "../../Error/ProcessError.js";
+
 let bussyIdsUsuario = new Set();
 let bussyIdsCargo = new Set();
 
-class UsuariosRepository {
+export class UsuariosRepository {
     static async get_cargos(options = {}) {
         const {
             ids = [],
@@ -421,4 +422,3 @@ class UsuariosRepository {
     }
 }
 
-module.exports.UsuariosRepository = UsuariosRepository;

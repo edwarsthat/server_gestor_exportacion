@@ -1,7 +1,8 @@
-const { db } = require("../../DB/mongoDB/config/init");
-const { ConnectionDBError } = require("../../Error/ConnectionErrors");
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 
-class FrutaDescompuestaRepository {
+
+export class FrutaDescompuestaRepository {
     /**
      * Crea un nuevo registro de fruta descompuesta en la base de datos.
      * 
@@ -119,4 +120,3 @@ class FrutaDescompuestaRepository {
     }
 }
 
-module.exports.FrutaDescompuestaRepository = FrutaDescompuestaRepository

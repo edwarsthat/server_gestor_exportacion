@@ -1,8 +1,8 @@
 
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineproveedores = async (conn) => {
+export const defineproveedores = async (conn) => {
 
 
   const PrecioSchema = new Schema({
@@ -80,4 +80,3 @@ const defineproveedores = async (conn) => {
   return Proveedores;
 }
 
-module.exports.defineproveedores = defineproveedores;

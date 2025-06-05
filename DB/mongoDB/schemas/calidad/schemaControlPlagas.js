@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-
 export const defineControlPlagas = async (conn) => {
 
     const elementoSchema = new Schema({

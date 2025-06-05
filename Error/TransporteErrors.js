@@ -1,4 +1,4 @@
-class TransporteError extends Error {
+export class TransporteError extends Error {
     constructor(code, message) {
         super();
         this.name = "TransporteError"
@@ -7,9 +7,3 @@ class TransporteError extends Error {
     }
 }
 
-
-
-module.exports = {
-    TransporteError,
-
-}

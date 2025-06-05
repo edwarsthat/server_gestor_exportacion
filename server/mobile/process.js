@@ -1,9 +1,11 @@
-const express = require('express');
-const { UserRepository } = require("../auth/users");
-const { ProcesoRepository } = require("../api/Proceso.mjs");
-const { VariablesDelSistema } = require('../Class/VariablesDelSistema');
-const { AccessError } = require('../../Error/ValidationErrors');
-const routerProceso = express.Router();
+import express from 'express';
+import { UserRepository } from "../auth/users.js";
+import { ProcesoRepository } from "../api/Proceso.mjs";
+import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
+import { AccessError } from '../../Error/ValidationErrors.js';
+
+
+export const routerProceso = express.Router();
 
 
 //#region PUT
@@ -267,7 +269,3 @@ routerProceso.post("/desverdizado", async (req, res) => {
 })
 
 
-
-module.exports = {
-    routerProceso
-}

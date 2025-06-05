@@ -1,6 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const { ProcessError } = require('../../Error/ProcessError');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { ProcessError } from '../../Error/ProcessError.js';
+
+// La magia para tener __dirname:
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const inspeccion_calidad_path = path.join(__dirname, '..', '..', 'constants', 'inspeccionCalidad.json');
 const clasificacion_descarte_path = path.join(__dirname, '..', '..', 'constants', 'clasificacion_descarte.json');
@@ -8,7 +13,8 @@ const observaciones_calidad_path = path.join(__dirname, '..', '..', 'constants',
 const tipo_fruta_path = path.join(__dirname, '..', '..', 'constants', 'tipo_fruta.json');
 const paises_GGN_path = path.join(__dirname, '..', '..', 'constants', 'paisesEXP.json');
 
-class ConstantesDelSistema {
+
+export class ConstantesDelSistema {
     static async get_info_formulario_inspeccion_fruta() {
         try {
 
@@ -68,6 +74,5 @@ class ConstantesDelSistema {
     }
 }
 
-module.exports = {
-    ConstantesDelSistema
-}
+
+

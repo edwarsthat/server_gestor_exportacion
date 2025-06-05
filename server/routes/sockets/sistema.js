@@ -1,7 +1,7 @@
-const { SistemaRepository } = require("../../api/Sistema")
-const { successResponseRoutes } = require("../helpers/responses")
+import { SistemaRepository } from "../../api/Sistema.js";
+import { successResponseRoutes } from "../helpers/responses.js";
 
-const apiSocketSistema = {
+export const apiSocketSistema = {
     put_sistema_proceso_habilitarPrediosDescarte: async (data) => {
         await SistemaRepository.put_sistema_proceso_habilitarPrediosDescarte(data)
         return successResponseRoutes()
@@ -71,5 +71,3 @@ const apiSocketSistema = {
     //#endregion
 
 }
-
-module.exports.apiSocketSistema = apiSocketSistema

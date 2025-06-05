@@ -1,9 +1,7 @@
-
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-
-const definePrecios = async (conn) => {
+export const definePrecios = async (conn) => {
 
     const PreciosSchema = new Schema({
         fecha: { type: Date, default: () => new Date() },
@@ -23,4 +21,3 @@ const definePrecios = async (conn) => {
     return Precios;
 }
 
-module.exports.definePrecios = definePrecios

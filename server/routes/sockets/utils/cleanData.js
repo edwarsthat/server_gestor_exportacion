@@ -16,6 +16,6 @@ function cleanForRust(obj) {
     }));
 }
 
-module.exports = {
+export {
     cleanForRust
 }

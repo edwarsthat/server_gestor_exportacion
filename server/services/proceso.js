@@ -1,4 +1,4 @@
-import { ContenedoresRepository } from "../Class/Contenedores.mjs";
+import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { ProcessError } from "../../Error/ProcessError.js";
 import { readFileSync } from 'fs';

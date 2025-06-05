@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
+export const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
 
     const descarteLavadoSchema = new Schema({
         descarteGeneral: { type: Number, default: 0 },
@@ -83,4 +83,3 @@ const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
     return historialDespachoDescarte;
 }
 
-module.exports.defineHistorialDespachoDescarte = defineHistorialDespachoDescarte;

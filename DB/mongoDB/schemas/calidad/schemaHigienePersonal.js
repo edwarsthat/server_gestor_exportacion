@@ -1,8 +1,7 @@
-
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineHigienePersonal = async (conn) => {
+export const defineHigienePersonal = async (conn) => {
 
     const HigienePersonalSchema = new Schema({
         fecha: { type: Date, default: () => new Date() },
@@ -24,5 +23,3 @@ const defineHigienePersonal = async (conn) => {
     const HigienePersonal = conn.model("HigienePersonal", HigienePersonalSchema);
     return HigienePersonal
 }
-
-module.exports.defineHigienePersonal = defineHigienePersonal;

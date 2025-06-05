@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineLimpiezaDiaria = async (conn) => {
+export const defineLimpiezaDiaria = async (conn) => {
 
     const elementoSchema = new Schema({
         status: Boolean,
@@ -120,4 +120,3 @@ const defineLimpiezaDiaria = async (conn) => {
     return LimpiezaDiaria
 }
 
-module.exports.defineLimpiezaDiaria = defineLimpiezaDiaria;

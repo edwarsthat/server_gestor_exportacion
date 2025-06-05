@@ -1,9 +1,8 @@
-const { TransporteError } = require("../../Error/TransporteErrors");
-const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
-const { ContenedoresRepository } = require("../Class/Contenedores");
+import { TransporteError } from "../../Error/TransporteErrors.js";
+import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
+import { ContenedoresRepository } from "../Class/Contenedores.js";
 
-
-class TransporteRepository {
+export class TransporteRepository {
 
     //#region programaciones
     static async get_transporte_programaciones_mulaContenedores() {
@@ -574,6 +573,3 @@ class TransporteRepository {
     //#endregion
 }
 
-module.exports = {
-    TransporteRepository
-}

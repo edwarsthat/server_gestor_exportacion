@@ -1,5 +1,5 @@
 
-class gestionCuentasValidationsRepository {
+export class gestionCuentasValidationsRepository {
     static query_gestionCuentas_obtener_usuarios(filtro) {
         const query = {}
 
@@ -23,5 +23,3 @@ class gestionCuentasValidationsRepository {
         return query
     }
 }
-
-module.exports.gestionCuentasValidationsRepository = gestionCuentasValidationsRepository

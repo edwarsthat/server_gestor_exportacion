@@ -1,11 +1,11 @@
-const { isValidObjectId } = require("mongoose");
-const { db } = require("../../DB/mongoDB/config/init.mjs");
-const { ConnectionDBError, PutError, PostError } = require("../../Error/ConnectionErrors");
-const { ItemBussyError } = require("../../Error/ProcessError");
+import { isValidObjectId } from "mongoose";
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ConnectionDBError, PutError, PostError } from "../../Error/ConnectionErrors.js";
+import { ItemBussyError } from "../../Error/ProcessError.js";
 
 let bussyIds = new Set();
 
-class ClientesRepository {
+export class ClientesRepository {
     //clientes internacionales
     static async get_clientes(options = {}) {
         try {
@@ -169,4 +169,3 @@ class ClientesRepository {
     }
 }
 
-module.exports.ClientesRepository = ClientesRepository

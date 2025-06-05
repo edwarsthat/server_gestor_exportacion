@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineHistorialDescarte = async (conn) => {
+export const defineHistorialDescarte = async (conn) => {
 
   const DescarLavadoteSchema = new Schema(
     {
@@ -48,4 +48,3 @@ const defineHistorialDescarte = async (conn) => {
 
 }
 
-module.exports.defineHistorialDescarte = defineHistorialDescarte;

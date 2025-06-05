@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
 // const { clientGRPC } = require('../../src/config/conexionGRPC');
 
-const routerPythonData = express.Router();
+export const routerPythonData = express.Router();
 
 
 routerPythonData.get("/python", async (req, res) => {
@@ -24,4 +24,3 @@ routerPythonData.get("/python", async (req, res) => {
 });
 
 
-module.exports.routerPythonData = routerPythonData

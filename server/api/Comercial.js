@@ -1,21 +1,25 @@
-const { ComercialLogicError } = require("../../Error/logicLayerError");
-const { ProcessError } = require("../../Error/ProcessError");
-const { RecordCreacionesRepository } = require("../archive/ArchiveCreaciones");
-const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
-const { ClientesRepository } = require("../Class/Clientes");
-const { ContenedoresRepository } = require("../Class/Contenedores");
-const { LotesRepository } = require("../Class/Lotes");
-const { PreciosRepository } = require("../Class/Precios");
-const { ProveedoresRepository } = require("../Class/Proveedores");
-const { ComercialValidationsRepository } = require("../validations/Comercial");
-const { filtroFechaInicioFin, filtroPorSemana } = require("./utils/filtros");
-const { getISOWeek } = require('date-fns')
-const { z, ZodError } = require('zod')
-const nodemailer = require('nodemailer');
+import { ComercialLogicError } from "../../Error/logicLayerError.js";
+import { ProcessError } from "../../Error/ProcessError.js";
+import { RecordCreacionesRepository } from "../archive/ArchiveCreaciones.js";
+import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
+import { ClientesRepository } from "../Class/Clientes.js";
+import { ContenedoresRepository } from "../Class/Contenedores.js";
+import { LotesRepository } from "../Class/Lotes.js";
+import { PreciosRepository } from "../Class/Precios.js";
+import { ProveedoresRepository } from "../Class/Proveedores.js";
+import { ComercialValidationsRepository } from "../validations/Comercial.js";
+import { filtroFechaInicioFin, filtroPorSemana } from "./utils/filtros.js";
+import { getISOWeek } from 'date-fns';
+import { z, ZodError } from 'zod';
+import nodemailer from 'nodemailer';
+import config from "../../src/config/index.js";
+const { EMAIL, PASSWORD_EMAIL} = config;
+
+
 
 // const nodemailer = require('nodemailer');
 
-class ComercialRepository {
+export class ComercialRepository {
 
     //#region proveedores
     static async get_sys_proveedores(data) {
@@ -471,7 +475,7 @@ class ComercialRepository {
                         archivosSubidos: paths
                     }
                 }
-            );
+            ); 
 
             const html = `
   <h2>Nueva Reclamación de Calidad registrada</h2>
@@ -515,8 +519,8 @@ class ComercialRepository {
                 port: 465,
                 secure: true,
                 auth: {
-                    user: 'sistemacelifrut@gmail.com', // Tu correo real
-                    pass: 'jitadtdkrvwtcqhn' // Contraseña o contraseña de aplicación
+                    user: EMAIL, 
+                    pass: PASSWORD_EMAIL 
                 }
             });
 
@@ -891,4 +895,3 @@ class ComercialRepository {
 
 }
 
-module.exports.ComercialRepository = ComercialRepository

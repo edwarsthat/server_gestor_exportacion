@@ -1,10 +1,10 @@
-const { z } = require('zod');
-const { safeString, optionalSafeString } = require('./utils/validationFunctions');
+import { z } from "zod";
+import { safeString, optionalSafeString } from "./utils/validationFunctions.js";
 
 const ACCIONES_VALIDAS = ["ingreso", "salida", "traslado", "retiro", "cancelado"];
 // const validKeyRegex = /^(descarteEncerado|descarteLavado|frutaNacional).*/;
 
-class InventariosValidations {
+export class InventariosValidations {
     static post_inventarios_canastillas_registro() {
         return z.object({
             destino: safeString("destino"),
@@ -431,5 +431,3 @@ class InventariosValidations {
         })
     }
 }
-
-module.exports.InventariosValidations = InventariosValidations

@@ -1,7 +1,9 @@
-const express = require('express');
-const yaml = require("js-yaml");
-const { SistemaRepository } = require('../api/Sistema');
-const routerSistema = express.Router();
+import express from 'express';
+import yaml from 'js-yaml';
+import { SistemaRepository } from '../api/Sistema.js';
+
+
+export const routerSistema = express.Router();
 
 routerSistema.get("/", (req, res) => {
     res.send("Sistema")
@@ -56,8 +58,3 @@ routerSistema.get("/check_desktopApp/:name", async (req, res) => {
     }
 })
 
-
-
-
-
-module.exports = { routerSistema };

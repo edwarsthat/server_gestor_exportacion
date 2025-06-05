@@ -1,13 +1,12 @@
-const express = require('express');
-const { HandleErrors } = require('../../Error/recordErrors');
-const { ProcesoRepository } = require('../api/Proceso.mjs');
+import express from 'express';
+import { HandleErrors } from '../../Error/recordErrors.js';
+import { ProcesoRepository } from '../api/Proceso.mjs';
 
-const sp32 = express.Router();
+export const sp32 = express.Router();
 
 sp32.get("/", (req, res) => {
     res.send("Sistema")
 });
-
 
 sp32.post("/", async (req, res) => {
     try {
@@ -21,4 +20,4 @@ sp32.post("/", async (req, res) => {
     }
 })
 
-module.exports = { sp32 };
+

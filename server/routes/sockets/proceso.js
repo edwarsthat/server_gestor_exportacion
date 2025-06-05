@@ -1,7 +1,7 @@
-const { ProcesoRepository } = require("../../api/Proceso.mjs")
-const { successResponseRoutes } = require("../helpers/responses")
+import { ProcesoRepository } from "../../api/Proceso.mjs";
+import { successResponseRoutes } from "../helpers/responses.js";
 
-const apiSocketProceso = {
+export const apiSocketProceso = {
     //#region aplicaciones
     post_proceso_aplicaciones_fotoCalidad: async (data) => {
         await ProcesoRepository.post_proceso_aplicaciones_fotoCalidad(data)
@@ -76,5 +76,3 @@ const apiSocketProceso = {
 
     //#endregion
 }
-
-module.exports.apiSocketProceso = apiSocketProceso

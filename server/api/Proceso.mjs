@@ -1,7 +1,7 @@
 import { ProcessError } from "../../Error/ProcessError.js";
 import { procesoEventEmitter } from "../../events/eventos.js";
-import { RecordLotesRepository } from "../archive/ArchiveLotes.mjs";
-import { ContenedoresRepository } from "../Class/Contenedores.mjs";
+import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
+import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { readFile } from 'fs/promises';
@@ -16,7 +16,7 @@ import { filtroFechaInicioFin } from "./utils/filtros.js";
 import { InventariosLogicError } from "../../Error/logicLayerError.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
 import { deshidratacionLote, rendimientoLote } from "./utils/lotesFunctions.js";
-import ProcesoValidations from "../validations/proceso.js";
+import { ProcesoValidations } from "../validations/proceso.js";
 import { ProcesoService } from "../services/proceso.js";
 import { z } from "zod";
 import { RedisRepository } from "../Class/RedisData.js";

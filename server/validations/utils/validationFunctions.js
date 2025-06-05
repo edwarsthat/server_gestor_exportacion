@@ -1,4 +1,4 @@
-const { z } = require("zod")
+import { z } from 'zod';
 
 const getErrorMessages = (zodError) => {
     const errors = {}
@@ -33,7 +33,7 @@ const optionalSafeString = (campo) =>
             message: `El ${campo} debe ser una cadena de texto válida y no contener caracteres especiales.`
         });
 
-module.exports = {
+export {
     getErrorMessages,
     safeString,
     optionalSafeString

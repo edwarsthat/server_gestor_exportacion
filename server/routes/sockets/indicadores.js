@@ -1,7 +1,8 @@
-const { IndicadoresAPIRepository } = require("../../api/IndicadoresAPI");
-const { successResponseRoutes } = require("../helpers/responses");
+import { IndicadoresAPIRepository } from "../../api/IndicadoresAPI.js";
+import { successResponseRoutes } from "../helpers/responses.js";
 
-const apiSockectIndicadores = {
+
+export const apiSockectIndicadores = {
     //#region registros eficiencia operativa
     get_indicadores_operaciones_eficienciaOperativa: async (data) => {
         const response = await IndicadoresAPIRepository.get_indicadores_operaciones_eficienciaOperativa(data)
@@ -29,5 +30,3 @@ const apiSockectIndicadores = {
     },
     //#endregios
 }
-
-module.exports.apiSockectIndicadores = apiSockectIndicadores

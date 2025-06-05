@@ -1,7 +1,7 @@
-const { db } = require("../DB/mongoDB/config/init");
-const { PostError } = require("./ConnectionErrors");
+import { db } from "../DB/mongoDB/config/init.js";
+import { PostError } from "./ConnectionErrors.js";
 
-class HandleErrors {
+export class HandleErrors {
     static async addError(error, user = '', action = '') {
         /**
  * Funcion que agrega un error a la base de datos lote de mongoDB
@@ -30,4 +30,3 @@ class HandleErrors {
     }
 }
 
-module.exports.HandleErrors = HandleErrors

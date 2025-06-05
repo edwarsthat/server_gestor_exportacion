@@ -1,4 +1,4 @@
-import { db } from "../../DB/mongoDB/config/init.mjs";
+import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PutError } from "../../Error/ConnectionErrors.js";
 import { ProcessError, ItemBussyError } from "../../Error/ProcessError.js";
 import { oobtener_datos_lotes_to_listaEmpaque } from "../mobile/utils/contenedoresLotes.js";

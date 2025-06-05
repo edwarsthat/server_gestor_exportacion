@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineRecordClientes = async (conn) => {
+export const defineRecordClientes = async (conn) => {
 
 
     const HistorialClientesSchema = new Schema({
@@ -16,5 +16,3 @@ const defineRecordClientes = async (conn) => {
     return recordClientes
 
 }
-
-module.exports.defineRecordClientes = defineRecordClientes;

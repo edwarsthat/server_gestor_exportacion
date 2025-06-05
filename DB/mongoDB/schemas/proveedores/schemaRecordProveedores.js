@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineRecordProveedor = async (conn) => {
+export const defineRecordProveedor = async (conn) => {
 
 
     const HistorialProveedoresSchema = new Schema({
@@ -16,4 +16,3 @@ const defineRecordProveedor = async (conn) => {
     return recordProveedor;
 }
 
-module.exports.defineRecordProveedor = defineRecordProveedor;

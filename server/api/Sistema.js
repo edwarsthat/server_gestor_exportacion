@@ -1,24 +1,24 @@
+import fs from 'fs';
+import path from 'path';
+import yaml from "js-yaml";
 
-const fs = require('fs');
-const path = require('path');
-const yaml = require("js-yaml");
-
-const { UsuariosRepository } = require('../Class/Usuarios');
-const bcrypt = require('bcrypt');
-const { UserRepository } = require('../auth/users');
-const { ValidationUserError } = require('../../Error/ValidationErrors');
-const { ConstantesDelSistema } = require('../Class/ConstantesDelSistema');
-const { ProcessError } = require('../../Error/ProcessError');
-const { VariablesDelSistema } = require('../Class/VariablesDelSistema');
-const { SistemaLogicError } = require('../../Error/logicLayerError');
-const { filtroFechaInicioFin } = require('./utils/filtros');
-const { RecordLotesRepository } = require('../archive/ArchiveLotes.mjs');
-const { LotesRepository } = require('../Class/Lotes');
-const { procesoEventEmitter } = require('../../events/eventos');
-const { db } = require('../../DB/mongoDB/config/init');
+import { UsuariosRepository } from '../Class/Usuarios.js';
+import bcrypt from 'bcrypt';
+import { UserRepository } from '../auth/users.js';
+import { ValidationUserError } from '../../Error/ValidationErrors.js';
+import { ConstantesDelSistema } from '../Class/ConstantesDelSistema.js';
+import { ProcessError } from '../../Error/ProcessError.js';
+import { VariablesDelSistema } from '../Class/VariablesDelSistema.js';
+import { SistemaLogicError } from '../../Error/logicLayerError.js';
+import { filtroFechaInicioFin } from './utils/filtros.js';
+import { RecordLotesRepository } from '../archive/ArchiveLotes.js';
+import { LotesRepository } from '../Class/Lotes.js';
+import { procesoEventEmitter } from '../../events/eventos.js';
+import { db } from '../../DB/mongoDB/config/init.js';
 
 
-class SistemaRepository {
+
+export class SistemaRepository {
     //#region proceso sistema
     static async put_sistema_proceso_habilitarPrediosDescarte(req) {
         try {
@@ -379,4 +379,4 @@ class SistemaRepository {
 
 }
 
-module.exports.SistemaRepository = SistemaRepository
+

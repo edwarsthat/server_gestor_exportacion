@@ -1,15 +1,15 @@
-const { LotesRepository } = require("../Class/Lotes");
-const { ProcesoRepository } = require("../api/Proceso.mjs");
-const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
-const { CalidadRepository } = require("../api/Calidad");
-const { ComercialRepository } = require("../api/Comercial");
-const { SistemaRepository } = require("../api/Sistema");
-const { ContabilidadRepository } = require("../api/Contabilidad");
-const { ConstantesDelSistema } = require("../Class/ConstantesDelSistema");
-const { Get_info_update_app_desktop } = require("./docs/getDocs");
-const { IndicadoresAPIRepository } = require("../api/IndicadoresAPI");
+import { LotesRepository } from "../Class/Lotes.js";
+import { ProcesoRepository } from "../api/Proceso.mjs";
+import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
+import { CalidadRepository } from "../api/Calidad.js";
+import { ComercialRepository } from "../api/Comercial.js";
+import { SistemaRepository } from "../api/Sistema.js";
+import { ContabilidadRepository } from "../api/Contabilidad.js";
+import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
+import { Get_info_update_app_desktop } from "./docs/getDocs.js";
+import { IndicadoresAPIRepository } from "../api/IndicadoresAPI.js";
 
-const apiSocket = {
+export const apiSocket = {
     //#region GET
     Get_info_update_app_desktop: async () => {
         const data = await Get_info_update_app_desktop()
@@ -279,4 +279,4 @@ const apiSocket = {
     //#endregion
 }
 
-module.exports.apiSocket = apiSocket;
+

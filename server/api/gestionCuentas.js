@@ -1,13 +1,12 @@
-const bcrypt = require('bcrypt');
+import bcrypt from 'bcrypt';
+import { GestionCuentasLogicError } from "../../Error/logicLayerError.js";
+import { RecordCreacionesRepository } from "../archive/ArchiveCreaciones.js";
+import { RecordDeleteRepository } from "../archive/ArchiveDelete.js";
+import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
+import { UsuariosRepository } from "../Class/Usuarios.js";
+import { gestionCuentasValidationsRepository } from "../validations/gestionCuentas.js";
 
-const { GestionCuentasLogicError } = require("../../Error/logicLayerError");
-const { RecordCreacionesRepository } = require("../archive/ArchiveCreaciones");
-const { RecordDeleteRepository } = require("../archive/ArchiveDelete");
-const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
-const { UsuariosRepository } = require("../Class/Usuarios");
-const { gestionCuentasValidationsRepository } = require("../validations/gestionCuentas");
-
-class gestionCuentasRepository {
+export class gestionCuentasRepository {
     //#region cargos
     static async get_gestionCuentas_cargos(req) {
         try {
@@ -267,5 +266,3 @@ class gestionCuentasRepository {
         }
     }
 }
-
-module.exports.gestionCuentasRepository = gestionCuentasRepository

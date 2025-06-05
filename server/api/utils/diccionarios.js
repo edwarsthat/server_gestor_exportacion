@@ -1,4 +1,4 @@
-import { VariablesDelSistema } from "../../Class/VariablesDelSistema";
+import { VariablesDelSistema } from "../../Class/VariablesDelSistema.js";
 
 const obtenerEstadoDesdeAccionCanastillasInventario = (accion) => {
     const ESTADOS = {

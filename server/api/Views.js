@@ -1,9 +1,10 @@
-const { ProcessError } = require("../../Error/ProcessError");
-const { ContenedoresRepository } = require("../Class/Contenedores");
-const { LotesRepository } = require("../Class/Lotes");
-const { filtroFechaInicioFin } = require("./utils/filtros");
+import { ProcessError } from "../../Error/ProcessError.js";
+import { ContenedoresRepository } from "../Class/Contenedores.js";
+import { LotesRepository } from "../Class/Lotes.js";
+import { filtroFechaInicioFin } from "./utils/filtros.js";
 
-class ViewsRepository {
+
+export class ViewsRepository {
     static async view_lotes(req) {
         try {
             const { data } = req
@@ -111,4 +112,3 @@ class ViewsRepository {
     }
 }
 
-module.exports.ViewsRepository = ViewsRepository

@@ -10,7 +10,7 @@ function errorResponseRoutes(error) {
     return { status, message };
 }
 
-module.exports = {
+export {
     successResponseRoutes,
     errorResponseRoutes,
 };

@@ -12,8 +12,7 @@
  * @module DB/mongoDB/schemas/lotes/schemaLotes
  */
 
-
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
 /**
@@ -28,7 +27,8 @@ const { Schema } = mongoose;
  *
  * @see https://mongoosejs.com/docs/models.html
  */
-const defineLotes = async (conn, AuditLog) => {
+
+export const defineLotes = async (conn, AuditLog) => {
 
   const calidadInternaSchema = new Schema({
     acidez: Number,
@@ -288,5 +288,3 @@ const defineLotes = async (conn, AuditLog) => {
   return Lotes;
 
 }
-
-module.exports.defineLotes = defineLotes;

@@ -1,11 +1,11 @@
-const { db } = require("../../DB/mongoDB/config/init");
-const { PostError, PutError, ConnectionDBError } = require("../../Error/ConnectionErrors");
-const { ItemBussyError } = require("../../Error/ProcessError");
+import { db } from "../../DB/mongoDB/config/init.js";
+import { PostError, PutError, ConnectionDBError } from "../../Error/ConnectionErrors.js";
+import { ItemBussyError } from "../../Error/ProcessError.js";
+
 
 let bussyIds = new Set();
 
-
-class TurnoDatarepository {
+export class TurnoDatarepository {
     static async add_turno() {
         try {
 
@@ -55,4 +55,3 @@ class TurnoDatarepository {
     }
 }
 
-module.exports.TurnoDatarepository = TurnoDatarepository

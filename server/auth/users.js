@@ -1,7 +1,8 @@
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const { ValidationUserError, ValidationTokenError, AccessError } = require('../../Error/ValidationErrors');
-const { UsuariosRepository } = require('../Class/Usuarios');
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { ValidationUserError, ValidationTokenError, AccessError } from '../../Error/ValidationErrors.js';
+import { UsuariosRepository } from '../Class/Usuarios.js';
+
 const permisos_generales = [
     "obtener_status_proceso",
     "obtener_info_mi_cuenta",
@@ -48,7 +49,7 @@ const permisos_generales = [
     "get_data_proveedores",
 ]
 
-class UserRepository {
+export class UserRepository {
 
     static async validate_password(user) {
         /**
@@ -181,5 +182,3 @@ class UserRepository {
     }
 }
 
-
-module.exports.UserRepository = UserRepository

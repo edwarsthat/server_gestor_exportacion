@@ -1,8 +1,7 @@
-const { gestionCuentasRepository } = require("../../api/gestionCuentas")
-const { successResponseRoutes } = require("../helpers/responses")
+import { gestionCuentasRepository } from "../../api/gestionCuentas.js";
+import { successResponseRoutes } from "../helpers/responses.js";
 
-
-const apiSocketGestionCuentas = {
+export const apiSocketGestionCuentas = {
     //#region cargos
     get_gestionCuentas_cargos: async (req) => {
         const response = await gestionCuentasRepository.get_gestionCuentas_cargos(req)
@@ -40,5 +39,3 @@ const apiSocketGestionCuentas = {
     },
     //#endregion
 }
-
-module.exports.apiSocketGestionCuentas = apiSocketGestionCuentas

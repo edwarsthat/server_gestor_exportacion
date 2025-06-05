@@ -1,5 +1,5 @@
-const { generadoresEF } = require("../utils/diccionarios");
-
+// const { generadoresEF } = require("../utils/diccionarios");
+import { generadoresEF } from '../utils/diccionarios.js';
 
 async function generarCodigoEF(ef, fecha) {
     const key = ef.substring(0, 3); // Solo los primeros 3 chars
@@ -10,6 +10,6 @@ async function generarCodigoEF(ef, fecha) {
     return generador(fecha);
 }
 
-module.exports = {
+export {
     generarCodigoEF
 }

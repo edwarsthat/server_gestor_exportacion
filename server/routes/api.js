@@ -1,8 +1,8 @@
-const express = require('express');
-const { SistemaRepository } = require('../api/Sistema');
-const { LotesRepository } = require('../Class/Lotes');
+import express from 'express';
+import { SistemaRepository } from '../api/Sistema.js';
+import { LotesRepository } from '../Class/Lotes.js';
 
-const routerAPI = express.Router();
+export const routerAPI = express.Router();
 
 
 routerAPI.get("/get_data_lotes", async (req, res) => {
@@ -25,4 +25,3 @@ routerAPI.get("/get_data_lotes", async (req, res) => {
     }
 })
 
-module.exports.routerAPI = routerAPI

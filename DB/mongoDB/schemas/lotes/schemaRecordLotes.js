@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineRecordLotes = async (conn) => {
+export const defineRecordLotes = async (conn) => {
 
 
   const HistorialLotesSchema = new Schema({
@@ -21,6 +21,4 @@ const defineRecordLotes = async (conn) => {
   return recordLotes
 
 }
-
-module.exports.defineRecordLotes = defineRecordLotes;
 

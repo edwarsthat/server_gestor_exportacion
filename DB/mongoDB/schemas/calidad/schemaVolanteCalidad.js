@@ -1,8 +1,7 @@
-
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineVolanteCalidad = async (conn) => {
+export const defineVolanteCalidad = async (conn) => {
 
     const VolanteCalidadSchema = new Schema({
         tipoFruta: String,
@@ -17,4 +16,3 @@ const defineVolanteCalidad = async (conn) => {
     return VolanteCalidad
 }
 
-module.exports.defineVolanteCalidad = defineVolanteCalidad;

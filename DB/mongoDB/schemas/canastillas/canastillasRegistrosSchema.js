@@ -1,9 +1,7 @@
-
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-
-const defineRegistroCanastillas = async (conn) => {
+export const defineRegistroCanastillas = async (conn) => {
 
     const cantidadSchema = new Schema({
         propias: { type: Number, default: 0 },
@@ -42,4 +40,3 @@ const defineRegistroCanastillas = async (conn) => {
     return Precios;
 }
 
-module.exports.defineRegistroCanastillas = defineRegistroCanastillas

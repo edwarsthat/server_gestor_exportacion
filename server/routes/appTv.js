@@ -8,7 +8,7 @@ import { SistemaRepository } from '../api/Sistema.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const routerAppTv = express.Router();
+export const routerAppTv = express.Router();
 
 routerAppTv.get("/", (req, res) => {
     console.log("asdasd")
@@ -71,5 +71,3 @@ routerAppTv.get("/events", async (req, res) => {
 
     }
 })
-
-export { routerAppTv };

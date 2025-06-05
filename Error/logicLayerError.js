@@ -53,7 +53,7 @@ class GestionCuentasLogicError extends Error {
 }
 
 
-module.exports = {
+export {
     InventariosLogicError,
     CalidadLogicError,
     SistemaLogicError,

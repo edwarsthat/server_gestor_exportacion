@@ -1,10 +1,10 @@
-const { db } = require("../../DB/mongoDB/config/init.mjs");
-const { ConnectionDBError, PutError, PostError } = require("../../Error/ConnectionErrors");
-const { ItemBussyError } = require("../../Error/ProcessError");
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ConnectionDBError, PutError, PostError } from "../../Error/ConnectionErrors.js";
+import { ItemBussyError } from "../../Error/ProcessError.js";
 
 let bussyIds = new Set();
 
-class ProveedoresRepository {
+export class ProveedoresRepository {
     static async getProveedores(data) {
         try {
             const proveedores = await db.Proveedores.find(data.data.query);
@@ -138,4 +138,3 @@ class ProveedoresRepository {
 
 }
 
-module.exports.ProveedoresRepository = ProveedoresRepository

@@ -1,7 +1,8 @@
-const express = require('express');
-const { InventariosRepository } = require('../../api/inventarios');
-const { UserRepository } = require('../../auth/users');
-const routerInventarios = express.Router();
+import express from 'express';
+import { InventariosRepository } from '../../api/inventarios.js';
+import { UserRepository } from '../../auth/users.js';
+
+export const routerInventarios = express.Router();
 
 routerInventarios.get("/", (req, res) => {
     console.log(req)
@@ -143,5 +144,3 @@ routerInventarios.put("/put_inventarios_registros_fruta_descompuesta", async (re
     }
 })
 
-
-module.exports.routerInventarios = routerInventarios

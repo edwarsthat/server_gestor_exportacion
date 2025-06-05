@@ -1,8 +1,3 @@
-const EventEmitter = require('events');
+import { EventEmitter } from 'events';
 
-const procesoEventEmitter = new EventEmitter();
-
-
-module.exports = {
-    procesoEventEmitter,
-};
+export const procesoEventEmitter = new EventEmitter();

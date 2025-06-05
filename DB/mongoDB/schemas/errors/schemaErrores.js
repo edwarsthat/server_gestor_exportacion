@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineErrores = async (conn) => {
+export const defineErrores = async (conn) => {
 
     const erroresSchema = new Schema({
         usuario: { type: Schema.Types.ObjectId, ref: "Usuarios" },
@@ -18,4 +18,3 @@ const defineErrores = async (conn) => {
 
 }
 
-module.exports.defineErrores = defineErrores;

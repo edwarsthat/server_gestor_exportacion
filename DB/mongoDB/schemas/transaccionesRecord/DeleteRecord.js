@@ -1,9 +1,8 @@
 
-
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineDeleteRecords = async (conn) => {
+export const defineDeleteRecords = async (conn) => {
 
     const HistorialEliminacionSchema = new Schema({
         accion: { type: String, required: true }, // Ej: "ELIMINACION_ELEMENTO"
@@ -32,4 +31,3 @@ const defineDeleteRecords = async (conn) => {
     return recordDelete;
 };
 
-module.exports.defineDeleteRecords = defineDeleteRecords;

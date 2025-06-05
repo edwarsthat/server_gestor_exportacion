@@ -1,8 +1,8 @@
-
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineClientes = async (conn) => {
+
+export const defineClientes = async (conn) => {
 
   const ClienteSchema = new Schema({
     CLIENTE: String,
@@ -19,7 +19,3 @@ const defineClientes = async (conn) => {
   return Clientes
 
 }
-
-module.exports.defineClientes = defineClientes;
-
-

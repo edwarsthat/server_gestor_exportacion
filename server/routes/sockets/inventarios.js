@@ -1,14 +1,12 @@
-const { CalidadRepository } = require("../../api/Calidad");
-const { ComercialRepository } = require("../../api/Comercial");
-const { InventariosRepository } = require("../../api/inventarios");
-const { ModificarRepository } = require("../../api/ModificarData");
-const { ProcesoRepository } = require("../../api/Proceso.mjs");
-const { VariablesDelSistema } = require("../../Class/VariablesDelSistema");
-const { successResponseRoutes } = require("../helpers/responses");
+import { CalidadRepository } from "../../api/Calidad.js";
+import { ComercialRepository } from "../../api/Comercial.js";
+import { InventariosRepository } from "../../api/inventarios.js";
+import { ModificarRepository } from "../../api/ModificarData.js";
+import { ProcesoRepository } from "../../api/Proceso.mjs";
+import { VariablesDelSistema } from "../../Class/VariablesDelSistema.js";
+import { successResponseRoutes } from "../helpers/responses.js";
 
-
-
-const apiSocketInventarios = {
+export const apiSocketInventarios = {
     //#region inventarios
     get_inventarios_frutaSinProcesar_frutaEnInventario: async () => {
         const data = await InventariosRepository.get_inventarios_frutaSinProcesar_frutaEnInventario();
@@ -229,4 +227,3 @@ const apiSocketInventarios = {
     //#endregion
 }
 
-module.exports.apiSocketInventarios = apiSocketInventarios;

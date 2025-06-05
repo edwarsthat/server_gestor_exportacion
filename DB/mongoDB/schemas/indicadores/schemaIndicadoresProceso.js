@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineIndicadores = async (conn) => {
+export const defineIndicadores = async (conn) => {
 
     const kilosExportacionSchema = new Schema({
         any: {
@@ -26,4 +26,3 @@ const defineIndicadores = async (conn) => {
     return Indicadores;
 }
 
-module.exports.defineIndicadores = defineIndicadores

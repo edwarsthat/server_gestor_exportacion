@@ -1,7 +1,7 @@
-const { db } = require("../../DB/mongoDB/config/init");
-const { ConnectionDBError } = require("../../Error/ConnectionErrors");
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 
-class IndicadoresRepository {
+export class IndicadoresRepository {
     static async get_cantidad_indicadores() {
         try {
             const count = await db.Indicadores.countDocuments();
@@ -59,4 +59,3 @@ class IndicadoresRepository {
     }
 }
 
-module.exports.IndicadoresRepository = IndicadoresRepository 

@@ -1,10 +1,11 @@
-const cron = require('node-cron');
-const { IndicadoresAPIRepository } = require('../../server/api/IndicadoresAPI');
-const { ProcesoRepository } = require('../../server/api/Proceso.mjs');
-const { VariablesDelSistema } = require('../../server/Class/VariablesDelSistema');
-const { FormulariosCalidadRepository } = require('../../server/Class/FormulariosCalidad');
+import cron from 'node-cron';
+import { IndicadoresAPIRepository } from '../../server/api/IndicadoresAPI.js';
+import { ProcesoRepository } from '../../server/api/Proceso.mjs';
+import { VariablesDelSistema } from '../../server/Class/VariablesDelSistema.js';
+import { FormulariosCalidadRepository } from '../../server/Class/FormulariosCalidad.js';
 
-function initCronJobs() {
+
+export function initCronJobs() {
 
     cron.schedule('10 5 * * *', async () => {
         await IndicadoresAPIRepository.post_indicadores_eficiencia_operativa_registro();
@@ -34,5 +35,3 @@ function initCronJobs() {
     });
 
 }
-
-module.exports.initCronJobs = initCronJobs

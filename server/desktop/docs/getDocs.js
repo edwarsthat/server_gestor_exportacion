@@ -1,8 +1,13 @@
-const fs = require('fs/promises')
-const path = require('path');
-const yaml = require("js-yaml");
+import fs from 'fs/promises';
+import path from 'path';
+import yaml from 'js-yaml';
 
-async function Get_info_update_app_desktop() {
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export async function Get_info_update_app_desktop() {
     try {
         const versionPath = path.join(__dirname, '..', '..', '..', 'updates', 'desktop', 'latest.yml');
         const fileContents = await fs.readFile(versionPath, 'utf8');
@@ -16,7 +21,3 @@ async function Get_info_update_app_desktop() {
         console.log(error);
     }
 }
-
-module.exports = {
-    Get_info_update_app_desktop
-};

@@ -1,7 +1,8 @@
-const { db } = require("../../DB/mongoDB/config/init");
-const { ConnectionDBError } = require("../../Error/ConnectionErrors");
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 
-class RecordContenedoresRepository {
+
+export class RecordContenedoresRepository {
     static async post_record_contenedor_modification(
         action,
         user,
@@ -49,5 +50,3 @@ class RecordContenedoresRepository {
         }
     }
 }
-
-module.exports.RecordContenedoresRepository = RecordContenedoresRepository

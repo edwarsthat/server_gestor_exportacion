@@ -1,4 +1,5 @@
-const { ProcessError } = require("../../Error/ProcessError");
+import { ProcessError } from "../../Error/ProcessError.js";
+
 
 async function insumos_contenedor(contenedor) {
     try {
@@ -136,8 +137,6 @@ async function insumos_contenedor(contenedor) {
     }
 }
 
-
-
-module.exports = {
+export {
     insumos_contenedor
 }

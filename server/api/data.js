@@ -1,13 +1,12 @@
-const { DataLogicError } = require("../../Error/logicLayerError")
-const { ClientesRepository } = require("../Class/Clientes")
-const { ConstantesDelSistema } = require("../Class/ConstantesDelSistema")
-// const { ContenedoresRepository } = require("../Class/Contenedores")
-const { LotesRepository } = require("../Class/Lotes")
-const { ProveedoresRepository } = require("../Class/Proveedores")
-const { UsuariosRepository } = require("../Class/Usuarios")
+import { DataLogicError } from "../../Error/logicLayerError.js";
+import { ClientesRepository } from "../Class/Clientes.js";
+import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
+import { LotesRepository } from "../Class/Lotes.js";
+import { ProveedoresRepository } from "../Class/Proveedores.js";
+import { UsuariosRepository } from "../Class/Usuarios.js";
 
 
-class dataRepository {
+export class dataRepository {
     static async get_data_clientes() {
         try {
             const clientes = await ClientesRepository.get_clientes({
@@ -171,5 +170,4 @@ class dataRepository {
     }
 }
 
-module.exports.dataRepository = dataRepository
 

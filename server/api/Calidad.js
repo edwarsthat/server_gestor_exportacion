@@ -1,21 +1,25 @@
+import { CalidadLogicError } from "../../Error/logicLayerError.js";
+import { procesoEventEmitter } from "../../events/eventos.js";
+import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
+import { ContenedoresRepository } from "../Class/Contenedores.js";
+import { FormulariosCalidadRepository } from "../Class/FormulariosCalidad.js";
+import { LotesRepository } from "../Class/Lotes.js";
+import { UsuariosRepository } from "../Class/Usuarios.js";
+import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
+import fs from 'fs';
+import path from 'path';
+import { filtroFechaInicioFin } from "./utils/filtros.js";
+import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
+import { CalidadValidationsRepository } from "../validations/calidad.js";
+import { z } from "zod";
 
-const { CalidadLogicError } = require("../../Error/logicLayerError");
-const { procesoEventEmitter } = require("../../events/eventos");
-const { ConstantesDelSistema } = require("../Class/ConstantesDelSistema");
-const { ContenedoresRepository } = require("../Class/Contenedores");
-const { FormulariosCalidadRepository } = require("../Class/FormulariosCalidad");
-const { LotesRepository } = require("../Class/Lotes");
-const { UsuariosRepository } = require("../Class/Usuarios");
-const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
-const fs = require('fs')
-const path = require('path');
-const { filtroFechaInicioFin } = require("./utils/filtros");
-const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
-const { CalidadValidationsRepository } = require("../validations/calidad");
-const { z } = require("zod");
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const tipoFormulariosCalidadPath = path.join(__dirname, '../../constants/formularios_calidad.json')
-class CalidadRepository {
+export class CalidadRepository {
 
     //#region historial calidad
     static async get_calidad_historial_calidadInterna(req) {
@@ -953,5 +957,3 @@ class CalidadRepository {
     //#region POST
 
 }
-
-module.exports.CalidadRepository = CalidadRepository

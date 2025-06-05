@@ -1,8 +1,7 @@
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 
-const { db } = require("../../DB/mongoDB/config/init");
-const { ConnectionDBError } = require("../../Error/ConnectionErrors");
-
-class RecordDeleteRepository {
+export class RecordDeleteRepository {
     static async post_record_eliminados(
         action,
         user,
@@ -53,6 +52,4 @@ class RecordDeleteRepository {
     }
 
 }
-
-module.exports.RecordDeleteRepository = RecordDeleteRepository
 

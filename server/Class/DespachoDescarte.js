@@ -1,7 +1,7 @@
-const { db } = require("../../DB/mongoDB/config/init");
-const { PostError, ConnectionDBError } = require("../../Error/ConnectionErrors");
+import { db } from "../../DB/mongoDB/config/init.js";
+import { PostError, ConnectionDBError } from "../../Error/ConnectionErrors.js";
 
-class DespachoDescartesRepository {
+export class DespachoDescartesRepository {
     /**
      * Crea un nuevo registro de despacho de descarte en la base de datos.
      * 
@@ -111,7 +111,3 @@ class DespachoDescartesRepository {
     }
 }
 
-module.exports.DespachoDescartesRepository = DespachoDescartesRepository;
-
-// const fullDoc = await historialDespachoDescarte.findById(doc._id).select('lotesDespachados');
-// return { ...doc._doc, lotesDespachados: fullDoc.lotesDespachados };

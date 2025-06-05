@@ -1,5 +1,6 @@
-const { z } = require('zod')
-class ComercialValidationsRepository {
+import { z } from "zod";
+
+export class ComercialValidationsRepository {
     static val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro) {
         // 1) Verificar que solo contenga llaves válidas
         const validKeys = ["SISPAP", "PREDIO", "GGN.code"];
@@ -193,5 +194,3 @@ class ComercialValidationsRepository {
         })
     }
 }
-
-module.exports.ComercialValidationsRepository = ComercialValidationsRepository

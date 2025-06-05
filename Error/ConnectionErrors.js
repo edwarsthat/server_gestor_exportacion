@@ -79,7 +79,7 @@ class ErrorActionAlready extends Error {
     }
 }
 
-module.exports = {
+export {
     ConnectionDBError,
     BadGetwayError,
     PostError,

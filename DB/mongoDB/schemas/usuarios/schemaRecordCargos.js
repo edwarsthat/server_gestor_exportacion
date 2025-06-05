@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineRecordcargo = async (conn) => {
+export const defineRecordcargo = async (conn) => {
 
     const HistorialCargoSchema = new Schema({
         operacionRealizada: String,
@@ -15,7 +15,4 @@ const defineRecordcargo = async (conn) => {
     const recordCargo = conn.model("recordCargo", HistorialCargoSchema);
     return recordCargo
 }
-
-
-module.exports.defineRecordcargo = defineRecordcargo;
 

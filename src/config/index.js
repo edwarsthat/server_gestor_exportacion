@@ -12,5 +12,7 @@ export default {
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     AES_SECRET: process.env.AES_SECRET,
     USUARIO_PRUEBA: process.env.USUARIO_PRUEBA,
-    PASSWORD_PRUEBA: process.env.PASSWORD_PRUEBA
+    PASSWORD_PRUEBA: process.env.PASSWORD_PRUEBA,
+    EMAIL: process.env.EMAIL,
+    PASSWORD_EMAIL: process.env.PASSWORD_EMAIL
 };

@@ -1,7 +1,8 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineInsumos = async (conn) => {
+
+export const defineInsumos = async (conn) => {
 
     const InsumosSchema = new Schema({
         codigo: { type: String, require: true, unique: true },
@@ -18,4 +19,4 @@ const defineInsumos = async (conn) => {
 }
 
 
-module.exports.defineInsumos = defineInsumos;
+

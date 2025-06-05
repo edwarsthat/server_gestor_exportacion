@@ -1,11 +1,11 @@
-const { iniciarRedisDB } = require("../../DB/redis/init");
-const { ConnectRedisError } = require("../../Error/ConnectionErrors");
-const tipoFrutas = require("../../constants/tipo_fruta.json")
-const tipoDescartes = require("../../constants/tipoDescartes.json")
+import { iniciarRedisDB } from "../../DB/redis/init.js";
+import { ConnectRedisError } from "../../Error/ConnectionErrors.js";
+import { cargarDescartes, cargarTipoFrutas } from "../../constants/constants.js";
+
+
 const clientePromise = iniciarRedisDB();
 
-
-class RedisRepository {
+export class RedisRepository {
     /**
  * Acumula los valores de descarte en el inventario general y en el inventario diario ("hoy") usando Redis.
  * 
@@ -202,6 +202,7 @@ class RedisRepository {
         try {
             cliente = await clientePromise;
             // Prepara todas las promesas para ejecutarlas en paralelo
+            const tipoFrutas = await cargarTipoFrutas();
             const promesas = tipoFrutas.map(fruta => (
                 Promise.all([
                     cliente.hGetAll(`inventarioDescarte:${fruta}:descarteLavado:`),
@@ -264,7 +265,8 @@ class RedisRepository {
         try {
             cliente = await clientePromise;
             const tareas = [];
-            console.log("sdasdasds")
+            const tipoFrutas = await cargarTipoFrutas();
+            const tipoDescartes = await cargarDescartes();
             tipoFrutas.forEach(fruta => {
                 Object.keys(tipoDescartes).forEach(descarte => {
                     tipoDescartes[descarte].forEach(item => {
@@ -290,5 +292,3 @@ class RedisRepository {
         return await clientePromise;
     }
 }
-
-module.exports.RedisRepository = RedisRepository

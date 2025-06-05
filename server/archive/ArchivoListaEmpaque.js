@@ -1,8 +1,6 @@
 
 // let bussyIds = new Set();
 
-class RecordListaEmpaqueRepository {
+export class RecordListaEmpaqueRepository {
 
 }
-
-module.exports.RecordListaEmpaqueRepository = RecordListaEmpaqueRepository

@@ -1,6 +1,7 @@
-const { LotesRepository } = require("../Class/Lotes");
+// const { LotesRepository } = require("../Class/Lotes");
+import { LotesRepository } from "../Class/Lotes.js";
 
-class ContabilidadRepository {
+export class ContabilidadRepository {
     static async obtener_lotes_contabilidad_informes_calidad(data) {
         const { page } = data;
         const resultsPerPage = 50;
@@ -50,5 +51,3 @@ class ContabilidadRepository {
         return lotes
     }
 }
-
-module.exports.ContabilidadRepository = ContabilidadRepository

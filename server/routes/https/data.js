@@ -1,8 +1,9 @@
-const express = require('express');
-const { dataRepository } = require('../../api/data');
-const { UserRepository } = require('../../auth/users');
+import express from 'express';
+import { dataRepository } from '../../api/data.js';
+import { UserRepository } from '../../auth/users.js';
 
-const routerDataSys = express.Router();
+
+export const routerDataSys = express.Router();
 
 
 routerDataSys.get("/get_data_tipoFruta", async (req, res) => {
@@ -20,5 +21,3 @@ routerDataSys.get("/get_data_tipoFruta", async (req, res) => {
     }
 });
 
-
-module.exports.routerDataSys = routerDataSys;

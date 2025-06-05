@@ -1,9 +1,14 @@
-const fs = require('fs');
-const path = require('path');
-const { ProcessError } = require('../../Error/ProcessError');
-const { iniciarRedisDB } = require('../../DB/redis/init');
-const { ConnectRedisError } = require('../../Error/ConnectionErrors');
-const { TurnoDatarepository } = require('./TurnoData');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { ProcessError } from '../../Error/ProcessError.js';
+import { iniciarRedisDB } from '../../DB/redis/init.js';
+import { ConnectRedisError } from '../../Error/ConnectionErrors.js';
+import { TurnoDatarepository } from './TurnoData.js';
+
+// 🪄 Magia para __dirname y __filename:
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const pathIDs = path.join(__dirname, '..', '..', 'inventory', 'seriales.json');
 const inventarioPath = path.join(__dirname, '..', '..', 'inventory', 'inventario.json');
@@ -14,6 +19,7 @@ const observacionesCalidadPath = path.join(__dirname, '..', '..', 'constants', '
 const canastillasPath = path.join(__dirname, '..', '..', 'inventory', 'canastillas.json');
 
 
+
 let inventarioFleg = false; // bandera que indica que el inventario se esta escribiendo
 let inventarioDesFleg = false; // bandera que indica que el inventarioDesverdizado se esta escribiendo
 let ordenVaceoFlag = false; //bandera que indica que la orden de vaceo se esta escribiendo
@@ -21,7 +27,7 @@ let inventarioDescarteFlag = false; // bandera que indica que el inventario desc
 
 const clientePromise = iniciarRedisDB();
 
-class VariablesDelSistema {
+export class VariablesDelSistema {
   // #region EF1 o Predios
   static async generarEF1(fecha_ingreso = new Date()) {
     try {
@@ -1558,5 +1564,3 @@ class VariablesDelSistema {
       }
     }
 }
-
-module.exports.VariablesDelSistema = VariablesDelSistema

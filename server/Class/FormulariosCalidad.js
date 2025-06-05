@@ -1,11 +1,11 @@
-const { db } = require("../../DB/mongoDB/config/init");
-const { ConnectionDBError, PutError } = require("../../Error/ConnectionErrors");
-const { ItemBussyError } = require("../../Error/ProcessError");
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ConnectionDBError, PutError } from "../../Error/ConnectionErrors.js";
+import { ItemBussyError } from "../../Error/ProcessError.js";
 
 let bussyIds = new Set();
 
 
-class FormulariosCalidadRepository {
+export class FormulariosCalidadRepository {
     static async crear_formulario_limpieza_diaria(ID, fechaInicio, fechaFin) {
         const formulario = new db.LimpiezaDiaria({
             ID: ID,
@@ -222,4 +222,3 @@ class FormulariosCalidadRepository {
     }
 }
 
-module.exports.FormulariosCalidadRepository = FormulariosCalidadRepository

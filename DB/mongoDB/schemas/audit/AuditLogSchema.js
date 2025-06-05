@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-
 export const defineAuditLogs = async (conn) => {
 
     const AuditLogSchema = new Schema({

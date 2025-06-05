@@ -1,7 +1,7 @@
-const { ComercialRepository } = require("../../api/Comercial")
-const { successResponseRoutes } = require("../helpers/responses")
+import { ComercialRepository } from "../../api/Comercial.js";
+import { successResponseRoutes } from "../helpers/responses.js";
 
-const apiSocketComercial = {
+export const apiSocketComercial = {
     //#region precio proveedores
     get_comercial_precios_proveedores_registros: async () => {
         const response = await ComercialRepository.get_comercial_precios_proveedores_registros();
@@ -97,5 +97,3 @@ const apiSocketComercial = {
     }
     //#endregion
 }
-
-module.exports.apiSocketComercial = apiSocketComercial

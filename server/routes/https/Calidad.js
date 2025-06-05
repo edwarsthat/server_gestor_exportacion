@@ -1,8 +1,10 @@
-const express = require('express');
-const { UserRepository } = require('../../auth/users');
-const { AccessError } = require('../../../Error/ValidationErrors');
-const { CalidadRepository } = require('../../api/Calidad');
-const routerCalidad = express.Router();
+import express from 'express';
+import { UserRepository } from '../../auth/users.js';
+import { AccessError } from '../../../Error/ValidationErrors.js';
+import { CalidadRepository } from '../../api/Calidad.js';
+
+
+export const routerCalidad = express.Router();
 
 routerCalidad.get("/", (req, res) => {
     console.log(req)
@@ -111,5 +113,3 @@ routerCalidad.put("/add_item_formulario_calidad", async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 });
-
-module.exports.routerCalidad = routerCalidad;

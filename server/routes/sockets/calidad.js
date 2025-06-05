@@ -1,7 +1,7 @@
-const { CalidadRepository } = require("../../api/Calidad")
-const { successResponseRoutes } = require("../helpers/responses")
+import { CalidadRepository } from "../../api/Calidad.js";
+import { successResponseRoutes } from "../helpers/responses.js";
 
-const apiSocketCalidad = {
+export const apiSocketCalidad = {
     //#region historial
     get_calidad_historial_calidadInterna: async (data) => {
         const response = await CalidadRepository.get_calidad_historial_calidadInterna(data)
@@ -154,4 +154,3 @@ const apiSocketCalidad = {
     //#endregion
 }
 
-module.exports.apiSocketCalidad = apiSocketCalidad

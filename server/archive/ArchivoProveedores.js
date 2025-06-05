@@ -1,6 +1,4 @@
 
-class RecordProveedoresRepository {
+export class RecordProveedoresRepository {
 
 }
-
-module.exports.RecordProveedoresRepository = RecordProveedoresRepository

@@ -1,16 +1,17 @@
-const { obtenerEstadoDesdeAccionCanastillasInventario } = require("../api/utils/diccionarios");
-const { RecordLotesRepository } = require("../archive/ArchiveLotes.mjs");
-const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
-const { ClientesRepository } = require("../Class/Clientes");
-const { DespachoDescartesRepository } = require("../Class/DespachoDescarte");
-const { FrutaDescompuestaRepository } = require("../Class/FrutaDescompuesta");
-const { LotesRepository } = require("../Class/Lotes");
-const { PreciosRepository } = require("../Class/Precios");
-const { ProveedoresRepository } = require("../Class/Proveedores");
-const { RedisRepository } = require("../Class/RedisData");
-const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
+import { obtenerEstadoDesdeAccionCanastillasInventario } from "../api/utils/diccionarios.js";
+import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
+import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
+import { ClientesRepository } from "../Class/Clientes.js";
+import { DespachoDescartesRepository } from "../Class/DespachoDescarte.js";
+import { FrutaDescompuestaRepository } from "../Class/FrutaDescompuesta.js";
+import { LotesRepository } from "../Class/Lotes.js";
+import { PreciosRepository } from "../Class/Precios.js";
+import { ProveedoresRepository } from "../Class/Proveedores.js";
+import { RedisRepository } from "../Class/RedisData.js";
+import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 
-class InventariosService {
+
+export class InventariosService {
 
     static async obtenerPrecioProveedor(predioId, tipoFruta) {
         const proveedor = await ProveedoresRepository.get_proveedores({
@@ -788,5 +789,3 @@ class InventariosService {
         }
     }
 }
-
-module.exports.InventariosService = InventariosService

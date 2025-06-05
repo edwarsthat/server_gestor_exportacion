@@ -1,4 +1,4 @@
-const { LotesRepository } = require("../../Class/Lotes");
+import { LotesRepository } from "../../Class/Lotes.js";
 
 const oobtener_datos_lotes_to_listaEmpaque = async (contenedores) => {
     try {
@@ -40,7 +40,7 @@ const obtener_datos_lotes_listaEmpaque_cajasSinPallet = async (items) => {
     }
     return items
 }
-module.exports = {
+export {
     oobtener_datos_lotes_to_listaEmpaque,
     obtener_datos_lotes_listaEmpaque_cajasSinPallet
 }

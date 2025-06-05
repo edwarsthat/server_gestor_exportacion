@@ -33,11 +33,10 @@ const { PORT, HOST } = config;
 
 const server = http.createServer(app);
 
-import { initMongoDB } from './DB/mongoDB/config/init.mjs';
+import { initMongoDB } from './DB/mongoDB/config/init.js';
 import { initSockets } from './src/sockets/ws.js';
 import { initCronJobs } from './src/cron/jobs.js';
-import grpcRust from './config/grpcRust.js';
-const { initRustRcp } = grpcRust;
+import {  initRustRcp } from './config/grpcRust.js';
 
 (async () => {
     try {

@@ -1,4 +1,4 @@
-import { UtilError } from "../../../Error/ProcessError";
+import { UtilError } from "../../../Error/ProcessError.js";
 import { getISOWeek } from 'date-fns';
 
 function filtroFechaInicioFin(fechaInicio, fechaFin, filter = {}, fecha) {

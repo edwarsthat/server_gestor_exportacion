@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineModificarElemento = async (conn) => {
+export const defineModificarElemento = async (conn) => {
 
     const HistorialModificacionSchema = new Schema({
         accion: { type: String, required: true }, // Ej: "ACTUALIZACION_PALET"
@@ -34,5 +34,3 @@ const defineModificarElemento = async (conn) => {
 
 };
 
-
-module.exports.defineModificarElemento = defineModificarElemento;

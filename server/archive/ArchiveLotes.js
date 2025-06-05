@@ -1,4 +1,4 @@
-import { db } from "../../DB/mongoDB/config/init.mjs";
+import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PutError } from "../../Error/ConnectionErrors.js";
 import { ItemBussyError } from "../../Error/ProcessError.js";
 

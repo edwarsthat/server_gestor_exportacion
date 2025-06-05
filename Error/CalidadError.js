@@ -1,4 +1,4 @@
-class CalidadError extends Error {
+export class CalidadError extends Error {
     constructor(code, message) {
         super();
         this.name = "CalidadError"
@@ -7,9 +7,3 @@ class CalidadError extends Error {
     }
 }
 
-
-
-module.exports = {
-    CalidadError,
-
-}

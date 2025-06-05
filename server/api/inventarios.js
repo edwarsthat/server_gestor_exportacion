@@ -1,24 +1,24 @@
-const { ZodError } = require("zod");
-const { InventariosLogicError } = require("../../Error/logicLayerError");
-const { procesoEventEmitter } = require("../../events/eventos");
-const { RecordLotesRepository } = require("../archive/ArchiveLotes.mjs");
-const { CanastillasRepository } = require("../Class/CanastillasRegistros");
-const { ContenedoresRepository } = require("../Class/Contenedores");
-const { DespachoDescartesRepository } = require("../Class/DespachoDescarte");
-const { FrutaDescompuestaRepository } = require("../Class/FrutaDescompuesta");
-const { InsumosRepository } = require("../Class/Insumos");
-const { LotesRepository } = require("../Class/Lotes");
-const { ProveedoresRepository } = require("../Class/Proveedores");
-const { UsuariosRepository } = require("../Class/Usuarios");
-const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
-const { InventariosValidations } = require("../validations/inventarios");
-const { generarCodigoEF } = require("./helper/inventarios");
-const { filtroFechaInicioFin } = require("./utils/filtros");
-const { transformObjectInventarioDescarte } = require("./utils/objectsTransforms");
-const { InventariosService } = require("../services/inventarios");
-const { RedisRepository } = require("../Class/RedisData");
+import { ZodError } from "zod";
+import { InventariosLogicError } from "../../Error/logicLayerError.js";
+import { procesoEventEmitter } from "../../events/eventos.js";
+import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
+import { CanastillasRepository } from "../Class/CanastillasRegistros.js";
+import { ContenedoresRepository } from "../Class/Contenedores.js";
+import { DespachoDescartesRepository } from "../Class/DespachoDescarte.js";
+import { FrutaDescompuestaRepository } from "../Class/FrutaDescompuesta.js";
+import { InsumosRepository } from "../Class/Insumos.js";
+import { LotesRepository } from "../Class/Lotes.js";
+import { ProveedoresRepository } from "../Class/Proveedores.js";
+import { UsuariosRepository } from "../Class/Usuarios.js";
+import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
+import { InventariosValidations } from "../validations/inventarios.js";
+import { generarCodigoEF } from "./helper/inventarios.js";
+import { filtroFechaInicioFin } from "./utils/filtros.js";
+import { transformObjectInventarioDescarte } from "./utils/objectsTransforms.js";
+import { InventariosService } from "../services/inventarios.js";
+import { RedisRepository } from "../Class/RedisData.js";
 
-class InventariosRepository {
+export class InventariosRepository {
     //#region inventarios
     static async put_inventarios_frutaDesverdizando_parametros(req) {
         try {
@@ -1457,6 +1457,3 @@ class InventariosRepository {
     }
     //endregion
 }
-
-
-module.exports.InventariosRepository = InventariosRepository

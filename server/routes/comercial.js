@@ -1,7 +1,7 @@
-const express = require('express');
-const { UserRepository } = require('../auth/users');
-const { ComercialRepository } = require('../api/Comercial');
-const routerComercial = express.Router();
+import express from 'express';
+import { UserRepository } from '../auth/users.js';
+import { ComercialRepository } from '../api/Comercial.js';
+export const routerComercial = express.Router();
 
 routerComercial.get("/", (req, res) => {
     console.log(req)
@@ -75,4 +75,3 @@ routerComercial.get("/get_comercial_precios_cantidad_registros", async (req, res
 })
 
 
-module.exports.routerComercial = routerComercial;

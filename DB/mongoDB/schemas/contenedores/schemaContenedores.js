@@ -1,7 +1,5 @@
-const mongoose = require("mongoose");
-
+import mongoose from "mongoose";
 const { Schema } = mongoose;
-
 
 function diffObjects(obj1, obj2, path = "") {
   const changes = [];
@@ -17,7 +15,7 @@ function diffObjects(obj1, obj2, path = "") {
 }
 
 
-const defineContenedores = async (conn, AuditLog) => {
+export const defineContenedores = async (conn, AuditLog) => {
 
   const insumosSchema = new Schema({
     any: {
@@ -231,5 +229,3 @@ const defineContenedores = async (conn, AuditLog) => {
   const Contenedores = conn.model("Contenedor", listaEmpaqueSchema);
   return Contenedores;
 }
-
-module.exports.defineContenedores = defineContenedores;

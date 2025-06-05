@@ -1,7 +1,7 @@
-const { db } = require("../../DB/mongoDB/config/init");
-const { ConnectionDBError } = require("../../Error/ConnectionErrors");
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 
-class CanastillasRepository {
+export class CanastillasRepository {
 
     static async post_registro(data) {
         try {
@@ -53,4 +53,3 @@ class CanastillasRepository {
     }
 }
 
-module.exports.CanastillasRepository = CanastillasRepository 

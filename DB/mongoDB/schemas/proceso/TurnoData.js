@@ -1,8 +1,8 @@
 
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineTurnoData = async (conn) => {
+export const defineTurnoData = async (conn) => {
 
     const dataStopSchema = new Schema({
         inicioPausa: Date,
@@ -23,5 +23,3 @@ const defineTurnoData = async (conn) => {
     const TurnoData = conn.model("turno", TurnoDataSchema);
     return TurnoData
 }
-
-module.exports.defineTurnoData = defineTurnoData;

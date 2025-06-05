@@ -25,7 +25,7 @@ class ValidationTokenError extends Error {
     }
 }
 
-module.exports = {
+export {
     ValidationUserError,
     ValidationTokenError,
     AccessError

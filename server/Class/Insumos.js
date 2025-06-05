@@ -1,10 +1,10 @@
-const { db } = require("../../DB/mongoDB/config/init");
-const { ConnectionDBError, PutError, PostError } = require("../../Error/ConnectionErrors");
-const { ItemBussyError } = require("../../Error/ProcessError");
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ConnectionDBError, PutError, PostError } from "../../Error/ConnectionErrors.js";
+import { ItemBussyError } from "../../Error/ProcessError.js";
 
 let bussyIds = new Set();
 
-class InsumosRepository {
+export class InsumosRepository {
     static async get_insumos(options = {}) {
 
         const {
@@ -90,4 +90,3 @@ class InsumosRepository {
     }
 }
 
-module.exports.InsumosRepository = InsumosRepository

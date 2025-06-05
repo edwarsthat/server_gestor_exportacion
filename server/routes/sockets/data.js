@@ -1,7 +1,8 @@
-const { dataRepository } = require("../../api/data")
-const { successResponseRoutes } = require("../helpers/responses")
+import { dataRepository } from "../../api/data.js";
+import { successResponseRoutes } from "../helpers/responses.js";
 
-const apiSocketData = {
+
+export const apiSocketData = {
     get_data_clientes: async () => {
         const response = await dataRepository.get_data_clientes();
         return successResponseRoutes(response);
@@ -23,5 +24,3 @@ const apiSocketData = {
         return successResponseRoutes(response)
     },
 }
-
-module.exports.apiSocketData = apiSocketData

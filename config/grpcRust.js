@@ -1,6 +1,6 @@
-const net = require("net");
+import net from "net";
 
-class RustRcp {
+export class RustRcp {
     constructor(host, port) {
         this.host = host;
         this.port = port;
@@ -23,7 +23,6 @@ class RustRcp {
             });
 
             this.client.on("error", (err) => {
-                // console.error("❌ Error en la conexión:", err);
                 this.isConnected = false;
                 this.startReconnectLoop();
                 reject(err);
@@ -33,7 +32,6 @@ class RustRcp {
                 console.log("⚠️ Desconectado del servidor");
                 this.isConnected = false;
                 this.startReconnectLoop();
-
             });
         });
     }
@@ -41,12 +39,9 @@ class RustRcp {
     startReconnectLoop() {
         if (this.retryTimer) return; // Already trying
 
-        // console.log("🔁 Iniciando intento de reconexión cada 15s...");
-
         this.retryTimer = setInterval(() => {
             if (!this.isConnected) {
-                // console.log("🔍 Intentando reconectar al servidor Rust...");
-                this.connect().catch(() => { }); // Don't spam errors
+                this.connect().catch(() => { /* silencioso para no saturar */ });
             }
         }, this.reconnectInterval);
     }
@@ -58,8 +53,8 @@ class RustRcp {
             }
 
             const dataToSend = JSON.stringify(data);
-            this.client.once("data", (data) => {
-                resolve(data.toString());
+            this.client.once("data", (incoming) => {
+                resolve(incoming.toString());
             });
 
             this.client.write(dataToSend, (err) => {
@@ -74,10 +69,9 @@ class RustRcp {
 }
 
 // Creamos una sola instancia global
-const rustRcpClient = new RustRcp("127.0.0.1", 5000);
+export const rustRcpClient = new RustRcp("127.0.0.1", 5000);
 
 // Exportamos la instancia y un método para inicializar
-module.exports = {
-    rustRcpClient,
-    initRustRcp: () => rustRcpClient.connect()
-};
+export function initRustRcp() {
+    return rustRcpClient.connect();
+}

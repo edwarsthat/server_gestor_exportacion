@@ -1,7 +1,7 @@
-const { db } = require("../../DB/mongoDB/config/init.mjs");
-const { ConnectionDBError } = require("../../Error/ConnectionErrors")
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 
-class PreciosRepository {
+export class PreciosRepository {
     static async post_precio(data) {
         try {
             const registro = new db.Precios(data);
@@ -81,4 +81,4 @@ class PreciosRepository {
     }
 }
 
-module.exports.PreciosRepository = PreciosRepository
+

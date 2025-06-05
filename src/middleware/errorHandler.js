@@ -1,5 +1,4 @@
-const { HandleErrors } = require("../../Error/recordErrors");
-
+import { HandleErrors } from "../../Error/recordErrors.js";
 
 async function middleWareHandleErrors(err, req, res, next) {
     console.error("Error capturado:", err);
@@ -12,6 +11,6 @@ async function middleWareHandleErrors(err, req, res, next) {
     res.status(status).json({ status, message });
 }
 
-module.exports = {
+export {
     middleWareHandleErrors
 };

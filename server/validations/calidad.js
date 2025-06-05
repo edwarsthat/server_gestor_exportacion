@@ -1,5 +1,6 @@
-const { z } = require('zod')
-class CalidadValidationsRepository {
+import { z } from "zod";
+
+export class CalidadValidationsRepository {
     static put_calidad_ingresos_clasificacionDescarte() {
         return z.object({
             _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
@@ -27,5 +28,3 @@ class CalidadValidationsRepository {
         })
     }
 }
-
-module.exports.CalidadValidationsRepository = CalidadValidationsRepository

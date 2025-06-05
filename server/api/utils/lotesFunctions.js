@@ -1,4 +1,6 @@
-import { ProcessError } from "../../../Error/ProcessError";
+import { ProcessError } from "../../../Error/ProcessError.js";
+
+
 
 async function rendimientoLote(data) {
     /**

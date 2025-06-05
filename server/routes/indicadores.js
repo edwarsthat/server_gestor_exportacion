@@ -1,8 +1,9 @@
-const express = require('express');
-const { UserRepository } = require('../auth/users');
-const { IndicadoresAPIRepository } = require('../api/IndicadoresAPI');
+import express from 'express';
+import { UserRepository } from '../auth/users.js';
+import { IndicadoresAPIRepository } from '../api/IndicadoresAPI.js';
 
-const routerIndicadores = express.Router();
+
+export const routerIndicadores = express.Router();
 
 
 routerIndicadores.get("/get_indicadores_proceso_numero_items", async (req, res) => {
@@ -55,8 +56,3 @@ routerIndicadores.put("/put_indicadores_eficiencia_operativa_modificar", async (
         res.json({ status: err.status, message: err.message })
     }
 })
-
-
-module.exports = {
-    routerIndicadores
-}

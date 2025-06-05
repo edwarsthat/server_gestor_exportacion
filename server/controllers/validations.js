@@ -33,7 +33,7 @@ async function is_finish_lote(lote) {
     return false
 }
 
-module.exports = {
+export {
     have_lote_GGN_export,
     is_finish_lote
 }

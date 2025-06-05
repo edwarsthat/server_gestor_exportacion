@@ -1,23 +1,22 @@
-const { BadGetwayError, ErrorUndefinedData } = require("../../Error/ConnectionErrors");
-const { HandleErrors } = require("../../Error/recordErrors");
-const { AccessError } = require("../../Error/ValidationErrors");
-const { procesoEventEmitter } = require("../../events/eventos");
-const { UserRepository } = require("../../server/auth/users");
-const { apiSocket } = require("../../server/desktop/reduce");
-const { apiSocketCalidad } = require("../../server/routes/sockets/calidad");
-const { apiSocketComercial } = require("../../server/routes/sockets/comercial");
-const { apiSocketData } = require("../../server/routes/sockets/data");
-const { apiSocketGestionCuentas } = require("../../server/routes/sockets/gestionCuentas");
-const { apiSockectIndicadores } = require("../../server/routes/sockets/indicadores");
-const { apiSocketInventarios } = require("../../server/routes/sockets/inventarios");
-const { apiSocketProceso } = require("../../server/routes/sockets/proceso");
-const { apiSocketPython } = require("../../server/routes/sockets/pythonRoute");
-const { apiSocketSistema } = require("../../server/routes/sockets/sistema");
-const { apiSocketTransporte } = require("../../server/routes/sockets/transporte");
+import { BadGetwayError, ErrorUndefinedData } from "../../Error/ConnectionErrors.js";
+import { HandleErrors } from "../../Error/recordErrors.js";
+import { AccessError } from "../../Error/ValidationErrors.js";
+import { procesoEventEmitter } from "../../events/eventos.js";
+import { UserRepository } from "../../server/auth/users.js";
+import { apiSocket } from "../../server/desktop/reduce.js";
+import { apiSocketCalidad } from "../../server/routes/sockets/calidad.js";
+import { apiSocketComercial } from "../../server/routes/sockets/comercial.js";
+import { apiSocketData } from "../../server/routes/sockets/data.js";
+import { apiSocketGestionCuentas } from "../../server/routes/sockets/gestionCuentas.js";
+import { apiSockectIndicadores } from "../../server/routes/sockets/indicadores.js";
+import { apiSocketInventarios } from "../../server/routes/sockets/inventarios.js";
+import { apiSocketProceso } from "../../server/routes/sockets/proceso.js";
+import { apiSocketPython } from "../../server/routes/sockets/pythonRoute.js";
+import { apiSocketSistema } from "../../server/routes/sockets/sistema.js";
+import { apiSocketTransporte } from "../../server/routes/sockets/transporte.js";
 
 
-
-function initSockets(io) {
+export function initSockets(io) {
     // Middleware de autenticación para Socket.IO
 
 
@@ -141,5 +140,3 @@ function initSockets(io) {
 
     });
 }
-
-module.exports.initSockets = initSockets

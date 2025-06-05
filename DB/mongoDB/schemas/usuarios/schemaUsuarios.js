@@ -1,8 +1,7 @@
-const mongoose = require("mongoose");
-// const { Cargo } = require("./schemaCargos");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineUser = async (conn) => {
+export const defineUser = async (conn) => {
 
     const usuariosSchema = new Schema({
         usuario: { type: String, required: true, unique: true },
@@ -30,6 +29,3 @@ const defineUser = async (conn) => {
 
 }
 
-module.exports = {
-    defineUser
-};
