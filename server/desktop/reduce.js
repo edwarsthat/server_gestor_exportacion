@@ -1,5 +1,5 @@
 const { LotesRepository } = require("../Class/Lotes");
-const { ProcesoRepository } = require("../api/Proceso");
+const { ProcesoRepository } = require("../api/Proceso.mjs");
 const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
 const { CalidadRepository } = require("../api/Calidad");
 const { ComercialRepository } = require("../api/Comercial");

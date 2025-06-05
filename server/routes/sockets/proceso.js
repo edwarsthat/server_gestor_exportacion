@@ -1,4 +1,4 @@
-const { ProcesoRepository } = require("../../api/Proceso")
+const { ProcesoRepository } = require("../../api/Proceso.mjs")
 const { successResponseRoutes } = require("../helpers/responses")
 
 const apiSocketProceso = {

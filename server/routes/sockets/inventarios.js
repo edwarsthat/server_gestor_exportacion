@@ -2,7 +2,7 @@ const { CalidadRepository } = require("../../api/Calidad");
 const { ComercialRepository } = require("../../api/Comercial");
 const { InventariosRepository } = require("../../api/inventarios");
 const { ModificarRepository } = require("../../api/ModificarData");
-const { ProcesoRepository } = require("../../api/Proceso");
+const { ProcesoRepository } = require("../../api/Proceso.mjs");
 const { VariablesDelSistema } = require("../../Class/VariablesDelSistema");
 const { successResponseRoutes } = require("../helpers/responses");
 

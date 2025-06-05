@@ -1,7 +1,13 @@
-const express = require('express');
-const path = require('path')
-const { procesoEventEmitter } = require('../../events/eventos');
-const { SistemaRepository } = require('../api/Sistema');
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { procesoEventEmitter } from '../../events/eventos.js';
+import { SistemaRepository } from '../api/Sistema.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const routerAppTv = express.Router();
 
 routerAppTv.get("/", (req, res) => {
@@ -66,4 +72,4 @@ routerAppTv.get("/events", async (req, res) => {
     }
 })
 
-module.exports.routerAppTv = routerAppTv;
+export { routerAppTv };

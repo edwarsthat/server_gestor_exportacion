@@ -1,10 +1,10 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineAuditLogs = async (conn) => {
 
+export const defineAuditLogs = async (conn) => {
 
-    const AuditLogSchema  = new Schema({
+    const AuditLogSchema = new Schema({
         collection: String,
         documentId: mongoose.Schema.Types.ObjectId,
         operation: String,
@@ -13,6 +13,11 @@ const defineAuditLogs = async (conn) => {
         timestamp: { type: Date, default: Date.now },
         oldValue: mongoose.Schema.Types.Mixed,
         newValue: mongoose.Schema.Types.Mixed,
+        changes: [{
+            field: String,
+            before: mongoose.Schema.Types.Mixed,
+            after: mongoose.Schema.Types.Mixed
+        }],
         description: String
     }, { timestamps: true });
 
@@ -26,5 +31,5 @@ const defineAuditLogs = async (conn) => {
 
 }
 
-module.exports.defineAuditLogs = defineAuditLogs;
+
 

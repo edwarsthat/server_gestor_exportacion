@@ -12,6 +12,7 @@
     "lint": "eslint . --fix",
     "iniciar-inventario": "node scripts/InicializarInventario.js"
   },
+  "type": "module",
   "author": "Edwar Stheven Ariza Torres",
   "license": "PROPIEDAD PRIVADA - USO EXCLUSIVO CELIFRUT",
   "dependencies": {
@@ -25,6 +26,7 @@
     "exceljs": "^4.4.0",
     "express": "^4.21.1",
     "express-rate-limit": "^7.5.0",
+    "file-type": "^16.5.4",
     "helmet": "^8.1.0",
     "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
@@ -34,6 +36,7 @@
     "nodemailer": "^6.10.0",
     "redis": "^4.7.0",
     "socket.io": "^4.8.1",
+    "uuid": "^11.1.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

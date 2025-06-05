@@ -1,28 +1,32 @@
-const { ProcessError } = require("../../Error/ProcessError");
-const { procesoEventEmitter } = require("../../events/eventos");
-const { RecordLotesRepository } = require("../archive/ArchiveLotes");
-const { ContenedoresRepository } = require("../Class/Contenedores");
-const { LotesRepository } = require("../Class/Lotes");
-const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
-const calidadFile = require('../../constants/calidad.json');
-const { insumos_contenedor } = require("../functions/insumos");
-const { InsumosRepository } = require("../Class/Insumos");
+import { ProcessError } from "../../Error/ProcessError.js";
+import { procesoEventEmitter } from "../../events/eventos.js";
+import { RecordLotesRepository } from "../archive/ArchiveLotes.mjs";
+import { ContenedoresRepository } from "../Class/Contenedores.mjs";
+import { LotesRepository } from "../Class/Lotes.js";
+import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
+import { readFile } from 'fs/promises';
+import { insumos_contenedor } from "../functions/insumos.js";
+import { InsumosRepository } from "../Class/Insumos.js";
 
-const path = require('path');
-const fs = require("fs");
+import path from 'path';
+import fs from "fs";
 
-const { have_lote_GGN_export } = require("../controllers/validations");
-const { filtroFechaInicioFin } = require("./utils/filtros");
-const { InventariosLogicError } = require("../../Error/logicLayerError");
-const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
-const { deshidratacionLote, rendimientoLote } = require("./utils/lotesFunctions");
-const ProcesoValidations = require("../validations/proceso");
-const { ProcesoService } = require("../services/proceso");
-const { z } = require("zod");
-const { RedisRepository } = require("../Class/RedisData");
+import { have_lote_GGN_export } from "../controllers/validations.js";
+import { filtroFechaInicioFin } from "./utils/filtros.js";
+import { InventariosLogicError } from "../../Error/logicLayerError.js";
+import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
+import { deshidratacionLote, rendimientoLote } from "./utils/lotesFunctions.js";
+import ProcesoValidations from "../validations/proceso.js";
+import { ProcesoService } from "../services/proceso.js";
+import { z } from "zod";
+import { RedisRepository } from "../Class/RedisData.js";
 
 
-class ProcesoRepository {
+const calidadFile = JSON.parse(
+    await readFile(new URL('../../constants/calidad.json', import.meta.url))
+);
+
+export class ProcesoRepository {
 
     //#region aplicaciones
     static async post_proceso_aplicaciones_fotoCalidad(req) {
@@ -2077,6 +2081,3 @@ class ProcesoRepository {
     //#endregion
 
 }
-
-module.exports.ProcesoRepository = ProcesoRepository
-

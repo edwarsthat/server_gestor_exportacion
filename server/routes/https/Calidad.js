@@ -46,8 +46,6 @@ routerCalidad.post("/post_calidad_ingresos_higienePersonal", async (req, res) =>
 })
 //#endregion
 
-
-
 routerCalidad.get("/get_lotes_clasificacion_descarte", async (req, res) => {
     try {
         const token = req.headers['authorization'];
@@ -78,7 +76,6 @@ routerCalidad.get("/get_formularios_calidad_creados", async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 })
-
 routerCalidad.put("/put_lotes_clasificacion_descarte", async (req, res) => {
     try {
         const token = req.headers['authorization'];
@@ -92,11 +89,7 @@ routerCalidad.put("/put_lotes_clasificacion_descarte", async (req, res) => {
             },
             user: user
         }
-
         await CalidadRepository.put_calidad_ingresos_clasificacionDescarte(data)
-
-
-
 
         res.send({ status: 200, message: 'Ok' })
     } catch (err) {

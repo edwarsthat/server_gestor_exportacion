@@ -1,7 +1,7 @@
 const { ZodError } = require("zod");
 const { InventariosLogicError } = require("../../Error/logicLayerError");
 const { procesoEventEmitter } = require("../../events/eventos");
-const { RecordLotesRepository } = require("../archive/ArchiveLotes");
+const { RecordLotesRepository } = require("../archive/ArchiveLotes.mjs");
 const { CanastillasRepository } = require("../Class/CanastillasRegistros");
 const { ContenedoresRepository } = require("../Class/Contenedores");
 const { DespachoDescartesRepository } = require("../Class/DespachoDescarte");

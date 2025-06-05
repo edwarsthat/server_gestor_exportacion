@@ -1,6 +1,11 @@
-const { z } = require('zod');
-const tiposFruta = require('../../constants/tipo_fruta.json');
-const { getErrorMessages, safeString, optionalSafeString } = require('./utils/validationFunctions');
+import { z } from 'zod';
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const tiposFruta = JSON.parse(readFileSync(join(__dirname, '../../constants/tipo_fruta.json'), 'utf8'));
+import { getErrorMessages, safeString, optionalSafeString } from './utils/validationFunctions.js';
 
 class ProcesoValidations {
     static async put_proceso_aplicaciones_listaEmpaque_agregarItem(data) {
@@ -113,4 +118,4 @@ class ProcesoValidations {
     }
 }
 
-module.exports = ProcesoValidations;
+export default ProcesoValidations;

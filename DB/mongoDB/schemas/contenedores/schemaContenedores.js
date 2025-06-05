@@ -2,7 +2,22 @@ const mongoose = require("mongoose");
 
 const { Schema } = mongoose;
 
-const defineContenedores = async (conn) => {
+
+function diffObjects(obj1, obj2, path = "") {
+  const changes = [];
+  for (const key of new Set([...Object.keys(obj1), ...Object.keys(obj2)])) {
+    const fullPath = path ? `${path}.${key}` : key;
+    if (typeof obj1[key] === "object" && typeof obj2[key] === "object" && obj1[key] && obj2[key]) {
+      changes.push(...diffObjects(obj1[key], obj2[key], fullPath));
+    } else if (obj1[key] !== obj2[key]) {
+      changes.push({ field: fullPath, before: obj1[key], after: obj2[key] });
+    }
+  }
+  return changes;
+}
+
+
+const defineContenedores = async (conn, AuditLog) => {
 
   const insumosSchema = new Schema({
     any: {
@@ -164,24 +179,53 @@ const defineContenedores = async (conn) => {
   });
 
   // Middleware to update `ultimaModificacion` field
-  listaEmpaqueSchema.pre("save", function (next) {
-    this.infoContenedor.ultimaModificacion = new Date();
-    next();
+  listaEmpaqueSchema.post('save', async function (doc) {
+    try {
+      await AuditLog.create({
+        collection: 'Lote',
+        documentId: doc._id,
+        operation: 'create',
+        user: doc._user,
+        action: "crearLote",
+        newValue: doc,
+        description: 'Creación de lote'
+      });
+    } catch (err) {
+      console.error('Error guardando auditoría:', err);
+    }
+  });
+  listaEmpaqueSchema.pre('findOneAndUpdate', async function (next) {
+    try {
+      const docToUpdate = await this.model.findOne(this.getQuery());
+      this._oldValue = docToUpdate ? docToUpdate.toObject() : null;
+      next();
+    } catch (err) {
+      next(err);
+    }
   });
 
-  listaEmpaqueSchema.pre("updateOne", function (next) {
-    this.set({ "infoContenedor.ultimaModificacion": () => new Date() });
-    next();
-  });
-
-  listaEmpaqueSchema.pre("findOneAndUpdate", function (next) {
-    this.set({ "infoContenedor.ultimaModificacion": () => new Date() });
-    next();
-  });
-
-  listaEmpaqueSchema.pre("findByIdAndUpdate", function (next) {
-    this.set({ "infoContenedor.ultimaModificacion": () => new Date() });
-    next();
+  listaEmpaqueSchema.post('findOneAndUpdate', async function (res) {
+    try {
+      // res es el nuevo documento, this._oldValue es el viejo
+      if (this._oldValue && res) {
+        const cambios = diffObjects(this._oldValue, res.toObject());
+        // Si hay cambios, guarda el log
+        if (cambios.length > 0) {
+          await AuditLog.create({
+            collection: 'Contenedor',
+            documentId: res._id,
+            operation: 'update',
+            user: this.options?.user,
+            action: this.options?.action,
+            date: new Date(),
+            changes: cambios,
+            description: 'Actualización parcial del contenedor'
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error guardando auditoría:', err);
+    }
   });
 
   const Contenedores = conn.model("Contenedor", listaEmpaqueSchema);

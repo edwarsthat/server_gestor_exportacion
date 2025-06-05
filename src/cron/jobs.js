@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const { IndicadoresAPIRepository } = require('../../server/api/IndicadoresAPI');
-const { ProcesoRepository } = require('../../server/api/Proceso');
+const { ProcesoRepository } = require('../../server/api/Proceso.mjs');
 const { VariablesDelSistema } = require('../../server/Class/VariablesDelSistema');
 const { FormulariosCalidadRepository } = require('../../server/Class/FormulariosCalidad');
 

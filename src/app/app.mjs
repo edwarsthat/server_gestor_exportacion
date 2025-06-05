@@ -1,27 +1,33 @@
-const express = require("express");
-const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
-const rateLimit = require('express-rate-limit');
-const helmet = require('helmet');
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 
-const { routerPythonData } = require("../../server/routes/pythonServer");
-const { routerVariablesdelSistema } = require("../../server/mobile/variablesDelSistema");
-const { routerProceso } = require("../../server/mobile/process");
-const { routerProceso2 } = require("../../server/routes/Proceso");
-const { routerIndicadores } = require("../../server/routes/indicadores");
-const { routerComercial } = require("../../server/routes/comercial");
-const { routerSistema } = require("../../server/mobile/sistema");
-const { routerAppTv } = require("../../server/routes/appTv");
-const { sp32 } = require("../../server/mobile/sp32");
-const { routerAPI } = require("../../server/routes/api");
-const { SistemaRepository } = require("../../server/api/Sistema");
-const { UserRepository } = require("../../server/auth/users");
-const { middleWareHandleErrors } = require("../middleware/errorHandler");
-const { formsAPI } = require("../../server/routes/public/forms");
-const { routerCalidad } = require("../../server/routes/https/Calidad");
-const { routerDataSys } = require("../../server/routes/https/data");
-const { routerInventarios } = require("../../server/routes/https/inventarios");
+import { routerPythonData } from "../../server/routes/pythonServer.js";
+import { routerVariablesdelSistema } from "../../server/mobile/variablesDelSistema.mjs";
+import { routerProceso } from "../../server/mobile/process.js";
+import { routerProceso2 } from "../../server/routes/Proceso.js";
+import { routerIndicadores } from "../../server/routes/indicadores.js";
+import { routerComercial } from "../../server/routes/comercial.js";
+import { routerSistema } from "../../server/mobile/sistema.js";
+import { routerAppTv } from "../../server/routes/appTv.js";
+import { sp32 } from "../../server/mobile/sp32.js";
+import { routerAPI } from "../../server/routes/api.js";
+import { SistemaRepository } from "../../server/api/Sistema.js";
+import { UserRepository } from "../../server/auth/users.js";
+import { middleWareHandleErrors } from "../middleware/errorHandler.js";
+import { formsAPI } from "../../server/routes/public/forms.mjs";
+import { routerCalidad } from "../../server/routes/https/Calidad.js";
+import { routerDataSys } from "../../server/routes/https/data.js";
+import { routerInventarios } from "../../server/routes/https/inventarios.js";
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 
 const app = express();
 
@@ -158,4 +164,4 @@ app.get('/:filename', async (req, res, next) => {
 
 app.use((err, req, res, next) => middleWareHandleErrors(err, req, res, next))
 
-module.exports = app;
+export default app;

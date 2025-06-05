@@ -1,4 +1,4 @@
-const { db } = require("../../DB/mongoDB/config/init");
+const { db } = require("../../DB/mongoDB/config/init.mjs");
 const { ConnectionDBError, PutError, PostError } = require("../../Error/ConnectionErrors");
 const { ItemBussyError } = require("../../Error/ProcessError");
 

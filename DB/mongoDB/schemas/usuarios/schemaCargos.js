@@ -1,8 +1,7 @@
-const mongoose = require('mongoose');
-// const { connectSistemaDB } = require('../../config/config');
-const Schema = mongoose.Schema;
+import mongoose from "mongoose";
+const { Schema } = mongoose;
 
-const defineCargo = async (conn) => {
+export const defineCargo = async (conn) => {
     // const conn = await connectSistemaDB();
     const permisosSchema = new Schema({
         any: {
@@ -45,7 +44,3 @@ const defineCargo = async (conn) => {
 
     return Cargo
 }
-
-module.exports = {
-    defineCargo,
-};

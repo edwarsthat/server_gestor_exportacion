@@ -1,6 +1,6 @@
-require('dotenv').config();
+import 'dotenv/config';
 
-module.exports = {
+export default {
     PORT: process.env.PORT || 3000,
     HOST: process.env.HOST || '0.0.0.0',
     MONGO_PORT: process.env.MONGO_PORT || "27017",

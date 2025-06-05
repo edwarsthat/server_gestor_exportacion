@@ -1,12 +1,14 @@
-const { db } = require("../../DB/mongoDB/config/init");
-const { ConnectionDBError, PutError } = require("../../Error/ConnectionErrors");
-const { ProcessError, ItemBussyError } = require("../../Error/ProcessError");
-const { oobtener_datos_lotes_to_listaEmpaque } = require("../mobile/utils/contenedoresLotes");
+import { db } from "../../DB/mongoDB/config/init.mjs";
+import { ConnectionDBError, PutError } from "../../Error/ConnectionErrors.js";
+import { ProcessError, ItemBussyError } from "../../Error/ProcessError.js";
+import { oobtener_datos_lotes_to_listaEmpaque } from "../mobile/utils/contenedoresLotes.js";
+import fs from 'fs';
+import path from 'path';
+
 let bussyIds = new Set();
 let lockedItems = new Map();
-const fs = require('fs')
-const path = require("path");
-class ContenedoresRepository {
+
+export class ContenedoresRepository {
 
     static lockItem(_id, elemento, pallet = -1) {
         const key = `${_id}:${elemento}:${pallet}`
@@ -874,5 +876,3 @@ class ContenedoresRepository {
         }
     }
 }
-
-module.exports.ContenedoresRepository = ContenedoresRepository

@@ -1,6 +1,6 @@
 const express = require('express');
 const { UserRepository } = require('../auth/users');
-const { ProcesoRepository } = require('../api/Proceso');
+const { ProcesoRepository } = require('../api/Proceso.mjs');
 
 
 const routerProceso2 = express.Router();

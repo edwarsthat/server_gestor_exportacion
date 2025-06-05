@@ -10,7 +10,8 @@ const { ProveedoresRepository } = require("../Class/Proveedores");
 const { ComercialValidationsRepository } = require("../validations/Comercial");
 const { filtroFechaInicioFin, filtroPorSemana } = require("./utils/filtros");
 const { getISOWeek } = require('date-fns')
-const { z } = require('zod')
+const { z, ZodError } = require('zod')
+const nodemailer = require('nodemailer');
 
 // const nodemailer = require('nodemailer');
 
@@ -457,18 +458,13 @@ class ComercialRepository {
     static async put_comercial_reclamacionCalidad_contenedor(req) {
         try {
             const { form, paths } = req
-            const { contenedor } = form
-            //se obtiene  el contenedor a modifiar
-            const foundContenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                query: { numeroContenedor: Number(contenedor) },
-                select: { infoContenedor: 1 },
-            });
 
-            if (foundContenedor.length <= 0) throw new Error("Contenedor no encontrado")
+            ComercialValidationsRepository.put_comercial_reclamacionCalidad_contenedor().parse(form);
+            const { contenedor } = form
 
             // Actualizar contenedor con pallets modificados
             await ContenedoresRepository.actualizar_contenedor(
-                { _id: foundContenedor[0]._id },
+                { numeroContenedor: contenedor },
                 {
                     reclamacionCalidad: {
                         ...form,
@@ -477,46 +473,73 @@ class ComercialRepository {
                 }
             );
 
+            const html = `
+  <h2>Nueva Reclamación de Calidad registrada</h2>
+  <p>Estimado equipo,</p>
+  <p>Se ha registrado una nueva reclamación de calidad con la siguiente información:</p>
+  <ul>
+    <li><b>Responsable:</b> ${form.responsable}</li>
+    <li><b>Cargo:</b> ${form.Cargo}</li>
+    <li><b>Teléfono:</b> ${form.telefono}</li>
+    <li><b>Cliente:</b> ${form.cliente}</li>
+    <li><b>Fecha de arribo:</b> ${form.fechaArribo}</li>
+    <li><b>Contenedor:</b>${form.contenedor}</li>
+    <li><b>Correo de contacto:</b> ${form.correo}</li>
+  </ul>
+  <h4>Detalles de la reclamación:</h4>
+  <ul>
+    <li><b>Kilos afectados:</b>${form.kilos}</li>
+    <li><b>Cajas afectadas:</b> ${form.cajas}</li>
+    <li><b>Fecha de detección:</b> ${form.fechaDeteccion}</li>
+  </ul>
+  <h4>Defectos reportados:</h4>
+  <ul>
+    <li><b>Moho encontrado:</b> ${form.moho_encontrado} (permitido: ${form.moho_permitido})</li>
+    <li><b>Golpes encontrados:</b> ${form.golpes_encontrado} (permitido: ${form.golpes_permitido})</li>
+    <li><b>Frío encontrado:</b> ${form.frio_encontrado} (permitido: ${form.frio_permitido})</li>
+    <li><b>Maduración encontrada:</b> ${form.maduracion_encontrado} (permitido: ${form.maduracion_permitido})</li>
+    <li><b>Otro defecto:</b> ${form.otroDefecto}</li>
+  </ul>
+  <h4>Observaciones:</h4>
+  <p>${form.observaciones}</p>
+  <p>Por favor, revisar la reclamación en el sistema para más información y seguimiento.</p>
+  <br>
+  <b>Atentamente,<br>
+  Sistema de Reclamaciones - Celifrut</b>
+`
 
-            // // Configura el transporte con los datos de Mailgun
-            // let transporter = nodemailer.createTransport({
-            //     host: 'smtp.mailgun.org',
-            //     port: 587,
-            //     secure: false, // true para 465, false para otros puertos
-            //     auth: {
-            //         user: '@celifrut.com', // Reemplaza con tu usuario (por ejemplo, postmaster@tudominio.com)
-            //         pass:  // Reemplaza con tu API key de Mailgun
-            //     }
-            // });
 
-            // // Define los detalles del correo
-            // let mailOptions = {
-            //     from: '"Tu Nombre" <transformaciondigital@celifrut.com>', // Remitente
-            //     to: correo, // Destinatario
-            //     subject: 'Correo enviado con Mailgun y Node.js',
-            //     text: 'Este es un correo de prueba enviado usando Mailgun SMTP en Node.js.'
-            // };
+            // Configura el transporte con los datos de Mailgun
+            let transporter = nodemailer.createTransport({
+                host: 'smtp.gmail.com',
+                port: 465,
+                secure: true,
+                auth: {
+                    user: 'sistemacelifrut@gmail.com', // Tu correo real
+                    pass: 'jitadtdkrvwtcqhn' // Contraseña o contraseña de aplicación
+                }
+            });
 
-            // // Envía el correo
-            // transporter.sendMail(mailOptions, (error, info) => {
-            //     if (error) {
-            //         return console.error('Error al enviar el correo:', error);
-            //     }
-            //     console.log('Correo enviado:', info.response);
-            // });
+            // Define los detalles del correo
+            let mailOptions = {
+                from: '<sistemacelifrut@gmail.com>', // Remitente
+                to: "comercial@celifrut.com , comercioexterior@celifrut.com, sig@celifrut.com, calidad@celifrut.com", // Destinatario
+                subject: 'Nueva Reclamación de Calidad registrada',
+                // text: 'Este es un correo de prueba enviado usando  Node.js.'
+                html:html
+            };
 
-
-            // transporter.sendMail(mailOptions, (error, info) => {
-            //     if (error) {
-            //         return console.log('Error al enviar el correo: ', error);
-            //     }
-            //     console.log('Correo enviado: %s', info.messageId);
-            // });
-
+            // Espera el envío para capturar el error con el mismo catch
+            await transporter.sendMail(mailOptions);
+            console.log('Correo enviado con éxito.');
 
         } catch (err) {
             if (err.status === 521) {
                 throw err
+            }
+            if (err instanceof ZodError) {
+                const mensajeLindo = err.errors[0]?.message || "Error desconocido en los datos del lote";
+                throw new ComercialLogicError(470, mensajeLindo);
             }
             throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }

@@ -25,16 +25,20 @@
  * @import module:DB
  */
 
-const http = require('http');
-const { Server } = require("socket.io");
-const app = require('./src/app/app')
-const { PORT, HOST } = require('./src/config/index')
+import http from 'http'
+import { Server } from "socket.io"
+import app from './src/app/app.mjs'
+import config from './src/config/index.js';
+const { PORT, HOST } = config;
+
 const server = http.createServer(app);
 
-const { initMongoDB } = require('./DB/mongoDB/config/init');
-const { initSockets } = require('./src/sockets/ws');
-const { initCronJobs } = require('./src/cron/jobs');
-const { initRustRcp } = require('./config/grpcRust');
+import { initMongoDB } from './DB/mongoDB/config/init.mjs';
+import { initSockets } from './src/sockets/ws.js';
+import { initCronJobs } from './src/cron/jobs.js';
+import grpcRust from './config/grpcRust.js';
+const { initRustRcp } = grpcRust;
+
 (async () => {
     try {
         /**

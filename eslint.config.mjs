@@ -4,7 +4,19 @@ import pluginJs from "@eslint/js";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
-  { files: ["**/*.js"], languageOptions: { sourceType: "commonjs" } },
+  {
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: "module",
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...globals.jest,
+        ...globals.mocha,
+      },
+    }
+  },
   { languageOptions: { globals: globals.node } },
   pluginJs.configs.recommended,
+
 ];

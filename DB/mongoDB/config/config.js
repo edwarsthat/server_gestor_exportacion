@@ -12,7 +12,7 @@
  *
  * @see module:DB
  */
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 /**
  * Conecta a la base de datos de procesos de MongoDB.
@@ -23,7 +23,7 @@ const mongoose = require("mongoose");
  * @param {string} [url] - URL de conexión a MongoDB. Si se omite, se utiliza la variable de entorno `MONGODB_PROCESO`.
  * @returns {Promise<mongoose.Connection>} Conexión activa a la base de datos de procesos.
  */
-const connectProcesoDB = async (url = '') => {
+export const connectProcesoDB = async (url = '') => {
 
   let tipoBaseDatos
 
@@ -56,7 +56,7 @@ const connectProcesoDB = async (url = '') => {
  * @memberof module:DB/mongoDB/config/config
  * @returns {Promise<mongoose.Connection>} Conexión activa a la base de datos del sistema.
  */
-const connectSistemaDB = async () => {
+export const connectSistemaDB = async () => {
 
   let tipoBaseDatos = process.env.MONGODB_SISTEMA;
 
@@ -82,7 +82,7 @@ const connectSistemaDB = async () => {
  * @param {mongoose.Connection} db - Conexión activa a MongoDB que se va a cerrar.
  * @returns {void}
  */
-const disconnectDB = (db) => {
+export const disconnectDB = (db) => {
   db.close((err) => {
     if (err) {
       console.log("Hubo un error al cerrar la conexión:", err);
@@ -92,9 +92,4 @@ const disconnectDB = (db) => {
   });
 };
 
-module.exports = {
-  connectProcesoDB,
-  connectSistemaDB,
-  disconnectDB
-};
 

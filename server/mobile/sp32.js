@@ -1,6 +1,6 @@
 const express = require('express');
 const { HandleErrors } = require('../../Error/recordErrors');
-const { ProcesoRepository } = require('../api/Proceso');
+const { ProcesoRepository } = require('../api/Proceso.mjs');
 
 const sp32 = express.Router();
 

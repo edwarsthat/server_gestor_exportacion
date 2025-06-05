@@ -166,6 +166,32 @@ class ComercialValidationsRepository {
 
         })
     }
+    static put_comercial_reclamacionCalidad_contenedor() {
+        return z.object({
+            responsable: z.string().min(1, "Responsable es requerido"),
+            Cargo: z.string().min(1, "Cargo es requerido"),
+            telefono: z.string().optional(), // You could add regex if you want to validate phone numbers
+            cliente: z.string().min(1, "Cliente es requerido"),
+            fechaArribo: z.string().refine(val => !isNaN(Date.parse(val)), "Fecha Arribo inválida"),
+            contenedor: z.string().optional(),
+            correo: z.string().email("Correo inválido"),
+            kilos: z.coerce.number().min(0, "Kilos debe ser un número positivo"),
+            cajas: z.coerce.number().min(0, "Cajas debe ser un número positivo"),
+            fechaDeteccion: z.string().refine(val => !isNaN(Date.parse(val)), "Fecha Detección inválida"),
+            moho_encontrado: z.string().optional(),
+            moho_permitido: z.string().optional(),
+            golpes_encontrado: z.string().optional(),
+            golpes_permitido: z.string().optional(),
+            frio_encontrado: z.string().optional(),
+            frio_permitido: z.string().optional(),
+            maduracion_encontrado: z.string().optional(),
+            maduracion_permitido: z.string().optional(),
+            otroDefecto: z.string().optional(),
+            observaciones: z.string().optional(),
+            archivosSubidos: z.array(z.string()).optional(),
+            fecha: z.date().optional(), // default will be set in your DB schema
+        })
+    }
 }
 
 module.exports.ComercialValidationsRepository = ComercialValidationsRepository

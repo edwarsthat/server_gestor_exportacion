@@ -1,7 +1,8 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-const defineControlPlagas = async (conn) => {
+
+export const defineControlPlagas = async (conn) => {
 
     const elementoSchema = new Schema({
         status: Boolean,
@@ -55,7 +56,8 @@ const defineControlPlagas = async (conn) => {
     })
 
     const ControlPlagas = conn.model("controlPlaga", ControlPlagasSchema);
-    return ControlPlagas
-}
+    return ControlPlagas;
+};
 
-module.exports.defineControlPlagas = defineControlPlagas;
+export default defineControlPlagas;
+

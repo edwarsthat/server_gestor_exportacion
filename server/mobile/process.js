@@ -1,6 +1,6 @@
 const express = require('express');
 const { UserRepository } = require("../auth/users");
-const { ProcesoRepository } = require("../api/Proceso");
+const { ProcesoRepository } = require("../api/Proceso.mjs");
 const { VariablesDelSistema } = require('../Class/VariablesDelSistema');
 const { AccessError } = require('../../Error/ValidationErrors');
 const routerProceso = express.Router();

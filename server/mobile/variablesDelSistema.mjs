@@ -1,7 +1,7 @@
 
-const express = require('express');
-const { ProcesoRepository } = require('../api/Proceso');
-const routerVariablesdelSistema = express.Router();
+import express from 'express';
+import { ProcesoRepository } from '../api/Proceso.mjs';
+export const routerVariablesdelSistema = express.Router();
 
 routerVariablesdelSistema.get("/", (req, res) => {
     res.send("Variables de proceso")
@@ -15,5 +15,3 @@ routerVariablesdelSistema.get("/predioProcesoDescarte", async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 })
-
-module.exports.routerVariablesdelSistema = routerVariablesdelSistema;

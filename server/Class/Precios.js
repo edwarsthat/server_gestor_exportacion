@@ -1,4 +1,4 @@
-const { db } = require("../../DB/mongoDB/config/init");
+const { db } = require("../../DB/mongoDB/config/init.mjs");
 const { ConnectionDBError } = require("../../Error/ConnectionErrors")
 
 class PreciosRepository {

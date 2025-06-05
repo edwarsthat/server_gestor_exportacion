@@ -22,56 +22,59 @@
  */
 
 
-require('dotenv').config('.');
+import dotenv from 'dotenv';
+dotenv.config('.');
 
-const { exec } = require('child_process');
-const mongoose = require('mongoose');
-const { connectProcesoDB, connectSistemaDB } = require('./config');
-const { defineCargo } = require('../schemas/usuarios/schemaCargos');
-const { defineUser } = require('../schemas/usuarios/schemaUsuarios');
-const { defineFrutaDescompuesta } = require('../schemas/frutaDescompuesta/schemaFrutaDecompuesta');
-const { defineRecordcargo } = require('../schemas/usuarios/schemaRecordCargos');
-const { defineRecordusuario } = require('../schemas/usuarios/schemaRecordUsuarios');
-const { defineControlPlagas } = require('../schemas/calidad/schemaControlPlagas');
-const { defineHigienePersonal } = require('../schemas/calidad/schemaHigienePersonal');
-const { defineLimpiezaDiaria } = require('../schemas/calidad/schemaLimpiezaDiaria');
-const { defineLimpiezaMensual } = require('../schemas/calidad/schemaLimpiezaMensual');
-const { defineVolanteCalidad } = require('../schemas/calidad/schemaVolanteCalidad');
-const { defineClientes } = require('../schemas/clientes/schemaClientes');
-const { defineRecordClientes } = require('../schemas/clientes/schemaRecordClientes');
-const { defineproveedores } = require('../schemas/proveedores/schemaProveedores');
-const { defineLotes } = require('../schemas/lotes/schemaLotes');
-const { defineContenedores } = require('../schemas/contenedores/schemaContenedores');
-const { defineRecordContenedores } = require('../schemas/contenedores/schemaRecordContenedores');
-const { defineErrores } = require('../schemas/errors/schemaErrores');
-const { defineRecordTipoInsumos } = require('../schemas/insumos/RecordSchemaInsumos');
-const { defineInsumos } = require('../schemas/insumos/schemaInsumos');
-const { defineHistorialDescarte } = require('../schemas/lotes/schemaHistorialDescarte');
-const { defineHistorialDespachoDescarte } = require('../schemas/lotes/schemaHistorialDespachosDescartes');
-const { defineTurnoData } = require('../schemas/proceso/TurnoData');
-const { defineRecordProveedor } = require('../schemas/proveedores/schemaRecordProveedores');
-const { defineRecordLotes } = require('../schemas/lotes/schemaRecordLotes');
-const { defineIndicadores } = require('../schemas/indicadores/schemaIndicadoresProceso');
-const { definePrecios } = require('../schemas/precios/schemaPrecios');
-const { defineModificarElemento } = require('../schemas/transaccionesRecord/ModificacionesRecord');
-const { defineCrearElemento } = require('../schemas/transaccionesRecord/AddsRecord');
-const { defineDeleteRecords } = require('../schemas/transaccionesRecord/DeleteRecord');
-const { defineRegistroCanastillas } = require('../schemas/canastillas/canastillasRegistrosSchema');
-const { defineClientesNacionales } = require('../schemas/clientes/schemaClientesNacionales');
-const { defineAuditLogs } = require('../schemas/audit/AuditLogSchema');
-const db = {};
+import { exec } from 'child_process';
+import mongoose from 'mongoose';
 
- /**
- * Verifica si el servicio de MongoDB está corriendo y responde a conexiones.
- *
- * Intenta establecer una conexión temporal a la base de datos definida en la variable de entorno `MONGODB_SISTEMA`.
- * Si la conexión es exitosa, la cierra inmediatamente y retorna `true`. Si falla, retorna `false`.
- *
- * @async
- * @function checkMongoDBRunning
- * @memberof module:DB/mongoDB/config/init
- * @returns {Promise<boolean>} Retorna `true` si MongoDB responde, `false` si no es posible conectarse.
- */
+import { connectProcesoDB, connectSistemaDB } from './config.js';
+import { defineCargo } from '../schemas/usuarios/schemaCargos.js';
+import { defineUser } from '../schemas/usuarios/schemaUsuarios.js';
+import { defineFrutaDescompuesta } from '../schemas/frutaDescompuesta/schemaFrutaDecompuesta.js';
+import { defineRecordcargo } from '../schemas/usuarios/schemaRecordCargos.js';
+import { defineRecordusuario } from '../schemas/usuarios/schemaRecordUsuarios.js';
+import { defineControlPlagas } from '../schemas/calidad/schemaControlPlagas.js';
+import { defineHigienePersonal } from '../schemas/calidad/schemaHigienePersonal.js';
+import { defineLimpiezaDiaria } from '../schemas/calidad/schemaLimpiezaDiaria.js';
+import { defineLimpiezaMensual } from '../schemas/calidad/schemaLimpiezaMensual.js';
+import { defineVolanteCalidad } from '../schemas/calidad/schemaVolanteCalidad.js';
+import { defineClientes } from '../schemas/clientes/schemaClientes.js';
+import { defineRecordClientes } from '../schemas/clientes/schemaRecordClientes.js';
+import { defineproveedores } from '../schemas/proveedores/schemaProveedores.js';
+import { defineLotes } from '../schemas/lotes/schemaLotes.js';
+import { defineContenedores } from '../schemas/contenedores/schemaContenedores.js';
+import { defineRecordContenedores } from '../schemas/contenedores/schemaRecordContenedores.js';
+import { defineErrores } from '../schemas/errors/schemaErrores.js';
+import { defineRecordTipoInsumos } from '../schemas/insumos/RecordSchemaInsumos.js';
+import { defineInsumos } from '../schemas/insumos/schemaInsumos.js';
+import { defineHistorialDescarte } from '../schemas/lotes/schemaHistorialDescarte.js';
+import { defineHistorialDespachoDescarte } from '../schemas/lotes/schemaHistorialDespachosDescartes.js';
+import { defineTurnoData } from '../schemas/proceso/TurnoData.js';
+import { defineRecordProveedor } from '../schemas/proveedores/schemaRecordProveedores.js';
+import { defineRecordLotes } from '../schemas/lotes/schemaRecordLotes.js';
+import { defineIndicadores } from '../schemas/indicadores/schemaIndicadoresProceso.js';
+import { definePrecios } from '../schemas/precios/schemaPrecios.js';
+import { defineModificarElemento } from '../schemas/transaccionesRecord/ModificacionesRecord.js';
+import { defineCrearElemento } from '../schemas/transaccionesRecord/AddsRecord.js';
+import { defineDeleteRecords } from '../schemas/transaccionesRecord/DeleteRecord.js';
+import { defineRegistroCanastillas } from '../schemas/canastillas/canastillasRegistrosSchema.js';
+import { defineClientesNacionales } from '../schemas/clientes/schemaClientesNacionales.js';
+import { defineAuditLogs } from '../schemas/audit/AuditLogSchema.js';
+
+export const db = {};
+
+/**
+* Verifica si el servicio de MongoDB está corriendo y responde a conexiones.
+*
+* Intenta establecer una conexión temporal a la base de datos definida en la variable de entorno `MONGODB_SISTEMA`.
+* Si la conexión es exitosa, la cierra inmediatamente y retorna `true`. Si falla, retorna `false`.
+*
+* @async
+* @function checkMongoDBRunning
+* @memberof module:DB/mongoDB/config/init
+* @returns {Promise<boolean>} Retorna `true` si MongoDB responde, `false` si no es posible conectarse.
+*/
 const checkMongoDBRunning = async () => {
     try {
         console.log("🧪 Probando conexión con MongoDB...");
@@ -150,7 +153,7 @@ const waitForMongoDB = () => {
  * // Inicializar MongoDB y obtener las conexiones
  * const [procesoDB, sistemaDb] = await initMongoDB();
  */
-async function initMongoDB() {
+export async function initMongoDB() {
     try {
         console.log("🔍 Verificando estado de MongoDB...");
 
@@ -172,7 +175,7 @@ async function initMongoDB() {
 
         console.log("🧬 Definiendo esquemas para cada base de datos...");
         await defineSchemasSistema(sistemaDb);
-        console.log("📦 Esquemas definidos para *Sistema*." );
+        console.log("📦 Esquemas definidos para *Sistema*.");
 
         await defineSchemasProceso(procesoDB);
         console.log("📦 Esquemas definidos para *Proceso*.");
@@ -271,7 +274,7 @@ const defineSchemasProceso = async (sysConn) => {
 
         // 6. Esquemas relacionados con contenedores (dependen de lotes)
         console.log("⚡ Definiendo Contenedores...");
-        db.Contenedores = await defineContenedores(sysConn);
+        db.Contenedores = await defineContenedores(sysConn, AuditLog);
         console.log("✅ Contenedores definido");
 
         console.log("⚡ Definiendo recordContenedores...");
@@ -372,8 +375,3 @@ const defineSchemasSistema = async (sysConn) => {
     }
 }
 
-/** @exports DB/mongoDB/config/init */
-module.exports = {
-    initMongoDB,
-    db
-};

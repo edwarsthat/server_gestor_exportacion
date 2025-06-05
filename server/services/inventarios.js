@@ -1,5 +1,5 @@
 const { obtenerEstadoDesdeAccionCanastillasInventario } = require("../api/utils/diccionarios");
-const { RecordLotesRepository } = require("../archive/ArchiveLotes");
+const { RecordLotesRepository } = require("../archive/ArchiveLotes.mjs");
 const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
 const { ClientesRepository } = require("../Class/Clientes");
 const { DespachoDescartesRepository } = require("../Class/DespachoDescarte");

@@ -1,11 +1,16 @@
-const { ContenedoresRepository } = require("../Class/Contenedores");
-const { LotesRepository } = require("../Class/Lotes");
-const { ProcessError } = require("../../Error/ProcessError");
-const calidadFile = require('../../constants/calidad.json');
-const { deshidratacionLote, rendimientoLote } = require("../api/utils/lotesFunctions");
-const { have_lote_GGN_export } = require("../controllers/validations");
-const { RecordModificacionesRepository } = require("../archive/ArchivoModificaciones");
-const { VariablesDelSistema } = require("../Class/VariablesDelSistema");
+import { ContenedoresRepository } from "../Class/Contenedores.mjs";
+import { LotesRepository } from "../Class/Lotes.js";
+import { ProcessError } from "../../Error/ProcessError.js";
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import { deshidratacionLote, rendimientoLote } from "../api/utils/lotesFunctions.js";
+import { have_lote_GGN_export } from "../controllers/validations.js";
+import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
+import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const calidadFile = JSON.parse(readFileSync(join(__dirname, '../../constants/calidad.json'), 'utf8'));
 
 class ProcesoService {
     static async getContenedorAndLote(loteID, ContenedorID) {
@@ -379,4 +384,4 @@ class ProcesoService {
     }
 }
 
-module.exports.ProcesoService = ProcesoService; 
+export { ProcesoService };
