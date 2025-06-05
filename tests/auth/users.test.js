@@ -1,6 +1,6 @@
-const { describe, test, expect } = require('@jest/globals');
-const request = require('supertest');
-const { HOST, PORT, USUARIO_PRUEBA, PASSWORD_PRUEBA } = require('../../src/config');
+import { describe, test, expect } from '@jest/globals';
+import request from 'supertest';
+import { HOST, PORT, USUARIO_PRUEBA, PASSWORD_PRUEBA } from '../../src/config';
 
 describe("Prueba integración /login2", () => {
     test("debería iniciar sesión con credenciales correctas", async () => {

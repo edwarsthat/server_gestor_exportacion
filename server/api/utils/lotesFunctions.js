@@ -1,4 +1,4 @@
-const { ProcessError } = require("../../../Error/ProcessError");
+import { ProcessError } from "../../../Error/ProcessError";
 
 async function rendimientoLote(data) {
     /**
@@ -84,7 +84,7 @@ function descarteTotal(descarte) {
     }
 }
 
-module.exports = {
+export {
     rendimientoLote,
     deshidratacionLote
-}
+};

@@ -1,4 +1,4 @@
-const { createClient } = require("redis");
+import { createClient } from "redis";
 
 const iniciarRedisDB = async () => {
   try{
@@ -14,4 +14,4 @@ const iniciarRedisDB = async () => {
 
 };
 
-module.exports.iniciarRedisDB = iniciarRedisDB;
+export { iniciarRedisDB };

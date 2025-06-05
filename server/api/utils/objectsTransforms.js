@@ -19,6 +19,6 @@ const transformObjectInventarioDescarte = async (obj) => {
     return result;
 };
 
-module.exports = {
+export {
     transformObjectInventarioDescarte
-}
+};
