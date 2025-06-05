@@ -1,5 +1,5 @@
-const { UtilError } = require("../../../Error/ProcessError");
-const { getISOWeek } = require('date-fns')
+import { UtilError } from "../../../Error/ProcessError";
+import { getISOWeek } from 'date-fns';
 
 function filtroFechaInicioFin(fechaInicio, fechaFin, filter = {}, fecha) {
 
@@ -90,7 +90,7 @@ function filtroPorSemana(fechaInicio, fechaFin, filter = {}, year = 'year', week
 
 }
 
-module.exports = {
+export {
     filtroFechaInicioFin,
     filtroPorSemana
-}
+};

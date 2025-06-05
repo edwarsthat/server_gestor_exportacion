@@ -1,8 +1,9 @@
-require('dotenv').config();
+import dotenv from 'dotenv';
+import net from 'net';
 
-const net = require('net');
+dotenv.config();
 
-let rustConnectionProceso = null;
+export let rustConnectionProceso = null;
 
 class RustConnectionProceso {
     constructor(host = process.env.RUST_MONGO_PROCESO, port = process.env.RUST_MONGO_PROCESO_PUERTO) {
@@ -61,14 +62,14 @@ class RustConnectionProceso {
 
 
 
-async function initRustProceso() {
+export async function initRustProceso() {
     rustConnectionProceso = new RustConnectionProceso();
 
     try {
         await rustConnectionProceso.connect();
         console.log('Aplicación Node.js conectada al servidor Rust');
 
-        module.exports.rustConnectionProceso = rustConnectionProceso
+        // La conexión se mantendrá disponible mediante la variable exportada
     } catch (error) {
         console.error('No se pudo conectar al servidor Rust:', error.message);
         process.exit(1); // Salir si no se puede conectar
@@ -76,16 +77,11 @@ async function initRustProceso() {
 
 };
 
-function getRustConnectionProceso() {
+export function getRustConnectionProceso() {
     if (!rustConnectionProceso) {
         throw new Error('La conexión con el servidor Rust no está inicializada.');
     }
     return rustConnectionProceso;
 }
-
-module.exports = {
-    initRustProceso,
-    getRustConnectionProceso
-};
 
 

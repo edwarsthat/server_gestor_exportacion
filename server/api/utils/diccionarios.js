@@ -1,4 +1,4 @@
-const { VariablesDelSistema } = require("../../Class/VariablesDelSistema");
+import { VariablesDelSistema } from "../../Class/VariablesDelSistema";
 
 const obtenerEstadoDesdeAccionCanastillasInventario = (accion) => {
     const ESTADOS = {
@@ -24,7 +24,7 @@ const generadoresEF = {
     EF8: VariablesDelSistema.generarEF8
 }
 
-module.exports = {
+export {
     obtenerEstadoDesdeAccionCanastillasInventario,
     generadoresEF
-}
+};
