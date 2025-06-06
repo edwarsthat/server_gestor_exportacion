@@ -96,13 +96,15 @@ formsAPI.get("/reclamaciones_calidad", (req, res) => {
 formsAPI.post("/reclamaciones_calidad", formLimiter, upload.array('documentos'), async (req, res) => {
     console.log("Recibido formulario de reclamación de calidad");
     try {
-        const paths = req.files.map(item => item.path);
+
+        const files = Array.isArray(req.files) ? req.files : [];
+        const paths = files.map(item => item.path);
         const data = {
             form: req.body,
             paths
         };
 
-        for (const file of req.files) {
+        for (const file of files) {
             const fileType = await FileType.fromFile(file.path);
             if (!fileType || !allowedTypes.includes(fileType.mime)) {
                 // Borra el archivo peligroso

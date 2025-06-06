@@ -150,7 +150,20 @@ export const apiSocketCalidad = {
         return successResponseRoutes(response)
 
     },
-
+    //#endregion
+    //#region reclamaciones
+    get_calidad_reclamaciones_contenedores_numeroElementos: async () => {
+        const response = await CalidadRepository.get_calidad_reclamaciones_contenedores_numeroElementos();
+        return successResponseRoutes(response)
+    },
+    get_calidad_reclamaciones_contenedores: async (data) => {
+        const response = await CalidadRepository.get_calidad_reclamaciones_contenedores(data);
+        return successResponseRoutes(response)
+    },
+    get_calidad_reclamaciones_contenedores_obtenerArchivo: async (data) => {
+        const response = await CalidadRepository.get_calidad_reclamaciones_contenedores_obtenerArchivo(data);
+        return successResponseRoutes(response)
+    },
     //#endregion
 }
 

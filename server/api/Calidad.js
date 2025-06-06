@@ -14,6 +14,7 @@ import { CalidadValidationsRepository } from "../validations/calidad.js";
 import { z } from "zod";
 
 import { fileURLToPath } from 'url';
+import { CalidadService } from "../services/calidad.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -892,27 +893,76 @@ export class CalidadRepository {
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
+    //#region reclamaciones
+    static async get_calidad_reclamaciones_contenedores(req) {
+        try {
+            const { data } = req
+            const { page } = data;
+            const resultsPerPage = 50;
+
+            const formularios = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                skip: (page - 1) * resultsPerPage,
+                limit: resultsPerPage,
+                select: {
+                    numeroContenedor: 1,
+                    infoContenedor: 1,
+                    reclamacionCalidad: 1
+                },
+                query: {
+                    reclamacionCalidad: { $exists: true },
+                }
+            })
+            return formularios
+
+        } catch (err) {
+            if (err.status === 524) {
+                throw err
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_calidad_reclamaciones_contenedores_numeroElementos() {
+        try {
+            const count = await ContenedoresRepository.obtener_cantidad_contenedores({
+                reclamacionCalidad: { $exists: true }
+            })
+            return count
+        } catch (err) {
+            if (err.status === 524) {
+                throw err
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_calidad_reclamaciones_contenedores_obtenerArchivo(req) {
+        try {
+            const { data } = req
+            const { url } = data
+
+            CalidadValidationsRepository.get_calidad_reclamaciones_contenedores_obtenerArchivo().parse(data)
+            const response = await CalidadService.obtenerArchivoReclamacionCliente(url)
+            return response
+        } catch (err) {
+            if (err instanceof z.ZodError) {
+                const errores = err.errors.map(e => `${e.path[0]}: ${e.message}`).join(" | ")
+                throw new CalidadLogicError(471, `Error de validación: ${errores}`)
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+
+    }
+    //#endregion
 
     //#endregion
-    //#region  GET
-    //obtiene los datos de los formularios
     static async get_info_formulario_inspeccion_fruta() {
         const formulario = await ConstantesDelSistema.get_info_formulario_inspeccion_fruta()
         return formulario
     }
-
     //!numero de elementos
-
     static async get_calidad_formularios_higienePersonal_numeroElementos() {
         const count = await FormulariosCalidadRepository.get_calidad_formularios_higienePersonal_numeroElementos()
         return count
     }
-
-
-    // #region PUT
-
-
-
     static async lotes_derogar_lote(req) {
         const { data, user } = req
 
@@ -954,6 +1004,5 @@ export class CalidadRepository {
     }
 
 
-    //#region POST
 
 }

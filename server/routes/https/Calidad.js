@@ -47,7 +47,7 @@ routerCalidad.post("/post_calidad_ingresos_higienePersonal", async (req, res) =>
     }
 })
 //#endregion
-
+//#region proceso
 routerCalidad.get("/get_lotes_clasificacion_descarte", async (req, res) => {
     try {
         const token = req.headers['authorization'];
@@ -73,6 +73,31 @@ routerCalidad.get("/get_formularios_calidad_creados", async (req, res) => {
 
         const data = await CalidadRepository.get_formularios_calidad_creados(user);
         res.json({ status: 200, message: 'Ok', data: data });
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+routerCalidad.get("/get_calidad_reclamaciones_contenedores", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const user = await UserRepository.authenticateToken(token);
+        const autorizado2 = await UserRepository.autentificacionPermisosHttps(user.cargo, "get_calidad_reclamaciones_contenedores");
+        if (!autorizado2) {
+            throw new AccessError(412, `Acceso no autorizado obtener_historial_decarte_lavado_proceso`);
+        }
+        const data = req.body
+        const response = await CalidadRepository.get_calidad_reclamaciones_contenedores(data);
+        res.json({ status: 200, message: 'Ok', data: response });
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})
+routerCalidad.get("/get_calidad_reclamaciones_contenedores_numeroElementos", async (req, res) => {
+    try {
+        const response = await CalidadRepository.get_calidad_reclamaciones_contenedores_numeroElementos();
+        res.json({ status: 200, message: 'Ok', data: response });
     } catch (err) {
         console.log(`Code ${err.status}: ${err.message}`)
         res.json({ status: err.status, message: err.message })
@@ -113,3 +138,5 @@ routerCalidad.put("/add_item_formulario_calidad", async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 });
+
+//#endregion

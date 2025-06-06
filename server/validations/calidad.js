@@ -27,4 +27,12 @@ export class CalidadValidationsRepository {
                 })
         })
     }
+    static get_calidad_reclamaciones_contenedores_obtenerArchivo() {
+        return z.object({
+            url: z.string().regex(
+                /^\/opt\/enterprise-projects\/sistema-operativo\/uploads\/clientes\/reclamos\/\d+\.png$/,
+                "La URL no sigue la estructura del destino soñado"
+            )
+        })
+    }
 }

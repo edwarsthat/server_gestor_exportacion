@@ -527,7 +527,8 @@ export class ComercialRepository {
             // Define los detalles del correo
             let mailOptions = {
                 from: '<sistemacelifrut@gmail.com>', // Remitente
-                to: "comercial@celifrut.com , comercioexterior@celifrut.com, sig@celifrut.com, calidad@celifrut.com", // Destinatario
+                // to: "comercial@celifrut.com , comercioexterior@celifrut.com, sig@celifrut.com, calidad@celifrut.com", // Destinatario
+                to: "transformaciondigital@celifrut.com", // Destinatario
                 subject: 'Nueva Reclamación de Calidad registrada',
                 // text: 'Este es un correo de prueba enviado usando  Node.js.'
                 html:html
@@ -597,7 +598,6 @@ export class ComercialRepository {
         }
     }
     //#endregion
-
 
     static async post_comercial_precios_add_precio(req) {
         try {
@@ -868,8 +868,6 @@ export class ComercialRepository {
             throw new ProcessError(480, `${err.type}: ${err.message}`)
         }
     }
-
-
 
     static async obtener_clientes_historial_contenedores() {
         try {

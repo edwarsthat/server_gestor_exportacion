@@ -174,7 +174,7 @@ export class InventariosRepository {
     static async put_inventarios_frutaDescarte_reprocesarFruta(req) {
         try {
             const { data } = req.data
-            const { user } = req.user
+            const { _id } = req.user
 
             InventariosValidations.put_inventarios_frutaDescarte_reprocesarFruta().parse(data)
 
@@ -184,7 +184,7 @@ export class InventariosRepository {
             const [, , loteCreado] = await Promise.all([
                 RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', data.tipoFruta),
                 RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', data.tipoFruta),
-                InventariosService.crear_lote_celifrut(data.tipoFruta, total, user)
+                InventariosService.crear_lote_celifrut(data.tipoFruta, total, _id)
             ])
 
 
