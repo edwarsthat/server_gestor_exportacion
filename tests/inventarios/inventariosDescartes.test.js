@@ -1,8 +1,12 @@
 import 'dotenv/config';
-import { HOST, PORT, USUARIO_PRUEBA, PASSWORD_PRUEBA } from '../../src/config';
+
+import config from '../../src/config';
+const { HOST, PORT, USUARIO_PRUEBA, PASSWORD_PRUEBA } = config
 import { describe, test, expect } from '@jest/globals';
 import request from 'supertest';
-import tipoFrutas from "../../constants/tipo_fruta.json" assert { type: 'json' };
+import fs from 'fs/promises';
+const raw = await fs.readFile(new URL('../../constants/tipo_fruta.json', import.meta.url), 'utf-8');
+const tipoFrutas = JSON.parse(raw);
 let TEST_TOKEN
 
 describe("Prueba integración inventarios Descartes", () => {

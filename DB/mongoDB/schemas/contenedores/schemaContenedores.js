@@ -176,6 +176,8 @@ export const defineContenedores = async (conn, AuditLog) => {
     reclamacionCalidad: reclamacionSchema
   });
 
+  listaEmpaqueSchema.index({ reclamacionCalidad: 1 });
+
   // Middleware to update `ultimaModificacion` field
   listaEmpaqueSchema.post('save', async function (doc) {
     try {

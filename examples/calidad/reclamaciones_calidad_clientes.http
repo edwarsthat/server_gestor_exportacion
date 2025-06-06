@@ -1,0 +1,14 @@
+GET http://localhost:3010/calidad/get_calidad_reclamaciones_contenedores
+Content-Type: application/json
+
+{
+    "data":{
+        "page": 1
+    }
+}
+
+### numero de elementos
+GET http://localhost:3010/calidad/get_calidad_reclamaciones_contenedores_numeroElementos
+Content-Type: application/json
+
+
