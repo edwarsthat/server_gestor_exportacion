@@ -79,6 +79,16 @@ class ErrorActionAlready extends Error {
     }
 }
 
+class ErrorCatalog extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Error conectando con catalogos"
+        this.status = code
+        this.message = message
+    }
+}
+
+
 export {
     ConnectionDBError,
     BadGetwayError,
@@ -88,5 +98,6 @@ export {
     ConnectAWS_Error,
     PilaAccess_Error,
     ErrorUndefinedData,
-    ErrorActionAlready
+    ErrorActionAlready,
+    ErrorCatalog
 }

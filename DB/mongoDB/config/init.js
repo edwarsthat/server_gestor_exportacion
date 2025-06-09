@@ -22,13 +22,13 @@
  */
 
 
-import dotenv from 'dotenv';
-dotenv.config('.');
 
+import config from '../../../src/config/index.js';
+const {  MONGODB_SISTEMA } = config;
 import { exec } from 'child_process';
 import mongoose from 'mongoose';
 
-import { connectProcesoDB, connectSistemaDB } from './config.js';
+import { connectCatalogosDB, connectProcesoDB, connectSistemaDB } from './config.js';
 import { defineCargo } from '../schemas/usuarios/schemaCargos.js';
 import { defineUser } from '../schemas/usuarios/schemaUsuarios.js';
 import { defineFrutaDescompuesta } from '../schemas/frutaDescompuesta/schemaFrutaDecompuesta.js';
@@ -61,6 +61,7 @@ import { defineDeleteRecords } from '../schemas/transaccionesRecord/DeleteRecord
 import { defineRegistroCanastillas } from '../schemas/canastillas/canastillasRegistrosSchema.js';
 import { defineClientesNacionales } from '../schemas/clientes/schemaClientesNacionales.js';
 import { defineAuditLogs } from '../schemas/audit/AuditLogSchema.js';
+import { defineCuartosdesverdizado } from '../schemas/catalogs/schemaCuartosDesverdizado.js';
 
 export const db = {};
 
@@ -79,7 +80,7 @@ const checkMongoDBRunning = async () => {
     try {
         console.log("🧪 Probando conexión con MongoDB...");
 
-        const db = mongoose.createConnection(process.env.MONGODB_SISTEMA, {
+        const db = mongoose.createConnection(MONGODB_SISTEMA, {
             serverSelectionTimeoutMS: 2000, // Tiempo máximo de espera
         });
 
@@ -172,6 +173,7 @@ export async function initMongoDB() {
 
         const procesoDB = await connectProcesoDB();
         const sistemaDb = await connectSistemaDB();
+        const catalogosDB = await connectCatalogosDB();
 
         console.log("🧬 Definiendo esquemas para cada base de datos...");
         await defineSchemasSistema(sistemaDb);
@@ -180,6 +182,7 @@ export async function initMongoDB() {
         await defineSchemasProceso(procesoDB);
         console.log("📦 Esquemas definidos para *Proceso*.");
 
+        await defineSchemasCatalogo(catalogosDB);
         console.log("🎉 Conexiones establecidas con éxito. MongoDB está listo para causar caos (o al menos guardar datos).");
 
         return [procesoDB, sistemaDb];
@@ -314,7 +317,7 @@ const defineSchemasProceso = async (sysConn) => {
 }
 
 /**
- * Registra y define todos los esquemas de Mongoose para la base de datos del sistema.
+ * Registra y define todos los esquemas de Mongoose para la base de datos de catalogos.
  *
  * @async
  * @function defineSchemasSistema
@@ -369,6 +372,39 @@ const defineSchemasSistema = async (sysConn) => {
         console.log("✅ Errores definido");
 
         console.log("🎉 Todos los schemas de sistema han sido definidos correctamente.");
+
+    } catch (error) {
+        console.error("Error durante la inicialización de MongoDB: creando los schemas", error);
+    }
+}
+
+/**
+ * Registra y define todos los esquemas de Mongoose para la base de datos del sistema.
+ *
+ * @async
+ * @function defineSchemasSistema
+ * @memberof module:DB/mongoDB/config/init
+ * @param {Object} sysConn - Conexión activa a la base de datos del sistema (Mongoose Connection).
+ * @returns {Promise<void>} Promesa que se resuelve cuando todos los esquemas han sido definidos.
+ *
+ * @throws {Error} Si ocurre un error durante la definición de los esquemas.
+ */
+const defineSchemasCatalogo = async (sysConn) => {
+    try {
+     try {
+        console.log("🔍 Iniciando definición de schemas sistema...");
+
+        console.log("⚡ Definiendo Cuartos desverdizado...");
+        db.CuartosDesverdizados = await defineCuartosdesverdizado(sysConn);
+        console.log("✅ Cuartos desverdizados definidos");
+
+
+
+        console.log("🎉 Todos los schemas de sistema han sido definidos correctamente.");
+
+    } catch (error) {
+        console.error("Error durante la inicialización de MongoDB: creando los schemas", error);
+    }
 
     } catch (error) {
         console.error("Error durante la inicialización de MongoDB: creando los schemas", error);

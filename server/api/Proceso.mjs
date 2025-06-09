@@ -1986,26 +1986,27 @@ export class ProcesoRepository {
         procesoEventEmitter.emit("proceso_event", {});
     }
 
-    static async desverdizado(req) {
-        const user = req.user.user;
-        const data = req.data
+    static async put_inventarios_frutaSinProcesar_desverdizado(req) {
+        console.log(req)
+        // const { user } = req.user;
+        // const { inventario, _id, desverdizado } = req.data
 
-        const { _id, inventario, desverdizado, __v, action } = data;
-        const query = {
-            desverdizado: desverdizado,
-            $inc: {
-                __v: 1
-            },
-        }
-        await LotesRepository.modificar_lote(_id, query, action, user, __v);
+        // const { _id, inventario, desverdizado, __v, action } = data;
+        // const query = {
+        //     desverdizado: desverdizado,
+        //     $inc: {
+        //         __v: 1
+        //     },
+        // }
+        // await LotesRepository.modificar_lote(_id, query, action, user, __v);
 
-        await VariablesDelSistema.ingresarInventarioDesverdizado(_id, inventario)
-        await VariablesDelSistema.modificarInventario(_id, inventario);
+        // await VariablesDelSistema.ingresarInventarioDesverdizado(_id, inventario)
+        // await VariablesDelSistema.modificarInventario(_id, inventario);
 
-        procesoEventEmitter.emit("server_event", {
-            action: "enviar_desverdizado",
-            data: {}
-        });
+        // procesoEventEmitter.emit("server_event", {
+        //     action: "enviar_desverdizado",
+        //     data: {}
+        // });
     }
 
 

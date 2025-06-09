@@ -23,4 +23,8 @@ export const apiSocketData = {
         const response = await dataRepository.get_data_proveedores(req)
         return successResponseRoutes(response)
     },
+    get_data_cuartosDesverdizados: async () => {
+        const response = await dataRepository.get_data_cuartosDesverdizados()
+        return successResponseRoutes(response)
+    }
 }

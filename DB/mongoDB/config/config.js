@@ -1,3 +1,5 @@
+import config from "../../../src/config/index.js";
+const { MONGODB_PROCESO, MONGODB_SISTEMA, MONGODB_CATALOGOS } = config;
 /**
  * @module DB/mongoDB/config/config
  * @summary Funciones utilitarias para la conexión y desconexión de bases de datos MongoDB usando Mongoose.
@@ -28,7 +30,7 @@ export const connectProcesoDB = async (url = '') => {
   let tipoBaseDatos
 
   if (url === '') {
-    tipoBaseDatos = process.env.MONGODB_PROCESO;
+    tipoBaseDatos = MONGODB_PROCESO;
 
   } else {
     tipoBaseDatos = url
@@ -58,7 +60,25 @@ export const connectProcesoDB = async (url = '') => {
  */
 export const connectSistemaDB = async () => {
 
-  let tipoBaseDatos = process.env.MONGODB_SISTEMA;
+  let tipoBaseDatos = MONGODB_SISTEMA;
+
+  try {
+
+    const db = mongoose.createConnection(tipoBaseDatos);
+
+    db.on("error", () => console.error("connection error:"));
+    db.once("open", function () {
+      console.log(`✅ Conectado a la base de datos ${tipoBaseDatos}.`);
+    });
+    return db;
+  } catch (error) {
+    console.error("Error conectando a la base de datos:", error);
+  }
+};
+
+export const connectCatalogosDB = async () => {
+
+  let tipoBaseDatos = MONGODB_CATALOGOS;
 
   try {
 

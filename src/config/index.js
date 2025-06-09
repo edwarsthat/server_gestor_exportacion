@@ -6,6 +6,7 @@ export default {
     MONGO_PORT: process.env.MONGO_PORT || "27017",
     MONGODB_PROCESO: process.env.MONGODB_PROCESO,
     MONGODB_SISTEMA: process.env.MONGODB_SISTEMA,
+    MONGODB_CATALOGOS: process.env.MONGODB_CATALOGOS,
     ACCES_TOKEN: process.env.ACCES_TOKEN,
     REFRESH_TOKEN: process.env.REFRESH_TOKEN,
     SALT_ROUNDS: process.env.SALT_ROUNDS,
@@ -14,5 +15,6 @@ export default {
     USUARIO_PRUEBA: process.env.USUARIO_PRUEBA,
     PASSWORD_PRUEBA: process.env.PASSWORD_PRUEBA,
     EMAIL: process.env.EMAIL,
-    PASSWORD_EMAIL: process.env.PASSWORD_EMAIL
+    PASSWORD_EMAIL: process.env.PASSWORD_EMAIL,
+
 };

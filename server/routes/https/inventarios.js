@@ -143,4 +143,27 @@ routerInventarios.put("/put_inventarios_registros_fruta_descompuesta", async (re
         res.json({ status: err.status, message: err.message })
     }
 })
+routerInventarios.put("/put_inventarios_frutaSinProcesar_desverdizado", async (req, res) => {
+    try {
+        // const token = req.headers['authorization'];
+        // console.log(req.body)
+        const data = req.body
 
+        // const user = await UserRepository.authenticateToken(token);
+        // await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
+        const user = {
+            user: 'edwarsthat',
+            cargo: '66b29b1736733668246c9559',
+            _id: '66b62fc3777ac9bdcc5050ed',
+            Rol: 0,
+            iat: 1749504988,
+            exp: 1749533788
+        }
+
+        const query = { data, user }
+        await InventariosRepository.put_inventarios_frutaSinProcesar_desverdizado(query)
+        res.json({ status: 200, message: 'Ok' })
+    } catch (err) {
+        res.json({ status: err.status, message: err.message })
+    }
+})

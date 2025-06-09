@@ -4,6 +4,7 @@ import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { ProveedoresRepository } from "../Class/Proveedores.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
+import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
 
 
 export class dataRepository {
@@ -161,6 +162,17 @@ export class dataRepository {
             }
 
             return await ProveedoresRepository.get_proveedores(query);
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_data_cuartosDesverdizados() {
+        try {
+            console.log("get_data_cuartosDesverdizados")
+            return await CuartosDesverdizados.get_cuartosDesverdizados();
         } catch (err) {
             if (err.status === 522) {
                 throw err

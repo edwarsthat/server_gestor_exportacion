@@ -17,7 +17,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes()
     },
     put_inventarios_frutaSinProcesar_desverdizado: async (data) => {
-        await ProcesoRepository.desverdizado(data)
+        await ProcesoRepository.put_inventarios_frutaSinProcesar_desverdizado(data)
         return successResponseRoutes()
     },
     put_inventarios_frutaSinProcesar_recepcionPendiente: async (data) => {

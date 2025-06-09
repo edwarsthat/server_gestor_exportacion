@@ -131,7 +131,7 @@ export class RedisRepository {
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
     }
-        /**
+    /**
      * Ingresa los valores de descarte del inventario general cuando se realiza un reproceso.
      * A diferencia de put_reprocesoDescarte_set, este método solo afecta al inventario acumulado
      * 
@@ -259,7 +259,36 @@ export class RedisRepository {
             throw new ConnectRedisError(502, `Error obteniendo descarte para ${tipoFruta}: ${err}`);
         }
     }
-
+    /**
+     * Reinicia completamente el inventario de descartes estableciendo todos los valores a cero.
+     * Este método es utilizado para el mantenimiento del sistema y resetea todos los contadores
+     * de descarte para todos los tipos de fruta y tipos de descarte definidos en el sistema.
+     * 
+     * El método ejecuta operaciones de reinicio en paralelo para optimizar el rendimiento,
+     * estableciendo cada campo de descarte a 0 para todas las combinaciones de:
+     * - Tipos de fruta (obtenidos de cargarTipoFrutas())
+     * - Tipos de descarte (obtenidos de cargarDescartes())
+     * - Items de descarte específicos para cada tipo
+     * 
+     * @static
+     * @async
+     * @returns {Promise<void>} Promesa que se resuelve cuando todos los contadores han sido reiniciados
+     * @throws {ConnectRedisError} Lanza un error personalizado si ocurre un fallo en la comunicación con Redis
+     * 
+     * @example
+     * // Reinicia todo el inventario de descartes a cero
+     * await RedisRepository.sys_reiniciar_inventario_descarte();
+     * 
+     * @description
+     * Este método:
+     * 1. Obtiene todos los tipos de fruta del sistema
+     * 2. Obtiene todos los tipos de descarte configurados
+     * 3. Para cada combinación fruta-descarte-item, establece el valor a 0 en Redis
+     * 4. Ejecuta todas las operaciones en paralelo para mejor rendimiento
+     * 5. Registra un mensaje informativo cuando la operación se completa exitosamente
+     * 
+     * @warning Este método resetea TODOS los contadores de descarte. Úselo con precaución.
+     */
     static async sys_reiniciar_inventario_descarte() {
         let cliente;
         try {
@@ -281,12 +310,550 @@ export class RedisRepository {
             await Promise.all(tareas);
 
             console.info('[INVENTARIO DESCARTES] Inventario de descartes reiniciado a cero.');
-
         } catch (err) {
             throw new ConnectRedisError(502, `Error reiniciando el inventario descartes: ${err}`);
         }
     }
+    //#region inventarioDesverdizado
+    /**
+     * Registra un ingreso de fruta al proceso de desverdizado utilizando Redis Hash.
+     * 
+     * Este método almacena la información de fruta que ingresa a un cuarto de desverdizado específico,
+     * utilizando un hash de Redis donde la clave principal identifica el cuarto y el campo del hash
+     * corresponde al ID único del registro. Los datos se almacenan como un campo dentro del hash.
+     * 
+     * El método soporta tanto ejecución inmediata como operaciones transaccionales a través
+     * del parámetro `multi`, permitiendo agrupar múltiples operaciones en una sola transacción.
+     * 
+     * @static
+     * @async
+     * @param {*} data - Datos del ingreso de desverdizado a almacenar. Puede ser cualquier tipo de dato serializable (string, JSON, etc.)
+     * @param {string} cuarto - Identificador del cuarto de desverdizado donde se almacena la fruta
+     * @param {string} _id - Identificador único del registro de ingreso que será usado como campo en el hash
+     * @param {Object|null} [multi=null] - Objeto de transacción Redis para operaciones en lote. Si se proporciona, la operación se agrega a la transacción sin ejecutarse inmediatamente
+     * @returns {Promise<void>} Promesa que se resuelve cuando los datos han sido almacenados (solo si multi es null)
+     * @throws {Error} Lanza el error original de Redis si ocurre un fallo en la comunicación
+     * 
+   
+     * 
+ 
+     * @description
+     * La estructura en Redis es la siguiente:
+     * - Clave: `inventarioDesverdizado:{cuarto}`
+     * - Campo: `{_id}` 
+     * - Valor: `{data}`
+     * 
+     * Esto permite:
+     * - Agrupar todos los ingresos de un cuarto en un solo hash
+     * - Acceso eficiente a registros individuales por ID
+     * - Operaciones en lote sobre todos los ingresos de un cuarto
+     * - Consultas rápidas usando comandos de hash de Redis
+     * 
+     * Casos de uso típicos:
+     * - Registrar fruta que ingresa al proceso de desverdizado
+     * - Mantener historial organizado por cuarto
+     * - Realizar operaciones transaccionales para consistencia de datos
+     * - Facilitar consultas y reportes por cuarto de desverdizado
+     */
+    static async put_ingreso_desverdizado(data, cuarto, _id, multi = null) {
+        const key = `inventarioDesverdizado:cuarto${cuarto}`;
+        let cliente;
+        try {
+            cliente = await clientePromise;
+            if (multi) {
+                multi.hset(key, _id, data);
+            } else {
+                await cliente.hset(key, _id, data);
+            }
+        } catch (err) {
+            console.error("Error guardando en Redis", err);
+            throw new ConnectRedisError(502, `Error modificando desverdizado ${err}`)
+        }
+    }
+    /**
+     * Obtiene el inventario de desverdizado con diferentes niveles de granularidad.
+     * 
+     * Este método flexible permite consultar el inventario de desverdizado de tres maneras:
+     * 1. Todo el inventario (sin parámetros)
+     * 2. Todos los registros de un cuarto específico (solo cuarto)
+     * 3. Un registro específico de un cuarto (cuarto + _id)
+     * 
+     * Para consultas completas utiliza Redis SCAN para manejar eficientemente
+     * grandes volúmenes de datos sin bloquear el servidor.
+     * 
+     * @static
+     * @async
+     * @param {string|null} [cuarto=null] - Identificador del cuarto de desverdizado. Si es null, obtiene todos los cuartos
+     * @param {string|null} [_id=null] - Identificador específico del registro dentro del cuarto. Solo válido si se especifica cuarto
+     * @returns {Promise<Object>} Objeto con la estructura del inventario de desverdizado
+     * @returns {Object} return.inventarioDesverdizado - Objeto principal que contiene los datos organizados por cuarto
+     * @throws {Error} Lanza el error original de Redis si ocurre un fallo en la comunicación
+     * 
+     * @example
+     * // Obtener todo el inventario de desverdizado
+     * const inventarioCompleto = await RedisRepository.get_inventario_desverdizado();
+     * // Retorna: { 
+     * //   inventarioDesverdizado: {
+     * //     "cuarto1": { "id1": "datos1", "id2": "datos2" },
+     * //     "cuarto2": { "id3": "datos3", "id4": "datos4" }
+     * //   }
+     * // }
+     * 
+     * @example
+     * // Obtener todos los registros de un cuarto específico
+     * const cuarto1 = await RedisRepository.get_inventario_desverdizado("cuarto1");
+     * // Retorna: { 
+     * //   inventarioDesverdizado: {
+     * //     "cuarto1": { "id1": "datos1", "id2": "datos2" }
+     * //   }
+     * // }
+     * 
+     * @example
+     * // Obtener un registro específico
+     * const registroEspecifico = await RedisRepository.get_inventario_desverdizado("cuarto1", "id1");
+     * // Retorna: { 
+     * //   inventarioDesverdizado: {
+     * //     "cuarto1": { "id1": "datos1" }
+     * //   }
+     * // }
+     * 
+     * @description
+     * **Comportamiento según parámetros:**
+     * 
+     * - **Sin parámetros**: Escanea todas las claves que coincidan con `inventarioDesverdizado:*`
+     *   y retorna todos los cuartos con sus respectivos registros
+     * 
+     * - **Solo cuarto**: Usa `hGetAll` para obtener todos los campos del hash del cuarto especificado
+     * 
+     * - **Cuarto + _id**: Usa `hGet` para obtener un campo específico del hash del cuarto
+     * 
+     * **Optimizaciones:**
+     * - Utiliza Redis SCAN con batch size de 100 para consultas completas
+     * - Procesa los datos de manera asíncrona usando streams
+     * - Mantiene la estructura consistente en todas las variantes de consulta
+     * 
+     * **Estructura de Redis:**
+     * - Clave: `inventarioDesverdizado:{cuarto}`
+     * - Campos: IDs de registros individuales
+     * - Valores: Datos de cada registro
+     * 
+     * @performance
+     * - Consultas específicas (cuarto/cuarto+id): O(1) - O(n) donde n es el número de campos
+     * - Consulta completa: O(N) donde N es el número total de claves, pero procesada en batches
+     */
+    static async get_inventario_desverdizado(cuarto = null, _id = null) {
+        let cliente;
+        try {
+            cliente = await clientePromise;
 
+            const resultado = { inventarioDesverdizado: {} };
+
+            // Si pidieron un cuarto específico
+            if (cuarto && !_id) {
+                const key = `inventarioDesverdizado:${cuarto}`;
+                const datos = await cliente.hGetAll(key);
+                resultado.inventarioDesverdizado[cuarto] = datos;
+                return resultado;
+            }
+
+            // Si pidieron un campo específico de un cuarto
+            if (cuarto && _id) {
+                const key = `inventarioDesverdizado:${cuarto}`;
+                const valor = await cliente.hGet(key, _id);
+                resultado.inventarioDesverdizado[cuarto] = { [_id]: valor };
+                return resultado;
+            }
+
+            // Si no pasaron nada: obtener TODO el inventarioDesverdizado
+            const stream = cliente.scanStream({
+                match: "inventarioDesverdizado:*",
+                count: 100 // batch size (ajustable)
+            });
+
+            return new Promise((resolve, reject) => {
+                stream.on('data', async (keys) => {
+                    for (const key of keys) {
+                        const partes = key.split(':');
+                        const cuartoName = partes[1];
+
+                        const datos = await cliente.hGetAll(key);
+                        resultado.inventarioDesverdizado[cuartoName] = datos;
+                    }
+                });
+
+                stream.on('end', () => {
+                    resolve(resultado);
+                });
+
+                stream.on('error', (err) => {
+                    console.error("Error leyendo inventario completo", err);
+                    reject(err);
+                });
+            });
+
+        } catch (err) {
+            console.error("Error leyendo inventario desverdizado", err);
+            throw new ConnectRedisError(502, `Error obeniendo desverdizado ${err}`)
+        }
+    }
+    /**
+     * Elimina un registro específico del inventario de desverdizado.
+     * 
+     * Este método remove un campo específico de un hash de Redis que representa
+     * un registro de ingreso de fruta en un cuarto de desverdizado. La operación
+     * elimina únicamente el registro especificado sin afectar otros datos del mismo cuarto.
+     * 
+     * El método soporta tanto ejecución inmediata como operaciones transaccionales,
+     * permitiendo incluir la eliminación como parte de una transacción más amplia
+     * para mantener la consistencia de datos.
+     * 
+     * @static
+     * @async
+     * @param {string} cuarto - Identificador del cuarto de desverdizado del cual eliminar el registro
+     * @param {string} _id - Identificador único del registro específico a eliminar
+     * @param {Object|null} [multi=null] - Objeto de transacción Redis para operaciones en lote. Si se proporciona, la operación se agrega a la transacción sin ejecutarse inmediatamente
+     * @returns {Promise<void>} Promesa que se resuelve cuando el registro ha sido eliminado (solo si multi es null)
+     * @throws {ConnectRedisError} Lanza un error personalizado con código 502 si ocurre un fallo en la comunicación con Redis
+     * 
+     * @example
+     * // Eliminar un registro específico inmediatamente
+     * await RedisRepository.delete_inventarioDesverdizado_registro("cuarto1", "ingreso_20250609_001");
+     * 
+     * @example
+     * // Eliminar múltiples registros en una transacción
+     * const cliente = await RedisRepository.getClient();
+     * const multi = cliente.multi();
+     * 
+     * await RedisRepository.delete_inventarioDesverdizado_registro("cuarto1", "id1", multi);
+     * await RedisRepository.delete_inventarioDesverdizado_registro("cuarto1", "id2", multi);
+     * await RedisRepository.delete_inventarioDesverdizado_registro("cuarto2", "id3", multi);
+     * 
+     * await multi.exec(); // Ejecutar todas las eliminaciones
+     * 
+     * @example
+     * // Operación transaccional compleja: eliminar registro obsoleto y agregar nuevo
+     * const cliente = await RedisRepository.getClient();
+     * const multi = cliente.multi();
+     * 
+     * // Eliminar registro anterior
+     * await RedisRepository.delete_inventarioDesverdizado_registro("cuarto1", "registro_antiguo", multi);
+     * 
+     * // Agregar nuevo registro
+     * await RedisRepository.put_ingreso_desverdizado(
+     *   JSON.stringify(nuevosDatos), "cuarto1", "registro_nuevo", multi
+     * );
+     * 
+     * await multi.exec();
+     * 
+     * @description
+     * **Funcionamiento interno:**
+     * - Construye la clave Redis: `inventarioDesverdizado:cuarto{cuarto}`
+     * - Utiliza el comando `HDEL` de Redis para eliminar el campo específico
+     * - Mantiene intactos otros registros del mismo cuarto
+     * - Si es el último campo del hash, Redis eliminará automáticamente la clave completa
+     * 
+     * **Casos de uso típicos:**
+     * - Corrección de registros erróneos
+     * - Limpieza de datos obsoletos
+     * - Procesamiento de salidas de fruta del desverdizado
+     * - Operaciones de mantenimiento del inventario
+     * - Reorganización de registros por cuarto
+     * 
+     * **Consideraciones importantes:**
+     * - La operación es irreversible una vez ejecutada
+     * - No valida la existencia previa del registro (Redis devuelve 0 si no existe)
+     * - Usar transacciones para operaciones que requieren consistencia
+     * - Los errores se manejan con doble try-catch para robustez
+     * 
+     * @performance
+     * - Complejidad: O(1) - Operación constante independiente del tamaño del hash
+     * - Muy eficiente para eliminaciones selectivas
+     * - No requiere cargar datos en memoria para la eliminación
+     * 
+     * @safety
+     * - Operación atómica a nivel de Redis
+     * - Segura para uso concurrente
+     * - Registra errores detallados para debugging
+     */
+    static async delete_inventarioDesverdizado_registro(cuarto, _id, multi = null) {
+        try {
+            const key = `inventarioDesverdizado:cuarto${cuarto}`;
+            let cliente;
+            try {
+                cliente = await clientePromise;
+                if (multi) {
+                    multi.hdel(key, _id);
+                } else {
+                    await cliente.hdel(key, _id);
+                }
+            } catch (err) {
+                console.error("Error eliminando en Redis", err);
+                throw new ConnectRedisError(502, `Error eliminando desverdizado ${err}`);
+            }
+        } catch (err) {
+            console.error("Error eliminando inventario desverdizado", err);
+            throw new ConnectRedisError(502, `Error eliminando desverdizado ${err}`);
+        }
+    }
+    /**
+     * Actualiza incrementalmente la cantidad de un registro en el inventario de desverdizado.
+     * 
+     * Este método modifica el valor numérico de un campo específico en un hash de Redis
+     * que representa un registro de inventario de desverdizado. Utiliza la operación
+     * atómica `HINCRBY` de Redis para incrementar o decrementar el valor existente,
+     * garantizando la consistencia en operaciones concurrentes.
+     * 
+     * El método soporta tanto ejecución inmediata como operaciones transaccionales,
+     * permitiendo incluir la actualización como parte de transacciones más complejas
+     * para mantener la integridad de los datos del inventario.
+     * 
+     * @static
+     * @async
+     * @param {string} cuarto - Identificador del cuarto de desverdizado donde se encuentra el registro
+     * @param {string} _id - Identificador único del registro específico a actualizar
+     * @param {number} cantidad - Cantidad a incrementar (positiva) o decrementar (negativa) del valor actual
+     * @param {Object|null} [multi=null] - Objeto de transacción Redis para operaciones en lote. Si se proporciona, la operación se agrega a la transacción sin ejecutarse inmediatamente
+     * @returns {Promise<void>} Promesa que se resuelve cuando la actualización ha sido aplicada (solo si multi es null)
+     * @throws {ConnectRedisError} Lanza un error personalizado con código 502 si ocurre un fallo en la comunicación con Redis
+     * 
+     * @example
+     * // Incrementar la cantidad de un registro específico
+     * await RedisRepository.update_inventarioDesverdizado("cuarto1", "lote_001", 500);
+     * 
+     * @example
+     * // Decrementar cantidad (salida de fruta del desverdizado)
+     * await RedisRepository.update_inventarioDesverdizado("cuarto2", "lote_002", -250);
+     * 
+     * @example
+     * // Múltiples actualizaciones en una transacción
+     * const cliente = await RedisRepository.getClient();
+     * const multi = cliente.multi();
+     * 
+     * // Transferencia entre cuartos: salida de un cuarto e ingreso a otro
+     * await RedisRepository.update_inventarioDesverdizado("cuarto1", "lote_001", -1000, multi);
+     * await RedisRepository.update_inventarioDesverdizado("cuarto2", "lote_001", 1000, multi);
+     * 
+     * await multi.exec(); // Ejecutar transferencia atómica
+     * 
+     * @example
+     * // Operación compleja: ajuste de inventario con registro de auditoría
+     * const cliente = await RedisRepository.getClient();
+     * const multi = cliente.multi();
+     * 
+     * // Ajustar cantidad
+     * await RedisRepository.update_inventarioDesverdizado("cuarto1", "lote_001", -100, multi);
+     * 
+     * // Registrar el ajuste (ejemplo conceptual)
+     * await RedisRepository.put_ingreso_desverdizado(
+     *   JSON.stringify({ 
+     *     tipo: 'ajuste', 
+     *     cantidad: -100, 
+     *     motivo: 'descarte por calidad',
+     *     fecha: new Date().toISOString()
+     *   }), 
+     *   "auditoria", 
+     *   `ajuste_${Date.now()}`, 
+     *   multi
+     * );
+     * 
+     * await multi.exec();
+     * 
+     * @description
+     * **Funcionamiento interno:**
+     * - Construye la clave Redis: `inventarioDesverdizado:{cuarto}`
+     * - Utiliza el comando `HINCRBY` de Redis para operaciones atómicas
+     * - Si el campo no existe, Redis lo inicializa con 0 antes del incremento
+     * - Soporta valores negativos para decrementos
+     * - Mantiene la precisión numérica usando enteros de 64 bits
+     * 
+     * **Casos de uso típicos:**
+     * - **Ingresos**: Incrementar cantidades cuando llega fruta nueva
+     * - **Salidas**: Decrementar cuando la fruta sale del desverdizado
+     * - **Transferencias**: Mover inventario entre cuartos de forma atómica
+     * - **Ajustes**: Correcciones de inventario por auditorías
+     * - **Procesamiento**: Reducir cantidad por descartes o mermas
+     * 
+     * **Ventajas de HINCRBY:**
+     * - **Atomicidad**: Operación indivisible, segura para concurrencia
+     * - **Eficiencia**: No requiere leer el valor actual antes de modificar
+     * - **Consistencia**: Evita condiciones de carrera (race conditions)
+     * - **Simplicidad**: Una sola operación para leer-modificar-escribir
+     * 
+     * **Consideraciones importantes:**
+     * - Los valores deben ser numéricos enteros para usar HINCRBY
+     * - No valida rangos (puede resultar en valores negativos si no se controla)
+     * - Para valores decimales, considerar almacenar como enteros escalados
+     * - Usar transacciones para operaciones que afectan múltiples registros
+     * 
+     * @performance
+     * - Complejidad: O(1) - Operación constante
+     * - Muy eficiente para actualizaciones frecuentes
+     * - No hay overhead de red adicional por lectura previa
+     * - Optimizado para alta concurrencia
+     * 
+     * @safety
+     * - Operación atómica garantizada por Redis
+     * - Segura para uso concurrente sin locks adicionales
+     * - Transaccional cuando se usa con multi
+     * - Manejo robusto de errores con logging detallado
+     * 
+     * @since 1.0.0
+     */
+    static async update_inventarioDesverdizado(cuarto, _id, cantidad, multi = null) {
+        const key = `inventarioDesverdizado:${cuarto}`;
+        let cliente;
+        try {
+            cliente = await clientePromise;
+            if (multi) {
+                multi.hincrby(key, _id, cantidad);
+            } else {
+                await cliente.hincrby(key, _id, cantidad);
+            }
+        } catch (err) {
+            console.error("Error actualizando inventario", err);
+            throw new ConnectRedisError(502, `Error actualizando desverdizado ${err}`);
+        }
+    }
+    /**
+     * Elimina completamente un cuarto de desverdizado y todos sus registros asociados.
+     * 
+     * Este método elimina de forma permanente una clave completa de Redis que representa
+     * un cuarto de desverdizado, incluyendo todos los registros de inventario almacenados
+     * en ese cuarto. La operación es irreversible y afecta a todos los datos del cuarto
+     * especificado, utilizando el comando `DEL` de Redis para una eliminación atómica.
+     * 
+     * A diferencia de `delete_inventarioDesverdizado_registro` que elimina registros
+     * individuales, este método elimina la estructura completa del cuarto, siendo útil
+     * para operaciones de limpieza masiva, cierre de cuartos o reorganización del sistema.
+     * 
+     * @static
+     * @async
+     * @param {string} cuarto - Identificador del cuarto de desverdizado a eliminar completamente
+     * @returns {Promise<void>} Promesa que se resuelve cuando el cuarto y todos sus registros han sido eliminados
+     * @throws {ConnectRedisError} Lanza un error personalizado con código 502 si ocurre un fallo en la comunicación con Redis
+     * 
+     * @example
+     * // Eliminar un cuarto completo con todos sus registros
+     * await RedisRepository.delete_inventarioDesverdizado_cuarto("cuarto1");
+     * // Esto elimina la clave 'inventarioDesverdizado:cuarto1' y todos sus campos
+     * 
+     * @example
+     * // Operación de limpieza de múltiples cuartos (sin transacción)
+     * const cuartosAEliminar = ["cuarto1", "cuarto2", "cuarto3"];
+     * 
+     * for (const cuarto of cuartosAEliminar) {
+     *   try {
+     *     await RedisRepository.delete_inventarioDesverdizado_cuarto(cuarto);
+     *     console.log(`Cuarto ${cuarto} eliminado exitosamente`);
+     *   } catch (error) {
+     *     console.error(`Error eliminando cuarto ${cuarto}:`, error);
+     *   }
+     * }
+     * 
+     * @example
+     * // Reorganización de cuartos: respaldar y limpiar
+     * async function reorganizarCuarto(cuarto) {
+     *   // Primero obtener los datos para respaldo
+     *   const backup = await RedisRepository.get_inventario_desverdizado(cuarto);
+     *   
+     *   // Guardar respaldo en otro sistema/archivo
+     *   await guardarRespaldo(cuarto, backup);
+     *   
+     *   // Eliminar el cuarto completo
+     *   await RedisRepository.delete_inventarioDesverdizado_cuarto(cuarto);
+     *   
+     *   console.log(`Cuarto ${cuarto} reorganizado exitosamente`);
+     * }
+     * 
+     * @example
+     * // Verificación antes de eliminar (patrón recomendado)
+     * async function eliminarCuartoSeguro(cuarto) {
+     *   // Verificar si el cuarto existe y obtener estadísticas
+     *   const inventario = await RedisRepository.get_inventario_desverdizado(cuarto);
+     *   
+     *   if (inventario.inventarioDesverdizado[cuarto]) {
+     *     const numRegistros = Object.keys(inventario.inventarioDesverdizado[cuarto]).length;
+     *     console.log(`Eliminando cuarto ${cuarto} con ${numRegistros} registros`);
+     *     
+     *     await RedisRepository.delete_inventarioDesverdizado_cuarto(cuarto);
+     *     console.log(`Cuarto ${cuarto} eliminado exitosamente`);
+     *   } else {
+     *     console.log(`Cuarto ${cuarto} no existe o ya está vacío`);
+     *   }
+     * }
+     * 
+     * @description
+     * **Funcionamiento interno:**
+     * - Construye la clave Redis: `inventarioDesverdizado:{cuarto}`
+     * - Utiliza el comando `DEL` de Redis para eliminar la clave completa
+     * - La operación es atómica: o se elimina todo o no se elimina nada
+     * - Si la clave no existe, Redis retorna 0 sin generar error
+     * - Todos los campos del hash son eliminados simultáneamente
+     * 
+     * **Casos de uso típicos:**
+     * - **Cierre de cuartos**: Cuando un cuarto termina su ciclo de desverdizado
+     * - **Limpieza masiva**: Eliminar datos obsoletos o de prueba
+     * - **Reorganización**: Cambiar la estructura de numeración de cuartos
+     * - **Mantenimiento**: Limpiar cuartos con datos corruptos o inconsistentes
+     * - **Migración**: Mover datos a nuevas estructuras o sistemas
+     * - **Testing**: Limpiar datos de prueba en entornos de desarrollo
+     * 
+     * **Diferencias con otros métodos de eliminación:**
+     * - `delete_inventarioDesverdizado_registro`: Elimina UN registro específico
+     * - `delete_inventarioDesverdizado_cuarto`: Elimina TODO el cuarto
+     * - Scope: Registro individual vs. cuarto completo
+     * - Impacto: Selectivo vs. masivo
+     * 
+     * **Consideraciones de seguridad:**
+     * - **Irreversible**: Una vez ejecutado, no hay forma de recuperar los datos
+     * - **Sin confirmación**: No solicita confirmación antes de eliminar
+     * - **Validación recomendada**: Verificar existencia y contenido antes de eliminar
+     * - **Respaldos**: Considerar crear respaldos antes de operaciones masivas
+     * - **Logs**: Registrar eliminaciones para auditoría
+     * 
+     * **Patrón recomendado de uso:**
+     * ```javascript
+     * // 1. Verificar existencia
+     * // 2. Crear respaldo si es necesario
+     * // 3. Registrar la operación
+     * // 4. Ejecutar eliminación
+     * // 5. Confirmar resultado
+     * ```
+     * 
+     * @performance
+     * - Complejidad: O(1) - Operación constante independiente del número de registros
+     * - Muy eficiente para eliminaciones masivas vs. eliminar registros individualmente
+     * - Una sola operación de red vs. múltiples operaciones para registros individuales
+     * - Redis libera memoria inmediatamente después de la eliminación
+     * 
+     * @safety
+     * - Operación atómica garantizada por Redis
+     * - No deja el cuarto en estado inconsistente
+     * - Segura para uso concurrente (otros clientes verán el cuarto como inexistente)
+     * - Manejo robusto de errores con logging detallado
+     * 
+     * @warning
+     * ⚠️ **OPERACIÓN DESTRUCTIVA**: Este método elimina permanentemente todos los datos
+     * del cuarto especificado. Asegúrese de:
+     * - Tener respaldos si los datos son importantes
+     * - Verificar que es el cuarto correcto
+     * - Confirmar que no hay procesos dependientes ejecutándose
+     * - Registrar la operación para auditoría
+     * 
+     * @since 1.0.0
+     */
+    static async delete_inventarioDesverdizado_cuarto(cuarto) {
+        const key = `inventarioDesverdizado:${cuarto}`;
+        let cliente;
+        try {
+            cliente = await clientePromise;
+            await cliente.del(key);
+        } catch (err) {
+            console.error("Error eliminando cuarto completo", err);
+            throw new ConnectRedisError(502, `Error eliminando cuarto completo ${err}`);
+        }
+    }
+    //#endregion inventarioDesverdizado
 
     static async getClient() {
         return await clientePromise;

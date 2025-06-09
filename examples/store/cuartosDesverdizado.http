@@ -1,0 +1,17 @@
+
+GET http://localhost:3010/dataSys/get_data_cuartosDesverdizados
+
+Content-Type: application/json
+
+### post fruta desverdizado
+
+PUT  http://localhost:3010/inventarios/put_inventarios_frutaSinProcesar_desverdizado
+Content-Type: application/json
+
+{
+ "data": {
+    "_id": "683720973ac9a5cdb1119fc7",
+    "desverdizado": { "canastillas": "5", "_id": "684729c916206012d825def4" },
+    "action": "put_inventarios_frutaSinProcesar_desverdizado"
+  }
+}
