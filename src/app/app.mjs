@@ -139,6 +139,8 @@ app.post('/login2', loginLimiter, async (req, res, next) => {
     }
 });
 
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
 
 
 //Envia los archivos para actualizar la aplicacion de escritorio 
