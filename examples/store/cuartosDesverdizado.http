@@ -9,9 +9,22 @@ PUT  http://localhost:3010/inventarios/put_inventarios_frutaSinProcesar_desverdi
 Content-Type: application/json
 
 {
- "data": {
-    "_id": "683720973ac9a5cdb1119fc7",
-    "desverdizado": { "canastillas": "5", "_id": "684729c916206012d825def4" },
+    "_id": "684887eeff9ac4540a53f2a3",
+    "desverdizado": { "canastillas": "5", "_id": "68483f430083290d6ae279fe" },
     "action": "put_inventarios_frutaSinProcesar_desverdizado"
-  }
+}
+
+### pedir el inventario
+GET http://localhost:3010/inventarios/get_inventarios_frutaDesverdizando_lotes
+
+
+
+### finalizar fruta desverdizada
+PUT  http://localhost:3010/inventarios/put_inventarios_frutaDesverdizado_finalizar
+Content-Type: application/json
+
+{
+    "_id": "684887eeff9ac4540a53f2a3",
+    "cuarto": "68483f6a0083290d6ae27a00",
+    "action": "put_inventarios_frutaDesverdizado_finalizar"
 }

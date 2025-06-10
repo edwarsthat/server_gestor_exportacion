@@ -356,14 +356,15 @@ export class RedisRepository {
      * - Facilitar consultas y reportes por cuarto de desverdizado
      */
     static async put_ingreso_desverdizado(data, cuarto, _id, multi = null) {
-        const key = `inventarioDesverdizado:cuarto${cuarto}`;
+        const key = `inventarioDesverdizado:${cuarto}`;
         let cliente;
         try {
             cliente = await clientePromise;
+            const value = JSON.stringify(data);
             if (multi) {
-                multi.hset(key, _id, data);
+                multi.hSet(key, _id, value);
             } else {
-                await cliente.hset(key, _id, data);
+                await cliente.hSet(key, _id, value);
             }
         } catch (err) {
             console.error("Error guardando en Redis", err);
@@ -465,35 +466,34 @@ export class RedisRepository {
             }
 
             // Si no pasaron nada: obtener TODO el inventarioDesverdizado
-            const stream = cliente.scanStream({
-                match: "inventarioDesverdizado:*",
-                count: 100 // batch size (ajustable)
+            let cursor = '0';
+            // do {
+
+            const { keys } = await cliente.scan(cursor, {
+                MATCH: 'inventarioDesverdizado:*',
+                COUNT: 100
             });
 
-            return new Promise((resolve, reject) => {
-                stream.on('data', async (keys) => {
-                    for (const key of keys) {
-                        const partes = key.split(':');
-                        const cuartoName = partes[1];
+            // Paralelizar todas las consultas hGetAll
+            const resultados = await Promise.all(
+                keys.map(async (key) => {
+                    const cuarto = key.split(':')[1];
+                    const datosCrudos = await cliente.hGetAll(key);
+                    const datos = Object.fromEntries(Object.entries(datosCrudos));
+                    return { cuarto, datos };
+                })
+            );
 
-                        const datos = await cliente.hGetAll(key);
-                        resultado.inventarioDesverdizado[cuartoName] = datos;
-                    }
-                });
+            // Consolidar resultados
+            for (const { cuarto, datos } of resultados) {
+                resultado.inventarioDesverdizado[cuarto] = datos;
+            }
 
-                stream.on('end', () => {
-                    resolve(resultado);
-                });
-
-                stream.on('error', (err) => {
-                    console.error("Error leyendo inventario completo", err);
-                    reject(err);
-                });
-            });
+            return resultado;
 
         } catch (err) {
             console.error("Error leyendo inventario desverdizado", err);
-            throw new ConnectRedisError(502, `Error obeniendo desverdizado ${err}`)
+            throw new ConnectRedisError(502, `Error obteniendo desverdizado: ${err.message}`);
         }
     }
     /**
@@ -577,14 +577,14 @@ export class RedisRepository {
      */
     static async delete_inventarioDesverdizado_registro(cuarto, _id, multi = null) {
         try {
-            const key = `inventarioDesverdizado:cuarto${cuarto}`;
+            const key = `inventarioDesverdizado:${cuarto}`;
             let cliente;
             try {
                 cliente = await clientePromise;
                 if (multi) {
-                    multi.hdel(key, _id);
+                    multi.hDel(key, _id);
                 } else {
-                    await cliente.hdel(key, _id);
+                    await cliente.hDel(key, _id);
                 }
             } catch (err) {
                 console.error("Error eliminando en Redis", err);
@@ -705,9 +705,9 @@ export class RedisRepository {
         try {
             cliente = await clientePromise;
             if (multi) {
-                multi.hincrby(key, _id, cantidad);
+                multi.hIncrBy(key, _id, cantidad);
             } else {
-                await cliente.hincrby(key, _id, cantidad);
+                await cliente.hIncrBy(key, _id, cantidad);
             }
         } catch (err) {
             console.error("Error actualizando inventario", err);

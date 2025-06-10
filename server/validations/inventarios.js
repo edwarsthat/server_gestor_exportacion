@@ -430,4 +430,67 @@ export class InventariosValidations {
             })
         })
     }
+    static put_inventarios_frutaSinProcesar_desverdizado() {
+        return z.object({
+            desverdizado: z.object({
+                canastillas: z.coerce.number({
+                    invalid_type_error: "Debe ser un número",
+                }).int("No se permiten decimales").min(1, "Debe ser mayor o igual a 1"),
+                _id: z.string().min(1, "El cuarto desverdizado es obligatorio"),
+            }),
+            _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
+            action: z.string()
+        })
+    }
+    static put_inventarios_frutaDesverdizando_parametros() {
+        return z.object({
+            _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
+            action: z.string(),
+            data: z.object({
+                temperatura: z.string()
+                    .min(1, "Temperatura es requerida")
+                    .refine(val => /^-?\d+(\.\d+)?$/.test(val), {
+                        message: "Debe ser un número válido"
+                    })
+                    .refine(val => Math.abs(parseFloat(val)) <= 1_000_000, {
+                        message: "El número no debe superar el millón"
+                    }),
+
+                etileno: z.string()
+                    .min(1, "Etileno es requerido")
+                    .refine(val => /^-?\d+(\.\d+)?$/.test(val), {
+                        message: "Debe ser un número válido"
+                    })
+                    .refine(val => Math.abs(parseFloat(val)) <= 1_000_000, {
+                        message: "El número no debe superar el millón"
+                    }),
+
+                carbono: z.string()
+                    .min(1, "Dióxido es requerido")
+                    .refine(val => /^-?\d+(\.\d+)?$/.test(val), {
+                        message: "Debe ser un número válido"
+                    })
+                    .refine(val => Math.abs(parseFloat(val)) <= 1_000_000, {
+                        message: "El número no debe superar el millón"
+                    }),
+
+                humedad: z.string()
+                    .min(1, "Humedad es requerida")
+                    .refine(val => /^-?\d+(\.\d+)?$/.test(val), {
+                        message: "Debe ser un número válido"
+                    })
+                    .refine(val => Math.abs(parseFloat(val)) <= 1_000_000, {
+                        message: "El número no debe superar el millón"
+                    }),
+                fecha: safeString()
+            })
+        })
+    }
+    static put_inventarios_frutaDesverdizado_finalizar() {
+        return z.object({
+            _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
+            cuarto: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
+            action: z.literal("put_inventarios_frutaDesverdizado_finalizar")
+        })
+    }
 }

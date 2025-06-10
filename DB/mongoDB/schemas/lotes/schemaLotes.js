@@ -112,15 +112,13 @@ export const defineLotes = async (conn, AuditLog) => {
 
   const desverdizadoSchema = new Schema({
     canastillasIngreso: { type: Number, default: 0 },
-    kilosIngreso: { type: Number, default: 0 },
-    cuartoDesverdizado: { type: String, default: "" },
+    cuartoDesverdizado:  [String],
     fechaIngreso: { type: Date, default: () => new Date() },
     fechaFinalizar: Date,
     desverdizando: Boolean,
-    canastillasSalida: { type: Number, default: 0 },
     parametros: [ParametroSchema],
     fechaProcesado: Date,
-  });
+  },  { _id: false });
 
   const contenedorDetalleSchema = new Schema({
     "1": Number,
