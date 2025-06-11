@@ -100,6 +100,10 @@ export const apiSocketInventarios = {
         await InventariosRepository.post_inventarios_canastillas_registro(data)
         return successResponseRoutes()
     },
+    put_inventarios_frutaDesverdizado_mover: async (data) => {
+        await InventariosRepository.put_inventarios_frutaDesverdizado_mover(data)
+        return successResponseRoutes()
+    },
     //#endregion
     //#region historiales
     get_inventarios_historialProcesado_frutaProcesada: async (data) => {

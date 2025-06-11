@@ -151,28 +151,28 @@ export class RedisRepository {
      *   'Naranja'
      * );
      */
-    static async put_reprocesoDescarte_set(data, tipoDescarte, tipoFruta, multi = null) {
-
-        const key = `inventarioDescarte:${tipoFruta}:${tipoDescarte}`;
-        let cliente;
-        try {
-            cliente = await clientePromise;
-            if (multi) {
-                // Solo agregas los comandos a la transacción, NO ejecutas nada aquí
-                for (const [campo, valor] of Object.entries(data)) {
-                    multi.hIncrBy(key, campo, valor);
-                }
-            } else {
-                const tareas = Object.entries(data)
-                    .map(([campo, valor]) => {
-                        cliente.hSetBy(`inventarioDescarte:${tipoFruta}:${tipoDescarte}`, campo, valor)
-                    });
-                await Promise.all(tareas);
+static async put_reprocesoDescarte_set(data, tipoDescarte, tipoFruta, multi = null) {
+    const key = `inventarioDescarte:${tipoFruta}:${tipoDescarte}`;
+    let cliente;
+    try {
+        cliente = await clientePromise;
+        if (multi) {
+            // Solo agregas los comandos a la transacción, NO ejecutas nada aquí
+            for (const [campo, valor] of Object.entries(data)) {
+                multi.hIncrBy(key, campo, valor);
             }
-        } catch (err) {
-            throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
+        } else {
+            const tareas = Object.entries(data)
+                .map(([campo, valor]) =>
+                    cliente.hSet(key, campo, valor) // CORREGIDO: hSet en vez de hSetBy
+                );
+            await Promise.all(tareas);
         }
+    } catch (err) {
+        throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
     }
+}
+
     /**
      * Obtiene el inventario completo de descartes para todos los tipos de fruta.
      * Recupera tanto los descartes de lavado como los de encerado para cada tipo de fruta

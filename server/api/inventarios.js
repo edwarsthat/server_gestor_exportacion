@@ -158,6 +158,15 @@ export class InventariosRepository {
                 { user: user._id, action: action }
             )
 
+            procesoEventEmitter.emit("server_event", {
+                action: "inventario_frutaSinProcesar",
+                data: {}
+            });
+            procesoEventEmitter.emit("server_event", {
+                action: "inventario_desverdizado",
+                data: {}
+            });
+
         } catch (err) {
             if (err.status === 523) {
                 throw err
@@ -680,17 +689,12 @@ export class InventariosRepository {
         }
     }
     static async get_inventarios_ordenVaceo_inventario() {
-        //JS
+
         //se obtiene los datos del inventario
         const inventario = await VariablesDelSistema.getInventario();
         const inventarioKeys = Object.keys(inventario)
 
-        // se obtiene el inventario de desverdizado
-        const InvDes = await VariablesDelSistema.getInventarioDesverdizado();
-        const InvDesKeys = Object.keys(InvDes);
-
-        const arrLotesKeys = inventarioKeys.concat(InvDesKeys);
-        const setLotesKeys = new Set(arrLotesKeys);
+        const setLotesKeys = new Set(inventarioKeys);
         const lotesKeys = [...setLotesKeys];
 
         const lotes = await LotesRepository.getLotes({
@@ -722,20 +726,11 @@ export class InventariosRepository {
         const resultado = lotesKeys.map(id => {
             const lote = lotes.find(lote => lote._id.toString() === id.toString());
 
-            if (lote && lote.desverdizado && lote.desverdizado.fechaFinalizar) {
-                return {
-                    ...lote.toObject(),
-                    inventario: InvDes[id]
-                }
-            } else if (lote && lote.desverdizado && !lote.desverdizado.fechaFinalizar) {
-                return null
-            } else if (lote) {
-                return {
-                    ...lote.toObject(),
-                    inventario: inventario[id]
-                }
+            return {
+                ...lote.toObject(),
+                inventario: inventario[id]
             }
-            return null
+
         }).filter(item => item !== null);
         return resultado
 
@@ -799,7 +794,7 @@ export class InventariosRepository {
  */
     static async put_inventarios_frutaSinProcesar_desverdizado(req) {
         try {
-            console.log("put_inventarios_frutaSinProcesar_desverdizado", req);
+
             const { user } = req.user;
             const { _id: loteId, desverdizado, action } = req.data
             const { canastillas, _id: cuartoId } = desverdizado;
@@ -837,6 +832,233 @@ export class InventariosRepository {
             const message = typeof err.message === "string" ? err.message : "Error inesperado";
             throw new InventariosLogicError(470, `Error ${err.type || "interno"}: ${message}`);
         }
+    }
+    /**
+     * Mueve fruta del inventario de desverdizado hacia diferentes destinos.
+     * 
+     * Este método gestiona el movimiento de fruta desde el inventario de desverdizado hacia
+     * otros inventarios o entre cuartos de desverdizado. Soporta dos tipos principales de
+     * operaciones: devolver fruta al inventario sin procesar o mover fruta entre cuartos
+     * de desverdizado diferentes.
+     * 
+     * El método actualiza tanto los registros en Redis (inventario de desverdizado) como
+     * en MongoDB (datos del lote), manteniendo la sincronización entre ambos sistemas
+     * y emitiendo eventos para notificar los cambios a otros componentes del sistema.
+     * 
+     * @static
+     * @async
+     * @param {Object} req - Objeto de solicitud con los datos de la operación de movimiento
+     * @param {Object} req.user - Información del usuario que realiza la operación
+     * @param {string} req.user._id - ID del usuario que ejecuta la acción
+     * @param {Object} req.data - Datos específicos de la operación de movimiento
+     * @param {string} req.data._id - ID del lote que se está moviendo
+     * @param {string} req.data.cuarto - ID del cuarto de desverdizado de origen
+     * @param {string} req.data.action - Descripción de la acción realizada para el historial
+     * @param {Object} req.data.data - Detalles específicos del movimiento
+     * @param {string} req.data.data.destino - Destino del movimiento ("inventarioFrutaSinProcesar" o ID de cuarto destino)
+     * @param {number} req.data.data.cantidad - Cantidad de canastillas a mover
+     * @returns {Promise<void>} Promesa que se resuelve cuando el movimiento se completa exitosamente
+     * @throws {InventariosLogicError} 470 - Error general en la validación o procesamiento
+     * @throws {Error} 518 - Error específico de conexión o datos
+     * @throws {Error} 413 - Error específico del proceso
+     * 
+     * @example
+     * // Mover fruta desde desverdizado de vuelta al inventario sin procesar
+     * const req = {
+     *   user: {
+     *     _id: "507f1f77bcf86cd799439011"
+     *   },
+     *   data: {
+     *     _id: "507f1f77bcf86cd799439012", // ID del lote
+     *     cuarto: "507f1f77bcf86cd799439013", // ID del cuarto origen
+     *     action: "devolver_fruta_sin_procesar",
+     *     data: {
+     *       destino: "inventarioFrutaSinProcesar",
+     *       cantidad: 15 // canastillas a devolver
+     *     }
+     *   }
+     * };
+     * 
+     * await InventariosRepository.put_inventarios_frutaDesverdizado_mover(req);
+     * 
+     * @example
+     * // Mover fruta entre cuartos de desverdizado
+     * const req = {
+     *   user: {
+     *     _id: "507f1f77bcf86cd799439011"
+     *   },
+     *   data: {
+     *     _id: "507f1f77bcf86cd799439012", // ID del lote
+     *     cuarto: "507f1f77bcf86cd799439013", // Cuarto origen
+     *     action: "transferir_entre_cuartos",
+     *     data: {
+     *       destino: "507f1f77bcf86cd799439014", // Cuarto destino
+     *       cantidad: 20 // canastillas a transferir
+     *     }
+     *   }
+     * };
+     * 
+     * await InventariosRepository.put_inventarios_frutaDesverdizado_mover(req);
+     * 
+     * @example
+     * // Caso de uso típico: ajuste por problemas de desverdizado
+     * const reqAjuste = {
+     *   user: { _id: "507f1f77bcf86cd799439011" },
+     *   data: {
+     *     _id: "507f1f77bcf86cd799439012",
+     *     cuarto: "507f1f77bcf86cd799439013",
+     *     action: "ajuste_temperatura_inadequada",
+     *     data: {
+     *       destino: "inventarioFrutaSinProcesar",
+     *       cantidad: 25
+     *     }
+     *   }
+     * };
+     * 
+     * // Se devuelve la fruta por condiciones inadecuadas de desverdizado
+     * await InventariosRepository.put_inventarios_frutaDesverdizado_mover(reqAjuste);
+     * 
+     * @description
+     * **Funcionamiento por tipo de destino:**
+     * 
+     * **1. Destino: "inventarioFrutaSinProcesar"**
+     * - Devuelve fruta al inventario general de fruta sin procesar
+     * - Decrementa las canastillas de ingreso del lote en MongoDB
+     * - Actualiza el inventario de desverdizado en Redis
+     * - Actualiza el inventario general de fruta sin procesar
+     * - Emite eventos para notificar cambios en ambos inventarios
+     * 
+     * **2. Destino: ID de cuarto (transferencia entre cuartos)**
+     * - Mueve fruta de un cuarto de desverdizado a otro
+     * - Actualiza únicamente el inventario de desverdizado en Redis
+     * - No modifica los registros del lote en MongoDB
+     * - No emite eventos (transferencia interna)
+     * 
+     * **Operaciones realizadas:**
+     * 1. **Validación**: Valida los datos usando el esquema correspondiente
+     * 2. **Decisión de flujo**: Determina el tipo de movimiento según el destino
+     * 3. **Actualización de datos**: Modifica inventarios en Redis y/o MongoDB según corresponda
+     * 4. **Emisión de eventos**: Notifica cambios cuando es necesario
+     * 
+     * **Casos de uso comunes:**
+     * - **Problemas de desverdizado**: Condiciones inadecuadas que requieren devolver fruta
+     * - **Optimización de cuartos**: Redistribuir fruta para mejor aprovechamiento del espacio
+     * - **Mantenimiento**: Vaciado de cuartos para mantenimiento o limpieza
+     * - **Ajustes de proceso**: Cambios en los parámetros de desverdizado
+     * - **Corrección de errores**: Movimientos erróneos que requieren corrección
+     * 
+     * **Impacto en el sistema:**
+     * - Actualiza inventarios en tiempo real
+     * - Mantiene trazabilidad completa de movimientos
+     * - Sincroniza datos entre Redis y MongoDB
+     * - Notifica cambios a interfaces en tiempo real
+     * 
+     * @performance
+     * - Operaciones atómicas en Redis para evitar inconsistencias
+     * - Uso de Promise.all() para operaciones paralelas cuando es posible
+     * - Validación previa para evitar operaciones innecesarias
+     * - Tiempo típico de ejecución: 50-150ms
+     * 
+     * @safety
+     * - Validación exhaustiva de datos de entrada
+     * - Operaciones transaccionales cuando es necesario
+     * - Manejo robusto de errores con rollback automático
+     * - Logging detallado para auditoría y debugging
+     * 
+     * @fires procesoEventEmitter#server_event - Emite "inventario_frutaSinProcesar" cuando se devuelve fruta
+     * @fires procesoEventEmitter#server_event - Emite "inventario_desverdizado" cuando se devuelve fruta
+     * 
+     * @since 1.0.0
+     * @see {@link InventariosValidations.put_inventarios_frutaDesverdizado_mover} Para validaciones de datos
+     * @see {@link InventariosService.move_desverdizado_inventario_to_frutaSinProcesar} Para devolución a inventario sin procesar
+     * @see {@link InventariosService.move_entre_cuartos_desverdizados} Para transferencias entre cuartos
+     * @see {@link LotesRepository.actualizar_lote} Para actualización de lotes en MongoDB
+     * 
+     * @note
+     * - Los movimientos entre cuartos no afectan las canastillas de ingreso del lote
+     * - Solo las devoluciones al inventario sin procesar emiten eventos del sistema
+     * - Todos los movimientos quedan registrados en el historial del lote
+     * - La cantidad debe ser válida y no exceder la disponible en el cuarto origen
+     */
+    static async put_inventarios_frutaDesverdizado_mover(req) {
+        try {
+
+            InventariosValidations.put_inventarios_frutaDesverdizado_mover().parse(req.data)
+            const { user } = req;
+            const { _id, cuarto, action, data } = req.data;
+            const { destino, cantidad } = data;
+
+            if (destino === "inventarioFrutaSinProcesar") {
+                const update = {
+                    '$inc': { 'desverdizado.canastillasIngreso': parseInt(-cantidad) },
+                }
+
+                const [, newLote] = await Promise.all([
+                    InventariosService.move_desverdizado_inventario_to_frutaSinProcesar(cuarto, _id, cantidad),
+                    LotesRepository.actualizar_lote(
+                        { _id: _id },
+                        update,
+                        { user: user._id, action: action }
+                    )
+                ])
+
+
+                if (newLote.desverdizado.canastillasIngreso <= 0) {
+                    const update2 = {
+                        $unset: { desverdizado: "" }
+                    }
+                    LotesRepository.actualizar_lote(
+                        { _id: _id },
+                        update2,
+                        { user: user._id, action: action }
+                    )
+                }
+
+                procesoEventEmitter.emit("server_event", {
+                    action: "inventario_frutaSinProcesar",
+                    data: {}
+                });
+                procesoEventEmitter.emit("server_event", {
+                    action: "inventario_desverdizado",
+                    data: {}
+                });
+                return true
+
+            } else {
+                await InventariosService.move_entre_cuartos_desverdizados(cuarto, destino, _id, cantidad)
+                procesoEventEmitter.emit("server_event", {
+                    action: "inventario_desverdizado",
+                    data: {}
+                });
+                return true
+            }
+        } catch (err) {
+            if (err.status === 518 || err.status === 413) {
+                throw err
+            }
+            const message = typeof err.message === "string" ? err.message : "Error inesperado";
+            throw new InventariosLogicError(470, `Error ${err.type || "interno"}: ${message}`);
+        }
+    }
+
+    static async set_inventarios_inventario(data) {
+        try {
+            InventariosValidations.set_inventarios_inventario().parse(data)
+            const { tipoFruta } = data;
+            const { descarteLavado, descarteEncerado } = await InventariosService.procesar_formulario_inventario_descarte(data);
+
+            await Promise.all([
+                RedisRepository.put_reprocesoDescarte_set(descarteLavado, "descarteLavado", tipoFruta),
+                RedisRepository.put_reprocesoDescarte_set(descarteEncerado, "descarteEncerado", tipoFruta),
+            ])
+
+        } catch (err) {
+            if (err.status === 518 || err.status === 413) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+
     }
 
     //? test

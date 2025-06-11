@@ -31,3 +31,21 @@ Content-Type: application/json
 {
 
 }
+
+### set inventario descarte
+POST http://localhost:3010/inventarios/set_inventarios_inventario-descarte
+Content-Type: application/json
+Authorization: 6ioBV4Gh35IrploLCPKYMGhLLMcyfySQ7dykYkOUzdThAxR3cRBJfxgHR7tv1HLD10LkhuKzk9hZxFdEbv
+
+{   
+    "tipoFruta": "Limon",
+    "descarteLavado:descarteGeneral": "1",
+    "descarteLavado:balin": "2",
+    "descarteLavado:pareja": "3",
+    "descarteEncerado:pareja": "4",
+    "descarteEncerado:descarteGeneral": "5",
+    "descarteEncerado:balin": "6",
+    "descarteEncerado:extra": "7",
+    "descarteEncerado:suelo": "8",
+    "descarteEncerado:frutaNacional": "9"
+}

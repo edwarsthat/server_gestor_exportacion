@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { ValidationUserError, ValidationTokenError, AccessError } from '../../Error/ValidationErrors.js';
 import { UsuariosRepository } from '../Class/Usuarios.js';
+import config from '../../src/config/index.js';
+const { ACCES_TOKEN } = config
 
 const permisos_generales = [
     "obtener_status_proceso",
@@ -79,7 +81,7 @@ export class UserRepository {
         }
 
         try {
-            const decoded = jwt.verify(token, process.env.ACCES_TOKEN);
+            const decoded = jwt.verify(token, ACCES_TOKEN);
             socket.user = decoded
             next()
         } catch (err) {
@@ -99,7 +101,7 @@ export class UserRepository {
         * @return - Devuelve la informacion del usuario
         */
         try {
-            const decoded = jwt.verify(token, process.env.ACCES_TOKEN);
+            const decoded = jwt.verify(token, ACCES_TOKEN);
             return decoded
         } catch (err) {
             if (err.name === 'TokenExpiredError') {

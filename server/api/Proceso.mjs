@@ -1817,19 +1817,12 @@ export class ProcesoRepository {
 
             const lote = await LotesRepository.getLotes({ ids: [_id] });
             //condicional si es desverdizado o no
-            if (lote[0].desverdizado) {
-                await VariablesDelSistema.modificarInventario_desverdizado(lote[0]._id.toString(), inventario);
-                pilaFunciones.push({
-                    funcion: "modificar_inventario_desverdizado",
-                    datos: { _id: lote[0]._id.toString(), inventario: inventario }
-                })
-            } else {
-                await VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario);
-                pilaFunciones.push({
-                    funcion: "modificar_inventario",
-                    datos: { _id: lote[0]._id.toString(), inventario: inventario }
-                })
-            }
+
+            await VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario);
+            pilaFunciones.push({
+                funcion: "modificar_inventario",
+                datos: { _id: lote[0]._id.toString(), inventario: inventario }
+            })
 
             const predioAnterior = await VariablesDelSistema.obtenerEF1proceso()
 

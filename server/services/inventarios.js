@@ -241,17 +241,11 @@ export class InventariosService {
         let inventarioOld
         let newInventario
         //modificar inventario
-        if (lote[0].desverdizado) {
-            inventarioOld = await VariablesDelSistema.getInventarioDesverdizado()
-            await VariablesDelSistema.modificarInventario_desverdizado(lote[0]._id, -inventario)
-            newInventario = await VariablesDelSistema.getInventarioDesverdizado()
 
-        } else {
-            inventarioOld = await VariablesDelSistema.getInventario()
-            await VariablesDelSistema.modificarInventario(lote[0]._id, -inventario);
-            newInventario = await VariablesDelSistema.getInventario()
+        inventarioOld = await VariablesDelSistema.getInventario()
+        await VariablesDelSistema.modificarInventario(lote[0]._id, -inventario);
+        newInventario = await VariablesDelSistema.getInventario()
 
-        }
         await RecordModificacionesRepository.post_record_contenedor_modification(
             action,
             user,
@@ -913,5 +907,38 @@ export class InventariosService {
             RedisRepository.delete_inventarioDesverdizado_registro(cuarto, _id)
         ])
 
+    }
+    static async move_desverdizado_inventario_to_frutaSinProcesar(cuarto, _id, cantidad) {
+        console.info(`[INVENTARIO DESCARTES] Inicio mover desverdizado a fruta sin procesar: ${_id}, en el cuarto ${cuarto}`);
+
+        const datosCrudos = await RedisRepository.get_inventario_desverdizado(cuarto, _id);
+        const canastillas = datosCrudos?.inventarioDesverdizado?.[cuarto]?.[_id];
+
+        if (canastillas < cantidad) {
+            throw new Error(`No hay suficientes canastillas para mover: ${canastillas} < ${cantidad}`);
+        }
+
+
+        await Promise.all([
+            canastillas === cantidad ?
+                RedisRepository.delete_inventarioDesverdizado_registro(cuarto, _id) :
+                RedisRepository.update_inventarioDesverdizado(cuarto, _id, -cantidad),
+                VariablesDelSistema.modificarInventario(_id, -cantidad),
+        ])
+    }
+    static async move_entre_cuartos_desverdizados(cuartoOrigen, cuartoDestino, _id, cantidad) {
+        console.info(`[INVENTARIO DESCARTES] Inicio mover entre cuartos desverdizados: ${_id}, de ${cuartoOrigen} a ${cuartoDestino}`);
+
+        const datosCrudosOrigen = await RedisRepository.get_inventario_desverdizado(cuartoOrigen, _id);
+        const canastillasOrigen = datosCrudosOrigen?.inventarioDesverdizado?.[cuartoOrigen]?.[_id];
+
+        if (canastillasOrigen < cantidad) {
+            throw new Error(`No hay suficientes canastillas en el cuarto origen: ${canastillasOrigen} < ${cantidad}`);
+        }
+
+        await Promise.all([
+            RedisRepository.update_inventarioDesverdizado(cuartoOrigen, _id, -cantidad),
+            RedisRepository.update_inventarioDesverdizado(cuartoDestino, _id, cantidad)
+        ])
     }
 }

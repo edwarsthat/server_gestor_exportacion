@@ -16,5 +16,5 @@ export default {
     PASSWORD_PRUEBA: process.env.PASSWORD_PRUEBA,
     EMAIL: process.env.EMAIL,
     PASSWORD_EMAIL: process.env.PASSWORD_EMAIL,
-
+    TEST_TOKEN: process.env.TEST_TOKEN,
 };
