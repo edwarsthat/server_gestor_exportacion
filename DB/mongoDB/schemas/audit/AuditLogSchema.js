@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 export const defineAuditLogs = async (conn) => {
 
     const AuditLogSchema = new Schema({
-        collection: String,
+        coleccion: String,
         documentId: mongoose.Schema.Types.ObjectId,
         operation: String,
         user: String,
