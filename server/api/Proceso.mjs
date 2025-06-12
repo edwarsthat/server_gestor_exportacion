@@ -20,8 +20,11 @@ import { ProcesoValidations } from "../validations/proceso.js";
 import { ProcesoService } from "../services/proceso.js";
 import { z } from "zod";
 import { RedisRepository } from "../Class/RedisData.js";
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const calidadFile = JSON.parse(
     await readFile(new URL('../../constants/calidad.json', import.meta.url))
 );

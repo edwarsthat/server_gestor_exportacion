@@ -165,6 +165,15 @@ export const defineContenedores = async (conn, AuditLog) => {
 
   }, { _id: false })
 
+  const entregaPrecintoSchema = new Schema({
+    entrega: String,
+    recibe: String,
+    createdAt: { type: Date, default: () => new Date() },
+    fechaEntrega:  Date,
+    fotos: [String]
+  }, { _id: false });
+  
+
   const listaEmpaqueSchema = new Schema({
     numeroContenedor: Number,
     pallets: [{ type: Map, of: subSchema }],
@@ -173,7 +182,8 @@ export const defineContenedores = async (conn, AuditLog) => {
     infoExportacion: schemaInfoExportacion,
     insumosData: insumosSchema,
     inspeccion_mula: inspeccionMulasSchema,
-    reclamacionCalidad: reclamacionSchema
+    reclamacionCalidad: reclamacionSchema,
+    entregaPrecinto: entregaPrecintoSchema,
   });
 
   listaEmpaqueSchema.index({ reclamacionCalidad: 1 });
@@ -186,9 +196,9 @@ export const defineContenedores = async (conn, AuditLog) => {
         documentId: doc._id,
         operation: 'create',
         user: doc._user,
-        action: "crearLote",
+        action: "crearo contenedor",
         newValue: doc,
-        description: 'Creación de lote'
+        description: 'Creación de contenedor'
       });
     } catch (err) {
       console.error('Error guardando auditoría:', err);
