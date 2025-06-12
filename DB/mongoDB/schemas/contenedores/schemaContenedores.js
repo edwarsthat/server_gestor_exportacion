@@ -171,7 +171,8 @@ export const defineContenedores = async (conn, AuditLog) => {
     createdAt: { type: Date, default: () => new Date() },
     fechaEntrega:  Date,
     fotos: [String],
-    user: String
+    user: String,
+    observaciones: String
   }, { _id: false });
   
 

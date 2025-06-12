@@ -161,6 +161,20 @@ export class TransporteRepository {
             }
         }
     }
+    static async get_transporte_contenedores_entregaPrescinto() {
+        try {
+            const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                query: {
+                    infoExportacion: { $exists: true },
+                    entregaPrecinto: { $exists: false },
+                }
+            })
+            return response;
+        } catch (err) {
+            const message = typeof err.message === "string" ? err.message : "Error inesperado";
+            throw new TransporteError(470, `Error ${err.type || "interno"}: ${message}`);
+        }
+    }
     static async post_transporte_entrega_precinto(req) {
         try {
             console.log(req)
