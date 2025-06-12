@@ -15,7 +15,11 @@ import { RecordLotesRepository } from '../archive/ArchiveLotes.js';
 import { LotesRepository } from '../Class/Lotes.js';
 import { procesoEventEmitter } from '../../events/eventos.js';
 import { db } from '../../DB/mongoDB/config/init.js';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 
 export class SistemaRepository {
