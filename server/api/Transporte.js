@@ -161,6 +161,17 @@ export class TransporteRepository {
             }
         }
     }
+    static async post_transporte_entrega_precinto(req) {
+        try {
+            console.log(req)
+        } catch (err) {
+            if (err.status === 518 || err.status === 413) {
+                throw err
+            }
+            const message = typeof err.message === "string" ? err.message : "Error inesperado";
+            throw new TransporteError(470, `Error ${err.type || "interno"}: ${message}`);
+        }
+    }
     //#endregion
     //#region registros
     static async get_transporte_registros_exportacion(req) {
