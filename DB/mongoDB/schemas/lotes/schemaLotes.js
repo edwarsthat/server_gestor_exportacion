@@ -28,6 +28,20 @@ const { Schema } = mongoose;
  * @see https://mongoosejs.com/docs/models.html
  */
 
+function diffObjects(obj1, obj2, path = "") {
+  const changes = [];
+  for (const key of new Set([...Object.keys(obj1), ...Object.keys(obj2)])) {
+    const fullPath = path ? `${path}.${key}` : key;
+    if (typeof obj1[key] === "object" && typeof obj2[key] === "object" && obj1[key] && obj2[key]) {
+      changes.push(...diffObjects(obj1[key], obj2[key], fullPath));
+    } else if (obj1[key] !== obj2[key]) {
+      changes.push({ field: fullPath, before: obj1[key], after: obj2[key] });
+    }
+  }
+  return changes;
+}
+
+
 export const defineLotes = async (conn, AuditLog) => {
 
   const calidadInternaSchema = new Schema({
@@ -112,13 +126,13 @@ export const defineLotes = async (conn, AuditLog) => {
 
   const desverdizadoSchema = new Schema({
     canastillasIngreso: { type: Number, default: 0 },
-    cuartoDesverdizado:  [String],
+    cuartoDesverdizado: [String],
     fechaIngreso: { type: Date, default: () => new Date() },
     fechaFinalizar: Date,
     desverdizando: Boolean,
     parametros: [ParametroSchema],
     fechaProcesado: Date,
-  },  { _id: false });
+  }, { _id: false });
 
   const contenedorDetalleSchema = new Schema({
     "1": Number,
@@ -194,7 +208,15 @@ export const defineLotes = async (conn, AuditLog) => {
     this._oldValue = docToUpdate ? docToUpdate.toObject() : null;
 
     let newKilos = 0
-    const actions = ["put_proceso_aplicaciones_descarteLavado","put_proceso_aplicaciones_descarteEncerado"]
+    const actions = ["put_proceso_aplicaciones_descarteLavado", "put_proceso_aplicaciones_descarteEncerado"]
+
+
+    if (this.options.action !== "put_calidad_informes_aprobacionComercial" || 
+      this.options.action !== "put_calidad_informes_loteFinalizarInforme") {
+
+      update.aprobacionProduccion = false
+
+    }
 
     if (actions.includes(this.options.action)) {
       if (update.$inc) {
@@ -227,19 +249,21 @@ export const defineLotes = async (conn, AuditLog) => {
 
   dataSchema.post('findOneAndUpdate', async function (res) {
     try {
-
-      await AuditLog.create({
-        collection: 'Lote',
-        documentId: res._id,
-        operation: 'update',
-        user: this.options.user, // Pasar el usuario como opción
-        action: this.options.action, // Pasar el usuario como opción
-        oldValue: this._oldValue,
-        newValue: res,
-        description: 'Actualización de lote'
-      });
-
-
+      if (this._oldValue && res) {
+        // Solo los cambios, no el pergamino completo
+        const cambios = diffObjects(this._oldValue, res.toObject());
+        if (cambios.length > 0) {
+          await AuditLog.create({
+            collection: 'Lote',
+            documentId: res._id,
+            operation: 'update',
+            user: this.options.user, // Pasar el usuario como opción
+            action: this.options.action, // Pasar la acción como opción
+            changes: cambios, // Aquí los cambios puntuales
+            description: 'Actualización de lote'
+          });
+        }
+      }
     } catch (err) {
       console.error('Error guardando auditoría:', err);
     }

@@ -1447,9 +1447,7 @@ export class ProcesoRepository {
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-
     //#endregion
-
 
     static async getInventario() {
 

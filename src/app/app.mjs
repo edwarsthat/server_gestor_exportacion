@@ -24,6 +24,7 @@ import { routerDataSys } from "../../server/routes/https/data.js";
 import { routerInventarios } from "../../server/routes/https/inventarios.js";
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { routerTransporte } from '../../server/routes/https/transporte.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -49,6 +50,7 @@ app.use(express.text());
 
 app.use(express.static(path.join(__dirname, '..', '..', 'public')));
 
+app.use("/transporte", routerTransporte)
 app.use("/data", routerPythonData)
 app.use("/dataSys", routerDataSys)
 app.use("/variablesDeProceso", routerVariablesdelSistema);

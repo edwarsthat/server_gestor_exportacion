@@ -25,3 +25,17 @@ routerTransporte.get("/get_transporte_contenedores_entregaPrescinto", async (req
         res.json({ status: err.status, message: err.message })
     }
 })
+routerTransporte.post("/post_transporte_conenedor_entregaPrecinto", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const user = await UserRepository.authenticateToken(token);
+        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
+
+        const data = req.body
+        const query = { data, user }
+        const response = await TransporteRepository.post_transporte_conenedor_entregaPrecinto(query)
+        res.json({ status: 200, message: 'Ok', data: response })
+    } catch (err) {
+        res.json({ status: err.status, message: err.message })
+    }
+})

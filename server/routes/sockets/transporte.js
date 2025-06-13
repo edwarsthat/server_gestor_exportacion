@@ -23,6 +23,10 @@ export const apiSocketTransporte = {
         const response = await TransporteRepository.get_transporte_contenedores_entregaPrescinto()
         return successResponseRoutes(response)
     },
+    post_transporte_conenedor_entregaPrecinto: async (data) => {
+        const response = await TransporteRepository.post_transporte_conenedor_entregaPrecinto(data)
+        return successResponseRoutes(response)
+    },
     //#endregion
     //#region registros
     get_transporte_registros_exportacion: async (data) => {

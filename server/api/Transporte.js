@@ -1,6 +1,10 @@
+import { ZodError } from "zod";
 import { TransporteError } from "../../Error/TransporteErrors.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
 import { ContenedoresRepository } from "../Class/Contenedores.js";
+import { transporteValidations } from "../validations/transporte.js";
+import { TransporteService } from "../services/transporte.js";
+
 
 export class TransporteRepository {
 
@@ -175,12 +179,40 @@ export class TransporteRepository {
             throw new TransporteError(470, `Error ${err.type || "interno"}: ${message}`);
         }
     }
-    static async post_transporte_entrega_precinto(req) {
+    static async post_transporte_conenedor_entregaPrecinto(req) {
         try {
             console.log(req)
+            transporteValidations.post_transporte_conenedor_entregaPrecinto().parse(req.data.data);
+            const { user } = req
+            const { data, fotos, action } = req.data;
+            const { _id, entrega, recibe, fechaEntrega, observaciones } = data;
+
+            const fotosUrls = await TransporteService.guardarFotosEntregaPrecintoContenedor(fotos)
+
+            const update = {
+                entregaPrecinto: {
+                    fotos: fotosUrls,
+                    entrega,
+                    recibe,
+                    fechaEntrega: new Date(fechaEntrega),
+                    observaciones,
+                }
+            }
+
+            await ContenedoresRepository.actualizar_contenedor(
+                { _id },
+                update,
+                { user: user._id, action: action }
+            )
+
+
         } catch (err) {
             if (err.status === 518 || err.status === 413) {
                 throw err
+            }
+            if (err instanceof ZodError) {
+                const mensajeLindo = err.errors[0]?.message || "Error desconocido en los datos del lote";
+                throw new TransporteError(470, mensajeLindo);
             }
             const message = typeof err.message === "string" ? err.message : "Error inesperado";
             throw new TransporteError(470, `Error ${err.type || "interno"}: ${message}`);

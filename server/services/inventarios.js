@@ -923,7 +923,7 @@ export class InventariosService {
             canastillas === cantidad ?
                 RedisRepository.delete_inventarioDesverdizado_registro(cuarto, _id) :
                 RedisRepository.update_inventarioDesverdizado(cuarto, _id, -cantidad),
-                VariablesDelSistema.modificarInventario(_id, -cantidad),
+            VariablesDelSistema.modificarInventario(_id, -cantidad),
         ])
     }
     static async move_entre_cuartos_desverdizados(cuartoOrigen, cuartoDestino, _id, cantidad) {
@@ -937,7 +937,9 @@ export class InventariosService {
         }
 
         await Promise.all([
-            RedisRepository.update_inventarioDesverdizado(cuartoOrigen, _id, -cantidad),
+            canastillasOrigen === cantidad ?
+                RedisRepository.delete_inventarioDesverdizado_registro(cuartoOrigen, _id) :
+                RedisRepository.update_inventarioDesverdizado(cuartoOrigen, _id, -cantidad),
             RedisRepository.update_inventarioDesverdizado(cuartoDestino, _id, cantidad)
         ])
     }
