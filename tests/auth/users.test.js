@@ -14,5 +14,4 @@ describe("Prueba integración /login2", () => {
             });
         expect(response.status).toBe(200);
     });
-
 });

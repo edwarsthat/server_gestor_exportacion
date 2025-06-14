@@ -1,0 +1,9 @@
+GET http://localhost:3010/transporte/get_transporte_registros_entregaPrecintos
+Content-Type: application/json
+
+{
+    "page":9999
+}
+
+### obtener elementos de la tabla transporte_registros_entregaPrecintos
+GET http://localhost:3010/transporte/get_transporte_registros_entregaPrecintos_numeroElementos

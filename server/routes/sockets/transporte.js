@@ -65,6 +65,15 @@ export const apiSocketTransporte = {
         await TransporteRepository.put_transporte_registros_inspeccionMula(data)
         return successResponseRoutes()
     },
+    get_transporte_registros_entregaPrecintos: async (data) => {
+        await TransporteRepository.get_transporte_registros_entregaPrecintos(data)
+        return successResponseRoutes()
+    },
+    get_transporte_registros_entregaPrecintos_numeroElementos: async () => {
+        await TransporteRepository.get_transporte_registros_entregaPrecintos_numeroElementos()
+        return successResponseRoutes()
+    },
+
     //#endregion
     //#region formularios
     get_transporte_formulario_contenedores: async () => {

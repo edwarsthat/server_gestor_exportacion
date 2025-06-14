@@ -5,7 +5,7 @@ const { Schema } = mongoose;
 export const defineClientesNacionales = async (conn) => {
 
     const ClienteNacionalSchema = new Schema({
-        codigo: { type: Number, unique: true, required: true },
+        codigo: { type: String, unique: true, required: true },
         cliente: { type: String, unique: true, required: true },
         ubicacion: String,
         canastillas: Number,

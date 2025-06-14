@@ -34,12 +34,13 @@ const permisos_generales = [
     "get_inventarios_historiales_lista_empaque_proveedores",
     "get_inventarios_historiales_numero_DespachoDescarte",
     "get_calidad_reclamaciones_contenedores_numeroElementos",
+    "get_transporte_registros_entregaPrecintos_numeroElementos",
     //obteniendo constantes
     "get_constantes_sistema_clasificacion_descarte",
     "get_constantes_sistema_observaciones_calidad",
     "get_constantes_sistema_tipo_frutas",
     "get_constantes_sistema_paises_GGN",
-
+    "get_comercial_clientesNacionales",
     //se obtiene datos del sistema
     "Get_info_update_app_desktop",
 
@@ -180,7 +181,7 @@ export class UserRepository {
             console.log(err)
         }
     }
-    static async generarTokenRecuperacion(){
+    static async generarTokenRecuperacion() {
         return crypto.randomInt(0, Math.pow(10, 6)).toString().padStart(6, '0')
     }
 }

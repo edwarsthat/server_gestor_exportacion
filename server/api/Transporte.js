@@ -4,7 +4,7 @@ import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones
 import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { transporteValidations } from "../validations/transporte.js";
 import { TransporteService } from "../services/transporte.js";
-
+const PAGE_ITEMS = 50;
 
 export class TransporteRepository {
 
@@ -179,9 +179,19 @@ export class TransporteRepository {
             throw new TransporteError(470, `Error ${err.type || "interno"}: ${message}`);
         }
     }
+    /**
+     * Registra la entrega de precinto para un contenedor, incluyendo fotos y datos de entrega.
+     * @param {Object} req - Objeto de solicitud que contiene el usuario, datos de entrega, fotos y acción.
+     * @param {Object} req.user - Usuario que realiza la acción.
+     * @param {Object} req.data - Datos de la entrega.
+     * @param {Object} req.data.data - Información de la entrega (id, entrega, recibe, fechaEntrega, observaciones).
+     * @param {Array} req.data.fotos - Fotos asociadas a la entrega del precinto.
+     * @param {string} req.data.action - Acción realizada.
+     * @returns {Promise<void>} No retorna nada si la operación es exitosa.
+     * @throws {TransporteError|ZodError} Si ocurre un error de validación o de proceso, lanza un error personalizado.
+     */
     static async post_transporte_conenedor_entregaPrecinto(req) {
         try {
-            console.log(req)
             transporteValidations.post_transporte_conenedor_entregaPrecinto().parse(req.data.data);
             const { user } = req
             const { data, fotos, action } = req.data;
@@ -488,6 +498,53 @@ export class TransporteRepository {
                     `Error ingresanddo dato post_transporte_registros_inspeccionMula_modificar a contenedor  --- 
                     ${err.message}`
                 )
+            }
+        }
+    }
+    static async get_transporte_registros_entregaPrecintos(req) {
+        try {
+            const { data } = req;
+            const { page } = data
+
+            const registros = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                query: {
+                    entregaPrecinto: { $exists: true },
+                },
+                select: {
+                    numeroContenedor: 1,
+                    infoContenedor: 1,
+                    entregaPrecinto: 1,
+                },
+                skip: (page - 1) * PAGE_ITEMS,
+                limit: PAGE_ITEMS,
+                sort: { 'entregaPrecinto.fechaEntrega': -1 },
+            })
+            return registros
+        } catch (err) {
+            if (err.status === 518 || err.status === 413) {
+                throw err
+            }
+            if (err instanceof ZodError) {
+                const mensajeLindo = err.errors[0]?.message || "Error desconocido en los datos del lote";
+                throw new TransporteError(470, mensajeLindo);
+            }
+            const message = typeof err.message === "string" ? err.message : "Error inesperado";
+            throw new TransporteError(470, `Error ${err.type || "interno"}: ${message}`);
+        }
+    }
+    static async get_transporte_registros_entregaPrecintos_numeroElementos() {
+        try {
+            const filtro = {
+                entregaPrecinto: { $exists: true }
+            }
+            const numeroContenedores = await ContenedoresRepository.obtener_cantidad_contenedores(filtro)
+            return numeroContenedores
+
+        } catch (err) {
+            if (err.status === 524) {
+                throw err
+            } else {
+                throw new TransporteError(440, `Error obteniendo contenedores --- ${err.message}`)
             }
         }
     }
