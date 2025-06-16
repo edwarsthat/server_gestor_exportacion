@@ -1,8 +1,9 @@
 GET http://localhost:3010/transporte/get_transporte_registros_entregaPrecintos
 Content-Type: application/json
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZWR3YXJzdGhhdCIsImNhcmdvIjoiNjZiMjliMTczNjczMzY2ODI0NmM5NTU5IiwiX2lkIjoiNjZiNjJmYzM3NzdhYzliZGNjNTA1MGVkIiwiUm9sIjowLCJpYXQiOjE3NTAwNzk3NTEsImV4cCI6MTc1MDEwODU1MX0.0vPTn1BSxc9Hk-jo5dUA9CS1Qnu5H-l67NMuQjPMkqI
 
 {
-    "page":9999
+    "page":1
 }
 
 ### obtener elementos de la tabla transporte_registros_entregaPrecintos

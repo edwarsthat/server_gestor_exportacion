@@ -53,7 +53,7 @@ const translations = {
         placeholderOtroDefecto: 'Otro defecto',
     },
     en: {
-        title: 'Quality Claims Questionnaire',
+        title: 'Quality Claims Form',
         infoSolicitante: '1. Applicant Information',
         infoConfirm: 'I declare that the information provided is true and complete for the proper management of the claim.',
         nombre: 'Full Name:',

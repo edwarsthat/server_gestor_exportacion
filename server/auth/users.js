@@ -51,6 +51,9 @@ const permisos_generales = [
     "get_data_cargos",
     "get_data_clientesNacionales",
     "get_data_proveedores",
+
+    //fotos
+    "get_transporte_registros_entregaPrecintos_fotos",
 ]
 
 export class UserRepository {

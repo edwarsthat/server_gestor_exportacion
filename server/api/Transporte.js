@@ -548,6 +548,20 @@ export class TransporteRepository {
             }
         }
     }
+    static async get_transporte_registros_entregaPrecintos_fotos(req) {
+        try {
+            const { data } = req.data;
+            transporteValidations.get_transporte_registros_entregaPrecintos_fotos().parse(data);
+            const response = await TransporteService.obtenerFotosEntregaPrecintoContenedor(data);
+            return response
+        } catch (err) {
+            if (err.status === 524) {
+                throw err
+            } else {
+                throw new TransporteError(440, `Error obteniendo contenedores --- ${err.message}`)
+            }
+        }
+    }
     //#endregion
     //#region formularios
     static async get_transporte_formulario_contenedores() {

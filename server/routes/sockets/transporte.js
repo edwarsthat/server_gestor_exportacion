@@ -66,12 +66,16 @@ export const apiSocketTransporte = {
         return successResponseRoutes()
     },
     get_transporte_registros_entregaPrecintos: async (data) => {
-        await TransporteRepository.get_transporte_registros_entregaPrecintos(data)
-        return successResponseRoutes()
+        const response = await TransporteRepository.get_transporte_registros_entregaPrecintos(data)
+        return successResponseRoutes(response)
     },
     get_transporte_registros_entregaPrecintos_numeroElementos: async () => {
-        await TransporteRepository.get_transporte_registros_entregaPrecintos_numeroElementos()
-        return successResponseRoutes()
+        const response = await TransporteRepository.get_transporte_registros_entregaPrecintos_numeroElementos()
+        return successResponseRoutes(response)
+    },
+    get_transporte_registros_entregaPrecintos_fotos: async (data) => {
+        const response = await TransporteRepository.get_transporte_registros_entregaPrecintos_fotos(data)
+        return successResponseRoutes(response)
     },
 
     //#endregion

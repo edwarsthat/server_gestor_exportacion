@@ -47,6 +47,15 @@ routerTransporte.get("/get_transporte_registros_entregaPrecintos_numeroElementos
         res.json({ status: err.status, message: err.message })
     }
 })
+routerTransporte.get("/get_transporte_registros_entregaPrecintos_fotos", async (req, res) => {
+    try {
+        const data = req.body
+        const response = await TransporteRepository.get_transporte_registros_entregaPrecintos_fotos(data)
+        res.json({ status: 200, message: 'Ok', data: response })
+    } catch (err) {
+        res.json({ status: err.status, message: err.message })
+    }
+})
 routerTransporte.post("/post_transporte_conenedor_entregaPrecinto", async (req, res) => {
     try {
         const token = req.headers['authorization'];

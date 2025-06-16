@@ -1547,7 +1547,7 @@ export class InventariosRepository {
     static async get_inventarios_lotes_infoLotes(req) {
         try {
             const { data } = req
-
+            console.log(data)
             InventariosValidations.get_inventarios_lotes_infoLotes().parse(data)
             const {
                 _id,
@@ -1570,8 +1570,9 @@ export class InventariosRepository {
             if (GGN) query.GGN = GGN;
             if (EF) query.enf = EF;
             if (_id) query._id = _id;
-            else query.enf = { $regex: '^E', $options: 'i' }
+            else if( !EF )query.enf = { $regex: '^E', $options: 'i' } 
 
+            console.log(query)
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, tipoFecha)
 
             const lotes = await LotesRepository.getLotes({

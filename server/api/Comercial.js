@@ -527,7 +527,7 @@ export class ComercialRepository {
             // Define los detalles del correo
             let mailOptions = {
                 from: '<sistemacelifrut@gmail.com>', // Remitente
-                to: "comercial@celifrut.com , comercioexterior@celifrut.com, sig}@celifrut.com, calidad@celifrut.com, operaciones@celifrut.com", // Destinatario
+                to: "comercial@celifrut.com , comercioexterior@celifrut.com, SIG@celifrut.com, calidad@celifrut.com, operaciones@celifrut.com", // Destinatario
                 // to: "transformaciondigital@celifrut.com", // Destinatario
                 subject: 'Nueva Reclamación de Calidad registrada',
                 // text: 'Este es un correo de prueba enviado usando  Node.js.'

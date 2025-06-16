@@ -64,4 +64,33 @@ export class TransporteService {
 
         return savedPaths;
     }
+    static async obtenerFotosEntregaPrecintoContenedor(urlArr) {
+        const baseDir = path.join(
+            __dirname,
+            "..",
+            "..",
+        );
+
+        try {
+            const readPromises = urlArr.map(async (relativeUrl) => {
+                // Evita path traversal
+                if (relativeUrl.includes("..")) {
+                    throw new Error("Ruta no permitida: " + relativeUrl);
+                }
+                const fullPath = path.join(baseDir, relativeUrl);
+                await fs.access(fullPath); // Verifica que exista
+                const ext = path.extname(fullPath).toLowerCase();
+                const mime = ext === ".png" ? "image/png" : "image/jpeg";
+                const fileBuffer = await fs.readFile(fullPath);
+                return { img: `data:${mime};base64,${fileBuffer.toString("base64")}` };
+            })
+
+            // Espera todas las lecturas en paralelo
+            const base64Images = await Promise.all(readPromises);
+            return base64Images;
+
+        } catch (error) {
+            throw new Error('Error al leer las fotos: ' + error.message);
+        }
+    }
 }
