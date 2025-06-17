@@ -1060,7 +1060,6 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type || "interno"}: ${message}`);
         }
     }
-
     static async set_inventarios_inventario(data) {
         try {
             InventariosValidations.set_inventarios_inventario().parse(data)
@@ -1077,6 +1076,104 @@ export class InventariosRepository {
                 throw err
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+
+    }
+    static async put_inventarios_ordenVaceo_vacear(req) {
+        const { user: user1, data } = req
+        const { user } = user1;
+
+        const pilaFunciones = [];
+        const { _id, kilosVaciados, inventario, __v } = data;
+
+        try {
+            const query = {
+                $inc: {
+                    kilosVaciados: kilosVaciados,
+                    __v: 1,
+                },
+                fechaProceso: new Date()
+            }
+            await LotesRepository.modificar_lote(_id, query, "vaciarLote", user, __v);
+
+
+            pilaFunciones.push({
+                funcion: "modificar_lote",
+                datos: { _id, kilosVaciados, __v }
+            })
+
+            const lote = await LotesRepository.getLotes({ ids: [_id] });
+            //condicional si es desverdizado o no
+
+            await VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario);
+            pilaFunciones.push({
+                funcion: "modificar_inventario",
+                datos: { _id: lote[0]._id.toString(), inventario: inventario }
+            })
+
+            const predioAnterior = await VariablesDelSistema.obtenerEF1proceso()
+
+            await VariablesDelSistema.procesarEF1(lote[0], inventario);
+            pilaFunciones.push({
+                funcion: "modificar_ef1Proceso",
+                datos: { ...predioAnterior }
+            })
+
+            await Promise.all([
+                VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString()),
+                VariablesDelSistema.sumarMetricaSimple(" ", kilosVaciados)
+            ])
+
+            //para lista de empaque
+            procesoEventEmitter.emit("predio_vaciado", {
+                predio: lote
+            });
+
+            //para el desktop app
+            procesoEventEmitter.emit("server_event", {
+                action: "inventario_frutaSinProcesar",
+                data: {
+                    predio: lote
+                }
+            });
+        } catch (err) {
+            // se devuelven los elementos que se cambiaron
+            for (let i = pilaFunciones.length - 1; i >= 0; i--) {
+                const value = pilaFunciones[i];
+                if (value.funcion === "modificar_lote") {
+                    const { _id, kilosVaciados, __v } = value.datos
+                    const query = {
+                        $inc: {
+                            kilosVaciados: - kilosVaciados,
+                            __v: 1,
+                        },
+                        fechaProceso: new Date()
+                    }
+                    await LotesRepository.modificar_lote(
+                        _id, query, "rectificando_moficiar_lote", user, __v + 1
+                    );
+                } else if (value.funcion === "modificar_inventario_desverdizado") {
+                    const { _id, inventario } = value.datos
+                    await VariablesDelSistema.modificarInventario_desverdizado(_id, -inventario);
+                } else if (value.funcion === "modificar_inventario") {
+                    const { _id, inventario } = value.datos
+                    await VariablesDelSistema.modificarInventario_desverdizado(_id, -inventario);
+                } else if (value.funcion === "modificar_ef1Proceso") {
+                    const { _id, enf, predio, nombrePredio, tipoFruta } = value.datos
+                    const lote = {
+                        _id: _id,
+                        enf: enf,
+                        tipoFruta: tipoFruta,
+                        predio: {
+                            _id: predio,
+                            nombrePredio: nombrePredio,
+                        }
+                    }
+                    await VariablesDelSistema.procesarEF1(lote);
+                }
+            }
+            throw new Error(`Code ${err.code}: ${err.message}`);
+
         }
 
     }

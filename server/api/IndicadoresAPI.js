@@ -16,10 +16,11 @@ export class IndicadoresAPIRepository {
                 skip: (page - 1) * resultsPerPage,
                 select: {
                     fecha_creacion: 1,
-                    kilos_procesador: 1,
+                    meta_kilos_procesados_hora: 1,
+                    duracion_turno_horas: 1,
                     meta_kilos_procesados: 1,
-                    total_horas_hombre: 1,
-                    tipo_fruta: 1
+                    kilos_procesados: 1,
+                    tipo_fruta: 1,
                 }
 
             })

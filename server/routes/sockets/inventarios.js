@@ -53,7 +53,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes()
     },
     put_inventarios_ordenVaceo_vacear: async (data) => {
-        await ProcesoRepository.vaciarLote(data)
+        await InventariosRepository.put_inventarios_ordenVaceo_vacear(data)
         return successResponseRoutes()
     },
     get_inventarios_frutaDesverdizando_lotes: async () => {

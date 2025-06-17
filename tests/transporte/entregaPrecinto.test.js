@@ -99,7 +99,62 @@ describe("Prueba integración entrega de precinto", () => {
         expect(response.body.status).toBe(200);
         expect(response.body.message).toBe("Ok");
         expect(typeof response.body.data).toBe("number");
+    });
+    test("los registros deben incluir todos los campos del schema InfoMula", async () => {
+        const response = await request(`http://${HOST}:${PORT}`)
+            .get("/transporte/get_transporte_registros_entregaPrecintos")
+            .set("Authorization", `${TEST_TOKEN}`)
+            .send({ page: 1 });
 
+        expect(response.body.status).toBe(200);
+        expect(Array.isArray(response.body.data)).toBe(true);
 
-    })
+        if (response.body.data.length > 0) {
+            const item = response.body.data[0];
+
+            // Verificar que existe la propiedad infoMula
+            expect(item).toHaveProperty("infoMula");
+            const infoMula = item.infoMula;
+
+            // Verificar todos los campos del schema schemaInfoMula
+            expect(infoMula).toHaveProperty("transportadora");
+            expect(typeof infoMula.transportadora).toBe("string");
+
+            expect(infoMula).toHaveProperty("nit");
+            expect(typeof infoMula.nit).toBe("string");
+
+            expect(infoMula).toHaveProperty("placa");
+            expect(typeof infoMula.placa).toBe("string");
+
+            expect(infoMula).toHaveProperty("trailer");
+            expect(typeof infoMula.trailer).toBe("string");
+
+            expect(infoMula).toHaveProperty("conductor");
+            expect(typeof infoMula.conductor).toBe("string");
+
+            expect(infoMula).toHaveProperty("cedula");
+            expect(typeof infoMula.cedula).toBe("string");
+
+            expect(infoMula).toHaveProperty("celular");
+            expect(typeof infoMula.celular).toBe("string");
+
+            expect(infoMula).toHaveProperty("temperatura");
+            expect(typeof infoMula.temperatura).toBe("string");
+
+            expect(infoMula).toHaveProperty("precinto");
+            expect(typeof infoMula.precinto).toBe("string");
+
+            expect(infoMula).toHaveProperty("datalogger_id");
+            expect(typeof infoMula.datalogger_id).toBe("string");
+
+            expect(infoMula).toHaveProperty("flete");
+            expect(typeof infoMula.flete).toBe("number");
+
+            expect(infoMula).toHaveProperty("marca");
+            expect(typeof infoMula.marca).toBe("string");
+
+            expect(infoMula).toHaveProperty("fecha");
+            expect(typeof infoMula.fecha).toBe("string");
+        }
+    });
 })

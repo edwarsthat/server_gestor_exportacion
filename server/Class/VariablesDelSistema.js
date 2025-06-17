@@ -853,7 +853,6 @@ export class VariablesDelSistema {
       throw new ProcessError(518, `Error modificando las variables del sistema: ${err.name}`)
     }
   }
-
   // #region Datos del proceso
   static async get_kilos_procesados_hoy() {
     let cliente
@@ -970,44 +969,71 @@ export class VariablesDelSistema {
       }
     }
   }
-  static async ingresar_kilos_vaciados(kilos) {
-    let cliente;
+
+
+  // static async ingresar_kilos_vaciados(kilos) {
+  //   let cliente;
+  //   try {
+  //     const clientePromise = iniciarRedisDB();
+  //     cliente = await clientePromise;
+  //     const key = "kilosVaciadosHoy";
+
+  //     // Obtener los kilos procesados de Redis
+  //     let kilosProcesados = await cliente.get(key);
+
+  //     // Si no existe, inicializar como un objeto vacío
+  //     if (kilosProcesados === null) {
+  //       kilosProcesados = 0;
+  //     }
+
+  //     // Convertir el valor a número o inicializar si es null
+  //     kilosProcesados = kilosProcesados ? parseInt(kilosProcesados, 10) : 0;
+
+  //     // Sumar los nuevos kilos
+  //     kilosProcesados += kilos;
+
+  //     // Actualizar el valor en Redis
+  //     await cliente.set(key, kilosProcesados);
+
+  //     return kilosProcesados;
+
+  //   } catch (err) {
+  //     console.error("Error socket: ", err);
+  //     throw new ConnectRedisError(
+  //       419,
+  //       `Error con la conexión con Redis sumando kilos vaceados: ${err.message}`
+  //     );
+  //   } finally {
+  //     if (cliente) {
+  //       cliente.quit();
+  //     }
+  //   }
+  // }
+
+
+  /**
+   * Suma un valor a una clave simple en Redis.
+   * Si se pasa multi, la operación se añade al pipeline/transacción.
+   * @param cliente Instancia de Redis
+   * @param key Clave de Redis
+   * @param value Valor a sumar
+   * @param multi (opcional) Pipeline o transacción
+   * @returns Promise<number | void>
+   */
+  static async sumarMetricaSimple(cliente, key, value, multi = null) {
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
-      const key = "kilosVaciadosHoy";
-
-      // Obtener los kilos procesados de Redis
-      let kilosProcesados = await cliente.get(key);
-
-      // Si no existe, inicializar como un objeto vacío
-      if (kilosProcesados === null) {
-        kilosProcesados = 0;
+      if (multi) {
+        multi.incrBy(key, value);
+        return; // No retornamos valor cuando se usa multi
+      } else {
+        return await cliente.incrBy(key, value);
       }
-
-      // Convertir el valor a número o inicializar si es null
-      kilosProcesados = kilosProcesados ? parseInt(kilosProcesados, 10) : 0;
-
-      // Sumar los nuevos kilos
-      kilosProcesados += kilos;
-
-      // Actualizar el valor en Redis
-      await cliente.set(key, kilosProcesados);
-
-      return kilosProcesados;
-
     } catch (err) {
-      console.error("Error socket: ", err);
-      throw new ConnectRedisError(
-        419,
-        `Error con la conexión con Redis sumando kilos vaceados: ${err.message}`
-      );
-    } finally {
-      if (cliente) {
-        cliente.quit();
-      }
+      console.error("Error actualizando métrica Redis:", err);
+      throw new ConnectRedisError(502, `Error actualizando métrica Redis: ${err}`);
     }
   }
+
 
   static async ingresar_exportacion(kilos, tipoFruta) {
     let cliente
@@ -1554,13 +1580,13 @@ export class VariablesDelSistema {
         }
       });
 
-      } catch (err) {
-        throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
-      } finally {
-        if (cliente) {
-          await cliente.quit();
-        }
-
+    } catch (err) {
+      throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
+    } finally {
+      if (cliente) {
+        await cliente.quit();
       }
+
     }
+  }
 }

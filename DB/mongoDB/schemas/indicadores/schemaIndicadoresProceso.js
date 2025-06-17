@@ -12,12 +12,15 @@ export const defineIndicadores = async (conn) => {
 
     const IndicadoresSchema = new Schema({
         fecha_creacion: { type: Date, default: () => new Date() },
-        kilos_procesador: Number,
+        kilos_procesados: { type: Number, default: 0 },
         kilos_vaciados: { type: Number, default: 0 },
         kilos_exportacion: kilosExportacionSchema,
         meta_kilos_procesados: { type: Number, default: 0 },
+        meta_kilos_procesados_hora: { type: Number, default: 0 },
         total_horas_hombre: { type: Number, default: 0 },
-        tipo_fruta: [String]
+        tipo_fruta: [String],
+        kilos_meta_hora: { type: Number, default: 0 },
+        duracion_turno_horas: { type: Number, default: 0 },
     })
 
 

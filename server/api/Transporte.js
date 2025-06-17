@@ -513,6 +513,7 @@ export class TransporteRepository {
                 select: {
                     numeroContenedor: 1,
                     infoContenedor: 1,
+                    infoTractoMula: 1,
                     entregaPrecinto: 1,
                 },
                 skip: (page - 1) * PAGE_ITEMS,
