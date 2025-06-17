@@ -202,6 +202,8 @@ export const defineLotes = async (conn, AuditLog) => {
 
   }, { versionKey: '__v' });
 
+
+
   dataSchema.pre('findOneAndUpdate', async function (next) {
     const update = this.getUpdate();
     const docToUpdate = await this.model.findOne(this.getQuery());
@@ -211,7 +213,7 @@ export const defineLotes = async (conn, AuditLog) => {
     const actions = ["put_proceso_aplicaciones_descarteLavado", "put_proceso_aplicaciones_descarteEncerado"]
 
 
-    if (this.options.action !== "put_calidad_informes_aprobacionComercial" || 
+    if (this.options.action !== "put_calidad_informes_aprobacionComercial" ||
       this.options.action !== "put_calidad_informes_loteFinalizarInforme") {
 
       update.aprobacionProduccion = false

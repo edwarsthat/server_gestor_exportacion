@@ -800,18 +800,38 @@ export class InventariosRepository {
             const { canastillas, _id: cuartoId } = desverdizado;
 
             InventariosValidations.put_inventarios_frutaSinProcesar_desverdizado().parse(req.data);
+            const updatePipeline = [
+                {
+                    $set: {
+                        'desverdizado.canastillasIngreso': {
+                            $add: ['$desverdizado.canastillasIngreso', parseInt(canastillas)]
+                        },
+                        'desverdizado.desverdizando': true,
+                        'desverdizado.cuartoDesverdizado': {
+                            $cond: [
+                                {
+                                    $in: [
+                                        cuartoId,
+                                        { $ifNull: ['$desverdizado.cuartoDesverdizado', []] }
+                                    ]
+                                },
+                                { $ifNull: ['$desverdizado.cuartoDesverdizado', []] },
+                                { $concatArrays: [{ $ifNull: ['$desverdizado.cuartoDesverdizado', []] }, [cuartoId]] }
+                            ]
+                        },
+                        'desverdizado.fechaIngreso': {
+                            $ifNull: ['$desverdizado.fechaIngreso', new Date()]
+                        }
+                    }
+                }
+            ];
 
-            const update = {
-                '$inc': { 'desverdizado.canastillasIngreso': parseInt(canastillas) },
-                '$set': { 'desverdizado.desverdizando': true },
-                '$addToSet': { 'desverdizado.cuartoDesverdizado': cuartoId }
-            }
 
             await Promise.all([
                 InventariosService.modificarInventarioIngresoDesverdizado(canastillas, cuartoId, loteId),
                 LotesRepository.actualizar_lote(
                     { _id: loteId },
-                    update,
+                    updatePipeline,
                     { user: user._id, action: action }
                 )
             ])
@@ -1570,7 +1590,7 @@ export class InventariosRepository {
             if (GGN) query.GGN = GGN;
             if (EF) query.enf = EF;
             if (_id) query._id = _id;
-            else if( !EF )query.enf = { $regex: '^E', $options: 'i' } 
+            else if (!EF) query.enf = { $regex: '^E', $options: 'i' }
 
             console.log(query)
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, tipoFecha)
