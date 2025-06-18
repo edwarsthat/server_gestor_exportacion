@@ -39,24 +39,21 @@ export class ProcesoValidations {
             throw new Error(`Validation error: ${JSON.stringify(formattedErrors)}`);
         }
     }
-    static async put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop(req) {
-        const dataSchema = z.object({
-            calidad: safeString('calidad').min(1),  // calidad es requerido y debe ser seguro
-            calibre: optionalSafeString('calibre'),  // calibre es opcional pero debe ser seguro
-            cajas: z.number().int().positive(),
-            tipoCaja: safeString('tipo de caja')  // tipoCaja es requerido y debe ser seguro
-        });
-
-        const schema = z.object({
-            _id: z.string().regex(/^[0-9a-fA-F]{24}$/),  // Validar ObjectId de MongoDB
-            pallet: z.number().int().nonnegative(),
-            seleccion: z.number().int().nonnegative(),
-            data: dataSchema,
-            action: z.literal('put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop')
-        });
+    static put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop() {
 
         try {
-            return schema.parse(req.data);
+            return z.object({
+                _id: z.string().regex(/^[0-9a-fA-F]{24}$/),  // Validar ObjectId de MongoDB
+                pallet: z.number().int().nonnegative(),
+                seleccion: z.number().int().nonnegative(),
+                action: z.literal('put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop'),
+                data: z.object({
+                    calidad: safeString('calidad'),  // calidad es requerido y debe ser seguro
+                    calibre: optionalSafeString('calibre'),  // calibre es opcional pero debe ser seguro
+                    cajas: z.number().int().positive(),
+                    tipoCaja: safeString('tipo de caja')  // tipoCaja es requerido y debe ser seguro
+                }),
+            })
         } catch (error) {
             // Transformar errores de Zod en un formato más amigable
             const formattedErrors = getErrorMessages(error);

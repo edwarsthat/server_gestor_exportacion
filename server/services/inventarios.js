@@ -213,7 +213,7 @@ export class InventariosService {
     }
     static async modificarLote_regresoHistorialFrutaProcesada(_id, queryLote, user, action, kilosVaciados) {
 
-        const lote = await LotesRepository.getLotes({ ids: [_id], select: { desverdizado: 1, kilosVaciados: 1 } })
+        const lote = await LotesRepository.getLotes({ ids: [_id], select: { desverdizado: 1, kilosVaciados: 1, tipoFruta: 1 } })
 
         const newLote = await LotesRepository.modificar_lote_proceso(
             _id,

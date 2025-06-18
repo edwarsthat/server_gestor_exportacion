@@ -1121,7 +1121,7 @@ export class InventariosRepository {
 
             await Promise.all([
                 VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString()),
-                VariablesDelSistema.sumarMetricaSimple(" ", kilosVaciados)
+                VariablesDelSistema.sumarMetricaSimple("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados)
             ])
 
             //para lista de empaque
@@ -1273,9 +1273,11 @@ export class InventariosRepository {
                     __v: 1
                 }
             }
-            await RecordLotesRepository.modificarRecord(_idRecord, queryRecord, __vHistorial);
-            await VariablesDelSistema.ingresar_kilos_vaciados(kilosVaciados);
 
+            await Promise.all([
+                RecordLotesRepository.modificarRecord(_idRecord, queryRecord, __vHistorial),
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta, kilosHistorial)
+            ])
 
             procesoEventEmitter.emit("server_event", {
                 action: "modificar_historial_fruta_procesada",
@@ -1283,6 +1285,7 @@ export class InventariosRepository {
             });
 
         } catch (err) {
+
             const erroresPermitidos = new Set([518, 523, 419]);
 
             if (erroresPermitidos.has(err.status)) {

@@ -509,6 +509,7 @@ export class TransporteRepository {
             const registros = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: {
                     entregaPrecinto: { $exists: true },
+                    infoTractoMula: { $exists: true },
                 },
                 select: {
                     numeroContenedor: 1,

@@ -928,6 +928,9 @@ export class VariablesDelSistema {
       }
     }
   }
+
+
+
   static async ingresar_kilos_procesados2(kilos, tipoFruta) {
     let cliente;
     try {
@@ -1011,26 +1014,31 @@ export class VariablesDelSistema {
   // }
 
 
-  /**
-   * Suma un valor a una clave simple en Redis.
-   * Si se pasa multi, la operación se añade al pipeline/transacción.
-   * @param cliente Instancia de Redis
-   * @param key Clave de Redis
-   * @param value Valor a sumar
-   * @param multi (opcional) Pipeline o transacción
-   * @returns Promise<number | void>
-   */
-  static async sumarMetricaSimple(cliente, key, value, multi = null) {
+
+  // static async sumarMetricaSimple(tipoMetrica, tipoFruta, value, multi = null) {
+  //   let cliente;
+  //   try {
+  //     cliente = await clientePromise;
+  //     if (multi) {
+  //       multi.hIncrBy(tipoMetrica, tipoFruta, value);
+  //     } else {
+  //       await cliente.hIncrBy(tipoMetrica, tipoFruta, value)
+  //     }
+  //   } catch (err) {
+  //     throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
+  //   }
+  // }
+
+  static sumarMetricaSimpleDirect(tipoMetrica, tipoFruta, value, multi) {
+    if (!multi) throw new Error("Se requiere pipeline para este método");
+    multi.hIncrBy(tipoMetrica, tipoFruta, value);
+  }
+
+  static async sumarMetricaSimpleAsync(cliente, tipoMetrica, tipoFruta, value) {
     try {
-      if (multi) {
-        multi.incrBy(key, value);
-        return; // No retornamos valor cuando se usa multi
-      } else {
-        return await cliente.incrBy(key, value);
-      }
+      await cliente.hIncrBy(tipoMetrica, tipoFruta, value);
     } catch (err) {
-      console.error("Error actualizando métrica Redis:", err);
-      throw new ConnectRedisError(502, `Error actualizando métrica Redis: ${err}`);
+      throw new ConnectRedisError(502, `Error ingresando descarte ${err}`);
     }
   }
 

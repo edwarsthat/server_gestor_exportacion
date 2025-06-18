@@ -27,9 +27,9 @@ routerTransporte.get("/get_transporte_contenedores_entregaPrescinto", async (req
 })
 routerTransporte.get("/get_transporte_registros_entregaPrecintos", async (req, res) => {
     try {
-        const token = req.headers['authorization'];
-        const user = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
+        // const token = req.headers['authorization'];
+        // const user = await UserRepository.authenticateToken(token);
+        // await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
 
         const data = req.body
         const query = { data }

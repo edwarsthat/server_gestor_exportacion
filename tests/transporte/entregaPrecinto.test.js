@@ -113,8 +113,8 @@ describe("Prueba integración entrega de precinto", () => {
             const item = response.body.data[0];
 
             // Verificar que existe la propiedad infoMula
-            expect(item).toHaveProperty("infoMula");
-            const infoMula = item.infoMula;
+            expect(item).toHaveProperty("infoTractoMula");
+            const infoMula = item.infoTractoMula;
 
             // Verificar todos los campos del schema schemaInfoMula
             expect(infoMula).toHaveProperty("transportadora");
