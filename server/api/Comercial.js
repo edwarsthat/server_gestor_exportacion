@@ -13,7 +13,7 @@ import { getISOWeek } from 'date-fns';
 import { z, ZodError } from 'zod';
 import nodemailer from 'nodemailer';
 import config from "../../src/config/index.js";
-const { EMAIL, PASSWORD_EMAIL} = config;
+const { EMAIL, PASSWORD_EMAIL } = config;
 
 
 
@@ -475,7 +475,7 @@ export class ComercialRepository {
                         archivosSubidos: paths
                     }
                 }
-            ); 
+            );
 
             const html = `
   <h2>Nueva Reclamación de Calidad registrada</h2>
@@ -519,8 +519,8 @@ export class ComercialRepository {
                 port: 465,
                 secure: true,
                 auth: {
-                    user: EMAIL, 
-                    pass: PASSWORD_EMAIL 
+                    user: EMAIL,
+                    pass: PASSWORD_EMAIL
                 }
             });
 
@@ -531,7 +531,7 @@ export class ComercialRepository {
                 // to: "transformaciondigital@celifrut.com", // Destinatario
                 subject: 'Nueva Reclamación de Calidad registrada',
                 // text: 'Este es un correo de prueba enviado usando  Node.js.'
-                html:html
+                html: html
             };
 
             // Espera el envío para capturar el error con el mismo catch
@@ -678,7 +678,7 @@ export class ComercialRepository {
     static async put_comercial_precios_precioLotes(req) {
         try {
             const { data: datos, user } = req
-            const { data } = datos
+            const { data, action } = datos
 
             let lotesQuery = {}
 
@@ -704,12 +704,18 @@ export class ComercialRepository {
 
                 lote.precio = precio._id
 
-                await LotesRepository.modificar_lote_proceso(
-                    lote._id,
+                // await LotesRepository.modificar_lote_proceso(
+                //     lote._id,
+                //     lote,
+                //     "Cambiar precio lote",
+                //     user.user
+                // )
+
+                await LotesRepository.actualizar_lote(
+                    { _id: lote._id },
                     lote,
-                    "Cambiar precio lote",
-                    user.user
-                )
+                    { new: true, user: user, action: action }
+                );
             }
 
 

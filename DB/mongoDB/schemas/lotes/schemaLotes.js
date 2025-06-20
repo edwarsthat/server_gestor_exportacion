@@ -212,10 +212,10 @@ export const defineLotes = async (conn, AuditLog) => {
     let newKilos = 0
     const actions = ["put_proceso_aplicaciones_descarteLavado", "put_proceso_aplicaciones_descarteEncerado"]
 
-
+    console.log("Lote pre findOneAndUpdate", this.options.action);
     if (
-      this.options.action !== "put_calidad_informes_aprobacionComercial" ||
-      this.options.action !== "put_calidad_informes_loteFinalizarInforme" ||
+      this.options.action !== "put_calidad_informes_aprobacionComercial" &&
+      this.options.action !== "put_calidad_informes_loteFinalizarInforme" &&
       this.options.action !== "put_comercial_precios_precioLotes" 
     ) {
 

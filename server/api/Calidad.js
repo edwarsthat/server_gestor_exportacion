@@ -309,7 +309,13 @@ export class CalidadRepository {
             const arrayDelete = contArr.filter(cont => lote[0].contenedores.includes(cont))
             query.contenedores = arrayDelete
 
-            await LotesRepository.modificar_lote_proceso(_id, query, action, user)
+            // await LotesRepository.modificar_lote_proceso(_id, query, action, user)
+
+            await LotesRepository.actualizar_lote(
+                { _id },
+                query,
+                { new: true, user: user, action: action }
+            );
         } catch (err) {
             if (err.status === 523 || err.status === 522) {
                 throw err
@@ -340,8 +346,8 @@ export class CalidadRepository {
                         aprobacionComercial: true,
                         fecha_aprobacion_comercial: new Date()
                     }
-
-                }
+                },
+                { new: true, user: user, action: action }
             );
 
             // Registrar modificación Contenedores
