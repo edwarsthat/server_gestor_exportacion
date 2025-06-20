@@ -213,8 +213,11 @@ export const defineLotes = async (conn, AuditLog) => {
     const actions = ["put_proceso_aplicaciones_descarteLavado", "put_proceso_aplicaciones_descarteEncerado"]
 
 
-    if (this.options.action !== "put_calidad_informes_aprobacionComercial" ||
-      this.options.action !== "put_calidad_informes_loteFinalizarInforme") {
+    if (
+      this.options.action !== "put_calidad_informes_aprobacionComercial" ||
+      this.options.action !== "put_calidad_informes_loteFinalizarInforme" ||
+      this.options.action !== "put_comercial_precios_precioLotes" 
+    ) {
 
       update.aprobacionProduccion = false
 
