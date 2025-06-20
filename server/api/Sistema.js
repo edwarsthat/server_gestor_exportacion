@@ -296,8 +296,6 @@ export class SistemaRepository {
         }
         return apkPath;
     }
-
-
     static async login2(data) {
         await UserRepository.validate_userName(data);
         await UserRepository.validate_password(data);
@@ -331,8 +329,6 @@ export class SistemaRepository {
         const fileContents = fs.readFileSync(filePath);
         return fileContents
     }
-
-
     static async obtener_info_mi_cuenta(user) {
         const { _id } = user
         const usuario = await UsuariosRepository.get_users({
@@ -349,8 +345,6 @@ export class SistemaRepository {
             password: hashedPassword
         }
         await UsuariosRepository.modificar_usuario(_id, query, action, user);
-
-
     }
     static async obtener_cantidad_usuarios() {
         const cantidad = await UsuariosRepository.obtener_cantidad_usuarios()

@@ -6,6 +6,7 @@ import { iniciarRedisDB } from '../../DB/redis/init.js';
 import { ConnectRedisError } from '../../Error/ConnectionErrors.js';
 import { TurnoDatarepository } from './TurnoData.js';
 
+
 // 🪄 Magia para __dirname y __filename:
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -834,20 +835,7 @@ export class VariablesDelSistema {
         nombrePredio: "Celifrut",
         tipoFruta: lote.tipoFruta,
       });
-      // await cliente.hSet("predioProcesando", {
-      //   _id: lote._id.toString(),
-      //   enf: lote.enf,
-      //   predio: "Celifrut",
-      //   nombrePredio: "Celifrut",
-      //   tipoFruta: lote.tipoFruta,
-      // });
-      // await cliente.hSet("predioProcesandoListaEmpaque", {
-      //   _id: lote._id.toString(),
-      //   enf: lote.enf,
-      //   predio: "Celifrut",
-      //   nombrePredio: "Celifrut",
-      //   tipoFruta: lote.tipoFruta,
-      // });
+
 
     } catch (err) {
       throw new ProcessError(518, `Error modificando las variables del sistema: ${err.name}`)
@@ -973,69 +961,14 @@ export class VariablesDelSistema {
     }
   }
 
-
-  // static async ingresar_kilos_vaciados(kilos) {
-  //   let cliente;
-  //   try {
-  //     const clientePromise = iniciarRedisDB();
-  //     cliente = await clientePromise;
-  //     const key = "kilosVaciadosHoy";
-
-  //     // Obtener los kilos procesados de Redis
-  //     let kilosProcesados = await cliente.get(key);
-
-  //     // Si no existe, inicializar como un objeto vacío
-  //     if (kilosProcesados === null) {
-  //       kilosProcesados = 0;
-  //     }
-
-  //     // Convertir el valor a número o inicializar si es null
-  //     kilosProcesados = kilosProcesados ? parseInt(kilosProcesados, 10) : 0;
-
-  //     // Sumar los nuevos kilos
-  //     kilosProcesados += kilos;
-
-  //     // Actualizar el valor en Redis
-  //     await cliente.set(key, kilosProcesados);
-
-  //     return kilosProcesados;
-
-  //   } catch (err) {
-  //     console.error("Error socket: ", err);
-  //     throw new ConnectRedisError(
-  //       419,
-  //       `Error con la conexión con Redis sumando kilos vaceados: ${err.message}`
-  //     );
-  //   } finally {
-  //     if (cliente) {
-  //       cliente.quit();
-  //     }
-  //   }
-  // }
-
-
-
-  // static async sumarMetricaSimple(tipoMetrica, tipoFruta, value, multi = null) {
-  //   let cliente;
-  //   try {
-  //     cliente = await clientePromise;
-  //     if (multi) {
-  //       multi.hIncrBy(tipoMetrica, tipoFruta, value);
-  //     } else {
-  //       await cliente.hIncrBy(tipoMetrica, tipoFruta, value)
-  //     }
-  //   } catch (err) {
-  //     throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
-  //   }
-  // }
-
   static sumarMetricaSimpleDirect(tipoMetrica, tipoFruta, value, multi) {
     if (!multi) throw new Error("Se requiere pipeline para este método");
     multi.hIncrBy(tipoMetrica, tipoFruta, value);
   }
 
-  static async sumarMetricaSimpleAsync(cliente, tipoMetrica, tipoFruta, value) {
+  static async sumarMetricaSimpleAsync(tipoMetrica, tipoFruta, value) {
     try {
+      const cliente = await clientePromise;
       await cliente.hIncrBy(tipoMetrica, tipoFruta, value);
     } catch (err) {
       throw new ConnectRedisError(502, `Error ingresando descarte ${err}`);
@@ -1134,33 +1067,25 @@ export class VariablesDelSistema {
     let cliente
 
     try {
-      const clientePromise = iniciarRedisDB();
       cliente = await clientePromise;
       const status = await cliente.get("statusProceso")
-
 
       if (status === 'on' || status === 'pause') {
         await this.set_hora_fin_proceso()
       }
 
-      await cliente.set("kilosProcesadosHoyLimon", "0");
-      await cliente.set("kilosProcesadosHoyNaranja", "0");
-      await cliente.set("kilosExportacionHoyLimon", "0");
-      await cliente.set("kilosExportacionHoyNaranja", "0");
-
-      await cliente.set("kilosVaciadosHoy", "0");
-      await cliente.set("fechaInicioProceso", '');
-      await cliente.set("statusProceso", 'off');
-      await cliente.set("statusProceso", 'off');
-      await cliente.set("kilosProcesadosHoy", '{}');
-      await cliente.set("kilosExportacionHoy", '{}');
+      await cliente.del("kilosProcesadosHoy");
+      await cliente.del("kilosVaciadosHoy");
+      console.info("Valores del proceso reiniciados correctamente");
 
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis sumar exportacion: ${err.name}`)
 
     } finally {
-      if (cliente) {
-        cliente.quit();
+      try {
+        if (cliente) await cliente.quit();
+      } catch (cerrarErr) {
+        console.warn("Error cerrando conexión Redis:", cerrarErr.message);
       }
     }
   }
@@ -1419,36 +1344,16 @@ export class VariablesDelSistema {
       }
     }
   }
-  static async get_kilos_procesados_hoy2() {
-    let cliente;
-
+  static async get_metrica_hash(key) {
+    let cliente
     try {
-      const clientePromise = iniciarRedisDB();
       cliente = await clientePromise;
-      const key = "kilosProcesadosHoy";
 
-      // Verificar si la clave existe
-      let kilos_procesados = await cliente.get(key);
-
-      // Si no existe, crearla como un arreglo vacío (JSON)
-      if (kilos_procesados === null) {
-        await cliente.set(key, JSON.stringify({})); // Crea un arreglo vacío
-        kilos_procesados = []; // Retorna el arreglo vacío
-      } else {
-        // Parsear el JSON almacenado
-        kilos_procesados = JSON.parse(kilos_procesados);
-      }
-
-      return kilos_procesados;
-
+      const inventario = await cliente.hGetAll(key);
+      return inventario
 
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
-    } finally {
-      if (cliente) {
-        await cliente.quit();
-      }
-
+      throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
     }
   }
   static async get_kilos_exportacion_hoy2() {

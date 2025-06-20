@@ -9,6 +9,7 @@ import { have_lote_GGN_export } from "../controllers/validations.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { RedisRepository } from "../Class/RedisData.js";
+import { registrarPasoLog } from "../api/helper/logs.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const calidadFile = JSON.parse(readFileSync(join(__dirname, '../../constants/calidad.json'), 'utf8'));
@@ -103,36 +104,18 @@ class ProcesoService {
 
         return { query, antes, kilos: kilos }
     }
-    static async eliminar_items_contenedor(_id, seleccion, pallet, action, user) {
-
-        let lotesIds = [];
-        const seleccionOrdenado = seleccion.sort((a, b) => b - a);
-
-        const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
-            ids: [_id],
-            select: { infoContenedor: 1, pallets: 1 },
-            populate: {
-                path: 'infoContenedor.clienteInfo',
-                select: 'CLIENTE PAIS_DESTINO',
-            }
-        })
-
-        //se crea una copa del pallet a modificar
-        const palletsModificados = JSON.parse(JSON.stringify(contenedor[0].pallets));
-        const copiaPallets = JSON.parse(JSON.stringify(contenedor[0].pallets));
-
+    static async eliminar_items_contenedor(contenedor, palletsModificados, copiaPallet, seleccion, pallet, logContext) {
 
         //se eliminan los items del contenedor
         const len = seleccion.length;
-        let itemsDelete = [];
 
         for (let i = 0; i < len; i++) {
-            itemsDelete.push(palletsModificados[pallet]["EF1"].splice(seleccionOrdenado[i], 1)[0]);
+            palletsModificados[pallet]["EF1"].splice(seleccion[i], 1)[0];
         }
 
         // Actualizar contenedor con pallets modificados
         await ContenedoresRepository.actualizar_contenedor(
-            { _id },
+            { _id: contenedor._id },
             {
                 $set: { [`pallets.${pallet}`]: palletsModificados[pallet] }
             }
@@ -140,65 +123,69 @@ class ProcesoService {
 
         // Registrar modificación Contenedores
         await RecordModificacionesRepository.post_record_contenedor_modification(
-            action,
-            user,
+            logContext.action,
+            logContext.user,
             {
                 modelo: "Contenedor",
-                documentoId: _id,
+                documentoId: contenedor._id,
                 descripcion: `Se eliminaron los items ${seleccion} en el pallet ${pallet}`,
             },
-            copiaPallets[pallet],
+            copiaPallet[pallet],
             palletsModificados[pallet],
-            { _id, pallet, seleccion, action }
+            { _id: contenedor._id, pallet, seleccion, action: logContext.action }
         );
+        await registrarPasoLog(logContext.logId, "ProcesoService.eliminar_items_contenedor", "Completado");
 
-        //se obtienen los lotes de las cajas que se eliminaron
+    }
+    static async restar_kilos_lote_indicadores(itemsDelete, logContext) {
+
+        //se recorren para restar los kilos en los lotes
+        const hoy = new Date();
         for (let i = 0; i < itemsDelete.length; i++) {
-            lotesIds.push(itemsDelete[i].lote)
+            const { tipoCaja, cajas, fecha } = itemsDelete[i]
+
+            const mult = Number(tipoCaja.split("-")[1].replace(",", "."))
+            const kilos = cajas * mult;
+            //se mira si es fruta de hoy para restar de las variables del proceso
+            const fechaSeleccionada = new Date(fecha)
+
+            // Ajustamos la fecha seleccionada restando 5 horas:
+            fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
+
+            // Ahora comparamos solo día, mes y año:
+            if (
+                fechaSeleccionada.getFullYear() === hoy.getFullYear() &&
+                fechaSeleccionada.getMonth() === hoy.getMonth() &&
+                fechaSeleccionada.getDate() === hoy.getDate()
+            ) {
+                await this.modificarIndicadoresFecha(itemsDelete[i], Number(-kilos), logContext.logId);
+            }
         }
+        await registrarPasoLog(logContext.logId, "restar_kilos_lote_indicadores", "Completado");
 
-        const lotesSet = new Set(lotesIds)
-        const lotesArrIds = [...lotesSet]
-
-
-        return { lotesArrIds, itemsDelete, contenedor }
     }
-    static async restar_kilos_lote(itemsDelete, lotes, contenedor, hoy) {
-        const { lote, calidad, tipoCaja, cajas, fecha, tipoFruta } = itemsDelete
-        const calidadItem = calidadFile[calidad]
+    static async restar_kilos_lote(lotes, itemsDelete, contenedor, logContext) {
 
-        const mult = Number(tipoCaja.split("-")[1].replace(",", "."))
-        const kilos = cajas * mult;
+        for (let i = 0; i < itemsDelete.length; i++) {
+            const { lote, calidad, tipoCaja, cajas } = itemsDelete[i]
+            const calidadItem = calidadFile[calidad]
 
-        //se le restan los kilos a el lote correspondiente
-        const loteIndex = lotes.findIndex(item => item._id.toString() === lote)
-        lotes[loteIndex][calidadItem] += - kilos
+            const mult = Number(tipoCaja.split("-")[1].replace(",", "."))
+            const kilos = cajas * mult;
 
-        // si se restan los kilos ggn
-        if (have_lote_GGN_export(lotes[loteIndex], contenedor[0], itemsDelete)) {
-            lotes[loteIndex].kilosGGN += - kilos
+            //se le restan los kilos a el lote correspondiente
+            const loteIndex = lotes.findIndex(item => item._id.toString() === lote)
+            lotes[loteIndex][calidadItem] += - kilos
+
+            // si se restan los kilos ggn
+            if (have_lote_GGN_export(lotes[loteIndex], contenedor, itemsDelete)) {
+                lotes[loteIndex].kilosGGN += - kilos
+            }
+
+            lotes[loteIndex].deshidratacion = await deshidratacionLote(lotes[loteIndex].toObject())
+            lotes[loteIndex].rendimiento = await rendimientoLote(lotes[loteIndex].toObject())
         }
 
-        lotes[loteIndex].deshidratacion = await deshidratacionLote(lotes[loteIndex].toObject())
-        lotes[loteIndex].rendimiento = await rendimientoLote(lotes[loteIndex].toObject())
-
-        //se mira si es fruta de hoy para restar de las variables del proceso
-        const fechaSeleccionada = new Date(fecha)
-
-        // Ajustamos la fecha seleccionada restando 5 horas:
-        fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
-
-        // Ahora comparamos solo día, mes y año:
-        if (
-            fechaSeleccionada.getFullYear() === hoy.getFullYear() &&
-            fechaSeleccionada.getMonth() === hoy.getMonth() &&
-            fechaSeleccionada.getDate() === hoy.getDate()
-        ) {
-            await VariablesDelSistema.ingresar_kilos_procesados2(-kilos, tipoFruta)
-            await VariablesDelSistema.ingresar_exportacion2(-kilos, tipoFruta)
-        }
-    }
-    static async guardar_cambios_lotes(lotes, action, user, _id, oldLotes) {
         const operations = lotes.map(loteDoc => ({
             updateOne: {
                 filter: { _id: loteDoc._id },
@@ -210,60 +197,17 @@ class ProcesoService {
                         kilosGGN: loteDoc.kilosGGN,
                         deshidratacion: loteDoc.deshidratacion,
                         rendimiento: loteDoc.rendimiento
-                        // Agrega aquí otros campos que necesites actualizar
                     }
                 }
             }
         }));
 
         await LotesRepository.bulkWrite(operations)
-
-        const newLotes = lotes.map(i => {
-            return {
-                _id: i._id,
-                enf: i.enf,
-                calidad1: i.calidad1,
-                calidad15: i.calidad15,
-                calidad2: i.calidad2,
-                deshidratacion: i.deshidratacion,
-                rendimiento: i.rendimiento
-            }
-        })
-
-        // Registrar modificación de los lotes
-        const documentosAfectados = newLotes.map(l => ({
-            modelo: "Lote", // o el nombre del modelo que estés utilizando
-            documentoId: l._id,
-            descripcion: `Se eliminaron kilos de ${l._id} el enf ${l.enf}`,
-        }));
-
-        await RecordModificacionesRepository.post_record_contenedor_modification(
-            action,
-            user,
-            documentosAfectados, // aquí pasas el array de documentos afectados
-            oldLotes,
-            newLotes,
-            { _id }
-        );
+        await registrarPasoLog(logContext.logId, "restar_kilos_lote", "Completado");
     }
-    static async restarItem_contenedor(_id, pallet, seleccion, cajas, action, user) {
-        //se obtiene el contenedor a modificar
-        const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
-            ids: [_id],
-            select: { infoContenedor: 1, pallets: 1 },
-            populate: {
-                path: 'infoContenedor.clienteInfo',
-                select: 'CLIENTE PAIS_DESTINO',
-            }
-        })
+    static async restarItem_contenedor(contenedor, palletsModificados, copiaPallet, pallet, seleccion, cajas, logContext) {
 
-        //se crea una copa del pallet a modificar
-        const palletsModificados = JSON.parse(JSON.stringify(contenedor[0].pallets));
         const itemSeleccionado = palletsModificados[pallet].EF1[seleccion];
-
-        const copiaPallets = JSON.parse(JSON.stringify(contenedor[0].pallets));
-        const copiaItemSeleccionado = copiaPallets[pallet].EF1[seleccion];
-
 
         itemSeleccionado.cajas -= cajas
 
@@ -273,7 +217,7 @@ class ProcesoService {
 
         // Actualizar contenedor con pallets modificados
         await ContenedoresRepository.actualizar_contenedor(
-            { _id },
+            { _id: contenedor._id },
             {
                 $set: { [`pallets.${pallet}`]: palletsModificados[pallet] }
             }
@@ -281,45 +225,24 @@ class ProcesoService {
 
         // Registrar modificación Contenedores
         await RecordModificacionesRepository.post_record_contenedor_modification(
-            action,
-            user,
+            logContext.action,
+            logContext.user,
             {
                 modelo: "Contenedor",
-                documentoId: _id,
+                documentoId: contenedor._id,
                 descripcion: `Se resto ${cajas} de ${seleccion} en el pallet ${pallet}`,
             },
-            copiaPallets[pallet],
+            copiaPallet[pallet],
             palletsModificados[pallet],
-            { action, _id, pallet, seleccion, cajas }
+            { action: logContext.action, _id: contenedor._id, pallet, seleccion, cajas }
         );
 
-        return {
-            contenedor, copiaItemSeleccionado, itemSeleccionado
-        }
+        await registrarPasoLog(logContext.logId, "ProcesoService.restarItem_contenedor", "Completado");
+
     }
-    static async restarItem_lote(copiaItemSeleccionado, cajas, contenedor, user, action,) {
-        //se modifica el lote
-        //se obtienen los lotes
-        const lotesObj = await LotesRepository.getLotes({
-            ids: [copiaItemSeleccionado.lote]
-        })
-
-        const lote = JSON.parse(JSON.stringify(lotesObj[0]))
-        const oldLote = JSON.parse(JSON.stringify(lotesObj[0]))
-
-        //objeto con la informacion de los lotes viejos
-        const antes = {
-            [calidadFile[copiaItemSeleccionado.calidad]]: oldLote[calidadFile[copiaItemSeleccionado.calidad]],
-            kilosGGN: oldLote.kilosGGN,
-            deshidratacion: oldLote.deshidratacion,
-            rendimiento: oldLote.rendimiento,
-        }
-
-        const kilos = Number(copiaItemSeleccionado.tipoCaja.split("-")[1].replace(",", ".")) * cajas;
+    static async restarItem_lote(lote, copiaItemSeleccionado, kilos, contenedor, logContext) {
 
         lote[calidadFile[copiaItemSeleccionado.calidad]] -= kilos
-        lote.deshidratacion = await deshidratacionLote(lote)
-        lote.rendimiento = await rendimientoLote(lote)
 
         const query = {
             $inc: {
@@ -334,35 +257,13 @@ class ProcesoService {
             query.$inc.kilosGGN = - kilos
         }
 
-        const newLote = await LotesRepository.modificar_lote_proceso(
+        await LotesRepository.modificar_lote_proceso(
             lote._id,
             query,
             "Ingresar exportacion",
-            user._id
+            logContext.user._id
         )
 
-        const newData = {
-            [calidadFile[copiaItemSeleccionado.calidad]]: newLote[calidadFile[copiaItemSeleccionado.calidad]],
-            kilosGGN: newLote.kilosGGN,
-            deshidratacion: newLote.deshidratacion,
-            rendimiento: newLote.rendimiento,
-        }
-        // Registrar modificación
-
-        await RecordModificacionesRepository.post_record_contenedor_modification(
-            action,
-            user,
-            {
-                modelo: "Lote",
-                documentoId: newLote._id,
-                descripcion: `Se restaron ${kilos} kilos a calidad ${copiaItemSeleccionado.calidad}`,
-            },
-            antes,
-            newData,
-            { action, cajas }
-        );
-
-        return { lote, kilos }
     }
     static async restarItem_variablesSistema(itemSeleccionado, kilos, lote) {
         //se mira si es fruta de hoy para restar de las variables del proceso
@@ -547,6 +448,150 @@ class ProcesoService {
             await VariablesDelSistema.ingresar_exportacion2(newKilos, palletSeleccionado.tipoFruta)
         }
 
+    }
+    static async modificarLoteEliminarItemdesktopListaEmpaque(palletSeleccionado, copiaPalletSeleccionado, lote, kilos, GGN, user, logId = null) {
+        //El objeto que lleva la data vieja para el registro
+        const oldDataRegistro = {
+            [calidadFile[palletSeleccionado.calidad]]: lote[0][calidadFile[palletSeleccionado.calidad]]
+        }
+
+        //El objeto que va a modificar la coleccion, se suma -kilos ya calculados
+        const query = {
+            $inc: {
+                [calidadFile[palletSeleccionado.calidad]]: -kilos
+            }
+        }
+
+        //se mira si se deben sumar kilosGNN
+        if (GGN) {
+            query.$inc.kilosGGN = -kilos
+            oldDataRegistro.kilosGGN = lote[0].kilosGGN
+        }
+
+        await LotesRepository.modificar_lote_proceso(
+            copiaPalletSeleccionado.lote,
+            query,
+            "Cambiar tipo de exportacion",
+            user
+        )
+
+        if (logId) await registrarPasoLog(logId, "modificarLoteEliminarItemdesktopListaEmpaque", "Completado", `cajas eliminadas: ${copiaPalletSeleccionado.cajas}, kilos: ${kilos}, lote: ${copiaPalletSeleccionado.lote}`);
+
+    }
+
+    // mirar si se puede usar en otro lado
+    static async obtenerContenedorLote(_id, pallet, seleccion) {
+        const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            ids: [_id],
+            select: { infoContenedor: 1, pallets: 1 },
+            populate: {
+                path: 'infoContenedor.clienteInfo',
+                select: 'CLIENTE PAIS_DESTINO',
+            }
+        })
+        const palletsModificados = contenedor[0].pallets;
+        const palletSeleccionado = palletsModificados[pallet].get('EF1')[seleccion];
+
+        //se obtiene el lote
+        const lote = await LotesRepository.getLotes({
+            ids: [palletSeleccionado.lote],
+            select: { predio: 1, [calidadFile[palletSeleccionado.calidad]]: 1, exportacionGGN: 1 }
+        });
+
+        return {
+            contenedor, lote
+        }
+
+    }
+    static async obtenerContenedorLotes(_id, pallet, seleccion) {
+        let lotesIds = [];
+        let itemsDelete = [];
+
+        const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            ids: [_id],
+            select: { infoContenedor: 1, pallets: 1 },
+            populate: {
+                path: 'infoContenedor.clienteInfo',
+                select: 'CLIENTE PAIS_DESTINO',
+            }
+        })
+        const palletsModificados = contenedor[0].pallets;
+        //se eliminan los items del contenedor
+        const len = seleccion.length;
+
+        for (let i = 0; i < len; i++) {
+            const index = seleccion[i];
+            const ef1Array = palletsModificados[pallet].get('EF1');
+            lotesIds.push(ef1Array[index].lote);
+            itemsDelete.push(ef1Array[index]);
+        }
+
+        const lotesSet = new Set(lotesIds)
+        const lotesArrIds = [...lotesSet]
+
+        //se obtiene el lote
+        const lotes = await LotesRepository.getLotes({
+            ids: lotesArrIds,
+            limite: 'all'
+        })
+
+        return {
+            contenedor, lotes, itemsDelete
+        }
+
+    }
+    static async crearCopiaProfundaPallets(contenedor) {
+        // Convertimos a objeto plano si es un documento Mongoose
+        const contenedorObj = contenedor?.toObject?.() ? contenedor.toObject() : contenedor;
+
+        // Convertimos cada pallet (si es Map) a objeto plano
+        const palletsPlanos = contenedorObj.pallets.map(pallet =>
+            pallet instanceof Map ? Object.fromEntries(pallet) : pallet
+        );
+
+        // Clonamos profundamente para trabajar sin mutar los originales
+        const palletsModificados = structuredClone(palletsPlanos);
+        const copiaPallet = structuredClone(palletsPlanos);
+
+        return {
+            palletsModificados,
+            copiaPallet
+        };
+    }
+    static async modificarIndicadoresFecha(copiaPalletSeleccionado, kilos, logId) {
+        //se mira si es fruta de hoy para restar de las variables del proceso
+        const fechaSeleccionada = new Date(copiaPalletSeleccionado.fecha)
+        const hoy = new Date()
+        // Ajustamos la fecha seleccionada restando 5 horas:
+        fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
+
+        // Ahora comparamos solo día, mes y año:
+        if (
+            fechaSeleccionada.getFullYear() === hoy.getFullYear() &&
+            fechaSeleccionada.getMonth() === hoy.getMonth() &&
+            fechaSeleccionada.getDate() === hoy.getDate()
+        ) {
+            const tipoFruta = copiaPalletSeleccionado.tipoFruta;
+            const calidad = copiaPalletSeleccionado.calidad;
+            const calibre = copiaPalletSeleccionado.calibre;
+
+            const cliente = await RedisRepository.getClient()
+
+            const multi = cliente.multi();
+
+            VariablesDelSistema.sumarMetricaSimpleDirect("kilosProcesadosHoy", tipoFruta, Number(kilos), multi);
+            VariablesDelSistema.sumarMetricaSimpleDirect("kilosExportacionHoy", tipoFruta, Number(kilos), multi);
+            VariablesDelSistema.sumarMetricaSimpleDirect(`exportacion:${tipoFruta}:calidad${calidad}`, calibre, Number(kilos), multi);
+
+            const results = await multi.exec();
+            console.info("Resultados de Redis:", results);
+            if (results.length === 0) {
+                throw new ProcessError(471, "Transacción Redis abortada. Revisa si hubo cambios concurrentes o tipos incorrectos en claves.");
+            }
+
+            await registrarPasoLog(logId, "modificarIndicadoresFecha", "Completado", `se modificaron ${kilos} kilos de la fruta ${tipoFruta} con calidad ${calidad} y calibre ${calibre}`);
+
+        }
     }
 }
 

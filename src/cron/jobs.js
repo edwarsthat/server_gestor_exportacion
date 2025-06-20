@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { IndicadoresAPIRepository } from '../../server/api/IndicadoresAPI.js';
-import { ProcesoRepository } from '../../server/api/Proceso.mjs';
+// import { ProcesoRepository } from '../../server/api/Proceso.mjs';
 import { VariablesDelSistema } from '../../server/Class/VariablesDelSistema.js';
 import { FormulariosCalidadRepository } from '../../server/Class/FormulariosCalidad.js';
 
@@ -14,10 +14,8 @@ export function initCronJobs() {
 
     //Kilos procesados al finalizar el dia
     cron.schedule('0 5 * * *', async () => {
-        await IndicadoresAPIRepository.sys_indicadores_eficiencia_operativa_kilos_procesados();
-        await IndicadoresAPIRepository.sys_indicadores_eficiencia_fruta_kilos_procesados();
-        await IndicadoresAPIRepository.sys_indicadores_eficiencia_fruta_kilos_vaciados();
-        await ProcesoRepository.reiniciarValores_proceso();
+        await IndicadoresAPIRepository.sys_indicadores_ingresar_indicador();
+        await IndicadoresAPIRepository.reiniciarValores_proceso();
 
     });
 

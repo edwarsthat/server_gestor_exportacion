@@ -4,6 +4,7 @@ import { ProcessError, ItemBussyError } from "../../Error/ProcessError.js";
 import { oobtener_datos_lotes_to_listaEmpaque } from "../mobile/utils/contenedoresLotes.js";
 import fs from 'fs';
 import path from 'path';
+import { registrarPasoLog } from "../api/helper/logs.js";
 
 let bussyIds = new Set();
 let lockedItems = new Map();
@@ -809,7 +810,7 @@ export class ContenedoresRepository {
 
 
 
-    static async actualizar_contenedor(filter, update, options = {}, session = null) {
+    static async actualizar_contenedor(filter, update, options = {}, logId = null, session = null) {
         /**
          * Función genérica para actualizar documentos en MongoDB usando Mongoose
          *
@@ -831,11 +832,13 @@ export class ContenedoresRepository {
                 update,
                 finalOptions
             );
+
+            if(logId) await registrarPasoLog(logId, "actualizar_contenedor", "Completado", `filter: ${JSON.stringify(filter)}, update: ${JSON.stringify(update)}`);
             return documentoActualizado;
         } catch (err) {
+            if(logId) await registrarPasoLog(logId, "actualizar_contenedor", "Error", `filter: ${JSON.stringify(filter)}, update: ${JSON.stringify(update)}, error: ${err.message}`);
             throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
-
-        }
+        } 
     }
     static async bulkWrite(operations) {
         try {

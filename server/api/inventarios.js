@@ -1121,7 +1121,7 @@ export class InventariosRepository {
 
             await Promise.all([
                 VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString()),
-                VariablesDelSistema.sumarMetricaSimple("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados)
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados) 
             ])
 
             //para lista de empaque

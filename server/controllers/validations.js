@@ -1,5 +1,5 @@
 
-function have_lote_GGN_export(lote, contenedor, item) {
+function have_lote_GGN_export(lote, contenedor, item="") {
     try {
         // Desestructurar para acceso más limpio y validación rápida
         if( !lote.GGN ) return false;

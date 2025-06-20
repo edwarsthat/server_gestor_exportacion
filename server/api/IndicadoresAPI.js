@@ -1,81 +1,73 @@
 import { ProcessError } from "../../Error/ProcessError.js";
+import { procesoEventEmitter } from "../../events/eventos.js";
 import { IndicadoresRepository } from "../Class/Indicadores.js";
+import { LogsRepository } from "../Class/LogsSistema.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
+import { IndicadoresService } from "../services/indicadores.js";
+import { IndicadoresValidations } from "../validations/indicadores.js";
+import { registrarPasoLog } from "./helper/logs.js";
 import { filtroFechaInicioFin } from "./utils/filtros.js";
 
 export class IndicadoresAPIRepository {
     //#region operaciones
     static async get_indicadores_operaciones_eficienciaOperativa(req) {
+        const { user } = req;
+        let log
         try {
+            log = await LogsRepository.create({
+                user: user._id ?? '66b62fc3777ac9bdcc5050ed', // usuario por defecto
+                action: "get_indicadores_operaciones_eficienciaOperativa",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
             const { page } = req.data
             const resultsPerPage = 50;
 
             const registros = await IndicadoresRepository.get_indicadores({
                 skip: (page - 1) * resultsPerPage,
-                select: {
-                    fecha_creacion: 1,
-                    meta_kilos_procesados_hora: 1,
-                    duracion_turno_horas: 1,
-                    meta_kilos_procesados: 1,
-                    kilos_procesados: 1,
-                    tipo_fruta: 1,
-                }
-
+                limit: resultsPerPage,
             })
+            await registrarPasoLog(log._id, "IndicadoresRepository.get_indicadores", "Completado");
 
             return registros
         } catch (err) {
+            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
             if (err.status === 522) {
                 throw err
             }
             throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     static async put_indicadores_operaciones_eficienciaOperativa(req) {
+        const { user } = req;
+        let log
         try {
+            log = await LogsRepository.create({
+                user: user._id,
+                action: "put_indicadores_operaciones_eficienciaOperativa",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
             const { _id, data } = req.data;
-
-            // Lista de campos permitidos
-            const camposPermitidos = ["meta_kilos_procesados", "total_horas_hombre"];
-
-            // Validar que los datos sean válidos
-            if (typeof data !== 'object' || data === null) {
-                throw new ProcessError(400, "La data proporcionada no es válida.");
-            }
-
-            // Verificar que solo contenga campos permitidos
-            const camposEnviados = Object.keys(data);
-            const camposInvalidos = camposEnviados.filter(campo => !camposPermitidos.includes(campo));
-
-            if (camposInvalidos.length > 0) {
-                throw new ProcessError(400, `Los campos no permitidos son: ${camposInvalidos.join(", ")}`);
-            }
-
-            // Validar tipos de datos
-            if (
-                data.meta_kilos_procesados !== undefined &&
-                typeof Number(data.meta_kilos_procesados) !== "number"
-            ) {
-                throw new ProcessError(400, "El campo 'meta_kilos_procesados' debe ser un número.");
-            }
-
-            if (
-                data.total_horas_hombre !== undefined &&
-                typeof Number(data.total_horas_hombre) !== "number"
-            ) {
-                throw new ProcessError(400, "El campo 'total_horas_hombre' debe ser un número.");
-            }
+            IndicadoresValidations.put_indicadores_operaciones_eficienciaOperativa().parse(data);
+            await registrarPasoLog(log._id, "validacion de datos", "Completado");
 
             await IndicadoresRepository.put_indicador(_id, data);
+            await registrarPasoLog(log._id, "IndicadoresRepository.put_indicador", "Completado", `indicador: ${_id}`);
+
         } catch (err) {
+            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
+
             if (err.status === 523) {
                 throw err
             } else if (err.status === 400) {
                 throw err
             }
             throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     static async get_indicadores_operaciones_registrosDiarios(req) {
@@ -217,33 +209,74 @@ export class IndicadoresAPIRepository {
 
 
 
-
-
-
-    static async sys_indicadores_eficiencia_operativa_kilos_procesados() {
+    static async reiniciarValores_proceso() {
+        let log
         try {
-            const indicador = await IndicadoresRepository.get_indicadores({
-                sort: { fecha_creacion: -1 },
-                limit: 1
+            log = await LogsRepository.create({
+                user: "66b62fc3777ac9bdcc5050ed",
+                action: "reiniciarValores_proceso",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
             })
-            const kilos_procesados = await VariablesDelSistema.get_kilos_procesados_hoy2()
+            await VariablesDelSistema.reiniciarValores_proceso();
+            await registrarPasoLog(log._id, "Se obtiene los kilos procesados", "Completado");
 
-            const kilos_total = Object.values(kilos_procesados).reduce((a, b) => a + b, 0);
-            const tipo_fruta = Object.keys(kilos_procesados);
-
-            await IndicadoresRepository.put_indicador(indicador[0]._id, {
-                tipo_fruta: tipo_fruta,
-                kilos_procesador: kilos_total
-            })
-
-
+            procesoEventEmitter.emit("proceso_event", {});
         } catch (err) {
+            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
+
             if (err.status === 525) {
                 throw err
             }
             throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
+    static async sys_indicadores_ingresar_indicador() {
+        let log
+        try {
+            log = await LogsRepository.create({
+                user: "66b62fc3777ac9bdcc5050ed",
+                action: "sys_indicadores_ingresar_indicador",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
+            const indicador = await IndicadoresRepository.get_indicadores({
+                sort: { fecha_creacion: -1 },
+                limit: 1
+            })
+            await registrarPasoLog(log._id, "Se obtiene el ultimo indicador", "Completado", `indicador: ${indicador[0]._id}`);
+
+            if (!indicador.length) {
+                throw new ProcessError(404, "No se encontró ningún indicador creado");
+            }
+
+            const kilos_procesados_raw = await VariablesDelSistema.get_metrica_hash("kilosProcesadosHoy");
+            const kilos_procesados = await IndicadoresService.procesar_metrica_hash(kilos_procesados_raw, log);
+            await registrarPasoLog(log._id, "Se obtiene los kilos procesados", "Completado");
+
+            const kilos_vaciados_raw = await VariablesDelSistema.get_metrica_hash("kilosVaciadosHoy");
+            const kilos_vaciados = await IndicadoresService.procesar_metrica_hash(kilos_vaciados_raw, log);
+            await registrarPasoLog(log._id, "Se obtiene los kilos vaciados", "Completado");
+
+            await IndicadoresRepository.put_indicador(indicador[0]._id, {
+                kilos_procesados: kilos_procesados,
+                kilos_vaciados: kilos_vaciados,
+            })
+            await registrarPasoLog(log._id, "Se modifica el indicador diario", "Completado");
+
+
+        } catch (err) {
+            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
+
+            if (err.status === 525) {
+                throw err
+            }
+            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
+        }
+    }
+
     static async sys_indicadores_eficiencia_fruta_kilos_procesados() {
         try {
             const indicador = await IndicadoresRepository.get_indicadores({
@@ -264,24 +297,5 @@ export class IndicadoresAPIRepository {
             throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async sys_indicadores_eficiencia_fruta_kilos_vaciados() {
-        try {
-            const indicador = await IndicadoresRepository.get_indicadores({
-                sort: { fecha_creacion: -1 },
-                limit: 1
-            })
-            const kilos_exportacion = await VariablesDelSistema.get_kilos_vaciados_hoy()
 
-            await IndicadoresRepository.put_indicador(indicador[0]._id, {
-                kilos_vaciados: kilos_exportacion
-            })
-
-
-        } catch (err) {
-            if (err.status === 525) {
-                throw err
-            }
-            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
-        }
-    }
 }
