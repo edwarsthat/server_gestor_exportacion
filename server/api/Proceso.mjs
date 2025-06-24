@@ -678,6 +678,9 @@ export class ProcesoRepository {
         try {
             const { _id: id1, pallet: pallet1 } = contenedor1
             const { _id: id2, pallet: pallet2 } = contenedor2
+            if (id1 === id2 && pallet1 === pallet2) {
+                throw new ProcessError(400, "No se puede mover ítems entre el mismo pallet")
+            }
             const seleccionOrdenado = contenedor1.seleccionado.sort((a, b) => b - a);
             let lotesIds = []
 
@@ -816,6 +819,9 @@ export class ProcesoRepository {
         try {
             const { _id: id1, pallet: pallet1 } = contenedor1
             const { _id: id2, pallet: pallet2 } = contenedor2
+            if (id1 === id2 && pallet1 === pallet2) {
+                throw new ProcessError(400, "No se puede mover ítems entre el mismo pallet")
+            }
             const seleccionOrdenado = contenedor1.seleccionado.sort((a, b) => b - a);
 
             // se obtienen los contenedores a modificar

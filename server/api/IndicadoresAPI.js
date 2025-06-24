@@ -2,8 +2,8 @@ import { ProcessError } from "../../Error/ProcessError.js";
 import { procesoEventEmitter } from "../../events/eventos.js";
 import { IndicadoresRepository } from "../Class/Indicadores.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
-import { LotesRepository } from "../Class/Lotes.js";
-import { UsuariosRepository } from "../Class/Usuarios.js";
+// import { LotesRepository } from "../Class/Lotes.js";
+// import { UsuariosRepository } from "../Class/Usuarios.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { IndicadoresService } from "../services/indicadores.js";
 import { IndicadoresValidations } from "../validations/indicadores.js";
@@ -70,34 +70,24 @@ export class IndicadoresAPIRepository {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
-    static async get_indicadores_operaciones_registrosDiarios(req) {
+    static async get_indicadores_operaciones_kilosProcesados(req) {
         try {
             const { filtro } = req.data
-            const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
+            IndicadoresValidations.get_indicadores_operaciones_kilosProcesados().parse(filtro);
 
+            const { fechaInicio, fechaFin } = filtro || {};
             let query = {}
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_creacion')
-
-            // Filtro por tipoFruta
-            if (tipoFruta && tipoFruta.length > 0) {
-                query.tipo_fruta = {
-                    $all: tipoFruta,          // Debe contener todos los elementos del filtro
-                    $size: tipoFruta.length   // Debe tener exactamente esta cantidad
-                };
-            }
 
             const registros = await IndicadoresRepository.get_indicadores({
                 query: query,
                 select: {
                     fecha_creacion: 1,
-                    kilos_procesador: 1,
-                    meta_kilos_procesados: 1,
-                    total_horas_hombre: 1,
-                    tipo_fruta: 1,
-                    kilos_exportacion: 1
+                    kilos_vaciados: 1,
+                    duracion_turno_horas: 1,
+                    kilos_meta_hora: 1,
                 }
-
             })
 
             return registros
@@ -108,82 +98,82 @@ export class IndicadoresAPIRepository {
             throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_indicadores_operaciones_lotes(req) {
-        try {
-            const { filtro } = req.data
-            const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
+    // static async get_indicadores_operaciones_lotes(req) {
+    //     try {
+    //         const { filtro } = req.data
+    //         const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
 
-            let query = {}
+    //         let query = {}
 
-            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha_ingreso_inventario")
+    //         query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha_ingreso_inventario")
 
-            // Filtro por tipoFruta
-            if (tipoFruta && tipoFruta.length > 0) {
-                query.tipoFruta = {
-                    $all: tipoFruta,          // Debe contener todos los elementos del filtro
-                };
-            }
+    //         // Filtro por tipoFruta
+    //         if (tipoFruta && tipoFruta.length > 0) {
+    //             query.tipoFruta = {
+    //                 $all: tipoFruta,          // Debe contener todos los elementos del filtro
+    //             };
+    //         }
 
-            query.fecha_finalizado_proceso = { $exists: true }
+    //         query.fecha_finalizado_proceso = { $exists: true }
 
-            const registros = await LotesRepository.getLotes({
-                query: query,
-                limit: 'all',
-                select: {
-                    fecha_ingreso_inventario: 1,
-                    fecha_finalizado_proceso: 1,
-                }
-            })
+    //         const registros = await LotesRepository.getLotes({
+    //             query: query,
+    //             limit: 'all',
+    //             select: {
+    //                 fecha_ingreso_inventario: 1,
+    //                 fecha_finalizado_proceso: 1,
+    //             }
+    //         })
 
-            const new_registros = registros.map(lote => {
-                const fechaInicio = new Date(lote.fecha_ingreso_inventario)
-                const fechaFin = new Date(lote.fecha_finalizado_proceso)
+    //         const new_registros = registros.map(lote => {
+    //             const fechaInicio = new Date(lote.fecha_ingreso_inventario)
+    //             const fechaFin = new Date(lote.fecha_finalizado_proceso)
 
-                const diferencia = Math.abs(fechaFin - fechaInicio)
+    //             const diferencia = Math.abs(fechaFin - fechaInicio)
 
-                const dias = diferencia / (1000 * 60 * 60)
+    //             const dias = diferencia / (1000 * 60 * 60)
 
-                return { ...lote._doc, dias_inicio_fin: dias }
-            })
+    //             return { ...lote._doc, dias_inicio_fin: dias }
+    //         })
 
 
-            return new_registros
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_indicadores_operaciones_noCalidad(req) {
-        try {
-            const { filtro } = req.data
-            const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
+    //         return new_registros
+    //     } catch (err) {
+    //         if (err.status === 522) {
+    //             throw err
+    //         }
+    //         throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+    //     }
+    // }
+    // static async get_indicadores_operaciones_noCalidad(req) {
+    //     try {
+    //         const { filtro } = req.data
+    //         const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
 
-            let query = {}
+    //         let query = {}
 
-            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha")
+    //         query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha")
 
-            // Filtro por tipoFruta
-            if (tipoFruta && tipoFruta.length > 0) {
-                query.tipoFruta = {
-                    $all: tipoFruta,          // Debe contener todos los elementos del filtro
-                };
-            }
+    //         // Filtro por tipoFruta
+    //         if (tipoFruta && tipoFruta.length > 0) {
+    //             query.tipoFruta = {
+    //                 $all: tipoFruta,          // Debe contener todos los elementos del filtro
+    //             };
+    //         }
 
-            const registros = await UsuariosRepository.obtener_volante_calidad({
-                query: query,
-                limit: 'all'
-            })
+    //         const registros = await UsuariosRepository.obtener_volante_calidad({
+    //             query: query,
+    //             limit: 'all'
+    //         })
 
-            return registros
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
-        }
-    }
+    //         return registros
+    //     } catch (err) {
+    //         if (err.status === 522) {
+    //             throw err
+    //         }
+    //         throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+    //     }
+    // }
     //#endregion
     static async post_indicadores_eficiencia_operativa_registro() {
         try {

@@ -14,17 +14,19 @@ export class transporteValidations {
             observaciones: z.string().optional(),
         })
     }
-    static get_transporte_registros_entregaPrecintos_fotos() {
-        return z.array(
-            z.string().refine(
-                val => val.startsWith('uploads\\fotos\\entrega_precinto_contenedor\\'),
+static get_transporte_registros_entregaPrecintos_fotos() {
+    return z.array(
+        z.string()
+            .refine(
+                val => val.replace(/\\/g, '/').startsWith('uploads/fotos/entrega_precinto_contenedor/'),
                 { message: "Ruta debe empezar con la carpeta correcta" }
             )
-                // No puede tener ..\ o ../ en ningún lado
-                .refine(
-                    val => !val.includes('..\\') && !val.includes('../'),
-                    { message: "Ruta contiene acceso inválido" }
-                )
-        )
-    }
+            // No puede tener ..\ o ../ en ningún lado
+            .refine(
+                val => !val.includes('..\\') && !val.includes('../'),
+                { message: "Ruta contiene acceso inválido" }
+            )
+    )
+}
+
 }

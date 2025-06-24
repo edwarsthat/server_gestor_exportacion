@@ -3,7 +3,7 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs/promises';
-import FileType from 'file-type';
+import { fileTypeFromBuffer } from 'file-type'; 
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -45,7 +45,7 @@ export class TransporteService {
             }
 
             // Usa FileType para verificar tipo de archivo real
-            const type = await FileType.fromBuffer(buffer);
+            const type = await fileTypeFromBuffer(buffer);
             if (!type || !['image/jpeg', 'image/png', 'image/webp'].includes(type.mime)) {
                 throw new Error('Tipo de imagen no permitido');
             }

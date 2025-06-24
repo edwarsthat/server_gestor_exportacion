@@ -204,7 +204,7 @@ export class TransporteRepository {
                     fotos: fotosUrls,
                     entrega,
                     recibe,
-                    fechaEntrega: new Date(fechaEntrega),
+                    fechaEntrega,
                     observaciones,
                 }
             }

@@ -2,7 +2,8 @@ import express from 'express';
 import path from 'path';
 import multer from 'multer';
 import { ComercialRepository } from '../../api/Comercial.js';
-import FileType from 'file-type';
+import { fileTypeFromFile } from 'file-type'; // ✅ Así es como lo debes hacer
+
 import fs from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import rateLimit from 'express-rate-limit';
@@ -105,7 +106,7 @@ formsAPI.post("/reclamaciones_calidad", formLimiter, upload.array('documentos'),
         };
 
         for (const file of files) {
-            const fileType = await FileType.fromFile(file.path);
+            const fileType = await fileTypeFromFile(file.path);
             if (!fileType || !allowedTypes.includes(fileType.mime)) {
                 // Borra el archivo peligroso
                 await fs.unlink(file.path);

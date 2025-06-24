@@ -1,5 +1,6 @@
 import fs from 'fs';
-import fileType from 'file-type'; // Importa todo el paquete como objeto
+import { fileTypeFromBuffer } from 'file-type'; // ✅ Así es como lo debes hacer
+
 
 const MAX_FILE_SIZE_MB = 10; // 10 megas
 const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -18,7 +19,7 @@ export class CalidadService {
         const data = fs.readFileSync(url);
 
         // Detecta el tipo de archivo real, no solo la extensión
-        const fileTypeResult = await fileType.fromBuffer(data);
+        const fileTypeResult = await fileTypeFromBuffer(data);
 
         const mimeType = fileTypeResult ? fileTypeResult.mime : 'application/octet-stream';
         return {
