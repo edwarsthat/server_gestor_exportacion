@@ -28,16 +28,22 @@ export class IndicadoresValidations {
                     return !isNaN(date.getTime());
                 }, "Fecha de fin debe ser una fecha válida o estar vacía")
         }).refine((data) => {
-            // Validar que fechaFin sea posterior a fechaInicio (solo si fechaFin no está vacía)
             if (data.fechaFin === "") return true;
 
             const fechaInicio = new Date(data.fechaInicio);
             const fechaFin = new Date(data.fechaFin);
 
+            // Setear hora mínima para inicio (00:00:00.000)
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            // Setear hora máxima para fin (23:59:59.999)
+            fechaFin.setHours(23, 59, 59, 999);
+
             return fechaFin > fechaInicio;
         }, {
             message: "La fecha de fin debe ser posterior a la fecha de inicio",
-            path: ["fechaFin"] // Especifica que el error se asocie al campo fechaFin
+            path: ["fechaFin"]
         })
+
     }
 }

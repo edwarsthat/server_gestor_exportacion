@@ -4,6 +4,7 @@ import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones
 import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { transporteValidations } from "../validations/transporte.js";
 import { TransporteService } from "../services/transporte.js";
+import { addHours } from "./utils/fechas.js";
 const PAGE_ITEMS = 50;
 
 export class TransporteRepository {
@@ -202,7 +203,7 @@ export class TransporteRepository {
             const update = {
                 entregaPrecinto: {
                     fotos: fotosUrls,
-                    entrega,
+                    entrega: addHours(entrega, 5),
                     recibe,
                     fechaEntrega,
                     observaciones,
