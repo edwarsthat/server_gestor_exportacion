@@ -32,6 +32,7 @@ export class IndicadoresAPIRepository {
 
             return registros
         } catch (err) {
+            console.log(`Error en get_indicadores_operaciones_eficienciaOperativa: ${err.message}`);
             await registrarPasoLog(log._id, "Error", "Fallido", err.message);
             if (err.status === 522) {
                 throw err

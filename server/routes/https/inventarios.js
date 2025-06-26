@@ -17,7 +17,7 @@ routerInventarios.get("/get_inventarios_frutaDescarte_fruta", async (req, res) =
     try {
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
+        await UserRepository.autentificacionPermisosHttps(user.cargo, "get_inventarios_frutaDescarte_fruta")
         const response = await InventariosRepository.get_inventarios_frutaDescarte_fruta()
         res.json({ status: 200, message: 'Ok', data: response })
     } catch (err) {
@@ -44,7 +44,7 @@ routerInventarios.patch("/sys_reiniciar_inventario_descarte", async (req, res) =
     try {
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
+        await UserRepository.autentificacionPermisosHttps(user.cargo, "sys_reiniciar_inventario_descarte")
 
         await InventariosRepository.sys_reiniciar_inventario_descarte()
 

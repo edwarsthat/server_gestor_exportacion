@@ -5,6 +5,7 @@ import { ProcessError } from '../../Error/ProcessError.js';
 import { iniciarRedisDB } from '../../DB/redis/init.js';
 import { ConnectRedisError } from '../../Error/ConnectionErrors.js';
 import { TurnoDatarepository } from './TurnoData.js';
+import { RedisRepository } from './RedisData.js';
 
 
 // 🪄 Magia para __dirname y __filename:
@@ -968,11 +969,11 @@ export class VariablesDelSistema {
 
   static async sumarMetricaSimpleAsync(tipoMetrica, tipoFruta, value) {
     try {
-      const cliente = await clientePromise;
+      const cliente = await RedisRepository.getClient();
       await cliente.hIncrBy(tipoMetrica, tipoFruta, value);
     } catch (err) {
       throw new ConnectRedisError(502, `Error ingresando descarte ${err}`);
-    }
+    } 
   }
 
 

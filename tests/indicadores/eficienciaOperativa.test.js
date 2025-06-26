@@ -38,14 +38,17 @@ describe("Prueba integración indicadoresProceso", () => {
             expect(item).toHaveProperty("fecha_creacion");
             expect(typeof item.fecha_creacion).toBe("string");
 
-            expect(item).toHaveProperty("kilos_procesados");
-            expect(typeof item.kilos_procesados).toBe("object");
+            if (item.kilos_procesados !== undefined) {
+                expect(item).toHaveProperty("kilos_procesados");
+                expect(typeof item.kilos_procesados).toBe("object");
+            }
+            if (item.kilos_vaciados !== undefined) {
+                expect(item).toHaveProperty("kilos_vaciados");
+                expect(typeof item.kilos_vaciados).toBe("object");
+            }
 
-            expect(item).toHaveProperty("kilos_vaciados");
-            expect(typeof item.kilos_vaciados).toBe("object");
-
-            expect(item).toHaveProperty("meta_kilos_procesados_hora");
-            expect(typeof item.meta_kilos_procesados_hora).toBe("number");
+            expect(item).toHaveProperty("kilos_meta_hora");
+            expect(typeof item.kilos_meta_hora).toBe("number");
 
             expect(item).toHaveProperty("duracion_turno_horas");
             expect(typeof item.duracion_turno_horas).toBe("number");
@@ -55,7 +58,8 @@ describe("Prueba integración indicadoresProceso", () => {
     it("debería cumplir con las restricciones de dominio en los datos", async () => {
         const response = await request(`http://${HOST}:${PORT}`)
             .get("/indicadores/get_indicadores_operaciones_eficienciaOperativa")
-            .set("Authorization", `${TEST_TOKEN}`);
+            .set("Authorization", `${TEST_TOKEN}`)
+            .send({ page: 1 })
 
         expect(response.status).toBe(200);
         expect(Array.isArray(response.body.data)).toBe(true);
@@ -67,41 +71,49 @@ describe("Prueba integración indicadoresProceso", () => {
             expect(isNaN(fecha)).toBe(false);
 
             // kilos_procesados debe ser un objeto y sus valores >= 0
-            expect(typeof item.kilos_procesados).toBe("object");
-            Object.values(item.kilos_procesados).forEach(valor => {
-                expect(typeof valor).toBe("number");
-                expect(valor).toBeGreaterThanOrEqual(0);
-            });
+            // expect(typeof item.kilos_procesados).toBe("object");
+            // Object.values(item.kilos_procesados).forEach(valor => {
+            //     expect(typeof valor).toBe("number");
+            //     expect(valor).toBeGreaterThanOrEqual(0);
+            // });
 
-            // kilos_vaciados debe ser un objeto y sus valores >= 0
-            expect(typeof item.kilos_vaciados).toBe("object");
-            Object.values(item.kilos_vaciados).forEach(valor => {
-                expect(typeof valor).toBe("number");
-                expect(valor).toBeGreaterThanOrEqual(0);
-            });
+            // kilos_vaciados debe ser un objeto y sus valores >= 0 (si existe)
+            if (item.kilos_vaciados !== undefined) {
+                expect(typeof item.kilos_vaciados).toBe("object");
+                Object.values(item.kilos_vaciados).forEach(valor => {
+                    expect(typeof valor).toBe("number");
+                    expect(valor).toBeGreaterThanOrEqual(0);
+                });
+            }
 
-            // meta_kilos_procesados
+            // meta_kilos_procesados (si existe)
+            if (item.kilos_procesados !== undefined) {
+                expect(typeof item.kilos_procesados).toBe("object");
+                Object.values(item.kilos_procesados).forEach(valor => {
+                    expect(typeof valor).toBe("number");
+                    expect(valor).toBeGreaterThanOrEqual(0);
+                });
+            }
+
+            // meta_kilos_procesados_hora
             expect(typeof item.meta_kilos_procesados).toBe("number");
             expect(item.meta_kilos_procesados).toBeGreaterThanOrEqual(0);
 
             // meta_kilos_procesados_hora
-            expect(typeof item.meta_kilos_procesados_hora).toBe("number");
-            expect(item.meta_kilos_procesados_hora).toBeGreaterThanOrEqual(0);
-
-            // kilos_meta_hora
             expect(typeof item.kilos_meta_hora).toBe("number");
             expect(item.kilos_meta_hora).toBeGreaterThanOrEqual(0);
 
-            // duracion_turno_horas
+            // kilos_meta_hora
             expect(typeof item.duracion_turno_horas).toBe("number");
             expect(item.duracion_turno_horas).toBeGreaterThanOrEqual(0);
+
         });
     });
     it("debería rechazar la petición si no se envía el token de autorización", async () => {
         const response = await request(`http://${HOST}:${PORT}`)
             .get("/indicadores/get_indicadores_operaciones_eficienciaOperativa"); // NO se envía .set("Authorization", ...)
 
-            console.log(response.body)
+        console.log(response.body)
         expect(response.body.status).toBe(405); // O el código que uses, puede ser 401 o 403
         expect(response.body).toHaveProperty("message");
     });

@@ -23,7 +23,7 @@ routerIndicadores.get("/get_indicadores_operaciones_eficienciaOperativa", async 
         //autentificacion
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
+        await UserRepository.autentificacionPermisosHttps(user.cargo, "get_indicadores_operaciones_eficienciaOperativa")
 
         const data = req.body
         const request = {
