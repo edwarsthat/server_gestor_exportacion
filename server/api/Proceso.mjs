@@ -154,7 +154,9 @@ export class ProcesoRepository {
             )
             await Promise.all([
                 RedisRepository.put_inventarioDescarte(data, 'descarteLavado:', lote.tipoFruta),
-                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta, kilos)
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta, kilos),
+                LogsRepository.createReporteIngresoDescarte({user: user.user, userID: user._id, descarteLavado: {}, descarteEncerado: data})
+
             ])
 
             procesoEventEmitter.emit("server_event", {
@@ -194,7 +196,6 @@ export class ProcesoRepository {
             const { user } = req;
             ProcesoValidations.put_proceso_aplicaciones_descarteEncerado().parse(req.data)
             const { _id, data, action } = req.data;
-            console.log(data)
 
             const keys = Object.keys(data);
             const query = { $inc: {} };
@@ -218,7 +219,8 @@ export class ProcesoRepository {
 
             await Promise.all([
                 RedisRepository.put_inventarioDescarte(data, 'descarteEncerado:', lote.tipoFruta),
-                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta, kilos)
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta, kilos),
+                LogsRepository.createReporteIngresoDescarte({user: user.user, userID: user._id, descarteLavado: {}, descarteEncerado: data})
             ])
 
             procesoEventEmitter.emit("server_event", {

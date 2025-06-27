@@ -34,4 +34,55 @@ export class LogsRepository {
             console.error("Error updating log:", err);
         }
     }
+    static async createReporteIngresoDescarte(data) {
+        try {
+            // Validar que los campos requeridos estén presentes
+            if (!data.user || !data.userID) {
+                throw new Error("Los campos 'user' y 'userID' son requeridos");
+            }
+
+            // Crear la estructura de datos con valores por defecto si no se proporcionan
+            const reporteData = {
+                user: data.user,
+                userID: data.userID,
+                descarteEncerado: {
+                    descarteGeneral: data.descarteEncerado?.descarteGeneral || 0,
+                    pareja: data.descarteEncerado?.pareja || 0,
+                    balin: data.descarteEncerado?.balin || 0,
+                    extra: data.descarteEncerado?.extra || 0,
+                    descompuesta: data.descarteEncerado?.descompuesta || 0,
+                    suelo: data.descarteEncerado?.suelo || 0,
+                },
+                descarteLavado: {
+                    descarteGeneral: data.descarteLavado?.descarteGeneral || 0,
+                    pareja: data.descarteLavado?.pareja || 0,
+                    balin: data.descarteLavado?.balin || 0,
+                    descompuesta: data.descarteLavado?.descompuesta || 0,
+                    piel: data.descarteLavado?.piel || 0,
+                    hojas: data.descarteLavado?.hojas || 0,
+                }
+            };
+
+            const reporte = new db.IngresoDescartes(reporteData);
+            const savedReporte = await reporte.save();
+            return savedReporte;
+        } catch (err) {
+            logErrorToFile(err, "LogsRepository.createReporteIngresoDescarte");
+            console.error("Error creating reporte ingreso descarte:", err);
+            throw err;
+        }
+    }
+
+    static async getReportesIngresoDescarte(filter = {}, options = {}) {
+        try {
+            const reportes = await db.IngresoDescartes.find(filter, null, options)
+                .populate('userID', 'nombre email')
+                .sort({ createdAt: -1 });
+            return reportes;
+        } catch (err) {
+            logErrorToFile(err, "LogsRepository.getReportesIngresoDescarte");
+            console.error("Error getting reportes ingreso descarte:", err);
+            throw err;
+        }
+    }
 }

@@ -63,6 +63,7 @@ import { defineClientesNacionales } from '../schemas/clientes/schemaClientesNaci
 import { defineAuditLogs } from '../schemas/audit/AuditLogSchema.js';
 import { defineCuartosdesverdizado } from '../schemas/catalogs/schemaCuartosDesverdizado.js';
 import { defineAuditSistemaLogs } from '../schemas/audit/AuditLosSistemaSchema.js';
+import { defineAuditDescartes } from '../schemas/audit/ReporteIngresoDescartesSchema.js';
 
 export const db = {};
 
@@ -377,6 +378,10 @@ const defineSchemasSistema = async (sysConn) => {
         console.log("⚡ Definiendo Errores...");
         db.Errores = await defineErrores(sysConn);
         console.log("✅ Errores definido");
+
+        console.log("⚡ Definiendo Record ingreso descartes...");
+        db.IngresoDescartes = await defineAuditDescartes(sysConn);
+        console.log("✅ Record ingreso descartes definido");
 
 
         console.log("🎉 Todos los schemas de sistema han sido definidos correctamente.");
