@@ -1119,15 +1119,13 @@ export class InventariosRepository {
                 datos: { ...predioAnterior }
             })
 
-            await Promise.all([
-                VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString()),
-                VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados) 
-            ])
+            await VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados)
+            await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString()),
 
-            //para lista de empaque
-            procesoEventEmitter.emit("predio_vaciado", {
-                predio: lote
-            });
+                //para lista de empaque
+                procesoEventEmitter.emit("predio_vaciado", {
+                    predio: lote
+                });
 
             //para el desktop app
             procesoEventEmitter.emit("server_event", {

@@ -1042,11 +1042,17 @@ export class ProcesoRepository {
         procesoEventEmitter.emit("listaempaque_update");
     }
     static async put_proceso_aplicaciones_listaEmpaque_modificarItems(req) {
-
+        const { user } = req;
+        let log
         try {
+            log = await LogsRepository.create({
+                user: user._id,
+                action: "put_proceso_aplicaciones_listaEmpaque_modificarItems",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
             ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_modificarItems(req.data)
-            console.log(req.data)
-            const { user } = req;
+            await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_modificarItems", "Completado");
+            
             const { _id, pallet, seleccion, data, action } = req.data;
             const { calidad, tipoCaja, calibre } = data
             const lotesIds = []
