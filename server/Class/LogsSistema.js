@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { db } from "../../DB/mongoDB/config/init.js";
+import { registrarPasoLog } from "../api/helper/logs.js";
 
 function logErrorToFile(err, context = "") {
     const logPath = path.resolve(process.cwd(), "logs", "logs_errors.txt");
@@ -34,7 +35,7 @@ export class LogsRepository {
             console.error("Error updating log:", err);
         }
     }
-    static async createReporteIngresoDescarte(data) {
+    static async createReporteIngresoDescarte(data, logID = null) {
         try {
             // Validar que los campos requeridos estén presentes
             if (!data.user || !data.userID) {
@@ -65,6 +66,10 @@ export class LogsRepository {
 
             const reporte = new db.IngresoDescartes(reporteData);
             const savedReporte = await reporte.save();
+
+            if (logID) {
+                await registrarPasoLog(logID, "LogsRepository.createReporteIngresoDescarte", "Completado");
+            }
             return savedReporte;
         } catch (err) {
             logErrorToFile(err, "LogsRepository.createReporteIngresoDescarte");

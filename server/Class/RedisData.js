@@ -1,6 +1,7 @@
 import { iniciarRedisDB } from "../../DB/redis/init.js";
 import { ConnectRedisError } from "../../Error/ConnectionErrors.js";
 import { cargarDescartes, cargarTipoFrutas } from "../../constants/constants.js";
+import { registrarPasoLog } from "../api/helper/logs.js";
 
 
 const clientePromise = iniciarRedisDB();
@@ -151,27 +152,27 @@ export class RedisRepository {
      *   'Naranja'
      * );
      */
-static async put_reprocesoDescarte_set(data, tipoDescarte, tipoFruta, multi = null) {
-    const key = `inventarioDescarte:${tipoFruta}:${tipoDescarte}`;
-    let cliente;
-    try {
-        cliente = await clientePromise;
-        if (multi) {
-            // Solo agregas los comandos a la transacción, NO ejecutas nada aquí
-            for (const [campo, valor] of Object.entries(data)) {
-                multi.hIncrBy(key, campo, valor);
+    static async put_reprocesoDescarte_set(data, tipoDescarte, tipoFruta, multi = null) {
+        const key = `inventarioDescarte:${tipoFruta}:${tipoDescarte}`;
+        let cliente;
+        try {
+            cliente = await clientePromise;
+            if (multi) {
+                // Solo agregas los comandos a la transacción, NO ejecutas nada aquí
+                for (const [campo, valor] of Object.entries(data)) {
+                    multi.hIncrBy(key, campo, valor);
+                }
+            } else {
+                const tareas = Object.entries(data)
+                    .map(([campo, valor]) =>
+                        cliente.hSet(key, campo, valor) // CORREGIDO: hSet en vez de hSetBy
+                    );
+                await Promise.all(tareas);
             }
-        } else {
-            const tareas = Object.entries(data)
-                .map(([campo, valor]) =>
-                    cliente.hSet(key, campo, valor) // CORREGIDO: hSet en vez de hSetBy
-                );
-            await Promise.all(tareas);
+        } catch (err) {
+            throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
-    } catch (err) {
-        throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
     }
-}
 
     /**
      * Obtiene el inventario completo de descartes para todos los tipos de fruta.
@@ -228,27 +229,24 @@ static async put_reprocesoDescarte_set(data, tipoDescarte, tipoFruta, multi = nu
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
     }
-    /**
-     * Obtiene el inventario de descartes para un tipo de fruta específico.
-     * 
-     * @static
-     * @async
-     * @param {string} tipoFruta - El tipo de fruta del cual obtener los descartes ('Naranja' o 'Limon')
-     * @returns {Promise<Object>} Un objeto con los descartes de lavado y encerado para el tipo de fruta especificado
-     * @returns {Object} return.descarteLavado - Objeto con los valores de descarte de lavado
-     * @returns {Object} return.descarteEncerado - Objeto con los valores de descarte de encerado
-     * @throws {ConnectRedisError} Si hay un error en la comunicación con Redis
-     */
-    static async get_inventarioDescarte_porTipoFruta(tipoFruta) {
-        let cliente;
-        try {
-            cliente = await clientePromise;
 
-            // Obtener datos de descarte lavado y encerado en paralelo
+    static async get_inventarioDescarte_porTipoFruta(tipoFruta, logId = null) {
+        try {
+
+            if (!tipoFruta || typeof tipoFruta !== 'string') {
+                throw new Error('El parámetro tipoFruta es requerido y debe ser un string');
+            }
+
+            const cliente = await this.getClient();
+
             const [descarteLavado, descarteEncerado] = await Promise.all([
                 cliente.hGetAll(`inventarioDescarte:${tipoFruta}:descarteLavado:`),
                 cliente.hGetAll(`inventarioDescarte:${tipoFruta}:descarteEncerado:`)
             ]);
+
+            if (logId) {
+                await registrarPasoLog(logId, "RedisData.get_inventarioDescarte_porTipoFruta", "Completado", `Tipo de fruta: ${tipoFruta}`);
+            }
 
             return {
                 descarteLavado,
@@ -256,7 +254,12 @@ static async put_reprocesoDescarte_set(data, tipoDescarte, tipoFruta, multi = nu
             };
 
         } catch (err) {
-            throw new ConnectRedisError(502, `Error obteniendo descarte para ${tipoFruta}: ${err}`);
+            // Si el error ya es ConnectRedisError, lo re-lanzamos
+            if (err instanceof ConnectRedisError) {
+                throw err;
+            }
+            // Para otros errores, los envolvemos
+            throw new ConnectRedisError(502, `Error obteniendo descarte para ${tipoFruta}: ${err.message || err}`);
         }
     }
     /**
@@ -752,6 +755,51 @@ static async put_reprocesoDescarte_set(data, tipoDescarte, tipoFruta, multi = nu
     //#endregion inventarioDesverdizado
 
     static async getClient() {
-        return await clientePromise;
+        try {
+            const cliente = await clientePromise;
+
+            // Validar que el cliente esté disponible
+            if (!cliente) {
+                throw new Error('Cliente Redis no disponible');
+            }
+
+            // Verificar conexión con un ping simple
+            await cliente.ping();
+
+            return cliente;
+
+        } catch (err) {
+            console.error('Error obteniendo cliente Redis:', err);
+            throw new ConnectRedisError(502, `Error obteniendo cliente Redis: ${err.message || err}`);
+        }
+    }
+    static async checkConnection() {
+        const startTime = Date.now();
+        try {
+            const cliente = await clientePromise;
+
+            if (!cliente) {
+                return {
+                    connected: false,
+                    error: 'Cliente Redis no disponible',
+                    responseTime: Date.now() - startTime
+                };
+            }
+
+            await cliente.ping();
+
+            return {
+                connected: true,
+                error: null,
+                responseTime: Date.now() - startTime
+            };
+
+        } catch (err) {
+            return {
+                connected: false,
+                error: err.message || 'Error desconocido',
+                responseTime: Date.now() - startTime
+            };
+        }
     }
 }

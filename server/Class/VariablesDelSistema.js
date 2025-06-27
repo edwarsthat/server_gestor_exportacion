@@ -6,6 +6,7 @@ import { iniciarRedisDB } from '../../DB/redis/init.js';
 import { ConnectRedisError } from '../../Error/ConnectionErrors.js';
 import { TurnoDatarepository } from './TurnoData.js';
 import { RedisRepository } from './RedisData.js';
+import { registrarPasoLog } from '../api/helper/logs.js';
 
 
 // 🪄 Magia para __dirname y __filename:
@@ -967,13 +968,18 @@ export class VariablesDelSistema {
     multi.hIncrBy(tipoMetrica, tipoFruta, value);
   }
 
-  static async sumarMetricaSimpleAsync(tipoMetrica, tipoFruta, value) {
+  static async sumarMetricaSimpleAsync(tipoMetrica, tipoFruta, value, logID = null) {
     try {
+
       const cliente = await RedisRepository.getClient();
       await cliente.hIncrBy(tipoMetrica, tipoFruta, value);
+
+      if (logID) {
+        await registrarPasoLog(logID, "VariablesDelSistema.sumarMetricaSimpleAsync", "Completado", `Se sumó ${value} a ${tipoFruta} en ${tipoMetrica}`);
+      }
     } catch (err) {
       throw new ConnectRedisError(502, `Error ingresando descarte ${err}`);
-    } 
+    }
   }
 
 

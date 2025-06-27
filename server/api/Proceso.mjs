@@ -135,9 +135,17 @@ export class ProcesoRepository {
      * @throws {ProcessError} Si ocurre un error durante el proceso.
      */
     static async put_proceso_aplicaciones_descarteLavado(req) {
+        const { user } = req;
+        let log
         try {
+            log = await LogsRepository.create({
+                user: user._id,
+                action: "put_proceso_aplicaciones_descarteLavado",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
             ProcesoValidations.put_proceso_aplicaciones_descarteLavado().parse(req.data)
-            const { user } = req;
+            await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteLavado", "Completado");
+
             const { _id, data, action } = req.data;
             const keys = Object.keys(data);
             const query = { $inc: {} };
@@ -152,12 +160,14 @@ export class ProcesoRepository {
                 query,
                 { user: user._id, action: action }
             )
-            await Promise.all([
-                RedisRepository.put_inventarioDescarte(data, 'descarteLavado:', lote.tipoFruta),
-                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta, kilos),
-                LogsRepository.createReporteIngresoDescarte({user: user.user, userID: user._id, descarteLavado: {}, descarteEncerado: data})
+            await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
 
+            await Promise.all([
+                RedisRepository.put_inventarioDescarte(data, 'descarteLavado:', lote.tipoFruta, log._id),
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta, kilos),
+                LogsRepository.createReporteIngresoDescarte({ user: user.user, userID: user._id, descarteEncerado: {}, descarteLavado: data })
             ])
+            await registrarPasoLog(log._id, "Promise.all", "Completado");
 
             procesoEventEmitter.emit("server_event", {
                 action: "descarte_change",
@@ -173,6 +183,8 @@ export class ProcesoRepository {
                 throw new ProcessError(470, `Error de validación: ${errores}`)
             }
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     /**
@@ -192,9 +204,17 @@ export class ProcesoRepository {
      * @throws {ProcessError} Si ocurre un error durante el proceso.
      */
     static async put_proceso_aplicaciones_descarteEncerado(req) {
+        const { user } = req;
+        let log
         try {
-            const { user } = req;
+            log = await LogsRepository.create({
+                user: user._id,
+                action: "put_proceso_aplicaciones_descarteEncerado",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
             ProcesoValidations.put_proceso_aplicaciones_descarteEncerado().parse(req.data)
+            await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteEncerado", "Completado");
+
             const { _id, data, action } = req.data;
 
             const keys = Object.keys(data);
@@ -216,12 +236,14 @@ export class ProcesoRepository {
                 query,
                 { user: user._id, action: action }
             )
+            await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
 
             await Promise.all([
                 RedisRepository.put_inventarioDescarte(data, 'descarteEncerado:', lote.tipoFruta),
                 VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta, kilos),
-                LogsRepository.createReporteIngresoDescarte({user: user.user, userID: user._id, descarteLavado: {}, descarteEncerado: data})
+                LogsRepository.createReporteIngresoDescarte({ user: user.user, userID: user._id, descarteLavado: {}, descarteEncerado: data })
             ])
+            await registrarPasoLog(log._id, "Promise.all", "Completado");
 
             procesoEventEmitter.emit("server_event", {
                 action: "descarte_change",
@@ -236,6 +258,8 @@ export class ProcesoRepository {
                 throw err
             }
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
 
@@ -1054,7 +1078,7 @@ export class ProcesoRepository {
             })
             ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_modificarItems(req.data)
             await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_modificarItems", "Completado");
-            
+
             const { _id, pallet, seleccion, data, action } = req.data;
             const { calidad, tipoCaja, calibre } = data
             const lotesIds = []
