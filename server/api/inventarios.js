@@ -1120,6 +1120,7 @@ export class InventariosRepository {
             })
 
             await VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados)
+
             await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString()),
 
                 //para lista de empaque
