@@ -1141,6 +1141,7 @@ export class InventariosRepository {
                 }
             });
         } catch (err) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
             // se devuelven los elementos que se cambiaron
             // for (let i = pilaFunciones.length - 1; i >= 0; i--) {
             //     const value = pilaFunciones[i];
