@@ -965,7 +965,15 @@ export class VariablesDelSistema {
 
   static sumarMetricaSimpleDirect(tipoMetrica, tipoFruta, value, multi) {
     if (!multi) throw new Error("Se requiere pipeline para este método");
-    multi.hIncrBy(tipoMetrica, tipoFruta, value);
+
+    let incremento = parseFloat(value);
+    if (isNaN(incremento)) {
+      throw new Error(`Valor inválido para incremento: ${value}`);
+    }
+
+    incremento = Math.round(incremento * 100) / 100;
+
+    multi.hIncrByFloat(tipoMetrica, tipoFruta, incremento);
   }
 
   static async sumarMetricaSimpleAsync(tipoMetrica, tipoFruta, value, logID = null) {

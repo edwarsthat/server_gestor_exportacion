@@ -478,6 +478,131 @@ class ProcesoService {
         if (logId) await registrarPasoLog(logId, "modificarLoteEliminarItemdesktopListaEmpaque", "Completado", `cajas eliminadas: ${copiaPalletSeleccionado.cajas}, kilos: ${kilos}, lote: ${copiaPalletSeleccionado.lote}`);
 
     }
+    static async modificarPalletModificarItemsListaEmpaque(palletsModificados, copiaPallet, pallet, seleccion, calidad, calibre, tipoCaja, _id, action, user, logID = null) {
+
+        for (let i = 0; i < seleccion.length; i++) {
+            const palletSeleccionado = palletsModificados[pallet].EF1[seleccion[i]];
+            Object.assign(palletSeleccionado, { calidad, calibre, tipoCaja });
+        }
+
+        // Actualizar contenedor con pallets modificados
+        await ContenedoresRepository.actualizar_contenedor(
+            { _id },
+            { pallets: palletsModificados }
+        );
+
+        // Registrar modificación
+        await RecordModificacionesRepository.post_record_contenedor_modification(
+            action,
+            user,
+            {
+                modelo: "Contenedor",
+                documentoId: _id,
+                descripcion: `Actualización pallet ${pallet}, posición ${seleccion}`,
+            },
+            copiaPallet[pallet].EF1,
+            palletsModificados[pallet].EF1,
+            { pallet, seleccion }
+        );
+
+        if (logID) {
+            await registrarPasoLog(logID, "modificarPalletModificarItemsListaEmpaque", "Completado", `se modificaron los items seleccionados en el pallet ${pallet}`);
+        }
+
+
+    }
+    static async modificarLotesModificarItemsListaEmpaque(lotes, copiaPallet, palletsModificados, seleccion, pallet, contenedor, logID = null) {
+        const lotesModificados = JSON.parse(JSON.stringify(lotes));
+
+        for (let i = 0; i < seleccion.length; i++) {
+            const itemSeleccionadoOld = copiaPallet[pallet].EF1[seleccion[i]];
+            const itemSeleccionadoNew = palletsModificados[pallet].EF1[seleccion[i]];
+
+            if (itemSeleccionadoOld.tipoCaja !== itemSeleccionadoNew.tipoCaja ||
+                itemSeleccionadoOld.calidad !== itemSeleccionadoNew.calidad) {
+                const oldKilos = itemSeleccionadoOld.cajas * Number(itemSeleccionadoOld.tipoCaja.split("-")[1].replace(",", "."));
+                const newKilos = itemSeleccionadoNew.cajas * Number(itemSeleccionadoNew.tipoCaja.split("-")[1].replace(",", "."));
+
+                const loteIndex = lotesModificados.findIndex(lote => lote._id.toString() === itemSeleccionadoOld.lote);
+                lotesModificados[loteIndex][calidadFile[itemSeleccionadoOld.calidad]] += - oldKilos;
+                lotesModificados[loteIndex][calidadFile[itemSeleccionadoNew.calidad]] += newKilos;
+
+                lotesModificados[loteIndex].deshidratacion = await deshidratacionLote(lotesModificados[loteIndex])
+                lotesModificados[loteIndex].rendimiento = await rendimientoLote(lotesModificados[loteIndex])
+
+                // si se restan los kilos ggn
+                if (have_lote_GGN_export(lotesModificados[loteIndex], contenedor, itemSeleccionadoOld)) {
+                    lotesModificados[loteIndex].kilosGGN += - oldKilos;
+                    lotesModificados[loteIndex].kilosGGN += newKilos;
+                }
+            }
+        }
+
+
+        const operations = lotesModificados.map(loteDoc => ({
+            updateOne: {
+                filter: { _id: loteDoc._id },
+                update: {
+                    $set: {
+                        calidad1: loteDoc.calidad1,
+                        calidad15: loteDoc.calidad15,
+                        calidad2: loteDoc.calidad2,
+                        kilosGGN: loteDoc.kilosGGN,
+                        deshidratacion: loteDoc.deshidratacion,
+                        rendimiento: loteDoc.rendimiento
+                    }
+                }
+            }
+        }));
+
+        await LotesRepository.bulkWrite(operations);
+
+        if (logID) {
+            await registrarPasoLog(logID, "modificarLotesModificarItemsListaEmpaque", "Completado", `se modificaron los lotes de los items seleccionados en el pallet ${pallet}`);
+        }
+
+    }
+    static async modificarIndicadorExportacion(palletsModificados, copiaPallet, seleccion, pallet, logID = null) {
+
+        const cliente = await RedisRepository.getClient()
+
+        const multi = cliente.multi();
+
+        for (let i = 0; i < seleccion.length; i++) {
+            const itemSeleccionadoOld = copiaPallet[pallet].EF1[seleccion[i]];
+            const itemSeleccionadoNew = palletsModificados[pallet].EF1[seleccion[i]];
+
+            if (itemSeleccionadoOld.tipoCaja !== itemSeleccionadoNew.tipoCaja ||
+                itemSeleccionadoOld.calidad !== itemSeleccionadoNew.calidad ||
+                itemSeleccionadoOld.calibre !== itemSeleccionadoNew.calibre
+            ) {
+                const kilosOld = itemSeleccionadoOld.cajas * Number(itemSeleccionadoOld.tipoCaja.split("-")[1].replace(",", "."));
+                VariablesDelSistema.sumarMetricaSimpleDirect(
+                    `exportacion:${itemSeleccionadoOld.tipoFruta}:calidad${itemSeleccionadoOld.calidad}`,
+                    itemSeleccionadoOld.calibre,
+                    -kilosOld,
+                    multi
+                );
+                const kilosNew = itemSeleccionadoNew.cajas * Number(itemSeleccionadoNew.tipoCaja.split("-")[1].replace(",", "."));
+                VariablesDelSistema.sumarMetricaSimpleDirect(
+                    `exportacion:${itemSeleccionadoNew.tipoFruta}:calidad${itemSeleccionadoNew.calidad}`,
+                    itemSeleccionadoNew.calibre,
+                    kilosNew,
+                    multi
+                );
+            }
+        }
+        const results = await multi.exec();
+        console.info("Resultados de Redis:", results);
+        if (results.length === 0) {
+            throw new ProcessError(471, "Transacción Redis abortada. Revisa si hubo cambios concurrentes o tipos incorrectos en claves.");
+        }
+
+        if (logID) {
+            await registrarPasoLog(logID, "modificarIndicadorExportacion", "Completado", `se modificaron los indicadores de exportacion de los items seleccionados en el pallet ${pallet}`);
+        }
+
+    }
 
     // mirar si se puede usar en otro lado
     static async obtenerContenedorLote(_id, pallet, seleccion) {
