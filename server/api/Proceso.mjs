@@ -165,7 +165,14 @@ export class ProcesoRepository {
             await Promise.all([
                 RedisRepository.put_inventarioDescarte(data, 'descarteLavado:', lote.tipoFruta, log._id),
                 VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta, kilos),
-                LogsRepository.createReporteIngresoDescarte({ user: user.user, userID: user._id, descarteEncerado: {}, descarteLavado: data })
+                LogsRepository.createReporteIngresoDescarte({
+                    user: user.user,
+                    userID: user._id,
+                    loteID: lote._id,
+                    enf: lote.enf,
+                    descarteEncerado: {},
+                    descarteLavado: data
+                })
             ])
             await registrarPasoLog(log._id, "Promise.all", "Completado");
 
@@ -241,7 +248,14 @@ export class ProcesoRepository {
             await Promise.all([
                 RedisRepository.put_inventarioDescarte(data, 'descarteEncerado:', lote.tipoFruta),
                 VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta, kilos),
-                LogsRepository.createReporteIngresoDescarte({ user: user.user, userID: user._id, descarteLavado: {}, descarteEncerado: data })
+                LogsRepository.createReporteIngresoDescarte({
+                    user: user.user,
+                    userID: user._id,
+                    loteID: lote._id,
+                    enf: lote.enf,
+                    descarteLavado: {},
+                    descarteEncerado: data
+                })
             ])
             await registrarPasoLog(log._id, "Promise.all", "Completado");
 

@@ -3,6 +3,7 @@ import { IndicadoresAPIRepository } from '../../server/api/IndicadoresAPI.js';
 // import { ProcesoRepository } from '../../server/api/Proceso.mjs';
 import { VariablesDelSistema } from '../../server/Class/VariablesDelSistema.js';
 import { FormulariosCalidadRepository } from '../../server/Class/FormulariosCalidad.js';
+import { InventariosRepository } from '../../server/api/inventarios.js';
 
 
 export function initCronJobs() {
@@ -16,9 +17,13 @@ export function initCronJobs() {
     cron.schedule('0 5 * * *', async () => {
         await IndicadoresAPIRepository.sys_indicadores_ingresar_indicador();
         await IndicadoresAPIRepository.reiniciarValores_proceso();
-
     });
 
+    //snapshot del inventario descarte del dia
+    cron.schedule('35 16 * * *', async () => {
+        await InventariosRepository.snapshot_inventario_descartes();
+
+    });
 
     cron.schedule("0 8 * * *", async () => {
         const inicio = new Date().setHours(0, 0, 0, 0);

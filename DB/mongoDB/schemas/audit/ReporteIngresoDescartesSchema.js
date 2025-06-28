@@ -26,6 +26,8 @@ export const defineAuditDescartes = async (conn) => {
     const descarteIngresoSchema = new Schema({
         user: { type: String, required: true },
         userID: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "usuario" },
+        loteID: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "lote" },
+        enf: String,
         descarteEncerado: descarteEnceradoSchema,
         descarteLavado: descarteLavadoSchema,
     }, { timestamps: true });

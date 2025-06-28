@@ -46,6 +46,8 @@ export class LogsRepository {
             const reporteData = {
                 user: data.user,
                 userID: data.userID,
+                loteID: data.loteID,
+                enf: data.enf || "",
                 descarteEncerado: {
                     descarteGeneral: data.descarteEncerado?.descarteGeneral || 0,
                     pareja: data.descarteEncerado?.pareja || 0,

@@ -17,6 +17,7 @@ import { filtroFechaInicioFin } from "./utils/filtros.js";
 import { transformObjectInventarioDescarte } from "./utils/objectsTransforms.js";
 import { InventariosService } from "../services/inventarios.js";
 import { RedisRepository } from "../Class/RedisData.js";
+import { InventariosHistorialRepository } from "../Class/Inventarios.js";
 
 
 export class InventariosRepository {
@@ -1083,7 +1084,7 @@ export class InventariosRepository {
         const { user: user1, data } = req
         const { user } = user1;
 
-        const pilaFunciones = [];
+        // const pilaFunciones = [];
         const { _id, kilosVaciados, inventario, __v } = data;
 
         try {
@@ -1095,38 +1096,42 @@ export class InventariosRepository {
                 fechaProceso: new Date()
             }
             await LotesRepository.modificar_lote(_id, query, "vaciarLote", user, __v);
+            console.log(`1 .Lote ${_id} vaciado con ${kilosVaciados} kilos.`);
 
 
-            pilaFunciones.push({
-                funcion: "modificar_lote",
-                datos: { _id, kilosVaciados, __v }
-            })
+            // pilaFunciones.push({
+            //     funcion: "modificar_lote",
+            //     datos: { _id, kilosVaciados, __v }
+            // })
 
             const lote = await LotesRepository.getLotes({ ids: [_id] });
+            console.log(`2 .Lote ${_id} obtenido para procesar inventario.`);
             //condicional si es desverdizado o no
 
             await VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario);
-            pilaFunciones.push({
-                funcion: "modificar_inventario",
-                datos: { _id: lote[0]._id.toString(), inventario: inventario }
-            })
+            // pilaFunciones.push({
+            //     funcion: "modificar_inventario",
+            //     datos: { _id: lote[0]._id.toString(), inventario: inventario }
+            // })
 
-            const predioAnterior = await VariablesDelSistema.obtenerEF1proceso()
+            // const predioAnterior = await VariablesDelSistema.obtenerEF1proceso()
 
             await VariablesDelSistema.procesarEF1(lote[0], inventario);
-            pilaFunciones.push({
-                funcion: "modificar_ef1Proceso",
-                datos: { ...predioAnterior }
-            })
+            console.log(`3 .Lote ${_id} procesado para EF1.`);
+            // pilaFunciones.push({
+            //     funcion: "modificar_ef1Proceso",
+            //     datos: { ...predioAnterior }
+            // })
 
             await VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados)
-
+            console.log(`4 .Métrica de kilos vaciados actualizada para hoy.`);
             await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString()),
+            console.log(`5 .Dato de orden de vaceo borrado del inventario.`);
 
-                //para lista de empaque
-                procesoEventEmitter.emit("predio_vaciado", {
-                    predio: lote
-                });
+            //para lista de empaque
+            procesoEventEmitter.emit("predio_vaciado", {
+                predio: lote
+            });
 
             //para el desktop app
             procesoEventEmitter.emit("server_event", {
@@ -1137,40 +1142,40 @@ export class InventariosRepository {
             });
         } catch (err) {
             // se devuelven los elementos que se cambiaron
-            for (let i = pilaFunciones.length - 1; i >= 0; i--) {
-                const value = pilaFunciones[i];
-                if (value.funcion === "modificar_lote") {
-                    const { _id, kilosVaciados, __v } = value.datos
-                    const query = {
-                        $inc: {
-                            kilosVaciados: - kilosVaciados,
-                            __v: 1,
-                        },
-                        fechaProceso: new Date()
-                    }
-                    await LotesRepository.modificar_lote(
-                        _id, query, "rectificando_moficiar_lote", user, __v + 1
-                    );
-                } else if (value.funcion === "modificar_inventario_desverdizado") {
-                    const { _id, inventario } = value.datos
-                    await VariablesDelSistema.modificarInventario_desverdizado(_id, -inventario);
-                } else if (value.funcion === "modificar_inventario") {
-                    const { _id, inventario } = value.datos
-                    await VariablesDelSistema.modificarInventario_desverdizado(_id, -inventario);
-                } else if (value.funcion === "modificar_ef1Proceso") {
-                    const { _id, enf, predio, nombrePredio, tipoFruta } = value.datos
-                    const lote = {
-                        _id: _id,
-                        enf: enf,
-                        tipoFruta: tipoFruta,
-                        predio: {
-                            _id: predio,
-                            nombrePredio: nombrePredio,
-                        }
-                    }
-                    await VariablesDelSistema.procesarEF1(lote);
-                }
-            }
+            // for (let i = pilaFunciones.length - 1; i >= 0; i--) {
+            //     const value = pilaFunciones[i];
+            //     if (value.funcion === "modificar_lote") {
+            //         const { _id, kilosVaciados, __v } = value.datos
+            //         const query = {
+            //             $inc: {
+            //                 kilosVaciados: - kilosVaciados,
+            //                 __v: 1,
+            //             },
+            //             fechaProceso: new Date()
+            //         }
+            //         await LotesRepository.modificar_lote(
+            //             _id, query, "rectificando_moficiar_lote", user, __v + 1
+            //         );
+            //     } else if (value.funcion === "modificar_inventario_desverdizado") {
+            //         const { _id, inventario } = value.datos
+            //         await VariablesDelSistema.modificarInventario_desverdizado(_id, -inventario);
+            //     } else if (value.funcion === "modificar_inventario") {
+            //         const { _id, inventario } = value.datos
+            //         await VariablesDelSistema.modificarInventario_desverdizado(_id, -inventario);
+            //     } else if (value.funcion === "modificar_ef1Proceso") {
+            //         const { _id, enf, predio, nombrePredio, tipoFruta } = value.datos
+            //         const lote = {
+            //             _id: _id,
+            //             enf: enf,
+            //             tipoFruta: tipoFruta,
+            //             predio: {
+            //                 _id: predio,
+            //                 nombrePredio: nombrePredio,
+            //             }
+            //         }
+            //         await VariablesDelSistema.procesarEF1(lote);
+            //     }
+            // }
             throw new Error(`Code ${err.code}: ${err.message}`);
 
         }
@@ -2078,4 +2083,22 @@ export class InventariosRepository {
         }
     }
     //endregion
+
+    //#region inventarios historiales
+    static async snapshot_inventario_descartes() {
+        try {
+            const inventario = await this.get_inventarios_frutaDescarte_fruta()
+            const ingresos = await RedisRepository.get_inventarioDescarte_dia_ingreso();
+
+            console.log(ingresos)
+            await InventariosHistorialRepository.crearInventarioDescarte({ inventario, kilos_ingreso: ingresos, kilos_salida: ingresos })
+
+        } catch (err) {
+            if (err.status === 500) {
+                throw err
+            }
+            throw new InventariosLogicError(500, `Error al crear el snapshot del inventario: ${err.message}`)
+        }
+    }
+    //#endregion
 }

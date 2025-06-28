@@ -64,6 +64,7 @@ import { defineAuditLogs } from '../schemas/audit/AuditLogSchema.js';
 import { defineCuartosdesverdizado } from '../schemas/catalogs/schemaCuartosDesverdizado.js';
 import { defineAuditSistemaLogs } from '../schemas/audit/AuditLosSistemaSchema.js';
 import { defineAuditDescartes } from '../schemas/audit/ReporteIngresoDescartesSchema.js';
+import { defineInventarioDescarte } from '../schemas/inventarios/SchemaInventarioDescartes.js';
 
 export const db = {};
 
@@ -311,6 +312,10 @@ const defineSchemasProceso = async (sysConn) => {
         db.RecordDelete = await defineDeleteRecords(sysConn);
         console.log("✅ RecordDelete definido");
 
+        console.log("⚡ Definiendo Inventario descarte...");
+        db.InventarioDescarte = await defineInventarioDescarte(sysConn);
+        console.log("✅ InventarioDescarte definido");
+
         console.log("🎉 Todos los schemas de proceso han sido definidos correctamente.")
 
     } catch (error) {
@@ -345,11 +350,11 @@ const defineSchemasSistema = async (sysConn) => {
         db.Usuarios = await defineUser(sysConn);
         console.log("✅ Usuarios definido");
 
-        
+
         console.log("⚡ Definiendo Logs...");
         db.Logs = await defineAuditSistemaLogs(sysConn);
         console.log("✅ Logs definido");
-        
+
 
         console.log("⚡ Definiendo recordUsuario...");
         db.recordUsuario = await defineRecordusuario(sysConn);
