@@ -971,6 +971,7 @@ export class VariablesDelSistema {
   static async sumarMetricaSimpleAsync(tipoMetrica, tipoFruta, value, logID = null) {
     try {
 
+      console.log("sumarMetricaSimpleAsync", tipoMetrica, tipoFruta, value, logID);
       const cliente = await RedisRepository.getClient();
       await cliente.hIncrBy(tipoMetrica, tipoFruta, value);
 
