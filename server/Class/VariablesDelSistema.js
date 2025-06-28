@@ -970,10 +970,16 @@ export class VariablesDelSistema {
 
   static async sumarMetricaSimpleAsync(tipoMetrica, tipoFruta, value, logID = null) {
     try {
-
-      console.log("sumarMetricaSimpleAsync", tipoMetrica, tipoFruta, value, logID);
       const cliente = await RedisRepository.getClient();
-      await cliente.hIncrBy(tipoMetrica, tipoFruta, value);
+
+      let incremento = parseFloat(value);
+      if (isNaN(incremento)) {
+        throw new Error(`Valor inválido para incremento: ${value}`);
+      }
+
+      incremento = Math.round(incremento * 100) / 100;
+
+      await cliente.hIncrByFloat(tipoMetrica, tipoFruta, incremento);
 
       if (logID) {
         await registrarPasoLog(logID, "VariablesDelSistema.sumarMetricaSimpleAsync", "Completado", `Se sumó ${value} a ${tipoFruta} en ${tipoMetrica}`);
