@@ -200,7 +200,7 @@ export class IndicadoresAPIRepository {
 
 
 
-    static async reiniciarValores_proceso() {
+    static async reiniciarValores_proceso(keysExportacion) {
         let log
         try {
             log = await LogsRepository.create({
@@ -208,7 +208,7 @@ export class IndicadoresAPIRepository {
                 action: "reiniciarValores_proceso",
                 acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
             })
-            await VariablesDelSistema.reiniciarValores_proceso();
+            await VariablesDelSistema.reiniciarValores_proceso(keysExportacion);
             await registrarPasoLog(log._id, "Se obtiene los kilos procesados", "Completado");
 
             procesoEventEmitter.emit("proceso_event", {});
@@ -249,13 +249,18 @@ export class IndicadoresAPIRepository {
             const kilos_vaciados = await IndicadoresService.procesar_metrica_hash(kilos_vaciados_raw, log);
             await registrarPasoLog(log._id, "Se obtiene los kilos vaciados", "Completado");
 
+            const [kilos_exportacion_raw, keys] = await VariablesDelSistema.get_metricas_exportacion();
+            const kilos_exportacion = await IndicadoresService.procesar_exportacion_hash(kilos_exportacion_raw, log);
+
+
             await IndicadoresRepository.put_indicador(indicador[0]._id, {
                 kilos_procesados: kilos_procesados,
                 kilos_vaciados: kilos_vaciados,
+                kilos_exportacion: kilos_exportacion,
             })
             await registrarPasoLog(log._id, "Se modifica el indicador diario", "Completado");
 
-
+            return keys
         } catch (err) {
             await registrarPasoLog(log._id, "Error", "Fallido", err.message);
 

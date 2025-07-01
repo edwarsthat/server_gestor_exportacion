@@ -15,12 +15,12 @@ export function initCronJobs() {
 
     //Kilos procesados al finalizar el dia
     cron.schedule('0 5 * * *', async () => {
-        await IndicadoresAPIRepository.sys_indicadores_ingresar_indicador();
-        await IndicadoresAPIRepository.reiniciarValores_proceso();
+        const keysExportacion = await IndicadoresAPIRepository.sys_indicadores_ingresar_indicador();
+        await IndicadoresAPIRepository.reiniciarValores_proceso(keysExportacion);
     });
 
     //snapshot del inventario descarte del dia
-    cron.schedule('35 16 * * *', async () => {
+    cron.schedule('5 5 * * *', async () => {
         await InventariosRepository.snapshot_inventario_descartes();
 
     });

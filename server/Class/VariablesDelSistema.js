@@ -17,7 +17,6 @@ const pathIDs = path.join(__dirname, '..', '..', 'inventory', 'seriales.json');
 const inventarioPath = path.join(__dirname, '..', '..', 'inventory', 'inventario.json');
 const inventarioDesverdizadoPath = path.join(__dirname, '..', '..', 'inventory', 'inventarioDesverdizado.json');
 const ordenVaceoPath = path.join(__dirname, '..', '..', 'inventory', 'OrdenDeVaceo.json');
-const inventarioDescartesPath = path.join(__dirname, '..', '..', 'inventory', 'inventariodescarte.json');
 const observacionesCalidadPath = path.join(__dirname, '..', '..', 'constants', 'observacionesCalidad.json');
 const canastillasPath = path.join(__dirname, '..', '..', 'inventory', 'canastillas.json');
 
@@ -26,7 +25,6 @@ const canastillasPath = path.join(__dirname, '..', '..', 'inventory', 'canastill
 let inventarioFleg = false; // bandera que indica que el inventario se esta escribiendo
 let inventarioDesFleg = false; // bandera que indica que el inventarioDesverdizado se esta escribiendo
 let ordenVaceoFlag = false; //bandera que indica que la orden de vaceo se esta escribiendo
-let inventarioDescarteFlag = false; // bandera que indica que el inventario descarte se está escribiendo
 
 
 
@@ -423,57 +421,7 @@ export class VariablesDelSistema {
     }
   }
 
-  static async ingresarInventarioDesverdizado(_id, canastillas) {
-    /**
-     * Funcion que guarda el numero de canastillas que van a ingresar al inventario desverdizado
-     * el inventario esta en un documento json en inventory
-     * 
-     * @param {string} _id - Es el id correspondiente al lote
-     * @param {number} canastillas - Es el numero de canastillas que se le va a asignar al id
-     * @throws debe devolver un error si hay algun problema abriendo y escribiendo el archivo de inventario
-     * @return {void} 
-     */
-    try {
-      if (inventarioDesFleg) throw new ProcessError(413, "Error el archivo se esta escribiendo")
 
-      inventarioDesFleg = true
-      const inventarioJSON = fs.readFileSync(inventarioDesverdizadoPath);
-      const inventario = JSON.parse(inventarioJSON);
-
-      inventario[_id] = canastillas;
-
-      const newInventarioJSON = JSON.stringify(inventario);
-      fs.writeFileSync(inventarioDesverdizadoPath, newInventarioJSON);
-    } catch (err) {
-      throw new ProcessError(410, `Error Guardando datos en el inventario desverdizado ${err.essage}`)
-    } finally {
-      inventarioDesFleg = false
-    }
-  }
-  static async getInventarioDesverdizado() {
-    /**
-     * Funcion que envia el inventario desverdizado que esta en el archivo inventarioDesverdizado.json
-     * 
-     * @throws envia error 413 si el archivo se esta escribiendo en esos momentos
-     * @throws - envia error 410 si hay algun error abriendo el archivo
-     * 
-     * @return {object} - Envia un objeto donde las keys son el _id del lote y el valor es la cantidad
-     *                    de canastillas en el inventario
-     */
-    try {
-      if (inventarioDesFleg) throw new ProcessError(413, "Error el archivo se esta escribiendo")
-
-      const inventarioJSON = fs.readFileSync(inventarioDesverdizadoPath);
-      const inventario = JSON.parse(inventarioJSON);
-
-      return inventario;
-
-    } catch (err) {
-      throw new ProcessError(410, `Error Obteniendo datos del inventario desverdizado ${err.name}`)
-    } finally {
-      inventarioDesFleg = false
-    }
-  }
   static async modificarInventario_desverdizado(_id, canastillas) {
     /**
      * 
@@ -581,189 +529,7 @@ export class VariablesDelSistema {
   }
 
   // #region inventario descartes
-  static async obtener_inventario_descartes() {
-    /**
-   * Función que obtiene el inventario de descartes desde un archivo JSON.
-   * 
-   * @returns {Promise<Object>} - Promesa que se resuelve con el inventario de descartes.
-   * @throws {ProcessError} - Lanza un error si ocurre un problema durante la lectura o el parseo del archivo.
-   */
-    if (inventarioDescarteFlag) throw new ProcessError(413, "Error el archivo se esta escribiendo");
-    try {
-      inventarioDescarteFlag = true
-      const inventarioJSON = fs.readFileSync(inventarioDescartesPath);
-      const inventario = JSON.parse(inventarioJSON);
 
-      return inventario
-
-    } catch (err) {
-      throw new ProcessError(518, `Error modificando datos del inventario descarte json: ${err.name}`)
-    } finally {
-      inventarioDescarteFlag = false
-    }
-  }
-  static async modificar_inventario_descarte(_id, data, tipoDescarte, lote) {
-    /**
-   * Modifica los datos del inventario de descarte y los guarda en un archivo JSON.
-   *
-   * @param {Object} data - Objeto que contiene los datos a modificar en el inventario de descarte.
-   * @throws {ProcessError} - Lanza un error si el archivo se está escribiendo o si ocurre un problema al modificar los datos.
-   */
-    if (inventarioDescarteFlag) throw new ProcessError(413, "Error el archivo se esta escribiendo");
-    try {
-      const inventarioJSON = fs.readFileSync(inventarioDescartesPath);
-      const inventario = JSON.parse(inventarioJSON);
-
-      const index = inventario.findIndex(item => item._id === _id)
-      const descartes = ['descarteGeneral', 'pareja', 'balin', 'extra', 'suelo', 'frutaNacional']
-      if (index !== -1) {
-
-        if (!Object.prototype.hasOwnProperty.call(inventario[index], tipoDescarte)) {
-          inventario[index][tipoDescarte] = {}
-          Object.keys(data).map(item => {
-            if (descartes.includes(item)) {
-              inventario[index][tipoDescarte][item] = data[item]
-            }
-          })
-        } else {
-          Object.keys(data).map(item => {
-            if (descartes.includes(item)) {
-              inventario[index][tipoDescarte][item] += data[item]
-            }
-          })
-        }
-      } else {
-        const newItem = { _id: _id, fecha: lote.fechaIngreso, tipoFruta: lote.tipoFruta }
-        newItem[tipoDescarte] = {}
-        Object.keys(data).map(item => {
-
-          if (descartes.includes(item)) {
-            newItem[tipoDescarte][item] = data[item]
-          }
-        })
-        inventario.push(newItem)
-      }
-
-      //se borran los items que ya no tienen fruta
-      for (let i = inventario.length - 1; i >= 0; i--) {
-        const totalDescarteLavado = inventario[i].descarteLavado ? Object.values(inventario[i].descarteLavado).reduce((acu, item) => acu += item, 0) : 0;
-        const totalDescarteEncerado = inventario[i].descarteEncerado ? Object.values(inventario[i].descarteEncerado).reduce((acu, item) => acu += item, 0) : 0;
-        const total = totalDescarteLavado + totalDescarteEncerado;
-        if (total === 0) {
-          inventario.splice(i, 1);
-        }
-      }
-      const newInventarioJSON = JSON.stringify(inventario);
-      fs.writeFileSync(inventarioDescartesPath, newInventarioJSON);
-
-    } catch (err) {
-      throw new ProcessError(518, `Error modificando datos del inventario descarte json ${err.name}`)
-    } finally {
-      inventarioDescarteFlag = false
-    }
-  }
-  static async restar_fruta_inventario_descarte(kilos, tipoFruta) {
-    if (inventarioDescarteFlag) throw new ProcessError(413, "Error el archivo se esta escribiendo");
-    try {
-      inventarioDescarteFlag = true
-      let inventoryOut = {}
-      const inventarioJSON = fs.readFileSync(inventarioDescartesPath);
-      const inventario = JSON.parse(inventarioJSON);
-
-
-      inventario.sort((a, b) => {
-        const fechaA = new Date(a.fecha);
-        const fechaB = new Date(b.fecha);
-        return fechaA - fechaB; // Si fechaA es anterior, será un valor negativo, y por lo tanto a quedará antes de b
-      });
-
-      const descartes = Object.keys(kilos)
-      //se recorre el tipo de descarte
-
-      for (let descarteIndex = 0; descarteIndex < descartes.length; descarteIndex++) {
-        const items = Object.keys(kilos[descartes[descarteIndex]]);
-        //se recorre el item de cada tipo de descarte
-        for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-          let item = Number(kilos[descartes[descarteIndex]][items[itemIndex]]);
-
-          //se recorre el inventario de descarte
-          if (item === 0) {
-            continue;
-          }
-          for (let i = 0; i < inventario.length; i++) {
-            //se resta solo a los items que son del mismo tipo de fruta
-            if (inventario[i].tipoFruta === tipoFruta &&
-              Object.prototype.hasOwnProperty.call(inventario[i], descartes[descarteIndex])
-            ) {
-              if (!inventoryOut[inventario[i]._id]) {
-                inventoryOut[inventario[i]._id] = {
-                  descarteEncerado: {
-                    descarteGeneral: 0,
-                    pareja: 0,
-                    balin: 0,
-                    extra: 0,
-                    suelo: 0,
-                    frutaNacional: 0
-                  },
-                  descarteLavado: {
-                    descarteGeneral: 0,
-                    pareja: 0,
-                    balin: 0
-                  }
-                }
-              }
-              const itemInv = inventario[i][descartes[descarteIndex]][items[itemIndex]];
-              if (itemInv === item) {
-                inventoryOut[inventario[i]._id][descartes[descarteIndex]][items[itemIndex]] = itemInv
-                inventario[i][descartes[descarteIndex]][items[itemIndex]] = 0
-                item = 0
-              } else if (itemInv < item) {
-                item -= itemInv
-                inventoryOut[inventario[i]._id][descartes[descarteIndex]][items[itemIndex]] = itemInv
-                inventario[i][descartes[descarteIndex]][items[itemIndex]] = 0
-              } else if (itemInv > item) {
-                inventoryOut[inventario[i]._id][descartes[descarteIndex]][items[itemIndex]] = item
-                inventario[i][descartes[descarteIndex]][items[itemIndex]] -= item
-                item = 0
-              }
-
-            }
-            if (item === 0) {
-              break;
-            }
-          }
-        }
-      }
-
-      //se borran los items que ya no tienen fruta
-      for (let i = inventario.length - 1; i >= 0; i--) {
-        const totalDescarteLavado = inventario[i].descarteLavado ?
-          Object.values(inventario[i].descarteLavado).reduce((acu, item) => acu += item, 0) : 0;
-
-        const totalDescarteEncerado = inventario[i].descarteEncerado ?
-          Object.values(inventario[i].descarteEncerado).reduce((acu, item) => acu += item, 0) : 0;
-
-        const total = totalDescarteLavado + totalDescarteEncerado;
-        if (total < 1) {
-          inventario.splice(i, 1);
-
-        }
-      }
-
-
-      //se guarda el nuevo inventario
-      const newInventarioJSON = JSON.stringify(inventario);
-      fs.writeFileSync(inventarioDescartesPath, newInventarioJSON);
-      return inventoryOut;
-
-    } catch (err) {
-      throw new ProcessError(518, `Error modificando inventario descarte: ${err.message}`)
-    } finally {
-      inventarioDescarteFlag = false
-
-    }
-
-  }
   static async reprocesar_predio(lote, kilosTotal) {
     try {
       /**
@@ -898,9 +664,6 @@ export class VariablesDelSistema {
 
     }
   }
-
-
-
   static async ingresar_kilos_procesados2(kilos, tipoFruta) {
     let cliente;
     try {
@@ -937,7 +700,6 @@ export class VariablesDelSistema {
       );
     }
   }
-
   static sumarMetricaSimpleDirect(tipoMetrica, tipoFruta, value, multi) {
     if (!multi) throw new Error("Se requiere pipeline para este método");
 
@@ -950,7 +712,6 @@ export class VariablesDelSistema {
 
     multi.hIncrByFloat(tipoMetrica, tipoFruta, incremento);
   }
-
   static async sumarMetricaSimpleAsync(tipoMetrica, tipoFruta, value, logID = null) {
     try {
       const cliente = await RedisRepository.getClient();
@@ -971,8 +732,6 @@ export class VariablesDelSistema {
       throw new ConnectRedisError(502, `Error ingresando descarte ${err}`);
     }
   }
-
-
   static async ingresar_exportacion(kilos, tipoFruta) {
     let cliente
 
@@ -1050,26 +809,38 @@ export class VariablesDelSistema {
       );
     }
   }
-  static async reiniciarValores_proceso() {
-    let cliente
+
+  static async reiniciarValores_proceso(exportacion_keys) {
+    let cliente;
 
     try {
       cliente = await getRedisClient();
-      const status = await cliente.get("statusProceso")
+      const status = await cliente.get("statusProceso");
 
       if (status === 'on' || status === 'pause') {
-        await this.set_hora_fin_proceso()
+        await this.set_hora_fin_proceso();
       }
 
-      await cliente.del("kilosProcesadosHoy");
-      await cliente.del("kilosVaciadosHoy");
+      // Junta todas las keys en un solo array, para borrarlas en un solo golpe
+      const keysToDelete = [
+        ...exportacion_keys,
+        "kilosProcesadosHoy",
+        "kilosVaciadosHoy"
+      ];
+      console.log(keysToDelete)
+      // Borra todas de una
+      if (keysToDelete.length > 0) {
+        await cliente.del(keysToDelete);
+      }
+
       console.info("Valores del proceso reiniciados correctamente");
 
     } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis sumar exportacion: ${err.name}`)
-
+      throw new ConnectRedisError(419, `Error con la conexion con redis sumar exportacion: ${err.name}`);
     }
   }
+
+
   static async obtener_fecha_inicio_proceso() {
     let cliente
 
@@ -1094,7 +865,7 @@ export class VariablesDelSistema {
 
     try {
       cliente = await getRedisClient();
-      console.log("casdadsa" , cliente)
+      console.log("casdadsa", cliente)
       const status = await cliente.get("statusProceso");
 
       // Cambiamos la validación a null
@@ -1304,6 +1075,37 @@ export class VariablesDelSistema {
       throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
     }
   }
+  static async get_metricas_exportacion() {
+    let cliente;
+    try {
+      cliente = await getRedisClient();
+
+      let cursor = '0';
+      const keys = [];
+      do {
+        const res = await cliente.scan(
+          cursor,
+          'MATCH',
+          'exportacion:*',
+          'COUNT',
+          '100'
+        );
+        const soloExportacion = res.keys.filter(k => k.startsWith('exportacion:'));
+        keys.push(...soloExportacion);
+        cursor = res.cursor; // <-- este paso es CLAVE
+      } while (cursor !== '0');
+
+      const results = {};
+      for (const key of keys) {
+        results[key] = await cliente.hGetAll(key);
+      }
+
+      return [results, keys];
+    } catch (err) {
+      throw new ConnectRedisError(502, `Error trayendo métricas exportación: ${err}`);
+    }
+  }
+
   static async get_kilos_exportacion_hoy2() {
     let cliente;
 
