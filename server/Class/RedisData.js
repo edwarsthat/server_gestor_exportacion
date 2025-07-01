@@ -225,7 +225,7 @@ export class RedisRepository {
         } catch (err) {
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
-    }    
+    }
     static async get_inventarioDescarte_dia_ingreso() {
         let cliente
         try {
@@ -257,8 +257,6 @@ export class RedisRepository {
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
     }
-
-
     static async get_inventarioDescarte_porTipoFruta(tipoFruta, logId = null) {
         try {
 
@@ -346,6 +344,36 @@ export class RedisRepository {
             throw new ConnectRedisError(502, `Error reiniciando el inventario descartes: ${err}`);
         }
     }
+    static async reiniciarDescarteIngresos() {
+        let cliente;
+        try {
+            cliente = await getRedisClient();
+            const tipoFrutas = await cargarTipoFrutas();
+
+            // Crea todas las promesas y espéralas juntas
+            const promesas = tipoFrutas.map(fruta =>
+                Promise.all([
+                    cliente.del(`inventarioDescarteHoy:${fruta}:descarteLavado:`),
+                    cliente.del(`inventarioDescarteHoy:${fruta}:descarteEncerado:`)
+                ]).then(([descarteLavado, descarteEncerado]) => ({
+                    fruta,
+                    descarteLavado,
+                    descarteEncerado
+                }))
+            );
+
+            // Aquí sí las esperas
+            const resultados = await Promise.all(promesas);
+
+            // (Opcional) Log resultados por si quieres ver el canto final
+            console.log("Resultados de descarte eliminados:", resultados);
+
+        } catch (err) {
+            throw new ConnectRedisError(502, `Error borrando descarte ${err}`);
+        }
+    }
+
+
     //#region inventarioDesverdizado
     /**
      * Registra un ingreso de fruta al proceso de desverdizado utilizando Redis Hash.

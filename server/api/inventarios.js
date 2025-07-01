@@ -2037,8 +2037,9 @@ export class InventariosRepository {
             const inventario = await this.get_inventarios_frutaDescarte_fruta()
             const ingresos = await RedisRepository.get_inventarioDescarte_dia_ingreso();
 
-            console.log(ingresos)
             await InventariosHistorialRepository.crearInventarioDescarte({ inventario, kilos_ingreso: ingresos, kilos_salida: ingresos })
+
+            await RedisRepository.reiniciarDescarteIngresos()
 
         } catch (err) {
             if (err.status === 500) {
