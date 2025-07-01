@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ProcessError } from '../../Error/ProcessError.js';
-import { iniciarRedisDB } from '../../DB/redis/init.js';
+import { getRedisClient } from '../../DB/redis/init.js';
 import { ConnectRedisError } from '../../Error/ConnectionErrors.js';
 import { TurnoDatarepository } from './TurnoData.js';
 import { RedisRepository } from './RedisData.js';
@@ -28,7 +28,7 @@ let inventarioDesFleg = false; // bandera que indica que el inventarioDesverdiza
 let ordenVaceoFlag = false; //bandera que indica que la orden de vaceo se esta escribiendo
 let inventarioDescarteFlag = false; // bandera que indica que el inventario descarte se está escribiendo
 
-const clientePromise = iniciarRedisDB();
+
 
 export class VariablesDelSistema {
   // #region EF1 o Predios
@@ -112,7 +112,7 @@ export class VariablesDelSistema {
 
   static async procesarEF1(lote) {
     try {
-      const cliente = await clientePromise;
+      const cliente = await getRedisClient();
 
       await this.modificar_predio_proceso(lote, cliente);
       await this.modificar_predio_proceso_descartes(lote, cliente);
@@ -130,7 +130,7 @@ export class VariablesDelSistema {
    * @throws {ConnectRedisError} - Lanza un error si ocurre un problema al conectarse a Redis.
    */
     try {
-      const cliente = await clientePromise;
+      const cliente = await getRedisClient();
       const predioData = await cliente.hGetAll("predioProcesando");
       return predioData
     } catch (err) {
@@ -145,7 +145,7 @@ export class VariablesDelSistema {
    * @throws {ConnectRedisError} - Lanza un error si ocurre un problema al conectarse a Redis.
    */
     try {
-      const cliente = await clientePromise;
+      const cliente = await getRedisClient();
       const predioData = await cliente.hGetAll("predioProcesandoDescartes");
       return predioData
     } catch (err) {
@@ -160,7 +160,7 @@ export class VariablesDelSistema {
 * @throws {ConnectRedisError} - Lanza un error si ocurre un problema al conectarse a Redis.
 */
     try {
-      const cliente = await clientePromise;
+      const cliente = await getRedisClient();
       const predioData = await cliente.hGetAll("predioProcesandoListaEmpaque");
       return predioData
     } catch (err) {
@@ -220,8 +220,7 @@ export class VariablesDelSistema {
    * @throws {ConnectRedisError} - Lanza un error si ocurre un problema con la conexión a Redis.
    */
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       await cliente.hSet("predioProcesandoDescartes", {
         _id: lote._id.toString(),
         enf: lote.enf,
@@ -232,10 +231,6 @@ export class VariablesDelSistema {
 
     } catch (err) {
       throw new ConnectRedisError(532, `Error con la conexion con redis predio descarte: ${err.name}`)
-    } finally {
-      if (cliente) {
-        cliente.quit();
-      }
     }
   }
 
@@ -779,7 +774,7 @@ export class VariablesDelSistema {
      * @returns {Promise<void>} - Promesa que se resuelve cuando el reprocesamiento ha terminado.
      * @throws {ProcessError} - Lanza un error si ocurre un problema durante el reprocesamiento.
      */
-      const cliente = await clientePromise;
+      const cliente = await getRedisClient();
       const kilosReprocesadorExist = await cliente.exists("kilosReprocesadorHoy");
       if (kilosReprocesadorExist !== 1) {
         await cliente.set("kilosReprocesadorHoy", 0);
@@ -814,7 +809,7 @@ export class VariablesDelSistema {
   static async reprocesar_predio_celifrut(lote, kilosTotal) {
     try {
 
-      const cliente = await clientePromise;
+      const cliente = await getRedisClient();
       const kilosReprocesadorExist = await cliente.exists("kilosReprocesadorHoy");
       if (kilosReprocesadorExist !== 1) {
         await cliente.set("kilosReprocesadorHoy", 0);
@@ -847,8 +842,7 @@ export class VariablesDelSistema {
   static async get_kilos_procesados_hoy() {
     let cliente
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       let kilosProcesadosLimon = await cliente.get("kilosProcesadosHoyLimon");
       if (kilosProcesadosLimon === undefined) kilosProcesadosLimon = "0";
 
@@ -859,17 +853,12 @@ export class VariablesDelSistema {
     } catch (err) {
       throw new ConnectRedisError(531, `Error con la conexion con redis obteniendo kilosProcesados: ${err.name}`)
 
-    } finally {
-      if (cliente) {
-        cliente.quit();
-      }
     }
   }
   static async get_kilos_exportacion_hoy() {
     let cliente
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       let kilosExportacionNaranja = await cliente.get("kilosExportacionHoyNaranja");
       if (kilosExportacionNaranja === undefined) kilosExportacionNaranja = "0";
 
@@ -880,17 +869,12 @@ export class VariablesDelSistema {
     } catch (err) {
       throw new ConnectRedisError(531, `Error con la conexion con redis obteniendo kilosProcesados: ${err.name}`)
 
-    } finally {
-      if (cliente) {
-        cliente.quit();
-      }
     }
   }
   static async ingresar_kilos_procesados(kilos, tipoFruta) {
     let cliente
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       let kilosProcesados;
       if (tipoFruta === 'Limon') {
         kilosProcesados = await cliente.get("kilosProcesadosHoyLimon");
@@ -912,10 +896,6 @@ export class VariablesDelSistema {
     } catch (err) {
       throw new ConnectRedisError(532, `Error con la conexion con redis sumando kilosProcesados: ${err.name}`)
 
-    } finally {
-      if (cliente) {
-        cliente.quit();
-      }
     }
   }
 
@@ -924,8 +904,7 @@ export class VariablesDelSistema {
   static async ingresar_kilos_procesados2(kilos, tipoFruta) {
     let cliente;
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       const key = "kilosProcesadosHoy";
 
       // Obtener los kilos procesados de Redis
@@ -956,10 +935,6 @@ export class VariablesDelSistema {
         532,
         `Error con la conexión con Redis sumando kilos procesados: ${err.message}`
       );
-    } finally {
-      if (cliente) {
-        cliente.quit();
-      }
     }
   }
 
@@ -1002,8 +977,7 @@ export class VariablesDelSistema {
     let cliente
 
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       let kilosProcesadosHoy
       let kilosExportacionHoy
 
@@ -1037,17 +1011,12 @@ export class VariablesDelSistema {
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis sumar exportacion: ${err.name}`)
 
-    } finally {
-      if (cliente) {
-        cliente.quit();
-      }
     }
   }
   static async ingresar_exportacion2(kilos, tipoFruta) {
     let cliente;
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       const key = "kilosExportacionHoy";
 
       // Obtener los kilos procesados de Redis
@@ -1079,17 +1048,13 @@ export class VariablesDelSistema {
         419,
         `Error con la conexión con Redis sumando kilos procesados: ${err.message}`
       );
-    } finally {
-      if (cliente) {
-        cliente.quit();
-      }
     }
   }
   static async reiniciarValores_proceso() {
     let cliente
 
     try {
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       const status = await cliente.get("statusProceso")
 
       if (status === 'on' || status === 'pause') {
@@ -1103,20 +1068,13 @@ export class VariablesDelSistema {
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis sumar exportacion: ${err.name}`)
 
-    } finally {
-      try {
-        if (cliente) await cliente.quit();
-      } catch (cerrarErr) {
-        console.warn("Error cerrando conexión Redis:", cerrarErr.message);
-      }
     }
   }
   static async obtener_fecha_inicio_proceso() {
     let cliente
 
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       const status = await cliente.get("statusProceso");
       if (status === 'off') {
         await cliente.set("tiempoTrabajadoHoy", "0");
@@ -1129,18 +1087,14 @@ export class VariablesDelSistema {
     } catch (err) {
       throw new ConnectRedisError(531, `Error redis: ${err.name}`)
 
-    } finally {
-      if (cliente) {
-        cliente.quit();
-      }
     }
   }
   static async obtener_status_proceso() {
     let cliente;
 
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
+      console.log("casdadsa" , cliente)
       const status = await cliente.get("statusProceso");
 
       // Cambiamos la validación a null
@@ -1152,19 +1106,15 @@ export class VariablesDelSistema {
       // Redis almacena los valores como strings, por lo que puede ser necesario hacer una conversión
       return status;
     } catch (err) {
+      console.log(err)
       throw new ConnectRedisError(531, `Error redis status proceso: ${err.name}`);
-    } finally {
-      if (cliente) {
-        await cliente.quit();
-      }
     }
   }
   static async get_status_pausa_proceso() {
     let cliente;
 
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       const status = await cliente.get("isProcesoStopped");
 
       // Cambiamos la validación a null
@@ -1176,10 +1126,6 @@ export class VariablesDelSistema {
       return status === 'true';
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
-    } finally {
-      if (cliente) {
-        await cliente.quit();
-      }
     }
   }
   static async set_hora_inicio_proceso() {
@@ -1187,10 +1133,9 @@ export class VariablesDelSistema {
     try {
       const hoy = new Date();
 
-      const clientePromise = iniciarRedisDB();
 
       //se crea el turno
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       //se guardan las banderas del proceso en redis
       await cliente.set('fechaInicioProceso', hoy.toISOString());
       await cliente.set('statusProceso', "on")
@@ -1200,10 +1145,6 @@ export class VariablesDelSistema {
     } catch (err) {
       throw new ConnectRedisError(532, `Error redis: ${err.name}`)
 
-    } finally {
-      if (cliente) {
-        await cliente.quit();
-      }
     }
   }
   static async set_hora_pausa_proceso() {
@@ -1213,8 +1154,7 @@ export class VariablesDelSistema {
 
     try {
       //se inicia redis
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
 
       // se obtiene el elmeento de mongo
       const query = {
@@ -1254,10 +1194,6 @@ export class VariablesDelSistema {
 
     } catch (err) {
       throw new ConnectRedisError(532, `Error set hora pausa proceso: ${err.name}`);
-    } finally {
-      if (cliente) {
-        await cliente.quit();
-      }
     }
   }
   static async set_hora_reanudar_proceso() {
@@ -1266,8 +1202,7 @@ export class VariablesDelSistema {
 
     try {
       //se inicia redis
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       //se busca en mongo el turno
       const query = {
         horaFin: { $exists: false }
@@ -1303,10 +1238,6 @@ export class VariablesDelSistema {
       return;
     } catch (err) {
       throw new ConnectRedisError(532, `Error redis hora reanudar: ${err.name}`);
-    } finally {
-      if (cliente) {
-        await cliente.quit();
-      }
     }
   }
   static async set_hora_fin_proceso() {
@@ -1314,8 +1245,7 @@ export class VariablesDelSistema {
     let cliente;
 
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
 
 
       const query = {
@@ -1360,16 +1290,12 @@ export class VariablesDelSistema {
       return
     } catch (err) {
       throw new ConnectRedisError(532, `Error redis set hora inicio : ${err.message}`);
-    } finally {
-      if (cliente) {
-        await cliente.quit();
-      }
     }
   }
   static async get_metrica_hash(key) {
     let cliente
     try {
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
 
       const inventario = await cliente.hGetAll(key);
       return inventario
@@ -1382,8 +1308,7 @@ export class VariablesDelSistema {
     let cliente;
 
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       const key = "kilosExportacionHoy";
 
       // Verificar si la clave existe
@@ -1403,19 +1328,13 @@ export class VariablesDelSistema {
 
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
-    } finally {
-      if (cliente) {
-        await cliente.quit();
-      }
-
     }
   }
   static async get_kilos_vaciados_hoy() {
     let cliente;
 
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       const key = "kilosVaciadosHoy";
 
       // Verificar si la clave existe
@@ -1431,11 +1350,6 @@ export class VariablesDelSistema {
 
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
-    } finally {
-      if (cliente) {
-        await cliente.quit();
-      }
-
     }
   }
   //#region Constantes
@@ -1502,8 +1416,7 @@ export class VariablesDelSistema {
     let cliente;
 
     try {
-      const clientePromise = iniciarRedisDB();
-      cliente = await clientePromise;
+      cliente = await getRedisClient();
       const ttl = 600; // Tiempo en segun
 
       cliente.setEx(`${usuario}`, ttl, code, (err, reply) => {
@@ -1517,11 +1430,6 @@ export class VariablesDelSistema {
 
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con status proceso: ${err.name}`);
-    } finally {
-      if (cliente) {
-        await cliente.quit();
-      }
-
     }
   }
 }

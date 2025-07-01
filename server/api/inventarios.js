@@ -1105,9 +1105,9 @@ export class InventariosRepository {
             // const predioAnterior = await VariablesDelSistema.obtenerEF1proceso()
 
             await VariablesDelSistema.procesarEF1(lote[0], inventario);
+            await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString()),
 
             await VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados)
-            await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString()),
 
             //para lista de empaque
             procesoEventEmitter.emit("predio_vaciado", {

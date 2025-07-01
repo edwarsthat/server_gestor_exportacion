@@ -166,6 +166,7 @@ export class ProcesoRepository {
                     userID: user._id,
                     loteID: lote._id,
                     enf: lote.enf,
+                    tipoFruta: lote.tipoFruta,
                     descarteEncerado: {},
                     descarteLavado: data
                 })
@@ -249,6 +250,7 @@ export class ProcesoRepository {
                     userID: user._id,
                     loteID: lote._id,
                     enf: lote.enf,
+                    tipoFruta: lote.tipoFruta,
                     descarteLavado: {},
                     descarteEncerado: data
                 })

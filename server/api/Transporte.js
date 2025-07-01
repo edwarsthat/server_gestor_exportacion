@@ -203,9 +203,9 @@ export class TransporteRepository {
             const update = {
                 entregaPrecinto: {
                     fotos: fotosUrls,
-                    entrega: addHours(entrega, 5),
+                    entrega,
                     recibe,
-                    fechaEntrega,
+                    fechaEntrega: addHours(fechaEntrega, 5),
                     observaciones,
                 }
             }

@@ -1,10 +1,7 @@
-import { iniciarRedisDB } from "../../DB/redis/init.js";
+import { getRedisClient } from "../../DB/redis/init.js";
 import { ConnectRedisError } from "../../Error/ConnectionErrors.js";
 import { cargarDescartes, cargarTipoFrutas } from "../../constants/constants.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
-
-
-const clientePromise = iniciarRedisDB();
 
 export class RedisRepository {
     /**
@@ -30,7 +27,7 @@ export class RedisRepository {
     static async put_inventarioDescarte(data, tipoDescarte, tipoFruta) {
         let cliente
         try {
-            cliente = await clientePromise;
+            cliente = await getRedisClient();
 
             const inventario = tipoDescarte === 'descarteLavado' ?
                 ["descarteGeneral", "pareja", "balin"] :
@@ -74,7 +71,7 @@ export class RedisRepository {
         const key = `inventarioDescarte:${tipoFruta}:${tipoDescarte}`;
         let cliente;
         try {
-            cliente = await clientePromise;
+            cliente = await getRedisClient();
             if (multi) {
                 // Solo agregas los comandos a la transacción, NO ejecutas nada aquí
                 for (const [campo, valor] of Object.entries(data)) {
@@ -115,7 +112,7 @@ export class RedisRepository {
         const key = `inventarioDescarte:${tipoFruta}:${tipoDescarte}`;
         let cliente;
         try {
-            cliente = await clientePromise;
+            cliente = await getRedisClient();
             if (multi) {
                 // Solo agregas los comandos a la transacción, NO ejecutas nada aquí
                 for (const [campo, valor] of Object.entries(data)) {
@@ -156,7 +153,7 @@ export class RedisRepository {
         const key = `inventarioDescarte:${tipoFruta}:${tipoDescarte}`;
         let cliente;
         try {
-            cliente = await clientePromise;
+            cliente = await getRedisClient();
             if (multi) {
                 // Solo agregas los comandos a la transacción, NO ejecutas nada aquí
                 for (const [campo, valor] of Object.entries(data)) {
@@ -201,7 +198,7 @@ export class RedisRepository {
     static async get_inventarioDescarte() {
         let cliente
         try {
-            cliente = await clientePromise;
+            cliente = await getRedisClient();
             // Prepara todas las promesas para ejecutarlas en paralelo
             const tipoFrutas = await cargarTipoFrutas();
             const promesas = tipoFrutas.map(fruta => (
@@ -232,7 +229,7 @@ export class RedisRepository {
     static async get_inventarioDescarte_dia_ingreso() {
         let cliente
         try {
-            cliente = await clientePromise;
+            cliente = await getRedisClient();
             // Prepara todas las promesas para ejecutarlas en paralelo
             const tipoFrutas = await cargarTipoFrutas();
             const promesas = tipoFrutas.map(fruta => (
@@ -327,7 +324,7 @@ export class RedisRepository {
     static async sys_reiniciar_inventario_descarte() {
         let cliente;
         try {
-            cliente = await clientePromise;
+            cliente = await getRedisClient();
             const tareas = [];
             const tipoFrutas = await cargarTipoFrutas();
             const tipoDescartes = await cargarDescartes();
@@ -394,7 +391,7 @@ export class RedisRepository {
         const key = `inventarioDesverdizado:${cuarto}`;
         let cliente;
         try {
-            cliente = await clientePromise;
+            cliente = await getRedisClient();
             const value = JSON.stringify(data);
             if (multi) {
                 multi.hSet(key, _id, value);
@@ -480,7 +477,7 @@ export class RedisRepository {
     static async get_inventario_desverdizado(cuarto = null, _id = null) {
         let cliente;
         try {
-            cliente = await clientePromise;
+            cliente = await getRedisClient();
 
             const resultado = { inventarioDesverdizado: {} };
 
@@ -615,7 +612,7 @@ export class RedisRepository {
             const key = `inventarioDesverdizado:${cuarto}`;
             let cliente;
             try {
-                cliente = await clientePromise;
+                cliente = await getRedisClient();
                 if (multi) {
                     multi.hDel(key, _id);
                 } else {
@@ -634,7 +631,7 @@ export class RedisRepository {
         const key = `inventarioDesverdizado:${cuarto}`;
         let cliente;
         try {
-            cliente = await clientePromise;
+            cliente = await getRedisClient();
             if (multi) {
                 multi.hIncrBy(key, _id, cantidad);
             } else {
@@ -777,7 +774,7 @@ export class RedisRepository {
         const key = `inventarioDesverdizado:${cuarto}`;
         let cliente;
         try {
-            cliente = await clientePromise;
+            cliente = await getRedisClient();
             await cliente.del(key);
         } catch (err) {
             console.error("Error eliminando cuarto completo", err);
@@ -788,7 +785,7 @@ export class RedisRepository {
 
     static async getClient() {
         try {
-            const cliente = await clientePromise;
+            const cliente = await getRedisClient();
 
             // Validar que el cliente esté disponible
             if (!cliente) {
@@ -808,7 +805,7 @@ export class RedisRepository {
     static async checkConnection() {
         const startTime = Date.now();
         try {
-            const cliente = await clientePromise;
+            const cliente = await getRedisClient();
 
             if (!cliente) {
                 return {

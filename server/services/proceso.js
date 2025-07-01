@@ -567,39 +567,58 @@ class ProcesoService {
         const cliente = await RedisRepository.getClient()
 
         const multi = cliente.multi();
+        let comandosEnviados = 0;
 
         for (let i = 0; i < seleccion.length; i++) {
             const itemSeleccionadoOld = copiaPallet[pallet].EF1[seleccion[i]];
             const itemSeleccionadoNew = palletsModificados[pallet].EF1[seleccion[i]];
 
-            if (itemSeleccionadoOld.tipoCaja !== itemSeleccionadoNew.tipoCaja ||
-                itemSeleccionadoOld.calidad !== itemSeleccionadoNew.calidad ||
-                itemSeleccionadoOld.calibre !== itemSeleccionadoNew.calibre
+            //se mira si es fruta de hoy para restar de las variables del proceso
+            const fechaSeleccionada = new Date(itemSeleccionadoOld.fecha)
+            const hoy = new Date()
+            // Ajustamos la fecha seleccionada restando 5 horas:
+            fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
+
+            if (
+                fechaSeleccionada.getFullYear() === hoy.getFullYear() &&
+                fechaSeleccionada.getMonth() === hoy.getMonth() &&
+                fechaSeleccionada.getDate() === hoy.getDate()
             ) {
-                const kilosOld = itemSeleccionadoOld.cajas * Number(itemSeleccionadoOld.tipoCaja.split("-")[1].replace(",", "."));
-                VariablesDelSistema.sumarMetricaSimpleDirect(
-                    `exportacion:${itemSeleccionadoOld.tipoFruta}:calidad${itemSeleccionadoOld.calidad}`,
-                    itemSeleccionadoOld.calibre,
-                    -kilosOld,
-                    multi
-                );
-                const kilosNew = itemSeleccionadoNew.cajas * Number(itemSeleccionadoNew.tipoCaja.split("-")[1].replace(",", "."));
-                VariablesDelSistema.sumarMetricaSimpleDirect(
-                    `exportacion:${itemSeleccionadoNew.tipoFruta}:calidad${itemSeleccionadoNew.calidad}`,
-                    itemSeleccionadoNew.calibre,
-                    kilosNew,
-                    multi
-                );
+                if (itemSeleccionadoOld.tipoCaja !== itemSeleccionadoNew.tipoCaja ||
+                    itemSeleccionadoOld.calidad !== itemSeleccionadoNew.calidad ||
+                    itemSeleccionadoOld.calibre !== itemSeleccionadoNew.calibre
+                ) {
+                    const kilosOld = itemSeleccionadoOld.cajas * Number(itemSeleccionadoOld.tipoCaja.split("-")[1].replace(",", "."));
+                    VariablesDelSistema.sumarMetricaSimpleDirect(
+                        `exportacion:${itemSeleccionadoOld.tipoFruta}:calidad${itemSeleccionadoOld.calidad}`,
+                        itemSeleccionadoOld.calibre,
+                        -kilosOld,
+                        multi
+                    );
+                    const kilosNew = itemSeleccionadoNew.cajas * Number(itemSeleccionadoNew.tipoCaja.split("-")[1].replace(",", "."));
+                    VariablesDelSistema.sumarMetricaSimpleDirect(
+                        `exportacion:${itemSeleccionadoNew.tipoFruta}:calidad${itemSeleccionadoNew.calidad}`,
+                        itemSeleccionadoNew.calibre,
+                        kilosNew,
+                        multi
+                    );
+                    comandosEnviados += 2
+                }
             }
         }
-        const results = await multi.exec();
-        console.info("Resultados de Redis:", results);
-        if (results.length === 0) {
-            throw new ProcessError(471, "Transacción Redis abortada. Revisa si hubo cambios concurrentes o tipos incorrectos en claves.");
+        let results = [];
+        if (comandosEnviados > 0) {
+            results = await multi.exec();
+            console.info("Resultados de Redis:", results);
+            if (results.length === 0) {
+                throw new ProcessError(471, "Transacción Redis abortada. Revisa si hubo cambios concurrentes o tipos incorrectos en claves.");
+            }
+        } else {
+            console.log("No hubo cambios que enviar a Redis, transacción vacía.");
         }
 
         if (logID) {
-            await registrarPasoLog(logID, "modificarIndicadorExportacion", "Completado", `se modificaron los indicadores de exportacion de los items seleccionados en el pallet ${pallet}`);
+            await registrarPasoLog(logID, "modificarIndicadorExportacion", "Completado", `se modificaron los lotes de los items seleccionados en el pallet ${pallet}`);
         }
 
     }
