@@ -88,6 +88,7 @@ export class IndicadoresAPIRepository {
                     kilos_vaciados: 1,
                     duracion_turno_horas: 1,
                     kilos_meta_hora: 1,
+                    kilos_exportacion: 1
                 }
             })
 

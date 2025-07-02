@@ -839,8 +839,6 @@ export class VariablesDelSistema {
       throw new ConnectRedisError(419, `Error con la conexion con redis sumar exportacion: ${err.name}`);
     }
   }
-
-
   static async obtener_fecha_inicio_proceso() {
     let cliente
 
@@ -1105,7 +1103,6 @@ export class VariablesDelSistema {
       throw new ConnectRedisError(502, `Error trayendo métricas exportación: ${err}`);
     }
   }
-
   static async get_kilos_exportacion_hoy2() {
     let cliente;
 
@@ -1166,7 +1163,6 @@ export class VariablesDelSistema {
       throw new ProcessError(522, `Error Obteniendo observaciones calidad ${err.name}`)
     }
   }
-
   //canastillas
   static async obtener_canastillas_inventario() {
     try {
@@ -1212,7 +1208,6 @@ export class VariablesDelSistema {
       throw new ProcessError(523, `Error modificando el inventario canastillas ${err.message}`)
     }
   }
-
   //Codigos
   static async guardar_codigo_recuperacion_password(usuario, code) {
     let cliente;

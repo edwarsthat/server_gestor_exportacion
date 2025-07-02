@@ -45,7 +45,6 @@ export class RedisRepository {
         } catch (err) {
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
-
     }
     /**
      * Resta los valores de descarte del inventario general cuando se realiza un reproceso.
@@ -170,7 +169,6 @@ export class RedisRepository {
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
     }
-
     /**
      * Obtiene el inventario completo de descartes para todos los tipos de fruta.
      * Recupera tanto los descartes de lavado como los de encerado para cada tipo de fruta
@@ -372,8 +370,27 @@ export class RedisRepository {
             throw new ConnectRedisError(502, `Error borrando descarte ${err}`);
         }
     }
+    static async salidas_inventario_descartes(data, tipoFruta) {
+        let cliente
+        try {
+            cliente = await getRedisClient();
 
+            const inventario = ["descarteGeneral", "pareja", "balin", "extra", "suelo", "frutaNacional"]
 
+            const tareas = Object.entries(data)
+                .map(([key, valor]) => {
+                    const [tipoDescarte, campo] = key.split(":");
+                    if (inventario.includes(campo)) {
+                        cliente.hIncrBy(`salidaInventarioDescarte:${tipoFruta}:${tipoDescarte}`, campo, valor)
+                    }
+                });
+
+            await Promise.all(tareas);
+
+        } catch (err) {
+            throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
+        }
+    }
     //#region inventarioDesverdizado
     /**
      * Registra un ingreso de fruta al proceso de desverdizado utilizando Redis Hash.
@@ -810,7 +827,6 @@ export class RedisRepository {
         }
     }
     //#endregion inventarioDesverdizado
-
     static async getClient() {
         try {
             const cliente = await getRedisClient();

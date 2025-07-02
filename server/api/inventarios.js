@@ -230,7 +230,8 @@ export class InventariosRepository {
             //se modifica el inventario
             const [, registro] = await Promise.all([
                 InventariosService.frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, inventario.tipoFruta),
-                DespachoDescartesRepository.crear_nuevo_despacho(newDespacho, user._id)
+                DespachoDescartesRepository.crear_nuevo_despacho(newDespacho, user._id),
+                RedisRepository.salidas_inventario_descartes(inventario, tipoFruta),
             ])
 
             procesoEventEmitter.emit("server_event", {
@@ -297,7 +298,9 @@ export class InventariosRepository {
             const [, , loteCreado] = await Promise.all([
                 RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', data.tipoFruta),
                 RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', data.tipoFruta),
-                InventariosService.crear_lote_celifrut(data.tipoFruta, total, _id)
+                InventariosService.crear_lote_celifrut(data.tipoFruta, total, _id),
+                RedisRepository.salidas_inventario_descartes(data, data.tipoFruta),
+
             ])
 
 
@@ -416,6 +419,7 @@ export class InventariosRepository {
             const [, registro] = await Promise.all([
                 InventariosService.frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, inventario.tipoFruta),
                 FrutaDescompuestaRepository.post_fruta_descompuesta(query, user._id),
+                RedisRepository.salidas_inventario_descartes(inventario, tipoFruta),
             ])
 
             procesoEventEmitter.emit("server_event", {

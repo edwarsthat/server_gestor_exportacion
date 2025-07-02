@@ -943,4 +943,7 @@ export class InventariosService {
             RedisRepository.update_inventarioDesverdizado(cuartoDestino, _id, cantidad)
         ])
     }
+    static async ingresar_salida_inventario_descartes(){
+        
+    }
 }
