@@ -253,7 +253,7 @@ class ProcesoService {
         }
 
         // si se restan los kilos ggn
-        const GGN = have_lote_GGN_export(lote.predio, contenedor[0], copiaItemSeleccionado)
+        const GGN = have_lote_GGN_export(lote, contenedor[0])
         console.log("tiene GGN", lote)
         if (GGN) {
             query.$inc.kilosGGN = - kilos
@@ -416,7 +416,7 @@ class ProcesoService {
         }
 
         //se mira si se deben sumar kilosGNN
-        if (have_lote_GGN_export(lote[0].predio, contenedor[0], oldData)) {
+        if (have_lote_GGN_export(lote[0], contenedor[0], oldData)) {
             const total = newKilos - oldKilos
             query.$inc.kilosGGN = total
             antes.kilosGGN = lote[0].kilosGGN
