@@ -480,7 +480,6 @@ export class ProcesoRepository {
                 .modificarContenedorModificarItemListaEmpaque(_id, pallet, seleccion, cajas, tipoCaja, calibre, calidad, action, user)
             await registrarPasoLog(log._id, "ProcesoService.modificarContenedorModificarItemListaEmpaque", "Completado");
 
-            console.log("oldData", oldKilos)
             await ProcesoService.modificarLoteModificarItemListaEmpaque(oldData, newKilos, oldKilos, palletSeleccionado, contenedor, user, calidad)
             await registrarPasoLog(log._id, "ProcesoService.modificarLoteModificarItemListaEmpaque", "Completado");
 

@@ -210,45 +210,41 @@ export const defineLotes = async (conn, AuditLog) => {
     this._oldValue = docToUpdate ? docToUpdate.toObject() : null;
 
     let newKilos = 0
-    const actions = ["put_proceso_aplicaciones_descarteLavado", "put_proceso_aplicaciones_descarteEncerado"]
+    // const actions = ["put_proceso_aplicaciones_descarteLavado", "put_proceso_aplicaciones_descarteEncerado"]
 
     console.log("Lote pre findOneAndUpdate", this.options.action);
     if (
       this.options.action !== "put_calidad_informes_aprobacionComercial" &&
       this.options.action !== "put_calidad_informes_loteFinalizarInforme" &&
-      this.options.action !== "put_comercial_precios_precioLotes" 
+      this.options.action !== "put_comercial_precios_precioLotes"
     ) {
 
       update.aprobacionProduccion = false
 
     }
 
-    if (actions.includes(this.options.action)) {
-      if (update.$inc) {
-        newKilos = Object.values(update.$inc).reduce((acu, item) => acu += item, 0)
-      }
-      const frutaNacional = docToUpdate.frutaNacional ?? 0;
-      const directoNacional = docToUpdate.directoNacional ?? 0;
-      const calidad1 = docToUpdate.calidad1 ?? 0;
-      const calidad15 = docToUpdate.calidad15 ?? 0;
-      const calidad2 = docToUpdate.calidad2 ?? 0;
-      const kilos = docToUpdate.kilos;
 
-      const totalDescarteLavado = docToUpdate.descarteLavado ?
-        Object.values(docToUpdate.descarteLavado._doc).reduce((acu, item) => acu += item, 0) : 0
+    const frutaNacional = docToUpdate.frutaNacional ?? 0;
+    const directoNacional = docToUpdate.directoNacional ?? 0;
+    const calidad1 = docToUpdate.calidad1 ?? 0;
+    const calidad15 = docToUpdate.calidad15 ?? 0;
+    const calidad2 = docToUpdate.calidad2 ?? 0;
+    const kilos = docToUpdate.kilos ?? 0;
 
-      const totalDescarteEncerado = docToUpdate.descarteEncerado ?
-        Object.values(docToUpdate.descarteEncerado._doc).reduce((acu, item) => acu += item, 0) : 0
+    const totalDescarteLavado = docToUpdate.descarteLavado ?
+      Object.values(docToUpdate.descarteLavado._doc).reduce((acu, item) => acu += item, 0) : 0
 
-      let deshidratacion = 100;
-      if (kilos > 0) {
-        const total = calidad1 + calidad15 + calidad2 + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional + newKilos;
-        deshidratacion = 100 - (total * 100) / kilos;
-      }
+    const totalDescarteEncerado = docToUpdate.descarteEncerado ?
+      Object.values(docToUpdate.descarteEncerado._doc).reduce((acu, item) => acu += item, 0) : 0
 
-      // Si el update tiene operadores
-      update.deshidratacion = deshidratacion;
+    let deshidratacion = 100;
+    if (kilos > 0) {
+      const total = calidad1 + calidad15 + calidad2 + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional + newKilos;
+      deshidratacion = 100 - (total * 100) / kilos;
     }
+
+    // Si el update tiene operadores
+    update.deshidratacion = deshidratacion;
     next();
   });
 
