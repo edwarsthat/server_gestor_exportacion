@@ -132,6 +132,7 @@ export class ProcesoRepository {
      */
     static async put_proceso_aplicaciones_descarteLavado(req) {
         const { user } = req;
+        console.log(req)
         let log
         try {
             log = await LogsRepository.create({
@@ -178,6 +179,8 @@ export class ProcesoRepository {
                 data: {}
             });
         } catch (err) {
+        console.log(err)
+
             const criticalStatus = new Set([523, 515, 518, 532]);
             if (err && criticalStatus.has(err.status)) {
                 throw err;
@@ -208,6 +211,8 @@ export class ProcesoRepository {
      * @throws {ProcessError} Si ocurre un error durante el proceso.
      */
     static async put_proceso_aplicaciones_descarteEncerado(req) {
+        console.log(req)
+
         const { user } = req;
         let log
         try {
@@ -262,6 +267,7 @@ export class ProcesoRepository {
                 data: {}
             });
         } catch (err) {
+            console.log(err)
             if (err.status === 523 ||
                 err.status === 515 ||
                 err.status === 518 ||
