@@ -1092,6 +1092,7 @@ export class InventariosRepository {
         const { _id, kilosVaciados, inventario, __v } = data;
 
         try {
+            
             const query = {
                 $inc: {
                     kilosVaciados: kilosVaciados,

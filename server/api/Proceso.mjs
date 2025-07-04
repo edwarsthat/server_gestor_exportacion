@@ -139,8 +139,8 @@ export class ProcesoRepository {
                 action: "put_proceso_aplicaciones_descarteLavado",
                 acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
             })
-            ProcesoValidations.put_proceso_aplicaciones_descarteLavado().parse(req.data)
-            await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteLavado", "Completado");
+            // ProcesoValidations.put_proceso_aplicaciones_descarteLavado().parse(req.data)
+            // await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteLavado", "Completado");
 
             const { _id, data, action } = req.data;
             const keys = Object.keys(data);
@@ -216,8 +216,8 @@ export class ProcesoRepository {
                 action: "put_proceso_aplicaciones_descarteEncerado",
                 acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
             })
-            ProcesoValidations.put_proceso_aplicaciones_descarteEncerado().parse(req.data)
-            await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteEncerado", "Completado");
+            // ProcesoValidations.put_proceso_aplicaciones_descarteEncerado().parse(req.data)
+            // await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteEncerado", "Completado");
 
             const { _id, data, action } = req.data;
 
