@@ -1,6 +1,6 @@
 import { LotesRepository } from "../Class/Lotes.js";
 import { ProcesoRepository } from "../api/Proceso.mjs";
-import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
+// import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { CalidadRepository } from "../api/Calidad.js";
 import { ComercialRepository } from "../api/Comercial.js";
 import { SistemaRepository } from "../api/Sistema.js";
@@ -193,16 +193,16 @@ export const apiSocket = {
     //#endregion
     //#region POST
 
-    guardarDescarteHistorial: async (data) => {
-        const descarte = data.data.inventario
+    // guardarDescarteHistorial: async (data) => {
+    //     const descarte = data.data.inventario
 
-        await VariablesDelSistema.modificar_inventario_descarte(descarte.descarteLavado, 'descarteLavado');
-        await VariablesDelSistema.modificar_inventario_descarte(descarte.descarteEncerado, 'descarteEncerado');
+    //     await VariablesDelSistema.modificar_inventario_descarte(descarte.descarteLavado, 'descarteLavado');
+    //     await VariablesDelSistema.modificar_inventario_descarte(descarte.descarteEncerado, 'descarteEncerado');
 
-        await LotesRepository.add_historial_descarte(data);
+    //     await LotesRepository.add_historial_descarte(data);
 
-        return { status: 200, message: 'Ok' }
-    },
+    //     return { status: 200, message: 'Ok' }
+    // },
 
 
     //! transporte

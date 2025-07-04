@@ -1,9 +1,9 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { PostError, PutError, ConnectionDBError } from "../../Error/ConnectionErrors.js";
-import { ItemBussyError, ProcessError } from "../../Error/ProcessError.js";
+import { ProcessError } from "../../Error/ProcessError.js";
 import fs from 'fs';
 
-let bussyIds = new Set();
+
 
 export class LotesRepository {
     static async addLote(data, user) {
@@ -115,7 +115,6 @@ export class LotesRepository {
          * @returns {Promise<Object>} - Promesa que resuelve al objeto del lote modificado.
          * @throws {PutError} - Lanza un error si ocurre un problema al modificar el lote.
          */
-        this.validateBussyIds(id)
         try {
 
             const lote = await db.Lotes.findOneAndUpdate({ _id: id, __v: __v }, query, { new: true });
@@ -126,9 +125,7 @@ export class LotesRepository {
             return lote_obj;
         } catch (err) {
             throw new PutError(523, `Error ${err.name} -- ${id} - ${query}`);
-        } finally {
-            bussyIds.delete(id);
-        }
+        } 
     }
     static async modificar_lote_proceso(id, query, action, user) {
         /**
@@ -162,7 +159,6 @@ export class LotesRepository {
          * @return {number} - retorna el valor del rendimiento
          */
         const id = data._id
-        this.validateBussyIds(id)
         try {
             const kilosVaciados = Number(data.kilosVaciados);
             if (kilosVaciados === 0) return 0;
@@ -177,9 +173,7 @@ export class LotesRepository {
             return rendimiento;
         } catch (e) {
             throw new ProcessError(415, "Error obteniendo rendimiento del lote" + e.message);
-        } finally {
-            bussyIds.delete(id);
-        }
+        } 
     }
     static async deshidratacion(data) {
         /**
@@ -191,7 +185,6 @@ export class LotesRepository {
          * @return {number} - devuelve la deshidratacion total
          */
         const id = data._id
-        this.validateBussyIds(id)
         try {
             const kilosTotal = data.kilos;
             if (kilosTotal === 0) return 0;
@@ -210,40 +203,38 @@ export class LotesRepository {
 
         } catch (err) {
             throw new ProcessError(515, `Error sumando los descartes ${err.message}`);
-        } finally {
-            bussyIds.delete(id);
-        }
+        } 
     }
-    static async add_historial_descarte(data) {
-        /**
-        * Función que agrega un historial de descarte en la base de datos.
-        *
-        * @param {Object} data - Objeto que contiene la información necesaria para agregar el historial de descarte.
-        * @param {Object} data.data - Datos necesarios para crear el historial de descarte.
-        * @param {Object} data.data.datos - Información adicional del descarte.
-        * @param {Array<string>} data.data.inventario - Inventario de fruta de salida para el descarte.
-        * @param {Object} data.user - Información del usuario que realiza la operación.
-        * @param {string} data.user.user - Nombre o identificador del usuario.
-        * @throws {ProcessError} - Lanza un error si ocurre un problema al agregar el historial de descarte.
-        */
-        try {
-            const descarteI = data.data.inventario
-            const query = {
-                ...data.data.datos,
-                frutaSalida: descarteI
-            }
+    // static async add_historial_descarte(data) {
+    //     /**
+    //     * Función que agrega un historial de descarte en la base de datos.
+    //     *
+    //     * @param {Object} data - Objeto que contiene la información necesaria para agregar el historial de descarte.
+    //     * @param {Object} data.data - Datos necesarios para crear el historial de descarte.
+    //     * @param {Object} data.data.datos - Información adicional del descarte.
+    //     * @param {Array<string>} data.data.inventario - Inventario de fruta de salida para el descarte.
+    //     * @param {Object} data.user - Información del usuario que realiza la operación.
+    //     * @param {string} data.user.user - Nombre o identificador del usuario.
+    //     * @throws {ProcessError} - Lanza un error si ocurre un problema al agregar el historial de descarte.
+    //     */
+    //     try {
+    //         const descarteI = data.data.inventario
+    //         const query = {
+    //             ...data.data.datos,
+    //             frutaSalida: descarteI
+    //         }
 
-            const descarte = new db.historialDescarte(query);
+    //         const descarte = new db.historialDescarte(query);
 
-            await descarte.save();
+    //         await descarte.save();
 
-            let record = new db.recordLotes({ operacionRealizada: 'enviar_descarte', user: data.user.user, documento: descarte })
-            await record.save();
+    //         let record = new db.recordLotes({ operacionRealizada: 'enviar_descarte', user: data.user.user, documento: descarte })
+    //         await record.save();
 
-        } catch (err) {
-            throw new ProcessError(415, `Error creando el registro del descarte ${err.message}`);
-        }
-    }
+    //     } catch (err) {
+    //         throw new ProcessError(415, `Error creando el registro del descarte ${err.message}`);
+    //     }
+    // }
     static async obtener_imagen_lote_calidad(url) {
         try {
             const data = fs.readFileSync(url)
@@ -297,52 +288,62 @@ export class LotesRepository {
             throw new ProcessError(416, `Error sumando los descartes ${err.message}`);
         }
     }
-    static validateBussyIds(id) {
+
+
+    static async actualizar_lote(filter, update, options = {}, session = null) {
         /**
-         * Funcion que añade el id del elemento que se este m0odificando para que no se creen errores de doble escritura
-         * 
-         * @param {string} id - El id del elemento que se esta modificando
+         * El update más lírico y funcional del reino Mongo.
          */
-        if (bussyIds.has(id)) throw new ItemBussyError(413, "Elemento no disponible por el momento");
-        bussyIds.add(id)
-    }
-    static async crear_informe_lote() {
-
-        // const lote = await db.Lotes.findById(data._id).populate("predio", "PREDIO ICA DEPARTAMENTO GGN");
-        // const contIds = lote.contenedores.map(item => new mongoose.Types.ObjectId(item));
-
-
-    }
-
-    static async actualizar_lote(filter, update, options = {}, session = null, user = '', action = '') {
-        /**
-         * Función genérica para actualizar documentos en MongoDB usando Mongoose
-         *
-         * @param {Model} model - Modelo Mongoose (db.Lotes, etc.)
-         * @param {Object} filter - Objeto de filtrado para encontrar el documento
-         * @param {Object} update - Objeto con los campos a actualizar
-         * @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
-         * @param {ClientSession} session - Sesión de transacción (opcional)
-         * @returns Documento actualizado
-         */
-        const defaultOptions = { new: true }; // retorna el documento actualizado
-        const finalOptions = session
-            ? { ...defaultOptions, ...options, session }
-            : { ...defaultOptions, ...options };
-        // finalOptions.user = user;
-        // finalOptions.action = action;
+        const finalOptions = {
+            new: true,
+            ...options,
+            ...(session && { session })
+        };
 
         try {
-            const documentoActualizado = await db.Lotes.findOneAndUpdate(
-                filter,
-                update,
-                finalOptions,
-                { new: true, user: user, action: action }
-            );
-            return documentoActualizado;
-        } catch (err) {
-            throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
+            // 1. Actualiza el lote con los datos proporcionados y obtiene el nuevo estado
+            let documento = await db.Lotes.findOneAndUpdate(filter, update, { ...finalOptions, new: true });
+            if (!documento) throw new Error('Lote no encontrado');
 
+            // 2. Calcula los campos mágicos
+            const get = (campo) => documento[campo] ?? 0;
+
+            const frutaNacional = get('frutaNacional');
+            const directoNacional = get('directoNacional');
+            const calidad1 = get('calidad1');
+            const calidad15 = get('calidad15');
+            const calidad2 = get('calidad2');
+            const kilos = get('kilos');
+            const kilosVaciados = get('kilosVaciados');
+
+            const sumarDescartes = (desc) =>
+                desc ? Object.values(desc._doc ? desc._doc : desc).reduce((acu, item) => acu + (item ?? 0), 0) : 0;
+
+            const totalDescarteLavado = sumarDescartes(documento.descarteLavado);
+            const totalDescarteEncerado = sumarDescartes(documento.descarteEncerado);
+
+            let deshidratacion = 100;
+            let rendimiento = 0;
+            if (kilos > 0) {
+                const total = calidad1 + calidad15 + calidad2 + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional;
+                deshidratacion = 100 - (total * 100) / kilos;
+                rendimiento = ((calidad1 + calidad15 + calidad2 ) * 100) / kilosVaciados;
+            }
+
+            // 3. Si hay que actualizar la deshidratación, hazlo solo si cambia
+            if (documento.deshidratacion !== deshidratacion || documento.rendimiento !== rendimiento) {
+                documento = await db.Lotes.findOneAndUpdate(
+                    filter,
+                    { deshidratacion, rendimiento },
+                    { ...finalOptions, new: true }
+                );
+            }
+
+            return documento;
+
+        } catch (err) {
+            // Aquí los errores se lamentan en verso
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
 

@@ -209,10 +209,9 @@ export const defineLotes = async (conn, AuditLog) => {
     const docToUpdate = await this.model.findOne(this.getQuery());
     this._oldValue = docToUpdate ? docToUpdate.toObject() : null;
 
-    let newKilos = 0
+    // let newKilos = 0
     // const actions = ["put_proceso_aplicaciones_descarteLavado", "put_proceso_aplicaciones_descarteEncerado"]
 
-    console.log("Lote pre findOneAndUpdate", this.options.action);
     if (
       this.options.action !== "put_calidad_informes_aprobacionComercial" &&
       this.options.action !== "put_calidad_informes_loteFinalizarInforme" &&
@@ -224,27 +223,49 @@ export const defineLotes = async (conn, AuditLog) => {
     }
 
 
-    const frutaNacional = docToUpdate.frutaNacional ?? 0;
-    const directoNacional = docToUpdate.directoNacional ?? 0;
-    const calidad1 = docToUpdate.calidad1 ?? 0;
-    const calidad15 = docToUpdate.calidad15 ?? 0;
-    const calidad2 = docToUpdate.calidad2 ?? 0;
-    const kilos = docToUpdate.kilos ?? 0;
+    // let docActualizado = { ...(docToUpdate ? docToUpdate.toObject() : {}) };
 
-    const totalDescarteLavado = docToUpdate.descarteLavado ?
-      Object.values(docToUpdate.descarteLavado._doc).reduce((acu, item) => acu += item, 0) : 0
+    // if (update.$set) {
+    //   Object.assign(docActualizado, update.$set);
+    // }
+    // if (update.$inc) {
+    //   for (const key in update.$inc) {
+    //     console.log("key", key, "update.$inc[key]", update.$inc[key]);
+    //     docActualizado[key] = (docActualizado[key] || 0) + update.$inc[key];
+    //   }
+    // }
+    // console.log("docActualizado", docActualizado);
 
-    const totalDescarteEncerado = docToUpdate.descarteEncerado ?
-      Object.values(docToUpdate.descarteEncerado._doc).reduce((acu, item) => acu += item, 0) : 0
+    // const frutaNacional = docActualizado.frutaNacional ?? 0;
+    // const directoNacional = docActualizado.directoNacional ?? 0;
+    // const calidad1 = docActualizado.calidad1 ?? 0;
+    // const calidad15 = docActualizado.calidad15 ?? 0;
+    // const calidad2 = docActualizado.calidad2 ?? 0;
+    // const kilos = docActualizado.kilos ?? 0;
 
-    let deshidratacion = 100;
-    if (kilos > 0) {
-      const total = calidad1 + calidad15 + calidad2 + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional + newKilos;
-      deshidratacion = 100 - (total * 100) / kilos;
-    }
+    // // 4. Si los descartes pueden venir también en el update, mételos así:
+    // let totalDescarteLavado = 0;
+    // if (docActualizado.descarteLavado) {
+    //   totalDescarteLavado = Object.values(
+    //     docActualizado.descarteLavado._doc ? docActualizado.descarteLavado._doc : docActualizado.descarteLavado
+    //   ).reduce((acu, item) => acu + item, 0);
+    // }
+    // let totalDescarteEncerado = 0;
+    // if (docActualizado.descarteEncerado) {
+    //   totalDescarteEncerado = Object.values(
+    //     docActualizado.descarteEncerado._doc ? docActualizado.descarteEncerado._doc : docActualizado.descarteEncerado
+    //   ).reduce((acu, item) => acu + item, 0);
+    // }
 
-    // Si el update tiene operadores
-    update.deshidratacion = deshidratacion;
+    
+    // let deshidratacion = 100;
+    // if (kilos > 0) {
+    //   const total = calidad1 + calidad15 + calidad2 + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional + newKilos;
+    //   deshidratacion = 100 - (total * 100) / kilos;
+    // }
+
+    // // Si el update tiene operadores
+    // update.deshidratacion = deshidratacion;
     next();
   });
 

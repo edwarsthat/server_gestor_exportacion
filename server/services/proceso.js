@@ -422,11 +422,9 @@ class ProcesoService {
             antes.kilosGGN = lote[0].kilosGGN
         }
 
-        await LotesRepository.modificar_lote_proceso(
+        await LotesRepository.actualizar_lote(
             oldData.lote,
-            query,
-            "Cambiar tipo de exportacion",
-            user
+            query
         )
 
     }
