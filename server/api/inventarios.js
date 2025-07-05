@@ -1090,9 +1090,9 @@ export class InventariosRepository {
 
         // const pilaFunciones = [];
         const { _id, kilosVaciados, inventario, __v } = data;
-
         try {
-            
+
+            // await InventariosService.probar_deshidratacion_loteProcesando()
             const query = {
                 $inc: {
                     kilosVaciados: kilosVaciados,
@@ -1112,7 +1112,7 @@ export class InventariosRepository {
             await VariablesDelSistema.procesarEF1(lote[0], inventario);
             await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString()),
 
-            await VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados)
+                await VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados)
 
             //para lista de empaque
             procesoEventEmitter.emit("predio_vaciado", {
@@ -1127,6 +1127,9 @@ export class InventariosRepository {
                 }
             });
         } catch (err) {
+            if(err.status === 470){
+                throw err;
+            }
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
             throw new Error(`Code ${err.code}: ${err.message}`);
 

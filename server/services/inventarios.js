@@ -1,3 +1,4 @@
+import { InventariosLogicError } from "../../Error/logicLayerError.js";
 import { obtenerEstadoDesdeAccionCanastillasInventario } from "../api/utils/diccionarios.js";
 import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
@@ -943,7 +944,23 @@ export class InventariosService {
             RedisRepository.update_inventarioDesverdizado(cuartoDestino, _id, cantidad)
         ])
     }
-    static async ingresar_salida_inventario_descartes(){
-        
+    static async ingresar_salida_inventario_descartes() {
+
+    }
+    static async probar_deshidratacion_loteProcesando() {
+        const predioVaciando = await VariablesDelSistema.obtenerEF1proceso()
+        const loteVaciando = await LotesRepository.getLotes({ ids: [predioVaciando._id] });
+        if (
+            loteVaciando &&
+            loteVaciando.length > 0 &&
+            typeof loteVaciando[0].deshidratacion === 'number' &&
+            (loteVaciando[0].deshidratacion > 2 || loteVaciando[0].deshidratacion < -1)
+        ) {
+            throw new InventariosLogicError(
+                470,
+                `El lote no se puede vaciar porque la deshidratacion de  ${predioVaciando.enf} - ${predioVaciando.nombrePredio}  no está en el rango correcto.`
+            );
+        }
+
     }
 }
