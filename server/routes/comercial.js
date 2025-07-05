@@ -30,7 +30,7 @@ routerComercial.get("/get_comercial_proveedores_elementos", async (req, res) => 
         //autentificacion
         const token = req.headers['authorization'];
         const user = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
+        await UserRepository.autentificacionPermisosHttps(user.cargo, "get_comercial_proveedores_elementos")
 
         const response = await ComercialRepository.get_comercial_proveedores_elementos()
 

@@ -132,7 +132,6 @@ export class ProcesoRepository {
      */
     static async put_proceso_aplicaciones_descarteLavado(req) {
         const { user } = req;
-        console.log(req)
         let log
         try {
             log = await LogsRepository.create({
