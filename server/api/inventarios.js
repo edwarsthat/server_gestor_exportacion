@@ -1085,14 +1085,15 @@ export class InventariosRepository {
 
     }
     static async put_inventarios_ordenVaceo_vacear(req) {
-        const { user: user1, data } = req
-        const { user } = user1;
+        const { user, data } = req
 
         // const pilaFunciones = [];
         const { _id, kilosVaciados, inventario, __v } = data;
         try {
+            if (user.Rol > 0) {
+                await InventariosService.probar_deshidratacion_loteProcesando()
 
-            await InventariosService.probar_deshidratacion_loteProcesando()
+            }
             const query = {
                 $inc: {
                     kilosVaciados: kilosVaciados,
@@ -1100,7 +1101,7 @@ export class InventariosRepository {
                 },
                 fechaProceso: new Date()
             }
-            await LotesRepository.modificar_lote(_id, query, "vaciarLote", user, __v);
+            await LotesRepository.modificar_lote(_id, query, "vaciarLote", user._id, __v);
 
             const lote = await LotesRepository.getLotes({ ids: [_id] });
             //condicional si es desverdizado o no
@@ -1127,7 +1128,7 @@ export class InventariosRepository {
                 }
             });
         } catch (err) {
-            if(err.status === 470){
+            if (err.status === 470) {
                 throw err;
             }
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
