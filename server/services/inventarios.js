@@ -954,7 +954,7 @@ export class InventariosService {
             loteVaciando &&
             loteVaciando.length > 0 &&
             typeof loteVaciando[0].deshidratacion === 'number' &&
-            (loteVaciando[0].deshidratacion > 2 || loteVaciando[0].deshidratacion < -1)
+            (loteVaciando[0].deshidratacion > 3 || loteVaciando[0].deshidratacion < -1)
         ) {
             throw new InventariosLogicError(
                 470,

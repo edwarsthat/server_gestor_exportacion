@@ -1092,7 +1092,7 @@ export class InventariosRepository {
         const { _id, kilosVaciados, inventario, __v } = data;
         try {
 
-            // await InventariosService.probar_deshidratacion_loteProcesando()
+            await InventariosService.probar_deshidratacion_loteProcesando()
             const query = {
                 $inc: {
                     kilosVaciados: kilosVaciados,
