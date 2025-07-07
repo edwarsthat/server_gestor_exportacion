@@ -125,7 +125,7 @@ export class LotesRepository {
             return lote_obj;
         } catch (err) {
             throw new PutError(523, `Error ${err.name} -- ${id} - ${query}`);
-        } 
+        }
     }
     static async modificar_lote_proceso(id, query, action, user) {
         /**
@@ -173,7 +173,7 @@ export class LotesRepository {
             return rendimiento;
         } catch (e) {
             throw new ProcessError(415, "Error obteniendo rendimiento del lote" + e.message);
-        } 
+        }
     }
     static async deshidratacion(data) {
         /**
@@ -203,7 +203,7 @@ export class LotesRepository {
 
         } catch (err) {
             throw new ProcessError(515, `Error sumando los descartes ${err.message}`);
-        } 
+        }
     }
     // static async add_historial_descarte(data) {
     //     /**
@@ -289,8 +289,8 @@ export class LotesRepository {
         }
     }
 
-
     static async actualizar_lote(filter, update, options = {}, session = null) {
+        // ...toda la magia anterior...
         /**
          * El update más lírico y funcional del reino Mongo.
          */
@@ -327,7 +327,7 @@ export class LotesRepository {
             if (kilos > 0) {
                 const total = calidad1 + calidad15 + calidad2 + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional;
                 deshidratacion = 100 - (total * 100) / kilos;
-                rendimiento = ((calidad1 + calidad15 + calidad2 ) * 100) / kilosVaciados;
+                rendimiento = ((calidad1 + calidad15 + calidad2) * 100) / kilosVaciados;
             }
 
             // 3. Si hay que actualizar la deshidratación, hazlo solo si cambia

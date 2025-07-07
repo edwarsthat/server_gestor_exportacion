@@ -226,7 +226,7 @@ class ProcesoService {
         // Registrar modificación Contenedores
         await RecordModificacionesRepository.post_record_contenedor_modification(
             logContext.action,
-            logContext.user,
+            logContext._id,
             {
                 modelo: "Contenedor",
                 documentoId: contenedor._id,
@@ -254,17 +254,21 @@ class ProcesoService {
 
         // si se restan los kilos ggn
         const GGN = have_lote_GGN_export(lote, contenedor[0])
-        console.log("tiene GGN", lote)
         if (GGN) {
             query.$inc.kilosGGN = - kilos
         }
 
-        await LotesRepository.modificar_lote_proceso(
-            lote._id,
+        await LotesRepository.actualizar_lote(
+            { _id: lote._id },
             query,
-            "Ingresar exportacion",
-            logContext.user._id
+            {
+                new: true,
+                user: logContext._id,                    
+                action: logContext.action     
+            }
         )
+        await registrarPasoLog(logContext.logId, "ProcesoService.restarItem_lote", "Completado");
+
 
     }
     static async restarItem_variablesSistema(itemSeleccionado, kilos, lote) {

@@ -221,51 +221,6 @@ export const defineLotes = async (conn, AuditLog) => {
       update.aprobacionProduccion = false
 
     }
-
-
-    // let docActualizado = { ...(docToUpdate ? docToUpdate.toObject() : {}) };
-
-    // if (update.$set) {
-    //   Object.assign(docActualizado, update.$set);
-    // }
-    // if (update.$inc) {
-    //   for (const key in update.$inc) {
-    //     console.log("key", key, "update.$inc[key]", update.$inc[key]);
-    //     docActualizado[key] = (docActualizado[key] || 0) + update.$inc[key];
-    //   }
-    // }
-    // console.log("docActualizado", docActualizado);
-
-    // const frutaNacional = docActualizado.frutaNacional ?? 0;
-    // const directoNacional = docActualizado.directoNacional ?? 0;
-    // const calidad1 = docActualizado.calidad1 ?? 0;
-    // const calidad15 = docActualizado.calidad15 ?? 0;
-    // const calidad2 = docActualizado.calidad2 ?? 0;
-    // const kilos = docActualizado.kilos ?? 0;
-
-    // // 4. Si los descartes pueden venir también en el update, mételos así:
-    // let totalDescarteLavado = 0;
-    // if (docActualizado.descarteLavado) {
-    //   totalDescarteLavado = Object.values(
-    //     docActualizado.descarteLavado._doc ? docActualizado.descarteLavado._doc : docActualizado.descarteLavado
-    //   ).reduce((acu, item) => acu + item, 0);
-    // }
-    // let totalDescarteEncerado = 0;
-    // if (docActualizado.descarteEncerado) {
-    //   totalDescarteEncerado = Object.values(
-    //     docActualizado.descarteEncerado._doc ? docActualizado.descarteEncerado._doc : docActualizado.descarteEncerado
-    //   ).reduce((acu, item) => acu + item, 0);
-    // }
-
-    
-    // let deshidratacion = 100;
-    // if (kilos > 0) {
-    //   const total = calidad1 + calidad15 + calidad2 + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional + newKilos;
-    //   deshidratacion = 100 - (total * 100) / kilos;
-    // }
-
-    // // Si el update tiene operadores
-    // update.deshidratacion = deshidratacion;
     next();
   });
 
