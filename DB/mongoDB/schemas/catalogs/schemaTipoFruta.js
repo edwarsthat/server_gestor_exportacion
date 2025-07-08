@@ -8,8 +8,8 @@ export const defineTipoFrutas = async (conn) => {
         tipoFruta: { type: String, required: true, unique: true, },
         valorPromedio: { type: Number, required: true, default: 19 },
         defectos: [String],
-        rengoDeshidratacionPositiva: Number,
-        rengoDeshidratacionNegativa: Number,
+        rengoDeshidratacionPositiva: { type: Number, required: true, default: 2 },
+        rengoDeshidratacionNegativa: { type: Number, required: true, default: -1 },
         createdAt: { type: Date, default: () => new Date() }
     });
 
