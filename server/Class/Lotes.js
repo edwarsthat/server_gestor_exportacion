@@ -101,9 +101,6 @@ export class LotesRepository {
             throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
         }
     }
-
-
-
     static async modificar_lote(id, query, action, user, __v = 0) {
         /**
          * Modifica un lote en la base de datos de MongoDB.
@@ -205,36 +202,6 @@ export class LotesRepository {
             throw new ProcessError(515, `Error sumando los descartes ${err.message}`);
         } 
     }
-    // static async add_historial_descarte(data) {
-    //     /**
-    //     * Función que agrega un historial de descarte en la base de datos.
-    //     *
-    //     * @param {Object} data - Objeto que contiene la información necesaria para agregar el historial de descarte.
-    //     * @param {Object} data.data - Datos necesarios para crear el historial de descarte.
-    //     * @param {Object} data.data.datos - Información adicional del descarte.
-    //     * @param {Array<string>} data.data.inventario - Inventario de fruta de salida para el descarte.
-    //     * @param {Object} data.user - Información del usuario que realiza la operación.
-    //     * @param {string} data.user.user - Nombre o identificador del usuario.
-    //     * @throws {ProcessError} - Lanza un error si ocurre un problema al agregar el historial de descarte.
-    //     */
-    //     try {
-    //         const descarteI = data.data.inventario
-    //         const query = {
-    //             ...data.data.datos,
-    //             frutaSalida: descarteI
-    //         }
-
-    //         const descarte = new db.historialDescarte(query);
-
-    //         await descarte.save();
-
-    //         let record = new db.recordLotes({ operacionRealizada: 'enviar_descarte', user: data.user.user, documento: descarte })
-    //         await record.save();
-
-    //     } catch (err) {
-    //         throw new ProcessError(415, `Error creando el registro del descarte ${err.message}`);
-    //     }
-    // }
     static async obtener_imagen_lote_calidad(url) {
         try {
             const data = fs.readFileSync(url)
@@ -288,7 +255,6 @@ export class LotesRepository {
             throw new ProcessError(416, `Error sumando los descartes ${err.message}`);
         }
     }
-
 
     static async actualizar_lote(filter, update, options = {}, session = null) {
         /**
@@ -346,5 +312,19 @@ export class LotesRepository {
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
-
+    //#region EF8
+    static async crear_lote_EF8(data, user) {
+        try {
+            const query = {
+                ...data,
+                user: user._id
+            }
+            const lote = new db.LotesEF8(query);
+            const new_lote = await lote.save();
+            return new_lote;
+        } catch (err) {
+            throw new PostError(521, `Error creando lote ${err.message}`);
+        }
+    }
+    //#endregion
 }

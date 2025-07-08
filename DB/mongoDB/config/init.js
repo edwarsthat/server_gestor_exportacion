@@ -65,6 +65,9 @@ import { defineCuartosdesverdizado } from '../schemas/catalogs/schemaCuartosDesv
 import { defineAuditSistemaLogs } from '../schemas/audit/AuditLosSistemaSchema.js';
 import { defineAuditDescartes } from '../schemas/audit/ReporteIngresoDescartesSchema.js';
 import { defineInventarioDescarte } from '../schemas/inventarios/SchemaInventarioDescartes.js';
+import { defineTipoFrutas } from '../schemas/catalogs/schemaTipoFruta.js';
+import { defineLoteEf8 } from '../schemas/lotes/schemaLoteEf8.js';
+import { defineSeriales } from '../schemas/seriales/SerialesSchema.js';
 
 export const db = {};
 
@@ -299,6 +302,10 @@ const defineSchemasProceso = async (sysConn) => {
         db.recordLotes = await defineRecordLotes(sysConn);
         console.log("✅ recordLotes definido");
 
+        console.log("⚡ Definiendo Lotes EF8...");
+        db.LotesEF8 = await defineLoteEf8(sysConn);
+        console.log("✅ Lotes EF8 definido");
+
         // 9. Esquemas de registro de transacciones
         console.log("⚡ Definiendo RecordModificacion...");
         db.RecordModificacion = await defineModificarElemento(sysConn);
@@ -315,6 +322,10 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Inventario descarte...");
         db.InventarioDescarte = await defineInventarioDescarte(sysConn);
         console.log("✅ InventarioDescarte definido");
+
+        console.log("⚡ Definiendo Seriales...");
+        db.Seriales = await defineSeriales(sysConn);
+        console.log("✅ Seriales definidos");
 
         console.log("🎉 Todos los schemas de proceso han sido definidos correctamente.")
 
@@ -416,7 +427,9 @@ const defineSchemasCatalogo = async (sysConn) => {
             db.CuartosDesverdizados = await defineCuartosdesverdizado(sysConn);
             console.log("✅ Cuartos desverdizados definidos");
 
-
+            console.log("⚡ Definiendo Tipo frutas...");
+            db.TipoFrutas = await defineTipoFrutas(sysConn);
+            console.log("✅ Tipo frutas definidos");
 
             console.log("🎉 Todos los schemas de sistema han sido definidos correctamente.");
 
