@@ -26,5 +26,9 @@ export const apiSocketData = {
     get_data_cuartosDesverdizados: async () => {
         const response = await dataRepository.get_data_cuartosDesverdizados()
         return successResponseRoutes(response)
+    },
+    get_data_EF8: async () => {
+        const response = await dataRepository.get_data_EF8()
+        return successResponseRoutes(response)
     }
 }

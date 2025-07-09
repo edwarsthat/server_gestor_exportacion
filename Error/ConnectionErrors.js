@@ -88,6 +88,14 @@ class ErrorCatalog extends Error {
     }
 }
 
+class ErrorSeriales extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Error conectando con seriales"
+        this.status = code
+        this.message = message
+    }
+}
 
 export {
     ConnectionDBError,
@@ -99,5 +107,6 @@ export {
     PilaAccess_Error,
     ErrorUndefinedData,
     ErrorActionAlready,
-    ErrorCatalog
+    ErrorCatalog,
+    ErrorSeriales
 }

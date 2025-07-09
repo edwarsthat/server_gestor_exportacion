@@ -5,7 +5,7 @@ import { UsuariosRepository } from '../Class/Usuarios.js';
 import config from '../../src/config/index.js';
 const { ACCES_TOKEN } = config
 
-const permisos_generales = [
+const permisos_generales = new Set([
     "obtener_status_proceso",
     "obtener_info_mi_cuenta",
     "modificar_mi_password",
@@ -52,9 +52,12 @@ const permisos_generales = [
     "get_data_clientesNacionales",
     "get_data_proveedores",
 
+    //seriales
+    "get_data_EF8",
+
     //fotos
     "get_transporte_registros_entregaPrecintos_fotos",
-]
+])
 
 export class UserRepository {
 
@@ -120,7 +123,7 @@ export class UserRepository {
             const { data, user } = req;
             const { action } = data;
             const { cargo } = user;
-            if (permisos_generales.includes(action)) {
+            if (permisos_generales.has(action)) {
                 return true
             }
             const permisos = await UsuariosRepository.get_cargos({
@@ -154,7 +157,7 @@ export class UserRepository {
         try {
 
             let permisoOut = false
-            if (permisos_generales.includes(action)) {
+            if (permisos_generales.has(action)) {
                 return true
             }
 
