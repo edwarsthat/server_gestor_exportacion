@@ -166,7 +166,7 @@ export class CalidadRepository {
                     observaciones: 1,
                     flag_is_favorita: 1,
                     flag_balin_free: 1,
-                    fecha_aprobacion_produccion:1,
+                    fecha_finalizado_proceso:1,
                     fecha_aprobacion_comercial:1
 
                 },
