@@ -10,6 +10,7 @@ import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { RedisRepository } from "../Class/RedisData.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
+import { getColombiaDate } from "../api/utils/fechas.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const calidadFile = JSON.parse(readFileSync(join(__dirname, '../../constants/calidad.json'), 'utf8'));
@@ -62,6 +63,7 @@ class ProcesoService {
         if (index === -1) {
             const itemnuevo = {
                 ...item,
+                fecha: new Date(),
                 SISPAP: lotes[0].predio.SISPAP,
                 GGN
             }
@@ -140,17 +142,14 @@ class ProcesoService {
     static async restar_kilos_lote_indicadores(itemsDelete, logContext) {
 
         //se recorren para restar los kilos en los lotes
-        const hoy = new Date();
+        const hoy = getColombiaDate();
         for (let i = 0; i < itemsDelete.length; i++) {
             const { tipoCaja, cajas, fecha } = itemsDelete[i]
 
             const mult = Number(tipoCaja.split("-")[1].replace(",", "."))
             const kilos = cajas * mult;
             //se mira si es fruta de hoy para restar de las variables del proceso
-            const fechaSeleccionada = new Date(fecha)
-
-            // Ajustamos la fecha seleccionada restando 5 horas:
-            fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
+            const fechaSeleccionada = getColombiaDate(new Date(fecha));
 
             // Ahora comparamos solo día, mes y año:
             if (
@@ -557,10 +556,8 @@ class ProcesoService {
             const itemSeleccionadoNew = palletsModificados[pallet].EF1[seleccion[i]];
 
             //se mira si es fruta de hoy para restar de las variables del proceso
-            const fechaSeleccionada = new Date(itemSeleccionadoOld.fecha)
-            const hoy = new Date()
-            // Ajustamos la fecha seleccionada restando 5 horas:
-            fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
+            const fechaSeleccionada = getColombiaDate(itemSeleccionadoOld.fecha)
+            const hoy = getColombiaDate()
 
             if (
                 fechaSeleccionada.getFullYear() === hoy.getFullYear() &&
@@ -736,8 +733,8 @@ class ProcesoService {
     }
     static async modificarIndicadoresFecha(copiaPalletSeleccionado, kilos, logId) {
         //se mira si es fruta de hoy para restar de las variables del proceso
-        const fechaSeleccionada = new Date(copiaPalletSeleccionado.fecha)
-        const hoy = new Date()
+        const fechaSeleccionada = getColombiaDate(copiaPalletSeleccionado.fecha)
+        const hoy = getColombiaDate()
         // Ajustamos la fecha seleccionada restando 5 horas:
         fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
 

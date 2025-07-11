@@ -23,6 +23,7 @@ import { fileURLToPath } from 'url';
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { checkFinalizadoLote } from "./utils/lotesFunctions.js";
+import { getColombiaDate } from "./utils/fechas.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -503,8 +504,8 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoService.modificarLoteModificarItemListaEmpaque", "Completado");
 
             //se mira si es fruta de hoy para restar de las variables del proceso
-            const fechaSeleccionada = new Date(palletSeleccionado.fecha)
-            const hoy = new Date()
+            const fechaSeleccionada = getColombiaDate(palletSeleccionado.fecha)
+            const hoy = getColombiaDate();
             // Ajustamos la fecha seleccionada restando 5 horas:
             fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
             // Ahora comparamos solo día, mes y año:
@@ -1126,7 +1127,7 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
 
             lotes.forEach(lote => {
-                if(checkFinalizadoLote(lote) ) {
+                if(checkFinalizadoLote(lote)) {
                     throw new ProcessError(400, `El lote ${lote.enf} ya se encuentra finalizado, no se puede modificar`);
                 }
             })
