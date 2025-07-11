@@ -108,7 +108,7 @@ export class VariablesDelSistema {
 
 
 
-  static async procesarEF1(lote) {
+  static async procesarEF1(lote, logId) {
     try {
       const cliente = await getRedisClient();
 
@@ -118,6 +118,8 @@ export class VariablesDelSistema {
 
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis ${err.name}`)
+    } finally {
+      await registrarPasoLog(logId, "LotesRepository.procesarEF1", "Completado");
     }
   }
   static async obtenerEF1proceso() {
@@ -383,7 +385,7 @@ export class VariablesDelSistema {
       inventarioFleg = false
     }
   }
-  static async modificarInventario(_id, canastillas) {
+  static async modificarInventario(_id, canastillas, LogId) {
     /**
      * 
      * Funcion que modifica el inventario restando las canastillas que entran 
@@ -418,6 +420,7 @@ export class VariablesDelSistema {
       throw new ProcessError(518, `Error modificando datos del inventario json ${err.name}`)
     } finally {
       inventarioFleg = false
+      await registrarPasoLog(LogId, "LotesRepository.modificarInventario", "Completado");
     }
   }
 
@@ -476,7 +479,7 @@ export class VariablesDelSistema {
       ordenVaceoFlag = false
     }
   }
-  static async borrarDatoOrdenVaceo(_id) {
+  static async borrarDatoOrdenVaceo(_id, logId) {
     /**
      * Función que borra un dato de la orden de vaceo identificado por su ID.
      *
@@ -503,6 +506,8 @@ export class VariablesDelSistema {
       throw new ProcessError(410, "Error Obteniendo datos de la orden de vaceo" + err.message)
     } finally {
       ordenVaceoFlag = false
+      await registrarPasoLog(logId, "LotesRepository.borrarDatoOrdenVaceo", "Completado");
+
     }
   }
   static async put_inventario_inventarios_orden_vaceo_modificar(data) {
@@ -809,7 +814,6 @@ export class VariablesDelSistema {
       );
     }
   }
-
   static async reiniciarValores_proceso(exportacion_keys) {
     let cliente;
 

@@ -4,7 +4,7 @@ import { ProcessError } from "../../Error/ProcessError.js";
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { deshidratacionLote, rendimientoLote } from "../api/utils/lotesFunctions.js";
+import { checkFinalizadoLote, deshidratacionLote, rendimientoLote } from "../api/utils/lotesFunctions.js";
 import { have_lote_GGN_export } from "../controllers/validations.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
@@ -226,7 +226,7 @@ class ProcesoService {
         // Registrar modificación Contenedores
         await RecordModificacionesRepository.post_record_contenedor_modification(
             logContext.action,
-            logContext._id,
+            logContext.user,
             {
                 modelo: "Contenedor",
                 documentoId: contenedor._id,
@@ -242,6 +242,7 @@ class ProcesoService {
     }
     static async restarItem_lote(lote, copiaItemSeleccionado, kilos, contenedor, logContext) {
 
+        console.log(lote)
         lote[calidadFile[copiaItemSeleccionado.calidad]] -= kilos
 
         const query = {
@@ -263,8 +264,8 @@ class ProcesoService {
             query,
             {
                 new: true,
-                user: logContext._id,                    
-                action: logContext.action     
+                user: logContext._id,
+                action: logContext.action
             }
         )
         await registrarPasoLog(logContext.logId, "ProcesoService.restarItem_lote", "Completado");
@@ -342,26 +343,11 @@ class ProcesoService {
 
         return { GGN, }
     }
-    static async modificarContenedorModificarItemListaEmpaque(_id, pallet, seleccion, cajas, tipoCaja, calibre, calidad, action, user) {
-        //se obtiene  el contenedor a modifiar
-        const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
-            ids: [_id],
-            select: { infoContenedor: 1, pallets: 1 },
-            populate: {
-                path: 'infoContenedor.clienteInfo',
-                select: 'CLIENTE PAIS_DESTINO',
-            }
-        })
-        // Crear copia profunda de los pallets
-        const palletsModificados = JSON.parse(JSON.stringify(contenedor[0].pallets));
-        const palletSeleccionado = palletsModificados[pallet].EF1[seleccion];
+    static async modificarContenedorModificarItemListaEmpaque(palletsModificados, palletSeleccionado, newKilos, copiaPallet, item, user) {
 
-        // Almacenar datos previos
-        const oldData = { ...palletSeleccionado };
+        const { _id, pallet, seleccion, data, action } = item
+        const { calidad, calibre, cajas, tipoCaja } = data
 
-        //se obtienen los kilos viejos que se restan y los kilos nuevos que se suman
-        const oldKilos = Number(oldData.tipoCaja.split('-')[1].replace(",", ".")) * oldData.cajas
-        const newKilos = Number(tipoCaja.split('-')[1].replace(",", ".")) * cajas
 
         if (newKilos === 0) {
             //se elimina el elemento si es 0
@@ -386,26 +372,19 @@ class ProcesoService {
                 documentoId: _id,
                 descripcion: `Actualización pallet ${pallet}, posición ${seleccion}`,
             },
-            oldData,
+            copiaPallet,
             palletSeleccionado,
             { pallet, seleccion }
         );
 
-        return { oldData, newKilos, oldKilos, palletSeleccionado, contenedor }
     }
-    static async modificarLoteModificarItemListaEmpaque(oldData, newKilos, oldKilos, palletSeleccionado, contenedor, user, calidad) {
-        //se obtiene el lote
-        const lote = await LotesRepository.getLotes({
-            ids: [oldData.lote],
-            select: { predio: 1, [calidadFile[oldData.calidad]]: 1, kilosGGN: 1 }
-        });
+    static async modificarLoteModificarItemListaEmpaque(oldData, palletSeleccionado, oldKilos, newKilos, calidad, lote, GGN) {
 
         //se guarda el registro
         const antes = {
             [calidadFile[oldData.calidad]]: lote[0][calidadFile[oldData.calidad]],
         }
 
-        //el objeto de modificacion de lotes
         const query = {
             $inc: {
             }
@@ -420,14 +399,14 @@ class ProcesoService {
         }
 
         //se mira si se deben sumar kilosGNN
-        if (have_lote_GGN_export(lote[0], contenedor[0], oldData)) {
+        if (GGN) {
             const total = newKilos - oldKilos
             query.$inc.kilosGGN = total
             antes.kilosGGN = lote[0].kilosGGN
         }
 
         await LotesRepository.actualizar_lote(
-            oldData.lote,
+            { _id: oldData.lote },
             query
         )
 
@@ -472,12 +451,12 @@ class ProcesoService {
             oldDataRegistro.kilosGGN = lote[0].kilosGGN
         }
 
-        await LotesRepository.modificar_lote_proceso(
-            copiaPalletSeleccionado.lote,
+        await LotesRepository.actualizar_lote(
+            { _id: copiaPalletSeleccionado.lote },
             query,
-            "Cambiar tipo de exportacion",
-            user
+            { user: user._id, action: "put_proceso_aplicaciones_listaEmpaque_eliminarItem_desktop" }
         )
+
 
         if (logId) await registrarPasoLog(logId, "modificarLoteEliminarItemdesktopListaEmpaque", "Completado", `cajas eliminadas: ${copiaPalletSeleccionado.cajas}, kilos: ${kilos}, lote: ${copiaPalletSeleccionado.lote}`);
 
@@ -626,6 +605,22 @@ class ProcesoService {
         }
 
     }
+    static async modificarLotedescartes(_id, query, user, action) {
+
+        const lote = await LotesRepository.getLotes({ ids: [_id] })
+        const result = checkFinalizadoLote(lote)
+        if (result) {
+            throw new ProcessError(400, `El lote ${lote[0].nombre} ya se encuentra finalizado, no se puede modificar`);
+        }
+
+        const loteModificado = await LotesRepository.actualizar_lote(
+            { _id: _id },
+            query,
+            { user: user._id, action: action }
+        )
+
+        return loteModificado;
+    }
 
     // mirar si se puede usar en otro lado
     static async obtenerContenedorLote(_id, pallet, seleccion) {
@@ -643,7 +638,7 @@ class ProcesoService {
         //se obtiene el lote
         const lote = await LotesRepository.getLotes({
             ids: [palletSeleccionado.lote],
-            select: { predio: 1, [calidadFile[palletSeleccionado.calidad]]: 1, exportacionGGN: 1 }
+            select: { predio: 1, [calidadFile[palletSeleccionado.calidad]]: 1, exportacionGGN: 1, finalizado: 1, enf: 1 }
         });
 
         return {
@@ -687,6 +682,39 @@ class ProcesoService {
             contenedor, lotes, itemsDelete
         }
 
+    }
+    static async obtenerContenedorLotesModificar(contenedor1, contenedor2) {
+
+        const { _id: id1, pallet: pallet1 } = contenedor1
+        const { _id: id2 } = contenedor2
+        // se obtienen los contenedores a modificar
+        const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            ids: [id1, id2],
+            select: { infoContenedor: 1, pallets: 1, numeroContenedor: 1 },
+            populate: {
+                path: 'infoContenedor.clienteInfo',
+                select: 'CLIENTE PAIS_DESTINO',
+            }
+        })
+
+        const [index1, index2] = id1 === id2 ? [0, 0] : [
+            contenedores.findIndex(c => c._id.toString() === id1),
+            contenedores.findIndex(c => c._id.toString() === id2)
+        ];
+
+        const seleccionOrdenado = contenedor1.seleccionado.sort((a, b) => b - a);
+        let lotesIds = []
+
+        const palletsModificados1 = contenedores[index1].pallets;
+
+        for (let i = 0; i < seleccionOrdenado.length; i++) {
+            lotesIds.push(palletsModificados1[pallet1].get('EF1')[seleccionOrdenado[i]].lote)
+        }
+        const lotesIdsArr = [...new Set(lotesIds)];
+
+        const lotes = await LotesRepository.getLotes({ ids: lotesIdsArr, limit: 'all' });
+
+        return { lotes, contenedores, index1, index2 }
     }
     static async crearCopiaProfundaPallets(contenedor) {
         // Convertimos a objeto plano si es un documento Mongoose

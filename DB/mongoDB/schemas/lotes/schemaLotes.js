@@ -180,6 +180,8 @@ export const defineLotes = async (conn, AuditLog) => {
     fecha_aprobacion_comercial: { type: Date },
     frutaNacional: { type: Number, default: 0 },
     flag_balin_free: { type: Boolean, default: true },
+    //restriccion se activa luego de vacear el predio siguiente
+    finalizado: { type: Boolean, default: false },
     GGN: { type: Boolean, default: false },
     historialDescarte: mongoose.Types.ObjectId,
     informeEnviado: { type: Boolean, default: false },

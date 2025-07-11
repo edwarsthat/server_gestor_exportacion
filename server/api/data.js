@@ -62,7 +62,22 @@ export class dataRepository {
 
             throw new DataLogicError(480, `Error ${type}: ${message}`);
         }
+    }
+    static async get_data_tipoFruta2() {
+        try {
+            const tipoFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2()
+            return tipoFrutas
+        } catch (err) {
+            if (
+                err.status === 522
+            ) {
+                throw err
+            }
+            const type = err?.type || "desconocido";
+            const message = err?.message || "Error inesperado";
 
+            throw new DataLogicError(480, `Error ${type}: ${message}`);
+        }
     }
     static async get_data_historicos_para_modelo_python(req) {
         try {
@@ -156,7 +171,6 @@ export class dataRepository {
     }
     static async get_data_cuartosDesverdizados() {
         try {
-            console.log("get_data_cuartosDesverdizados")
             return await CuartosDesverdizados.get_cuartosDesverdizados();
         } catch (err) {
             if (err.status === 522) {
@@ -167,7 +181,6 @@ export class dataRepository {
     }
     static async get_data_EF8() {
         try {
-            
             const EF8 = await dataService.get_ef8_serial();
             return EF8
         } catch (err) {

@@ -18,100 +18,14 @@ import { transformObjectInventarioDescarte } from "./utils/objectsTransforms.js"
 import { InventariosService } from "../services/inventarios.js";
 import { RedisRepository } from "../Class/RedisData.js";
 import { InventariosHistorialRepository } from "../Class/Inventarios.js";
+import { LogsRepository } from "../Class/LogsSistema.js";
+import { dataService } from "../services/data.js";
+import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
+import { registrarPasoLog } from "./helper/logs.js";
 
 
 export class InventariosRepository {
     //#region inventarios
-    /**
-     * Agrega parámetros de desverdizado a un lote que está en proceso de desverdizado.
-     * Este método permite registrar configuraciones o parámetros específicos utilizados
-     * durante el proceso de desverdizado de la fruta.
-     * 
-     * @async
-     * @static
-     * @method put_inventarios_frutaDesverdizando_parametros
-     * 
-     * @param {Object} req - Objeto de solicitud con los datos del parámetro a agregar
-     * @param {Object} req.user - Información del usuario que realiza la operación
-     * @param {string} req.user.user - Datos del usuario autenticado
-     * @param {string} req.user.user._id - ID del usuario que ejecuta la acción
-     * @param {Object} req.data - Datos de la operación
-     * @param {string} req.data._id - ID del lote al que se agregarán los parámetros
-     * @param {Object} req.data.data - Objeto con los parámetros de desverdizado a agregar
-     * @param {string} req.data.action - Descripción de la acción realizada para el historial
-     * 
-     * @description
-     * Este método realiza las siguientes operaciones:
-     * 1. **Validación de datos**: Valida la estructura y contenido de los datos usando Zod
-     * 2. **Preparación de la consulta**: Construye una consulta MongoDB para agregar los parámetros
-     * 3. **Actualización del lote**: Agrega los parámetros al array `desverdizado.parametros`
-     * 4. **Versionado**: Incrementa la versión del documento (`__v`) para control de concurrencia
-     * 5. **Registro de auditoría**: Registra la operación con información del usuario y acción
-     * 
-     * La operación utiliza el operador `$push` de MongoDB para agregar nuevos parámetros
-     * al array existente sin sobrescribir los parámetros anteriores, manteniendo un
-     * historial completo de todas las configuraciones aplicadas durante el proceso.
-     * 
-     * @throws {InventariosLogicError} 470 - Error general de validación o procesamiento
-     * @throws {Error} 523 - Error específico de actualización del lote (se propaga sin modificar)
-     * 
-     * @example
-     * // Ejemplo de uso para agregar parámetros de temperatura y humedad
-     * const req = {
-     *   user: {
-     *     user: {
-     *       _id: "507f1f77bcf86cd799439011"
-     *     }
-     *   },
-     *   data: {
-     *     _id: "507f1f77bcf86cd799439012", // ID del lote
-     *     data: {
-     *       temperatura: 18,
-     *       humedad: 85,
-     *       tiempoEstimado: 72,
-     *       fechaInicio: new Date(),
-     *       observaciones: "Parámetros estándar para naranja"
-     *     },
-     *     action: "agregar_parametros_desverdizado"
-     *   }
-     * };
-     * 
-     * await InventariosRepository.put_inventarios_frutaDesverdizando_parametros(req);
-     * 
-     * @example
-     * // Ejemplo de estructura después de agregar múltiples parámetros
-     * // El lote tendrá en su campo desverdizado.parametros:
-     * [
-     *   {
-     *     temperatura: 18,
-     *     humedad: 85,
-     *     tiempoEstimado: 72,
-     *     fechaInicio: "2024-01-15T10:00:00.000Z",
-     *     observaciones: "Parámetros iniciales"
-     *   },
-     *   {
-     *     temperatura: 20,
-     *     humedad: 80,
-     *     ajuste: "Incremento temperatura por clima",
-     *     fechaModificacion: "2024-01-16T08:00:00.000Z"
-     *   }
-     * ]
-     * 
-     * @since 1.0.0
-     * @see {@link InventariosValidations.put_inventarios_frutaDesverdizando_parametros} Para validaciones de datos
-     * @see {@link LotesRepository.actualizar_lote} Para la actualización del lote en la base de datos
-     * 
-     * @performance
-     * - Operación optimizada usando operadores MongoDB nativos ($push, $inc)
-     * - Validación previa para evitar operaciones innecesarias
-     * - Tiempo típico de ejecución: < 50ms
-     * 
-     * @note
-     * - Los parámetros se agregan al array sin validar duplicados
-     * - Cada entrada en el array mantiene su estructura independiente
-     * - El versionado del documento ayuda a prevenir conflictos de concurrencia
-     * - Todos los parámetros agregados quedan registrados permanentemente
-     */
     static async put_inventarios_frutaDesverdizando_parametros(req) {
         try {
             InventariosValidations.put_inventarios_frutaDesverdizando_parametros().parse(req.data)
@@ -1085,15 +999,19 @@ export class InventariosRepository {
 
     }
     static async put_inventarios_ordenVaceo_vacear(req) {
-        const { user, data } = req
-
-        // const pilaFunciones = [];
+        let log
+        const { user, data } = req;
         const { _id, kilosVaciados, inventario, __v } = data;
         try {
-            if (user.Rol > 0) {
-                await InventariosService.probar_deshidratacion_loteProcesando()
+            log = await LogsRepository.create({
+                user: user._id,
+                action: "put_inventarios_ordenVaceo_vacear",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
 
-            }
+            const loteAnterior = await InventariosService.probar_deshidratacion_loteProcesando(user)
+            await registrarPasoLog(log._id, "InventariosService.probar_deshidratacion_loteProcesando", "Completado");
+
             const query = {
                 $inc: {
                     kilosVaciados: kilosVaciados,
@@ -1102,24 +1020,26 @@ export class InventariosRepository {
                 fechaProceso: new Date()
             }
             await LotesRepository.modificar_lote(_id, query, "vaciarLote", user._id, __v);
+            await registrarPasoLog(log._id, "LotesRepository.modificar_lote", "Completado", `Se modificó el lote con ID ${_id} para vaciarlo, kilosVaciados: ${kilosVaciados}`);
 
             const lote = await LotesRepository.getLotes({ ids: [_id] });
-            //condicional si es desverdizado o no
+            await registrarPasoLog(log._id, "LotesRepository.getLotes", "Completado",);
 
-            await VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario);
+            await Promise.all([
+                VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario, log._id),
+                VariablesDelSistema.procesarEF1(lote[0], inventario, log._id),
+                VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString(), log._id),
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados, log._id)
+            ])
+            await registrarPasoLog(log._id, "Promise.all", "Completado");
 
-            // const predioAnterior = await VariablesDelSistema.obtenerEF1proceso()
-
-            await VariablesDelSistema.procesarEF1(lote[0], inventario);
-            await VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString()),
-
-                await VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados)
+            await LotesRepository.actualizar_lote({ _id: loteAnterior._id }, { finalizado: true })
+            await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Se actualizó el lote ${loteAnterior._id} a finalizado: true`);
 
             //para lista de empaque
             procesoEventEmitter.emit("predio_vaciado", {
                 predio: lote
             });
-
             //para el desktop app
             procesoEventEmitter.emit("server_event", {
                 action: "inventario_frutaSinProcesar",
@@ -1128,12 +1048,16 @@ export class InventariosRepository {
                 }
             });
         } catch (err) {
+            await registrarPasoLog(log._id, "Promise.all", "Error", `Error: ${err.message}`);
+
             if (err.status === 470) {
                 throw err;
             }
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
             throw new Error(`Code ${err.code}: ${err.message}`);
 
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
 
     }
@@ -1899,6 +1823,45 @@ export class InventariosRepository {
             });
 
         } catch (err) {
+            if (err.status === 521) {
+                throw err
+            }
+            if (err instanceof ZodError) {
+                const mensajeLindo = err.errors[0]?.message || "Error desconocido en los datos del lote";
+                throw new InventariosLogicError(470, mensajeLindo);
+            }
+            throw new InventariosLogicError(470, err.message)
+
+        }
+
+    }
+    static async post_inventarios_EF8(req) {
+        const { user } = req;
+        // let log
+        try {
+            // log = await LogsRepository.create({
+            //     user: user._id,
+            //     action: "post_inventarios_EF8",
+            //     acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            // })
+            const { data } = req.data;
+            InventariosValidations.post_inventarios_EF8().parse(data)
+
+            const [EF8, tipoFruta] = await Promise.all([
+                dataService.get_ef8_serial(data.fecha_ingreso_inventario),
+                ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(data.tipoFruta)
+            ])
+            console.log(EF8, tipoFruta)
+
+            const { precioId, } = await InventariosService.obtenerPrecioProveedor(data.predio, tipoFruta[0].tipoFruta)
+            const query = await InventariosService.construir_ef8_lote(data, EF8, precioId, tipoFruta, user);
+
+            await LotesRepository.crear_lote_EF8(query, user);
+
+            //falta ingresar la fruta al inventario descarte, el movimiento en el inventario de canastillas
+            //modificar los indicadores dado el caso, toca mirar 
+        } catch (err) {
+            console.log(err)
             if (err.status === 521) {
                 throw err
             }

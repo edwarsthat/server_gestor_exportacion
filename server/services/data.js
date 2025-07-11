@@ -1,7 +1,7 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 
 export class dataService {
-    static async get_ef8_serial() {
+    static async get_ef8_serial(fecha = null) {
         const EF8 = await db.Seriales.find({ name: "EF8-" })
             .exec();
 
@@ -14,8 +14,14 @@ export class dataService {
         if (!EF8[0].serial || typeof EF8[0].serial !== 'number') {
             throw new Error("El campo 'serial' no es un número o no existe en el registro de EF8");
         }
-
-        let fecha = new Date();
+        if (fecha) {
+            fecha = new Date(fecha);
+            if (isNaN(fecha.getTime())) {
+                throw new Error("Fecha inválida proporcionada");
+            }
+        } else {
+            fecha = new Date();
+        }
         let year = fecha.getFullYear().toString().slice(-2);
         let month = String(fecha.getMonth() + 1).padStart(2, "0");
         let enf;

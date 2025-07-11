@@ -22,6 +22,7 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
+import { checkFinalizadoLote } from "./utils/lotesFunctions.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -151,12 +152,9 @@ export class ProcesoRepository {
                 kilos += Math.round(data[keys[i]]);
             }
 
-            const lote = await LotesRepository.actualizar_lote(
-                { _id: _id },
-                query,
-                { user: user._id, action: action }
-            )
-            await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
+            const lote = await ProcesoService.modificarLotedescartes(_id, query, user, action)
+            await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
+
 
             await Promise.all([
                 RedisRepository.put_inventarioDescarte(data, 'descarteLavado:', lote.tipoFruta, log._id),
@@ -178,9 +176,8 @@ export class ProcesoRepository {
                 data: {}
             });
         } catch (err) {
-        console.log(err)
 
-            const criticalStatus = new Set([523, 515, 518, 532]);
+            const criticalStatus = new Set([523, 515, 518, 532, 400]);
             if (err && criticalStatus.has(err.status)) {
                 throw err;
             }
@@ -239,12 +236,8 @@ export class ProcesoRepository {
                 }
             }
 
-            const lote = await LotesRepository.actualizar_lote(
-                { _id: _id },
-                query,
-                { user: user._id, action: action }
-            )
-            await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
+            const lote = await ProcesoService.modificarLotedescartes(_id, query, user, action)
+            await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
 
             await Promise.all([
                 RedisRepository.put_inventarioDescarte(data, 'descarteEncerado:', lote.tipoFruta),
@@ -266,20 +259,19 @@ export class ProcesoRepository {
                 data: {}
             });
         } catch (err) {
-            console.log(err)
-            if (err.status === 523 ||
-                err.status === 515 ||
-                err.status === 518 ||
-                err.status === 532
-            ) {
-                throw err
+            const criticalStatus = new Set([523, 515, 518, 532, 400]);
+            if (err && criticalStatus.has(err.status)) {
+                throw err;
+            }
+            if (err instanceof z.ZodError) {
+                const errores = err.errors.map(e => `${e.path[0]}: ${e.message}`).join(" | ")
+                throw new ProcessError(470, `Error de validación: ${errores}`)
             }
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
         } finally {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
-
     static async get_proceso_aplicaciones_listaEmpaque_contenedores() {
         try {
             const contenedores = await ContenedoresRepository.getContenedores({
@@ -432,6 +424,10 @@ export class ProcesoRepository {
             const { contenedor, lotes } = await ProcesoService.getContenedorAndLote(lote, _id);
             const loteModificado = JSON.parse(JSON.stringify(lotes[0]));
 
+            if (checkFinalizadoLote(lotes[0])) {
+                throw new ProcessError(400, `El lote ${lotes[0].enf} ya se encuentra finalizado, no se puede modificar`);
+            }
+
             const GGN = have_lote_GGN_export(loteModificado, contenedor[0], item)
             await registrarPasoLog(log._id, "Revisa si tiene GGN", "Completado", `Tiene GGN: ${GGN}`);
 
@@ -457,7 +453,8 @@ export class ProcesoRepository {
 
             if (
                 err.status === 610 ||
-                err.status === 523
+                err.status === 523 ||
+                err.status === 400
             ) {
                 throw err
             }
@@ -478,14 +475,31 @@ export class ProcesoRepository {
             ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop().parse(req.data)
             await registrarPasoLog(log._id, "Validación de datos completada", "Completado");
 
-            const { _id, pallet, seleccion, data, action } = req.data
+            const { _id, pallet, seleccion, data } = req.data
             const { calidad, calibre, cajas, tipoCaja } = data
 
-            const { oldData, newKilos, oldKilos, palletSeleccionado, contenedor } = await ProcesoService
-                .modificarContenedorModificarItemListaEmpaque(_id, pallet, seleccion, cajas, tipoCaja, calibre, calidad, action, user)
+            const { contenedor, lote } = await ProcesoService.obtenerContenedorLote(_id, pallet, seleccion);
+            await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLote", "Completado", `Contenedor: ${_id}, Pallet: ${pallet}, Selección: ${seleccion} - Lote: ${lote._id}`);
+
+            if (checkFinalizadoLote(lote[0])) {
+                throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
+            }
+
+            const { palletsModificados, copiaPallet } = await ProcesoService.crearCopiaProfundaPallets(contenedor[0]);
+            await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
+
+            const GGN = have_lote_GGN_export(lote, contenedor[0])
+
+            const oldData = copiaPallet[pallet].EF1[seleccion];
+            const itemSeleccionadoOld = copiaPallet[pallet].EF1[seleccion];
+            const oldKilos = itemSeleccionadoOld.cajas * Number(itemSeleccionadoOld.tipoCaja.split("-")[1].replace(",", "."));
+            const palletSeleccionado = palletsModificados[pallet].EF1[seleccion];
+            const newKilos = Number(tipoCaja.split('-')[1].replace(",", ".")) * cajas
+
+            await ProcesoService.modificarContenedorModificarItemListaEmpaque(palletsModificados, palletSeleccionado, newKilos, copiaPallet, req.data, user)
             await registrarPasoLog(log._id, "ProcesoService.modificarContenedorModificarItemListaEmpaque", "Completado");
 
-            await ProcesoService.modificarLoteModificarItemListaEmpaque(oldData, newKilos, oldKilos, palletSeleccionado, contenedor, user, calidad)
+            await ProcesoService.modificarLoteModificarItemListaEmpaque(oldData, palletSeleccionado, oldKilos, newKilos, calidad, lote, GGN)
             await registrarPasoLog(log._id, "ProcesoService.modificarLoteModificarItemListaEmpaque", "Completado");
 
             //se mira si es fruta de hoy para restar de las variables del proceso
@@ -535,6 +549,10 @@ export class ProcesoRepository {
             const { _id, pallet, seleccion, action } = req.data
             const { contenedor, lote } = await ProcesoService.obtenerContenedorLote(_id, pallet, seleccion);
             await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLote", "Completado", `Contenedor: ${_id}, Pallet: ${pallet}, Selección: ${seleccion} - Lote: ${lote._id}`);
+
+            if (checkFinalizadoLote(lote[0])) {
+                throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
+            }
 
             const { palletsModificados, copiaPallet } = await ProcesoService.crearCopiaProfundaPallets(contenedor[0]);
             await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
@@ -600,6 +618,12 @@ export class ProcesoRepository {
             const { contenedor, lotes, itemsDelete } = await ProcesoService.obtenerContenedorLotes(_id, pallet, seleccionOrdenado);
             await registrarPasoLog(log._id, "ProcesoValidations.obtenerContenedorLotes", "Completado");
 
+            lotes.forEach(lote => {
+                if (checkFinalizadoLote(lote)) {
+                    throw new ProcessError(400, `El lote ${lote.enf} ya se encuentra finalizado, no se puede modificar`);
+                }
+            })
+
             const { palletsModificados, copiaPallet } = await ProcesoService.crearCopiaProfundaPallets(contenedor[0]);
             await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
 
@@ -620,7 +644,6 @@ export class ProcesoRepository {
 
         } catch (err) {
             await registrarPasoLog(log._id, "Error", "Fallido", err.message);
-
             if (
                 err.status === 610 ||
                 err.status === 523 ||
@@ -631,7 +654,6 @@ export class ProcesoRepository {
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
         } finally {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-
         }
     }
     static async put_proceso_aplicaciones_listaEmpaque_restarItem(req) {
@@ -653,9 +675,16 @@ export class ProcesoRepository {
             //se obtienen los datos
             const { contenedor, lote } = await ProcesoService.obtenerContenedorLote(_id, pallet, seleccion);
             await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLote", "Completado", `Contenedor: ${_id}, Pallet: ${pallet}, Selección: ${seleccion} - Lote: ${lote[0]._id}`);
+
+            console.log(lote)
+            if (checkFinalizadoLote(lote[0])) {
+                throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
+            }
+
             //se copian
             const { palletsModificados, copiaPallet } = await ProcesoService.crearCopiaProfundaPallets(contenedor[0]);
             await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
+
             //se preparan los datos
             const copiaPalletSeleccionado = copiaPallet[pallet].EF1[seleccion];
             const copiaItemSeleccionado = palletsModificados[pallet].EF1[seleccion]
@@ -685,7 +714,7 @@ export class ProcesoRepository {
             ) {
                 throw err
             }
-            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
+            throw new ProcessError(470, `Error: ${err.message}`)
         } finally {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
@@ -716,47 +745,29 @@ export class ProcesoRepository {
      * @param {Object} user - Usuario que realiza la acción.
      */
     static async mover_item_entre_contenedores(contenedor1, contenedor2, action, user) {
-
+        let log
         try {
+            log = await LogsRepository.create({
+                user: user._id,
+                action: "mover_item_entre_contenedores",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
             const { _id: id1, pallet: pallet1 } = contenedor1
             const { _id: id2, pallet: pallet2 } = contenedor2
             if (id1 === id2 && pallet1 === pallet2) {
                 throw new ProcessError(400, "No se puede mover ítems entre el mismo pallet")
             }
+            const { lotes, contenedores, index1, index2 } = await ProcesoService.obtenerContenedorLotesModificar(contenedor1, contenedor2)
+            await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLotesModificar", "Completado");
+
             const seleccionOrdenado = contenedor1.seleccionado.sort((a, b) => b - a);
-            let lotesIds = []
 
-            // se obtienen los contenedores a modificar
-            const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                ids: [id1, id2],
-                select: { infoContenedor: 1, pallets: 1, numeroContenedor: 1 },
-                populate: {
-                    path: 'infoContenedor.clienteInfo',
-                    select: 'CLIENTE PAIS_DESTINO',
-                }
-            })
+            const { palletsModificados: palletsModificados1, copiaPallet: copiaPallets1 } = await ProcesoService.crearCopiaProfundaPallets(contenedores[index1]);
+            const { palletsModificados: palletsModificados2, copiaPallet: copiaPallets2 } = await ProcesoService.crearCopiaProfundaPallets(contenedores[index2]);
+            await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
 
-            const [index1, index2] = id1 === id2 ? [0, 0] : [
-                contenedores.findIndex(c => c._id.toString() === id1),
-                contenedores.findIndex(c => c._id.toString() === id2)
-            ];
+            if (lotes.length > 0) {
 
-            //se crea una copa del pallet a modificar
-            const palletsModificados1 = JSON.parse(JSON.stringify(contenedores[index1].pallets));
-            const palletsModificados2 = JSON.parse(JSON.stringify(contenedores[index2].pallets));
-            const copiaPallets1 = JSON.parse(JSON.stringify(contenedores[index1].pallets));
-            const copiaPallets2 = JSON.parse(JSON.stringify(contenedores[index2].pallets));
-
-
-            for (let i = 0; i < seleccionOrdenado.length; i++) {
-                lotesIds.push(palletsModificados1[pallet1].EF1[seleccionOrdenado[i]].lote)
-            }
-
-            const lotesIdsArr = [...new Set(seleccionOrdenado.map(i => palletsModificados1[pallet1].EF1[i].lote))];
-
-            if (lotesIdsArr.length > 0) {
-
-                const lotes = await LotesRepository.getLotes({ ids: lotesIds, limit: 'all' });
                 const oldLotes = lotes.map(l => ({ _id: l._id, enf: l.enf, contenedores: l.contenedores }));
                 const operationsLotes = [];
 
@@ -767,8 +778,13 @@ export class ProcesoRepository {
                     const itemSplice = palletsModificados1[pallet1].EF1.splice(seleccionOrdenado[i], 1)[0]
                     const lote = lotes.find(l => l._id.toString() === itemSplice.lote)
 
+
                     const oldGGN = have_lote_GGN_export(lote, contenedores[index1], palletsModificados1)
                     const GGN = have_lote_GGN_export(lote, contenedores[index2], palletsModificados2)
+
+                    if (((oldGGN !== GGN) || !lote.contenedores.includes(id2)) && lote.finalizado) {
+                        throw new ProcessError(400, `El lote ${lote.enf} ya se encuentra finalizado, no se puede modificar`);
+                    }
 
                     palletsModificados2[pallet2].EF1.push({ ...itemSplice, GGN });
 
@@ -836,6 +852,7 @@ export class ProcesoRepository {
             procesoEventEmitter.emit("listaempaque_update");
 
         } catch (err) {
+            console.log(err)
             if (
                 err.status === 610 ||
                 err.status === 523
@@ -895,8 +912,12 @@ export class ProcesoRepository {
             const oldGGN = have_lote_GGN_export(lotes[0], contenedores[index1], palletsModificados1)
             const GGN = have_lote_GGN_export(lotes[0], contenedores[index2], palletsModificados2)
 
+            if (((oldGGN !== GGN) || !lotes[0].contenedores.includes(id2)) && lotes[0].finalizado) {
+                throw new ProcessError(400, `El lote ${lotes[0].enf} ya se encuentra finalizado, no se puede modificar`);
+            }
+            await LotesRepository.actualizar_lote(lotes[0]._id, { $addToSet: { contenedores: id2 } })
+
             const kilos = cajas * Number(itemSeleccionado.tipoCaja.split('-')[1].replace(",", "."))
-            console.log(kilos)
             // se busca si el elemento del contenedor2 tiene un elemento igual
             const index = palletsModificados2[pallet2].EF1.findIndex(item => (
                 item.lote === itemSeleccionado.lote &&
@@ -1103,6 +1124,12 @@ export class ProcesoRepository {
 
             const { palletsModificados, copiaPallet } = await ProcesoService.crearCopiaProfundaPallets(contenedor[0]);
             await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
+
+            lotes.forEach(lote => {
+                if(checkFinalizadoLote(lote) ) {
+                    throw new ProcessError(400, `El lote ${lote.enf} ya se encuentra finalizado, no se puede modificar`);
+                }
+            })
 
             await Promise.all([
                 ProcesoService.modificarPalletModificarItemsListaEmpaque(

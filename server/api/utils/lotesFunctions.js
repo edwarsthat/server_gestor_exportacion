@@ -23,7 +23,6 @@ async function rendimientoLote(data) {
         throw new ProcessError(602, `${err.type} ${err.message}`);
     }
 }
-
 async function deshidratacionLote(data) {
     /**
      * Calcula y guarda la deshidratación del lote, sumando toda la fruta procesada,
@@ -68,8 +67,6 @@ async function deshidratacionLote(data) {
         throw new ProcessError(602, `${err.type} ${err.message}`);
     }
 }
-
-
 function descarteTotal(descarte) {
     /**
      * Funcion que suma los descartes 
@@ -86,7 +83,10 @@ function descarteTotal(descarte) {
     }
 }
 
+const checkFinalizadoLote = lote => lote?.finalizado;
+
 export {
     rendimientoLote,
-    deshidratacionLote
+    deshidratacionLote,
+    checkFinalizadoLote
 };

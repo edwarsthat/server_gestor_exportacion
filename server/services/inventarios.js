@@ -945,22 +945,50 @@ export class InventariosService {
         ])
     }
     static async ingresar_salida_inventario_descartes() {
-
     }
-    static async probar_deshidratacion_loteProcesando() {
+    static async probar_deshidratacion_loteProcesando(user) {
         const predioVaciando = await VariablesDelSistema.obtenerEF1proceso()
         const loteVaciando = await LotesRepository.getLotes({ ids: [predioVaciando._id] });
-        if (
-            loteVaciando &&
-            loteVaciando.length > 0 &&
-            typeof loteVaciando[0].deshidratacion === 'number' &&
-            (loteVaciando[0].deshidratacion > 3 || loteVaciando[0].deshidratacion < -1)
-        ) {
-            throw new InventariosLogicError(
-                470,
-                `El lote no se puede vaciar porque la deshidratacion de  ${predioVaciando.enf} - ${predioVaciando.nombrePredio}  no está en el rango correcto.`
-            );
+        if (user.Rol > 0) {
+            if (
+                loteVaciando &&
+                loteVaciando.length > 0 &&
+                typeof loteVaciando[0].deshidratacion === 'number' &&
+                (loteVaciando[0].deshidratacion > 3 || loteVaciando[0].deshidratacion < -1)
+            ) {
+                throw new InventariosLogicError(
+                    470,
+                    `El lote no se puede vaciar porque la deshidratacion de  ${predioVaciando.enf} - ${predioVaciando.nombrePredio}  no está en el rango correcto.`
+                );
+            }
+        }
+        return loteVaciando[0];
+    }
+    static async construir_ef8_lote(data, enf, precio, tipoFruta, user) {
+        const totalCanastillas =
+            Number(data.canastillasPropias || 0) + Number(data.canastillasPrestadas || 0) +
+            Number(data.canastillasVaciasPropias || 0) + Number(data.canastillasVaciasPrestadas || 0);
+        const total = Number(data.descarteGeneral || 0) + Number(data.balin || 0) + Number(data.pareja || 0);
+        const promedio = totalCanastillas > 0 ? total / totalCanastillas : 0;
+
+        const loteEF8 = {
+            balin: data.balin || 0,
+            canastillas: totalCanastillas || 0,
+            descarteGeneral: Number(data.descarteGeneral || 0),
+            enf: enf,
+            fecha_ingreso_inventario: new Date(data.fechaIngreso || Date.now()),
+            numeroPrecintos: Number(data.numeroPrecintos || 0),
+            numeroRemision: data.numeroRemision,
+            observaciones: data.observaciones || '',
+            pareja: Number(data.pareja || 0),
+            placa: data.placa || '',
+            predio: data.predio || '',
+            precio: precio,
+            promedio: promedio,
+            tipoFruta: tipoFruta._id,
+            user: user._id
         }
 
+        return loteEF8
     }
 }

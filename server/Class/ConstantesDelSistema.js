@@ -62,17 +62,16 @@ export class ConstantesDelSistema {
             throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`)
         }
     }
-    static async get_constantes_sistema_tipo_frutas2() {
+    static async get_constantes_sistema_tipo_frutas2(_id) {
         try {
-            const registros = await db.SerTipoFrutasiales.find()
-                .exec();
-
-            return registros
-
+            const filter = _id ? { _id } : {}; // Si hay _id, filtra; si no, tráeme todo.
+            const registros = await db.TipoFrutas.find(filter).exec();
+            return registros;
         } catch (err) {
-            throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`)
+            throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`);
         }
     }
+
     static async get_constantes_sistema_paises_GGN() {
         try {
             const dataJSON = fs.readFileSync(paises_GGN_path);

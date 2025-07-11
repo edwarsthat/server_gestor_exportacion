@@ -493,7 +493,7 @@ export class InventariosValidations {
             action: z.literal("put_inventarios_frutaDesverdizado_finalizar")
         })
     }
-    static put_inventarios_frutaDesverdizado_mover(){
+    static put_inventarios_frutaDesverdizado_mover() {
         return z.object({
             _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
             cuarto: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
@@ -506,9 +506,9 @@ export class InventariosValidations {
             })
         })
     }
-    static set_inventarios_inventario(){
+    static set_inventarios_inventario() {
         return z.object({
-             "descarteLavado:descarteGeneral": z.string().refine((val) => val === "N/A" || (!isNaN(Number(val)) && Number(val) >= 0 && Number.isInteger(Number(val))), {
+            "descarteLavado:descarteGeneral": z.string().refine((val) => val === "N/A" || (!isNaN(Number(val)) && Number(val) >= 0 && Number.isInteger(Number(val))), {
                 message: "Debe ser un número entero positivo o N/A"
             }),
             "descarteLavado:pareja": z.string().refine((val) => val === "N/A" || (!isNaN(Number(val)) && Number(val) >= 0 && Number.isInteger(Number(val))), {
@@ -536,5 +536,64 @@ export class InventariosValidations {
                 message: "Debe ser un número entero positivo o N/A"
             })
         })
+    }
+    static post_inventarios_EF8() {
+        return z.object({
+            predio: z.string().min(1, "El predio es obligatorio"),
+            tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
+            descarteGeneral: z
+                .string()
+                .optional()
+                .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+            pareja: z
+                .string()
+                .optional()
+                .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+            balin: z
+                .string()
+                .optional()
+                .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+            canastillasPropias: z
+                .string()
+                .optional()
+                .transform(val => Number(val))
+                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+            canastillasPrestadas: z
+                .string()
+                .optional()
+                .transform(val => Number(val))
+                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+            canastillasVaciasPropias: z
+                .string()
+                .optional()
+                .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+            canastillasVaciasPrestadas: z
+                .string()
+                .optional()
+                .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+            fecha_ingreso_inventario: z.string()
+                .min(1, "La fecha de ingreso es obligatoria")
+                .refine(val => !isNaN(Date.parse(val)), {
+                    message: "La fecha no es válida",
+                }),
+            placa: z
+                .string()
+                .min(1, "La placa es obligatoria")
+                .regex(/^[A-Z]{3}\d{3}$/, "La placa debe tener 3 letras seguidas de 3 números (ej. ABC123)")
+                .transform(val => val.toUpperCase())
+
+        });
     }
 }
