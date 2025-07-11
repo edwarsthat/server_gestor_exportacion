@@ -1,7 +1,8 @@
 import { db } from "../../DB/mongoDB/config/init.js";
+import { registrarPasoLog } from "../api/helper/logs.js";
 
 export class dataService {
-    static async get_ef8_serial(fecha = null) {
+    static async get_ef8_serial(fecha = null, logId) {
         const EF8 = await db.Seriales.find({ name: "EF8-" })
             .exec();
 
@@ -30,7 +31,11 @@ export class dataService {
         } else {
             enf = EF8[0].name + year + month + EF8[0].serial;
         }
-        console.log("Serial EF8:", enf);
+
+        if (logId) {
+            await registrarPasoLog(logId, "dataService.get_ef8_serial", "Completado");
+        }
+
         return enf;
     }
 }

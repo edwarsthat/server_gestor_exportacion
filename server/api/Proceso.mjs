@@ -152,10 +152,8 @@ export class ProcesoRepository {
                 query.$inc[`descarteLavado.${keys[i]}`] = Math.round(data[keys[i]]);
                 kilos += Math.round(data[keys[i]]);
             }
-
             const lote = await ProcesoService.modificarLotedescartes(_id, query, user, action)
             await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
-
 
             await Promise.all([
                 RedisRepository.put_inventarioDescarte(data, 'descarteLavado:', lote.tipoFruta, log._id),
@@ -208,7 +206,6 @@ export class ProcesoRepository {
      * @throws {ProcessError} Si ocurre un error durante el proceso.
      */
     static async put_proceso_aplicaciones_descarteEncerado(req) {
-        console.log(req)
 
         const { user } = req;
         let log

@@ -10,3 +10,13 @@ export function getColombiaDate(date = new Date()) {
     // Colombia está en UTC-5:00, así que restamos 5 horas
     return new Date(utc - (5 * 60 * 60 * 1000));
 }
+
+export function colombiaToUTC(dateString) {
+    // Crea una fecha con la hora local Colombia, pero la interpreta como local del servidor (típicamente UTC)
+    const fechaCol = new Date(dateString);
+
+    // Suma 5 horas para convertir a UTC
+    fechaCol.setHours(fechaCol.getHours() + 5);
+
+    return fechaCol;
+}

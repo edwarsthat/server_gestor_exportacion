@@ -2,6 +2,7 @@ import { db } from "../../DB/mongoDB/config/init.js";
 import { PostError, PutError, ConnectionDBError } from "../../Error/ConnectionErrors.js";
 import { ProcessError } from "../../Error/ProcessError.js";
 import fs from 'fs';
+import { registrarPasoLog } from "../api/helper/logs.js";
 
 
 
@@ -314,7 +315,7 @@ export class LotesRepository {
         }
     }
     //#region EF8
-    static async crear_lote_EF8(data, user) {
+    static async crear_lote_EF8(data, user, logId = null) {
         try {
             const query = {
                 ...data,
@@ -322,6 +323,11 @@ export class LotesRepository {
             }
             const lote = new db.LotesEF8(query);
             const new_lote = await lote.save();
+
+            if (logId) {
+                await registrarPasoLog(logId, "LotesRepository.crear_lote_EF8", "Completado");
+
+            }
             return new_lote;
         } catch (err) {
             throw new PostError(521, `Error creando lote ${err.message}`);

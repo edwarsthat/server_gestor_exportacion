@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { ProcessError } from '../../Error/ProcessError.js';
 import { db } from '../../DB/mongoDB/config/init.js';
+import { registrarPasoLog } from '../api/helper/logs.js';
 
 // La magia para tener __dirname:
 const __filename = fileURLToPath(import.meta.url);
@@ -62,10 +63,14 @@ export class ConstantesDelSistema {
             throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`)
         }
     }
-    static async get_constantes_sistema_tipo_frutas2(_id) {
+    static async get_constantes_sistema_tipo_frutas2(_id, logId = null) {
         try {
             const filter = _id ? { _id } : {}; // Si hay _id, filtra; si no, tráeme todo.
             const registros = await db.TipoFrutas.find(filter).exec();
+
+            if (logId) {
+                await registrarPasoLog(logId, "ConstantesDelSistema.get_constantes_sistema_tipo_frutas2", "Completado");
+            }
             return registros;
         } catch (err) {
             throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`);

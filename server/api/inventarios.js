@@ -1837,31 +1837,40 @@ export class InventariosRepository {
     }
     static async post_inventarios_EF8(req) {
         const { user } = req;
-        // let log
+        let log
         try {
-            // log = await LogsRepository.create({
-            //     user: user._id,
-            //     action: "post_inventarios_EF8",
-            //     acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-            // })
+            log = await LogsRepository.create({
+                user: user._id,
+                action: "post_inventarios_EF8",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
             const { data } = req.data;
             InventariosValidations.post_inventarios_EF8().parse(data)
+            await registrarPasoLog(log._id, "InventariosValidations.post_inventarios_EF8", "Completado");
 
             const [EF8, tipoFruta] = await Promise.all([
-                dataService.get_ef8_serial(data.fecha_ingreso_inventario),
-                ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(data.tipoFruta)
+                dataService.get_ef8_serial(data.fecha_ingreso_inventario, log._id),
+                ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(data.tipoFruta, log._id)
             ])
-            console.log(EF8, tipoFruta)
 
-            const { precioId, } = await InventariosService.obtenerPrecioProveedor(data.predio, tipoFruta[0].tipoFruta)
-            const query = await InventariosService.construir_ef8_lote(data, EF8, precioId, tipoFruta, user);
+            const { precioId, } = await InventariosService.obtenerPrecioProveedor(data.predio, tipoFruta[0].tipoFruta);
+            await registrarPasoLog(log._id, "InventariosService.obtenerPrecioProveedor", "Completado");
 
-            await LotesRepository.crear_lote_EF8(query, user);
+            const { loteEF8, total } = await InventariosService.construir_ef8_lote(data, EF8, precioId, tipoFruta, user);
+            await registrarPasoLog(log._id, "InventariosService.construir_ef8_lote", "Completado");
 
-            //falta ingresar la fruta al inventario descarte, el movimiento en el inventario de canastillas
-            //modificar los indicadores dado el caso, toca mirar 
+            await Promise.all([
+                LotesRepository.crear_lote_EF8(loteEF8, user, log._id),
+                InventariosService.ingresarDescarteEf8(loteEF8, log._id),
+                // VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", loteEF8.tipoFruta, total, log._id)
+            ])
+            procesoEventEmitter.emit("server_event", {
+                action: "descarte_change",
+                data: {}
+            });
+
         } catch (err) {
-            console.log(err)
+            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
             if (err.status === 521) {
                 throw err
             }
@@ -1871,6 +1880,8 @@ export class InventariosRepository {
             }
             throw new InventariosLogicError(470, err.message)
 
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
 
     }

@@ -1,5 +1,6 @@
 import { InventariosLogicError } from "../../Error/logicLayerError.js";
 import { obtenerEstadoDesdeAccionCanastillasInventario } from "../api/utils/diccionarios.js";
+import { colombiaToUTC } from "../api/utils/fechas.js";
 import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
 import { ClientesRepository } from "../Class/Clientes.js";
@@ -976,7 +977,7 @@ export class InventariosService {
             canastillas: totalCanastillas || 0,
             descarteGeneral: Number(data.descarteGeneral || 0),
             enf: enf,
-            fecha_ingreso_inventario: new Date(data.fechaIngreso || Date.now()),
+            fecha_ingreso_inventario: colombiaToUTC(data.fechaIngreso || Date.now()),
             numeroPrecintos: Number(data.numeroPrecintos || 0),
             numeroRemision: data.numeroRemision,
             observaciones: data.observaciones || '',
@@ -985,10 +986,20 @@ export class InventariosService {
             predio: data.predio || '',
             precio: precio,
             promedio: promedio,
-            tipoFruta: tipoFruta._id,
+            tipoFruta: data.tipoFruta,
             user: user._id
         }
 
-        return loteEF8
+        return { loteEF8, total }
+    }
+    static async ingresarDescarteEf8(data, logId) {
+        const descarte = {
+            descarteGeneral: data.descarteGeneral || 0,
+            pareja: data.pareja || 0,
+            balin: data.balin || 0,
+        }
+        console.log(data)
+        await RedisRepository.put_inventarioDescarte(descarte, 'descarteLavado:', data.tipoFruta, logId)
+
     }
 }
