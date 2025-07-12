@@ -19,7 +19,7 @@ export const defineLoteEf8 = async (conn) => {
         predio: { type: Schema.Types.ObjectId, ref: 'Proveedor' },
         precio: { type: Schema.Types.ObjectId, ref: 'precio' },
         promedio: Number,
-        tipoFruta: String,
+        tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas' },
         user: {
             type: Schema.Types.ObjectId,
             ref: 'usuario',

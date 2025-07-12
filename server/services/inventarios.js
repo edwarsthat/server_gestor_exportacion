@@ -965,7 +965,7 @@ export class InventariosService {
         }
         return loteVaciando[0];
     }
-    static async construir_ef8_lote(data, enf, precio, tipoFruta, user) {
+    static async construir_ef8_lote(data, enf, precio, user) {
         const totalCanastillas =
             Number(data.canastillasPropias || 0) + Number(data.canastillasPrestadas || 0) +
             Number(data.canastillasVaciasPropias || 0) + Number(data.canastillasVaciasPrestadas || 0);
@@ -992,14 +992,13 @@ export class InventariosService {
 
         return { loteEF8, total }
     }
-    static async ingresarDescarteEf8(data, logId) {
+    static async ingresarDescarteEf8(data, tipoFruta, logId) {
         const descarte = {
             descarteGeneral: data.descarteGeneral || 0,
             pareja: data.pareja || 0,
             balin: data.balin || 0,
         }
-        console.log(data)
-        await RedisRepository.put_inventarioDescarte(descarte, 'descarteLavado:', data.tipoFruta, logId)
+        await RedisRepository.put_inventarioDescarte(descarte, 'descarteLavado:', tipoFruta, logId)
 
     }
 }

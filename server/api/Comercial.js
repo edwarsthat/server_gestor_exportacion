@@ -657,11 +657,11 @@ export class ComercialRepository {
                 if (precio.predios.includes(lote.predio._id.toString())) {
                     lote.precio = precio._id
 
-                    await LotesRepository.modificar_lote_proceso(
-                        lote._id,
+                    await LotesRepository.actualizar_lote(
+                        { _id: lote._id },
                         lote,
-                        "Cambiar precio",
-                        user
+                        { user: user._id, action: "post_comercial_precios_add_precio" },
+                        null, false
                     )
                 }
             }
@@ -731,7 +731,6 @@ export class ComercialRepository {
         try {
 
             const { data } = req
-
 
             const query = { _id: { $in: data } }; // Busca documentos cuyo _id esté en la lista
             const update = [

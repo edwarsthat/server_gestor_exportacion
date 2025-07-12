@@ -257,7 +257,7 @@ export class LotesRepository {
         }
     }
 
-    static async actualizar_lote(filter, update, options = {}, session = null) {
+    static async actualizar_lote(filter, update, options = {}, session = null, calculateFields = true) {
         // ...toda la magia anterior...
         /**
          * El update más lírico y funcional del reino Mongo.
@@ -273,40 +273,41 @@ export class LotesRepository {
             let documento = await db.Lotes.findOneAndUpdate(filter, update, { ...finalOptions, new: true });
             if (!documento) throw new Error('Lote no encontrado');
 
-            // 2. Calcula los campos mágicos
-            const get = (campo) => documento[campo] ?? 0;
+            if (!calculateFields) {
+                // 2. Calcula los campos mágicos
+                const get = (campo) => documento[campo] ?? 0;
 
-            const frutaNacional = get('frutaNacional');
-            const directoNacional = get('directoNacional');
-            const calidad1 = get('calidad1');
-            const calidad15 = get('calidad15');
-            const calidad2 = get('calidad2');
-            const kilos = get('kilos');
-            const kilosVaciados = get('kilosVaciados');
+                const frutaNacional = get('frutaNacional');
+                const directoNacional = get('directoNacional');
+                const calidad1 = get('calidad1');
+                const calidad15 = get('calidad15');
+                const calidad2 = get('calidad2');
+                const kilos = get('kilos');
+                const kilosVaciados = get('kilosVaciados');
 
-            const sumarDescartes = (desc) =>
-                desc ? Object.values(desc._doc ? desc._doc : desc).reduce((acu, item) => acu + (item ?? 0), 0) : 0;
+                const sumarDescartes = (desc) =>
+                    desc ? Object.values(desc._doc ? desc._doc : desc).reduce((acu, item) => acu + (item ?? 0), 0) : 0;
 
-            const totalDescarteLavado = sumarDescartes(documento.descarteLavado);
-            const totalDescarteEncerado = sumarDescartes(documento.descarteEncerado);
+                const totalDescarteLavado = sumarDescartes(documento.descarteLavado);
+                const totalDescarteEncerado = sumarDescartes(documento.descarteEncerado);
 
-            let deshidratacion = 100;
-            let rendimiento = 0;
-            if (kilos > 0) {
-                const total = calidad1 + calidad15 + calidad2 + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional;
-                deshidratacion = 100 - (total * 100) / kilos;
-                rendimiento = ((calidad1 + calidad15 + calidad2) * 100) / kilosVaciados;
+                let deshidratacion = 100;
+                let rendimiento = 0;
+                if (kilos > 0) {
+                    const total = calidad1 + calidad15 + calidad2 + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional;
+                    deshidratacion = 100 - (total * 100) / kilos;
+                    rendimiento = ((calidad1 + calidad15 + calidad2) * 100) / kilosVaciados;
+                }
+
+                // 3. Si hay que actualizar la deshidratación, hazlo solo si cambia
+                if (documento.deshidratacion !== deshidratacion || documento.rendimiento !== rendimiento) {
+                    documento = await db.Lotes.findOneAndUpdate(
+                        filter,
+                        { deshidratacion, rendimiento },
+                        { ...finalOptions, new: true }
+                    );
+                }
             }
-
-            // 3. Si hay que actualizar la deshidratación, hazlo solo si cambia
-            if (documento.deshidratacion !== deshidratacion || documento.rendimiento !== rendimiento) {
-                documento = await db.Lotes.findOneAndUpdate(
-                    filter,
-                    { deshidratacion, rendimiento },
-                    { ...finalOptions, new: true }
-                );
-            }
-
             return documento;
 
         } catch (err) {

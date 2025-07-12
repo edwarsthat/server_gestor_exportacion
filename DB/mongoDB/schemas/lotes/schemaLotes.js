@@ -213,11 +213,15 @@ export const defineLotes = async (conn, AuditLog) => {
 
     // let newKilos = 0
     // const actions = ["put_proceso_aplicaciones_descarteLavado", "put_proceso_aplicaciones_descarteEncerado"]
-
+    console.log("this.options.action", this.options.action)
     if (
       this.options.action !== "put_calidad_informes_aprobacionComercial" &&
       this.options.action !== "put_calidad_informes_loteFinalizarInforme" &&
-      this.options.action !== "put_comercial_precios_precioLotes"
+      this.options.action !== "put_comercial_precios_precioLotes" &&
+      this.options.action !== "put_comercial_registroPrecios_proveedores_comentario"  &&
+      this.options.action !== "post_comercial_precios_add_precio" &&
+      this.options.action !== "put_comercial_precios_proveedores_precioFijo" &&
+      this.options.action !== "put_comercial_precios_precioLotes" 
     ) {
 
       update.aprobacionProduccion = false

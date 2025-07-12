@@ -1856,13 +1856,13 @@ export class InventariosRepository {
             const { precioId, } = await InventariosService.obtenerPrecioProveedor(data.predio, tipoFruta[0].tipoFruta);
             await registrarPasoLog(log._id, "InventariosService.obtenerPrecioProveedor", "Completado");
 
-            const { loteEF8, total } = await InventariosService.construir_ef8_lote(data, EF8, precioId, tipoFruta, user);
+            const { loteEF8, total } = await InventariosService.construir_ef8_lote(data, EF8, precioId, user);
             await registrarPasoLog(log._id, "InventariosService.construir_ef8_lote", "Completado");
 
             await Promise.all([
                 LotesRepository.crear_lote_EF8(loteEF8, user, log._id),
-                InventariosService.ingresarDescarteEf8(loteEF8, log._id),
-                // VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", loteEF8.tipoFruta, total, log._id)
+                InventariosService.ingresarDescarteEf8(loteEF8, tipoFruta[0].tipoFruta, log._id),
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", loteEF8.tipoFruta, total, log._id)
             ])
             procesoEventEmitter.emit("server_event", {
                 action: "descarte_change",
