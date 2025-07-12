@@ -3,6 +3,7 @@ import { ClientesRepository } from "../Class/Clientes.js";
 import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { ProveedoresRepository } from "../Class/Proveedores.js";
+import { Seriales } from "../Class/Seriales.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { dataService } from "../services/data.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
@@ -183,6 +184,19 @@ export class dataRepository {
         try {
             const EF8 = await dataService.get_ef8_serial();
             return EF8
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async incrementar_ef8_serial() {
+        try {
+            await Seriales.modificar_seriales(
+                { name: "EF8-" },
+                { $inc: { serial: 1 } }
+            )
         } catch (err) {
             if (err.status === 522) {
                 throw err

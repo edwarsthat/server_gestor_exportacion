@@ -334,5 +334,38 @@ export class LotesRepository {
             throw new PostError(521, `Error creando lote ${err.message}`);
         }
     }
+    static async getLotesEF8(options = {}) {
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { fecha_creacion: -1},
+            limit = 50,
+            skip = 0,
+            populate = [{ path: 'predio', select: 'PREDIO' }]
+        } = options;
+        try {
+            let lotesQuery = { ...query };
+
+            if (ids.length > 0) {
+                lotesQuery._id = { $in: ids };
+            }
+
+            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
+
+            const lotes = await db.LotesEF8.find(lotesQuery)
+                .select(select)
+                .sort(sort)
+                .limit(limitToUse)
+                .skip(skip)
+                .populate(populate)
+                .exec();
+
+            return lotes
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
+        }
+    }
     //#endregion
 }

@@ -8,8 +8,6 @@ import { DespachoDescartesRepository } from "../Class/DespachoDescarte.js";
 import { FrutaDescompuestaRepository } from "../Class/FrutaDescompuesta.js";
 import { InsumosRepository } from "../Class/Insumos.js";
 import { LotesRepository } from "../Class/Lotes.js";
-import { ProveedoresRepository } from "../Class/Proveedores.js";
-import { UsuariosRepository } from "../Class/Usuarios.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { InventariosValidations } from "../validations/inventarios.js";
 import { generarCodigoEF } from "./helper/inventarios.js";
@@ -22,6 +20,7 @@ import { LogsRepository } from "../Class/LogsSistema.js";
 import { dataService } from "../services/data.js";
 import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
+import { dataRepository } from "./data.js";
 
 
 export class InventariosRepository {
@@ -1061,7 +1060,6 @@ export class InventariosRepository {
         }
 
     }
-
     //? test
     static async sys_reiniciar_inventario_descarte() {
         try {
@@ -1082,7 +1080,6 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-
     //#endregion
     //#region Historiales
     static async get_inventarios_historialProcesado_frutaProcesada(data) {
@@ -1275,62 +1272,22 @@ export class InventariosRepository {
     }
     static async get_inventarios_historiales_ingresoFruta_registros(req) {
         try {
+            console.log(req)
             const { data } = req
-            const { page } = data;
-            const query = {
-                operacionRealizada: "crearLote"
-            }
+            const { page, filtro } = data;
             const resultsPerPage = 50;
-            const lotes = await RecordLotesRepository.getRecordLotes({
-                query: query,
-                skip: (page - 1) * resultsPerPage,
-                limit: resultsPerPage,
+            let result = []
 
-            });
-
-            const proveedoresids = [];
-            const usersId = [];
-
-            for (const lote of lotes) {
-                proveedoresids.push(lote.documento.predio.toString());
-                usersId.push(lote.user.toString());
+            if(filtro.EF1 && !filtro.EF8){
+                result = await InventariosService.obtenerRecordLotesIngresoLote(page, resultsPerPage, filtro)
             }
-
-            const proveedoresSet = new Set(proveedoresids)
-            const proveedoresArr = [...proveedoresSet]
-
-            const proveedores = await ProveedoresRepository.get_proveedores({
-                ids: proveedoresArr
-            })
-
-            const usersIdSet = new Set(usersId)
-            const usersIdArr = [...usersIdSet]
-
-            const user = await UsuariosRepository.get_users({
-                ids: usersIdArr,
-                getAll: true
-            })
-
-            const result = [];
-            for (const lote of lotes) {
-                const proveedor = proveedores.find(proveedor =>
-                    proveedor._id.toString() === lote.documento.predio.toString()
-                );
-
-                const usuario = user.find(u => u._id.toString() === lote.user.toString());
-
-                if (proveedor && usuario) {
-                    delete lote.documento.predio0;
-                    lote.documento.predio = {};
-                    lote.documento.predio.PREDIO = proveedor.PREDIO;
-                    lote.documento.predio.GGN = proveedor.GGN;
-                    lote.documento.predio._id = proveedor._id;
-                    lote.user = usuario.nombre + " " + usuario.apellido;
-                }
-                result.push(lote);
+            else if(filtro.EF8 && !filtro.EF1){
+                result = await InventariosService.obtenerRecordLotesIngresoLoteEF8(page, resultsPerPage, filtro)
             }
+            console.log(result)
             return result;
         } catch (err) {
+            console.log(err)
             if (err.status === 522) {
                 throw err
             }
@@ -1856,14 +1813,18 @@ export class InventariosRepository {
             const { precioId, } = await InventariosService.obtenerPrecioProveedor(data.predio, tipoFruta[0].tipoFruta);
             await registrarPasoLog(log._id, "InventariosService.obtenerPrecioProveedor", "Completado");
 
-            const { loteEF8, total } = await InventariosService.construir_ef8_lote(data, EF8, precioId, user);
+            const { loteEF8, } = await InventariosService.construir_ef8_lote(data, EF8, precioId, user);
             await registrarPasoLog(log._id, "InventariosService.construir_ef8_lote", "Completado");
 
             await Promise.all([
                 LotesRepository.crear_lote_EF8(loteEF8, user, log._id),
                 InventariosService.ingresarDescarteEf8(loteEF8, tipoFruta[0].tipoFruta, log._id),
-                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", loteEF8.tipoFruta, total, log._id)
             ])
+            await registrarPasoLog(log._id, "Promise.all", "Completado");
+
+            await dataRepository.incrementar_ef8_serial()
+            await registrarPasoLog(log._id, "dataService.incrementar_ef8_serial", "Completado");
+
             procesoEventEmitter.emit("server_event", {
                 action: "descarte_change",
                 data: {}

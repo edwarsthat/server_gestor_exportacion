@@ -1,4 +1,5 @@
 import { InventariosLogicError } from "../../Error/logicLayerError.js";
+import { dataRepository } from "../api/data.js";
 import { obtenerEstadoDesdeAccionCanastillasInventario } from "../api/utils/diccionarios.js";
 import { colombiaToUTC } from "../api/utils/fechas.js";
 import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
@@ -10,6 +11,7 @@ import { LotesRepository } from "../Class/Lotes.js";
 import { PreciosRepository } from "../Class/Precios.js";
 import { ProveedoresRepository } from "../Class/Proveedores.js";
 import { RedisRepository } from "../Class/RedisData.js";
+import { UsuariosRepository } from "../Class/Usuarios.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
 
@@ -1000,5 +1002,105 @@ export class InventariosService {
         }
         await RedisRepository.put_inventarioDescarte(descarte, 'descarteLavado:', tipoFruta, logId)
 
+    }
+    static async obtenerRecordLotesIngresoLote(page, resultsPerPage) {
+
+        const query = {
+            operacionRealizada: "crearLote"
+        }
+        const lotes = await RecordLotesRepository.getRecordLotes({
+            query: query,
+            skip: (page - 1) * resultsPerPage,
+            limit: resultsPerPage,
+
+        });
+
+        const proveedoresids = [];
+        const usersId = [];
+
+        for (const lote of lotes) {
+            proveedoresids.push(lote.documento.predio.toString());
+            usersId.push(lote.user.toString());
+        }
+
+        const proveedoresSet = new Set(proveedoresids)
+        const proveedoresArr = [...proveedoresSet]
+
+        const proveedores = await ProveedoresRepository.get_proveedores({
+            ids: proveedoresArr
+        })
+
+        const usersIdSet = new Set(usersId)
+        const usersIdArr = [...usersIdSet]
+
+        const user = await UsuariosRepository.get_users({
+            ids: usersIdArr,
+            getAll: true
+        })
+
+        const result = [];
+        for (const lote of lotes) {
+            const proveedor = proveedores.find(proveedor =>
+                proveedor._id.toString() === lote.documento.predio.toString()
+            );
+
+            const usuario = user.find(u => u._id.toString() === lote.user.toString());
+
+            if (proveedor && usuario) {
+                delete lote.documento.predio0;
+                lote.documento.predio = {};
+                lote.documento.predio.PREDIO = proveedor.PREDIO;
+                lote.documento.predio.GGN = proveedor.GGN;
+                lote.documento.predio._id = proveedor._id;
+                lote.user = usuario.nombre + " " + usuario.apellido;
+            }
+            result.push(lote);
+        }
+        return result;
+    }
+    static async obtenerRecordLotesIngresoLoteEF8(page, resultsPerPage) {
+
+
+        const lotes = await LotesRepository.getLotesEF8({
+            skip: (page - 1) * resultsPerPage,
+            limit: resultsPerPage,
+        });
+
+        const usersId = [];
+        const tipoFrutaId = []
+
+        for (const lote of lotes) {
+            usersId.push(lote.user.toString());
+            tipoFrutaId.push(lote.tipoFruta);
+        }
+
+        const usersIdSet = new Set(usersId)
+        const usersIdArr = [...usersIdSet]
+
+        const tipoFrutaIdSet = new Set(tipoFrutaId)
+        const tipoFrutaIdArr = [...tipoFrutaIdSet]
+
+        const user = await UsuariosRepository.get_users({
+            ids: usersIdArr,
+            getAll: true
+        })
+
+        const tipoFrutas = await dataRepository.get_data_tipoFruta2({
+            ids: tipoFrutaIdArr
+        })
+
+        const result = [];
+        for (const lote of lotes) {
+            const usuario = user.find(u => u._id.toString() === lote.user);
+            if (usuario) {
+                lote.user = usuario.nombre + " " + usuario.apellido;
+            }
+            const tipoFruta = tipoFrutas.find(u => u._id.toString() === lote.tipoFruta);
+            if (tipoFruta) {
+                lote.tipoFruta = tipoFruta.tipoFruta;
+            }
+            result.push(lote);
+        }
+        return result;
     }
 }

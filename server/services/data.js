@@ -1,10 +1,10 @@
-import { db } from "../../DB/mongoDB/config/init.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
+import { Seriales } from "../Class/Seriales.js";
 
 export class dataService {
     static async get_ef8_serial(fecha = null, logId) {
-        const EF8 = await db.Seriales.find({ name: "EF8-" })
-            .exec();
+        const EF8 = await Seriales.get_seriales("EF8-");
+
 
         if (!EF8 || EF8.length === 0) {
             throw new Error("No se encontraron registros de EF8");
