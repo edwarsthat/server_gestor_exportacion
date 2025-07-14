@@ -273,7 +273,7 @@ export class LotesRepository {
             let documento = await db.Lotes.findOneAndUpdate(filter, update, { ...finalOptions, new: true });
             if (!documento) throw new Error('Lote no encontrado');
 
-            if (!calculateFields) {
+            if (calculateFields) {
                 // 2. Calcula los campos mágicos
                 const get = (campo) => documento[campo] ?? 0;
 
@@ -339,7 +339,7 @@ export class LotesRepository {
             ids = [],
             query = {},
             select = {},
-            sort = { fecha_creacion: -1},
+            sort = { fecha_creacion: -1 },
             limit = 50,
             skip = 0,
             populate = [{ path: 'predio', select: 'PREDIO' }]
@@ -365,6 +365,24 @@ export class LotesRepository {
 
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
+        }
+    }
+    static async actualizar_lote_EF8(filter, update, options = {}, session = null) {
+
+        const finalOptions = {
+            new: true,
+            ...options,
+            ...(session && { session })
+        };
+
+        try {
+            let documento = await db.Lotes.findOneAndUpdate(filter, update, { ...finalOptions, new: true });
+            if (!documento) throw new Error('Lote no encontrado');
+
+            return documento;
+
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
     //#endregion

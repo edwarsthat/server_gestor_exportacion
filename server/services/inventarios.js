@@ -4,6 +4,7 @@ import { obtenerEstadoDesdeAccionCanastillasInventario } from "../api/utils/dicc
 import { colombiaToUTC } from "../api/utils/fechas.js";
 import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
+import { CanastillasRepository } from "../Class/CanastillasRegistros.js";
 import { ClientesRepository } from "../Class/Clientes.js";
 import { DespachoDescartesRepository } from "../Class/DespachoDescarte.js";
 import { FrutaDescompuestaRepository } from "../Class/FrutaDescompuesta.js";
@@ -11,6 +12,7 @@ import { LotesRepository } from "../Class/Lotes.js";
 import { PreciosRepository } from "../Class/Precios.js";
 import { ProveedoresRepository } from "../Class/Proveedores.js";
 import { RedisRepository } from "../Class/RedisData.js";
+import { UnionsRepository } from "../Class/unions.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
@@ -358,16 +360,16 @@ export class InventariosService {
      * Crea un nuevo lote de reproceso para Celifrut con un código autogenerado.
      * Este método se utiliza para registrar lotes de fruta que serán reprocesados,
      * generando automáticamente un código ENF y registrando el lote como vaciado.
-     * 
+     *
      * @param {string} tipoFruta - Tipo de fruta ('Naranja' o 'Limon')
      * @param {number} kilos - Cantidad de kilos de fruta del lote
      * @param {Object} user - Usuario que realiza la operación
      * @param {string} user._id - ID del usuario
      * @param {string} user.user - Nombre del usuario
-     * 
+     *
      * @returns {Promise<Object>} El lote creado con todos sus datos
      * @throws {Error} Si hay problemas al generar el código o crear el lote
-     * 
+     *
      * @example
      * const lote = await InventariosService.crear_lote_celifrut('Naranja', 1000, {
      *   _id: '123',
@@ -410,19 +412,19 @@ export class InventariosService {
     /**
      * Revisa y compara los cambios entre un registro existente de despacho de descarte y los nuevos datos.
      * Esta función determina si hay cambios en el tipo de fruta o en los kilos del registro.
-     * 
+     *
      * @param {string} _id - ID del registro de despacho de descarte a revisar
      * @param {Object} newData - Nuevos datos para comparar con el registro existente
      * @param {string} newData.tipoFruta - Tipo de fruta del nuevo registro
      * @param {number} newData.kilos - Cantidad de kilos del nuevo registro
-     * 
+     *
      * @returns {Promise<Object>} Objeto con los resultados de la comparación
      * @returns {boolean} return.cambioFruta - Indica si hubo cambio en el tipo de fruta
      * @returns {boolean} return.cambioIventario - Indica si hubo cambio en la cantidad de kilos
      * @returns {Object} return.registro - El registro original encontrado en la base de datos
-     * 
+     *
      * @throws {Error} Si el ID del registro no existe en la base de datos
-     * 
+     *
      * @example
      * // Revisar cambios en un registro
      * const cambios = await InventariosService.revisar_cambio_registro_despachodescarte(
@@ -449,19 +451,19 @@ export class InventariosService {
     /**
  * Revisa y compara los cambios entre un registro existente de fruta descompuesta y los nuevos datos.
  * Esta función determina si hay cambios en el tipo de fruta o en los kilos del registro.
- * 
+ *
  * @param {string} _id - ID del registro de fruta descompuesta a revisar
  * @param {Object} newData - Nuevos datos para comparar con el registro existente
  * @param {string} newData.tipoFruta - Tipo de fruta del nuevo registro
  * @param {number} newData.kilos - Cantidad de kilos del nuevo registro
- * 
+ *
  * @returns {Promise<Object>} Objeto con los resultados de la comparación
  * @returns {boolean} return.cambioFruta - Indica si hubo cambio en el tipo de fruta
  * @returns {boolean} return.cambioIventario - Indica si hubo cambio en la cantidad de kilos
  * @returns {Object} return.registro - El registro original encontrado en la base de datos
- * 
+ *
  * @throws {Error} Si el ID del registro no existe en la base de datos
- * 
+ *
  * @example
  * // Revisar cambios en un registro
  * const cambios = await InventariosService.revisar_cambio_registro_frutaDescompuestae(
@@ -488,15 +490,15 @@ export class InventariosService {
     /**
      * Procesa los datos del formulario de registro de descarte, calculando los totales
      * para descartes de lavado y encerado.
-     * 
+     *
      * @param {Object} data - Objeto con los datos del formulario a procesar
      * @param {Object.<string, string|number>} data - Pares clave-valor donde las claves tienen formato 'tipo.subtipo'
-     * 
+     *
      * @returns {Promise<Object>} Objeto con los descartes procesados
      * @returns {Object.<string, number>} return.descarteLavado - Mapa de tipos de descarte de lavado y sus cantidades
      * @returns {Object.<string, number>} return.descarteEncerado - Mapa de tipos de descarte de encerado y sus cantidades
      * @returns {number} return.total - Suma total de todos los valores de descarte
-     * 
+     *
      * @example
      * // Entrada:
      * {
@@ -541,7 +543,7 @@ export class InventariosService {
      * Modifica el inventario en Redis cuando hay un cambio en el tipo de fruta de un registro de descarte.
      * Esta función maneja una transacción atómica en Redis para asegurar la consistencia del inventario,
      * incluyendo un mecanismo de rollback en caso de fallo.
-     * 
+     *
      * @param {Object} registro - El registro original de descarte
      * @param {Object} registro.descarteLavado - Objeto con los valores de descarte de lavado originales
      * @param {Object} registro.descarteEncerado - Objeto con los valores de descarte de encerado originales
@@ -550,10 +552,10 @@ export class InventariosService {
      * @param {string} newRegistro.tipoFruta - Nuevo tipo de fruta
      * @param {Object} descarteLavado - Objeto con los nuevos valores de descarte de lavado
      * @param {Object} descarteEncerado - Objeto con los nuevos valores de descarte de encerado
-     * 
+     *
      * @throws {Error} Si los kilos a modificar son mayores que el inventario disponible
      * @throws {Error} Si la transacción falla por concurrencia
-     * 
+     *
      * @example
      * await InventariosService.modificar_inventario_registro_cambioFruta(
      *   {
@@ -641,14 +643,14 @@ export class InventariosService {
      * Almacena en Redis las modificaciones de inventario de descartes de fruta mediante una transacción atómica.
      * Verifica que haya suficiente inventario disponible antes de realizar las modificaciones y
      * maneja la concurrencia mediante el sistema de vigilancia (WATCH) de Redis.
-     * 
+     *
      * @param {Object.<string, number>} descarteLavado - Mapa de tipos de descarte de lavado y sus cantidades
      * @param {Object.<string, number>} descarteEncerado - Mapa de tipos de descarte de encerado y sus cantidades
      * @param {string} tipoFruta - Tipo de fruta ('Naranja' o 'Limon')
-     * 
+     *
      * @throws {Error} Si los kilos a modificar son mayores que el inventario disponible
      * @throws {Error} Si la transacción falla por concurrencia con otros procesos
-     * 
+     *
      * @example
      * await InventariosService.frutaDescarte_despachoDescarte_redis_store(
      *   { descarteGeneral: 10, pareja: 5 },
@@ -707,13 +709,13 @@ export class InventariosService {
      * Restaura el inventario en Redis después de un error o cuando se necesita revertir cambios.
      * A diferencia de la función store, esta función suma las cantidades al inventario existente
      * usando una transacción atómica para mantener la consistencia de los datos.
-     * 
+     *
      * @param {Object.<string, number>} descarteLavado - Mapa de tipos de descarte de lavado y sus cantidades a restaurar
      * @param {Object.<string, number>} descarteEncerado - Mapa de tipos de descarte de encerado y sus cantidades a restaurar
      * @param {string} tipoFruta - Tipo de fruta ('Naranja' o 'Limon')
-     * 
+     *
      * @throws {Error} Si la transacción falla por concurrencia con otros procesos
-     * 
+     *
      * @example
      * // Restaurar cantidades al inventario
      * await InventariosService.frutaDescarte_despachoDescarte_redis_restore(
@@ -791,28 +793,28 @@ export class InventariosService {
      * Modifica el inventario cuando se ingresa fruta sin procesar al proceso de desverdizado.
      * Esta función actualiza tanto el inventario general como el inventario específico de desverdizado
      * de forma concurrente para optimizar el rendimiento.
-     * 
+     *
      * @async
      * @static
      * @method modificarInventarioIngresoDesverdizado
-     * 
+     *
      * @param {number|string} canastillas - Cantidad de canastillas que se ingresan al desverdizado
      * @param {string} cuartoId - ID del cuarto de desverdizado donde se almacena la fruta
      * @param {string} loteId - ID del lote que se está procesando
-     * 
+     *
      * @description
      * Este método realiza dos operaciones principales de forma paralela:
      * 1. **Actualización del inventario general**: Resta las canastillas del inventario principal
      *    usando VariablesDelSistema.modificarInventario()
-     * 2. **Actualización del inventario de desverdizado**: Agrega las canastillas al inventario 
+     * 2. **Actualización del inventario de desverdizado**: Agrega las canastillas al inventario
      *    específico del cuarto de desverdizado usando RedisRepository.update_inventarioDesverdizado()
-     * 
+     *
      * La operación se ejecuta de forma atómica usando Promise.all() para garantizar que ambas
      * modificaciones se completen exitosamente o fallen juntas.
-     * 
+     *
      * @throws {Error} Si falla alguna de las operaciones de actualización del inventario
      * @throws {Error} Si los parámetros proporcionados son inválidos
-     * 
+     *
      * @example
      * // Ingresar 25 canastillas al cuarto de desverdizado
      * await InventariosService.modificarInventarioIngresoDesverdizado(
@@ -820,25 +822,25 @@ export class InventariosService {
      *   "507f1f77bcf86cd799439013",     // cuartoId
      *   "507f1f77bcf86cd799439012"      // loteId
      * );
-     * 
+     *
      * @example
      * // Uso típico dentro del flujo de desverdizado
      * try {
      *   await InventariosService.modificarInventarioIngresoDesverdizado(
-     *     canastillas, 
-     *     cuartoId, 
+     *     canastillas,
+     *     cuartoId,
      *     loteId
      *   );
      *   console.log('Inventario actualizado correctamente');
      * } catch (error) {
      *   console.error('Error al actualizar inventario:', error.message);
      * }
-     * 
+     *
      * @since 1.0.0
      * @see {@link VariablesDelSistema.modificarInventario} Para modificación del inventario general
      * @see {@link RedisRepository.update_inventarioDesverdizado} Para actualización del inventario de desverdizado
      * @see {@link InventariosRepository.put_inventarios_frutaSinProcesar_desverdizado} Método que utiliza esta función
-     * 
+     *
      * @performance
      * - Operaciones paralelas usando Promise.all() para mejor rendimiento
      * - Tiempo típico de ejecución: < 100ms
@@ -1060,14 +1062,13 @@ export class InventariosService {
     }
     static async obtenerRecordLotesIngresoLoteEF8(page, resultsPerPage) {
 
-
         const lotes = await LotesRepository.getLotesEF8({
             skip: (page - 1) * resultsPerPage,
             limit: resultsPerPage,
         });
 
         const usersId = [];
-        const tipoFrutaId = []
+        const tipoFrutaId = [];
 
         for (const lote of lotes) {
             usersId.push(lote.user.toString());
@@ -1102,5 +1103,99 @@ export class InventariosService {
             result.push(lote);
         }
         return result;
+    }
+    static async obtenerRecordLotesIngresolote_EF1_EF8(page, resultsPerPage) {
+        const skip = (page - 1) * resultsPerPage;
+        const data = await UnionsRepository.obtenerUnionRecordLotesIngresoLoteEF8({ operacionRealizada: "crearLote" }, skip, resultsPerPage);
+
+        const proveedoresids = [];
+        const usersId = [];
+        const tipoFrutaId = [];
+
+        for (const lote of data) {
+            if (Object.hasOwnProperty.call(lote, 'documento')) {
+                proveedoresids.push(lote.documento.predio.toString());
+                usersId.push(lote.user.toString());
+            } else {
+                usersId.push(lote.user.toString());
+                tipoFrutaId.push(lote.tipoFruta);
+            }
+        }
+
+        const proveedoresSet = new Set(proveedoresids)
+        const proveedoresArr = [...proveedoresSet]
+        const usersIdSet = new Set(usersId)
+        const usersIdArr = [...usersIdSet]
+        const tipoFrutaIdSet = new Set(tipoFrutaId)
+        const tipoFrutaIdArr = [...tipoFrutaIdSet]
+
+        const user = await UsuariosRepository.get_users({
+            ids: usersIdArr,
+            getAll: true
+        })
+        const tipoFrutas = await dataRepository.get_data_tipoFruta2({
+            ids: tipoFrutaIdArr
+        })
+        const proveedores = await ProveedoresRepository.get_proveedores({
+            ids: proveedoresArr
+        })
+
+        const result = [];
+
+        for (const lote of data) {
+            if (Object.hasOwnProperty.call(lote, 'documento')) {
+                const proveedor = proveedores.find(proveedor =>
+                    proveedor._id.toString() === lote.documento.predio.toString()
+                );
+
+                const usuario = user.find(u => u._id.toString() === lote.user.toString());
+
+                if (proveedor && usuario) {
+                    delete lote.documento.predio0;
+                    lote.documento.predio = {};
+                    lote.documento.predio.PREDIO = proveedor.PREDIO;
+                    lote.documento.predio.GGN = proveedor.GGN;
+                    lote.documento.predio._id = proveedor._id;
+                    lote.user = usuario.nombre + " " + usuario.apellido;
+                }
+                result.push(lote);
+            } else {
+                const usuario = user.find(u => u._id.toString() === lote.user);
+                if (usuario) {
+                    lote.user = usuario.nombre + " " + usuario.apellido;
+                }
+                const tipoFruta = tipoFrutas.find(u => u._id.toString() === lote.tipoFruta);
+                if (tipoFruta) {
+                    lote.tipoFruta = tipoFruta;
+                }
+                lote.predio = lote.predioInfo[0] || {};
+                result.push(lote);
+            }
+        }
+        return result;
+    }
+    static async ingresarCanasillas(datos, user) {
+        const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)
+        const canastillasPrestadas = Number(datos.canastillasPrestadas || 0) + Number(datos.canastillasVaciasPrestadas || 0)
+
+        const dataRegistro = await this.crearRegistroInventarioCanastillas({
+            destino: "65c27f3870dd4b7f03ed9857",
+            origen: datos.predio,
+            observaciones: "ingreso lote",
+            fecha: datos.fecha_ingreso_inventario,
+            canastillas: canastillasPropias,
+            canastillasPrestadas: canastillasPrestadas,
+            accion: "ingreso",
+            user
+        })
+
+        await Promise.all([
+            this.ajustarCanastillasProveedorCliente(datos.predio, -canastillasPropias),
+            this.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", canastillasPropias),
+            CanastillasRepository.post_registro(dataRegistro),
+            VariablesDelSistema.modificar_canastillas_inventario(canastillasPrestadas, "canastillasPrestadas"),
+        ])
+
+
     }
 }

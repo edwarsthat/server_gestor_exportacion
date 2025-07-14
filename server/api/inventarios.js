@@ -1278,13 +1278,14 @@ export class InventariosRepository {
             const resultsPerPage = 50;
             let result = []
 
-            if(filtro.EF1 && !filtro.EF8){
+            if (filtro.EF1 && !filtro.EF8) {
                 result = await InventariosService.obtenerRecordLotesIngresoLote(page, resultsPerPage, filtro)
             }
-            else if(filtro.EF8 && !filtro.EF1){
+            else if (filtro.EF8 && !filtro.EF1) {
                 result = await InventariosService.obtenerRecordLotesIngresoLoteEF8(page, resultsPerPage, filtro)
+            } else {
+                result = await InventariosService.obtenerRecordLotesIngresolote_EF1_EF8(page, resultsPerPage, filtro)
             }
-            console.log(result)
             return result;
         } catch (err) {
             console.log(err)
@@ -1296,25 +1297,43 @@ export class InventariosRepository {
     }
     static async put_inventarios_historiales_ingresoFruta_modificar(req) {
         try {
-            const { data: datos, user } = req
-            const { action, data, _idLote, _idRecord, __v } = datos
+            console.log(req.data)
+            const { user, type } = req
 
-            InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar(datos)
+            if (type === 'loteEF1') {
+                const { action, data, _idLote, _idRecord, __v } = req.data
 
-            const queryLote = {
-                ...data,
-                fecha_ingreso_patio: data.fecha_ingreso_inventario,
-                fecha_salida_patio: data.fecha_ingreso_inventario,
-                fecha_estimada_llegada: data.fecha_ingreso_inventario,
+                InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar(req.data)
+
+                const queryLote = {
+                    ...data,
+                    fecha_ingreso_patio: data.fecha_ingreso_inventario,
+                    fecha_salida_patio: data.fecha_ingreso_inventario,
+                    fecha_estimada_llegada: data.fecha_ingreso_inventario,
+                }
+
+                await InventariosService.modificarLote_regresoHistorialFrutaIngreso(
+                    _idLote, queryLote, user, action
+                )
+
+                await InventariosService.modificarRecordLote_regresoHistorialFrutaIngreso(
+                    _idRecord, __v, data
+                )
+            } else if( type === 'loteEF8') {
+
+                const { data, _id } = req.data
+
+                InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar_EF8(data)
+
+                await LotesRepository.actualizar_lote_EF8(
+                    { _id: _id },
+                    data,
+                    { user: user.user._id, action: data.action }
+                )
+
             }
 
-            await InventariosService.modificarLote_regresoHistorialFrutaIngreso(
-                _idLote, queryLote, user, action
-            )
 
-            await InventariosService.modificarRecordLote_regresoHistorialFrutaIngreso(
-                _idRecord, __v, data
-            )
 
         } catch (err) {
             if (err.status === 523) {
@@ -1508,7 +1527,6 @@ export class InventariosRepository {
     static async get_inventarios_lotes_infoLotes(req) {
         try {
             const { data } = req
-            console.log(data)
             InventariosValidations.get_inventarios_lotes_infoLotes().parse(data)
             const {
                 _id,
@@ -1795,6 +1813,7 @@ export class InventariosRepository {
     static async post_inventarios_EF8(req) {
         const { user } = req;
         let log
+
         try {
             log = await LogsRepository.create({
                 user: user._id,
@@ -1818,6 +1837,7 @@ export class InventariosRepository {
 
             await Promise.all([
                 LotesRepository.crear_lote_EF8(loteEF8, user, log._id),
+                InventariosService.ingresarCanasillas(data, user),
                 InventariosService.ingresarDescarteEf8(loteEF8, tipoFruta[0].tipoFruta, log._id),
             ])
             await registrarPasoLog(log._id, "Promise.all", "Completado");

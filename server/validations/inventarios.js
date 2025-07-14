@@ -237,6 +237,41 @@ export class InventariosValidations {
             })
         })
     }
+    static put_inventarios_historiales_ingresoFruta_modificar_EF8() {
+        return z.object({
+            enf: z.string().min(1, "El codigo del lote no puede ir vacio"),
+            predio: z.string().min(1, "Debe seleccionar un predio"),
+            canastillas: z.string({ required_error: "Campo obligatorio" })
+                .min(1, "Debe ingresar un número")
+                .transform(val => Number(val))
+                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+            balin: z
+                .string()
+                .optional()
+                .transform(val => val === undefined ? undefined : Number(val))
+                .refine(val => val === undefined || !isNaN(val), { message: "Los kilos deben ser un número válido" }),
+            pareja: z
+                .string()
+                .optional()
+                .transform(val => val === undefined ? undefined : Number(val))
+                .refine(val => val === undefined || !isNaN(val), { message: "Los kilos deben ser un número válido" }),
+            descarteGeneral: z
+                .string()
+                .optional()
+                .transform(val => val === undefined ? undefined : Number(val))
+                .refine(val => val === undefined || !isNaN(val), { message: "Los kilos deben ser un número válido" }),
+
+            tipoFruta: z.string().min(1, "Se debe seleccionar un tipo de fruta"),
+            observaciones: z.string().optional(),
+            placa: z.string().min(1, "La placa es obligatoria"),
+            fecha_ingreso_inventario: z.string()
+                .min(1, "La fecha estimada de llegada es obligatoria")
+                .refine(val => !isNaN(Date.parse(val)), {
+                    message: "La fecha no es válida",
+                }),
+        })
+    }
     static put_inventarios_frutaDescarte_despachoDescarte() {
         return z.object({
             data: z.object({

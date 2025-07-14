@@ -21,6 +21,7 @@ export const defineLoteEf8 = async (conn) => {
         promedio: Number,
         tipoFruta: { type: String, required: true },
         user: { type: String, required: true },
+        createdAt: { type: Date, default: () => new Date() },
 
     });
 
