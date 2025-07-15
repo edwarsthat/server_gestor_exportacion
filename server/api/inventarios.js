@@ -21,6 +21,7 @@ import { dataService } from "../services/data.js";
 import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { dataRepository } from "./data.js";
+import { TiposFruta } from "../store/TipoFruta.js";
 
 
 export class InventariosRepository {
@@ -1272,23 +1273,24 @@ export class InventariosRepository {
     }
     static async get_inventarios_historiales_ingresoFruta_registros(req) {
         try {
-            console.log(req)
+            console.log("get_inventarios_historiales_ingresoFruta_registros", req);
+
             const { data } = req
-            const { page, filtro } = data;
-            const resultsPerPage = 50;
+            const { filtro } = data;
+
             let result = []
 
             if (filtro.EF1 && !filtro.EF8) {
-                result = await InventariosService.obtenerRecordLotesIngresoLote(page, resultsPerPage, filtro)
+                result = await InventariosService.obtenerRecordLotesIngresoLote(filtro)
             }
             else if (filtro.EF8 && !filtro.EF1) {
-                result = await InventariosService.obtenerRecordLotesIngresoLoteEF8(page, resultsPerPage, filtro)
+                result = await InventariosService.obtenerRecordLotesIngresoLoteEF8(filtro)
             } else {
-                result = await InventariosService.obtenerRecordLotesIngresolote_EF1_EF8(page, resultsPerPage, filtro)
+                result = await InventariosService.obtenerRecordLotesIngresolote_EF1_EF8(filtro)
             }
             return result;
         } catch (err) {
-            console.log(err)
+            console.log("Error en get_inventarios_historiales_ingresoFruta_registros", err);
             if (err.status === 522) {
                 throw err
             }
@@ -1297,8 +1299,8 @@ export class InventariosRepository {
     }
     static async put_inventarios_historiales_ingresoFruta_modificar(req) {
         try {
-            console.log(req.data)
-            const { user, type } = req
+            const { user } = req;
+            const { type } = req.data
 
             if (type === 'loteEF1') {
                 const { action, data, _idLote, _idRecord, __v } = req.data
@@ -1319,23 +1321,46 @@ export class InventariosRepository {
                 await InventariosService.modificarRecordLote_regresoHistorialFrutaIngreso(
                     _idRecord, __v, data
                 )
-            } else if( type === 'loteEF8') {
+            } else if (type === 'loteEF8') {
 
                 const { data, _id } = req.data
 
                 InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar_EF8(data)
+                const oldLoteEf8 = await LotesRepository.getLotesEF8({ ids: [_id] })
+                const oldTipoFruta = await TiposFruta.get_tiposFruta({ _id: oldLoteEf8[0].tipoFruta })
 
-                await LotesRepository.actualizar_lote_EF8(
-                    { _id: _id },
-                    data,
-                    { user: user.user._id, action: data.action }
-                )
+                const loteEF8 = await LotesRepository.actualizar_lote_EF8({ _id: _id }, data, { user: user.user._id, action: data.action })
+                const newTipoFruta = await TiposFruta.get_tiposFruta({ _id: loteEF8.tipoFruta })
+
+
+                const registroIngresoCanastillas = await CanastillasRepository.get_registros_canastillas({ ids: [loteEF8.registroCanastillas] })
+
+                const canastillas = registroIngresoCanastillas[0].cantidad.propias + registroIngresoCanastillas[0].cantidad.prestadas;
+                if (canastillas !== data.canastillas) {
+                    await CanastillasRepository.actualizar_registro(
+                        { _id: registroIngresoCanastillas[0]._id },
+                        { cantidad: { propias: data.canastillas, prestadas: 0 } },
+                    )
+                }
+
+                const oldKilos = {
+                        descarteGeneral: -oldLoteEf8[0].descarteGeneral || 0,
+                        pareja: -oldLoteEf8[0].pareja || 0,
+                        balin: -oldLoteEf8[0].balin || 0,
+                }
+                const newKilos = {
+                    descarteGeneral: loteEF8.descarteGeneral || 0,
+                    pareja: loteEF8.pareja || 0,
+                    balin: loteEF8.balin || 0,
+                }
+                //se restan los datos antiguos del lote y se suman los nuevos
+                await InventariosService.ingresarDescarteEf8(oldKilos, oldTipoFruta[0].tipoFruta)
+                await InventariosService.ingresarDescarteEf8(newKilos, newTipoFruta[0].tipoFruta)
 
             }
 
-
-
         } catch (err) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
             if (err.status === 523) {
                 throw err
             }
@@ -1835,12 +1860,14 @@ export class InventariosRepository {
             const { loteEF8, } = await InventariosService.construir_ef8_lote(data, EF8, precioId, user);
             await registrarPasoLog(log._id, "InventariosService.construir_ef8_lote", "Completado");
 
-            await Promise.all([
-                LotesRepository.crear_lote_EF8(loteEF8, user, log._id),
-                InventariosService.ingresarCanasillas(data, user),
-                InventariosService.ingresarDescarteEf8(loteEF8, tipoFruta[0].tipoFruta, log._id),
-            ])
-            await registrarPasoLog(log._id, "Promise.all", "Completado");
+            const registroCanastillas = await InventariosService.ingresarCanasillas(data, user);
+            await registrarPasoLog(log._id, "InventariosService.ingresarCanasillas", "Completado");
+
+            await LotesRepository.crear_lote_EF8({ ...loteEF8, registroCanastillas: registroCanastillas._id }, user, log._id);
+            await registrarPasoLog(log._id, "LotesRepository.crear_lote_EF8", "Completado");
+
+            await InventariosService.ingresarDescarteEf8(loteEF8, tipoFruta[0].tipoFruta, log._id)
+            await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
 
             await dataRepository.incrementar_ef8_serial()
             await registrarPasoLog(log._id, "dataService.incrementar_ef8_serial", "Completado");

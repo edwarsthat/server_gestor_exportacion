@@ -4,7 +4,6 @@ import { fileURLToPath } from 'url';
 import { ProcessError } from '../../Error/ProcessError.js';
 import { db } from '../../DB/mongoDB/config/init.js';
 import { registrarPasoLog } from '../api/helper/logs.js';
-
 // La magia para tener __dirname:
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -76,7 +75,6 @@ export class ConstantesDelSistema {
             throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`);
         }
     }
-
     static async get_constantes_sistema_paises_GGN() {
         try {
             const dataJSON = fs.readFileSync(paises_GGN_path);

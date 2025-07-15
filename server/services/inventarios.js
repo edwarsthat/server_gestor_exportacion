@@ -2,6 +2,7 @@ import { InventariosLogicError } from "../../Error/logicLayerError.js";
 import { dataRepository } from "../api/data.js";
 import { obtenerEstadoDesdeAccionCanastillasInventario } from "../api/utils/diccionarios.js";
 import { colombiaToUTC } from "../api/utils/fechas.js";
+import { filtroFechaInicioFin } from "../api/utils/filtros.js";
 import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
 import { CanastillasRepository } from "../Class/CanastillasRegistros.js";
@@ -72,7 +73,7 @@ export class InventariosService {
             user,
             fecha = '',
             observaciones = '',
-            duenio = ''
+
         }
     ) {
         const estado = obtenerEstadoDesdeAccionCanastillasInventario(accion)
@@ -82,13 +83,7 @@ export class InventariosService {
             origen: origen,
             cantidad: {
                 propias: canastillas,
-                // Se deja como array porque en el futuro se manejarán varios propietarios
-                prestadas: [
-                    {
-                        cantidad: canastillasPrestadas,
-                        propietario: duenio
-                    }
-                ]
+                prestadas: canastillasPrestadas
             },
             observaciones: observaciones,
             referencia: "C1",
@@ -1005,16 +1000,23 @@ export class InventariosService {
         await RedisRepository.put_inventarioDescarte(descarte, 'descarteLavado:', tipoFruta, logId)
 
     }
-    static async obtenerRecordLotesIngresoLote(page, resultsPerPage) {
-
-        const query = {
-            operacionRealizada: "crearLote"
+    static async obtenerRecordLotesIngresoLote(filtro) {
+        const { fechaInicio, fechaFin, tipoFruta2 = {} } = filtro;
+        let query = {
+            operacionRealizada: "crearLote",
         }
+        query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'documento.fecha_ingreso_inventario')
+
+        if (
+            tipoFruta2._id !== undefined &&
+            tipoFruta2._id !== null &&
+            !(typeof tipoFruta2 === "object" && Object.keys(tipoFruta2).length === 0)
+        ) {
+            query.tipoFruta = tipoFruta2._id;
+        }
+
         const lotes = await RecordLotesRepository.getRecordLotes({
             query: query,
-            skip: (page - 1) * resultsPerPage,
-            limit: resultsPerPage,
-
         });
 
         const proveedoresids = [];
@@ -1060,53 +1062,80 @@ export class InventariosService {
         }
         return result;
     }
-    static async obtenerRecordLotesIngresoLoteEF8(page, resultsPerPage) {
+    static async obtenerRecordLotesIngresoLoteEF8(filtro) {
+        const { fechaInicio, fechaFin, tipoFruta2 = {} } = filtro;
+        let query = {}
+        query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_ingreso_inventario')
+
+        if (
+            tipoFruta2 &&
+            tipoFruta2._id !== undefined &&
+            tipoFruta2._id !== null &&
+            !(typeof tipoFruta2 === "object" && Object.keys(tipoFruta2).length === 0)
+        ) {
+            query.tipoFruta = tipoFruta2._id;
+        }
+
 
         const lotes = await LotesRepository.getLotesEF8({
-            skip: (page - 1) * resultsPerPage,
-            limit: resultsPerPage,
+            query: query
         });
-
         const usersId = [];
-        const tipoFrutaId = [];
 
         for (const lote of lotes) {
             usersId.push(lote.user.toString());
-            tipoFrutaId.push(lote.tipoFruta);
         }
 
         const usersIdSet = new Set(usersId)
         const usersIdArr = [...usersIdSet]
-
-        const tipoFrutaIdSet = new Set(tipoFrutaId)
-        const tipoFrutaIdArr = [...tipoFrutaIdSet]
 
         const user = await UsuariosRepository.get_users({
             ids: usersIdArr,
             getAll: true
         })
 
-        const tipoFrutas = await dataRepository.get_data_tipoFruta2({
-            ids: tipoFrutaIdArr
-        })
-
+        const tipoFrutas = await dataRepository.get_data_tipoFruta2()
         const result = [];
         for (const lote of lotes) {
-            const usuario = user.find(u => u._id.toString() === lote.user);
+            // Haz el objeto plano primero
+            const lotePlano = typeof lote.toObject === "function" ? lote.toObject() : { ...lote };
+
+            // Luego sí modifica lo que quieras, aquí ya es un objeto JS normal
+            const usuario = user.find(u => u._id.toString() === lotePlano.user);
             if (usuario) {
-                lote.user = usuario.nombre + " " + usuario.apellido;
+                lotePlano.user = usuario.nombre + " " + usuario.apellido;
             }
-            const tipoFruta = tipoFrutas.find(u => u._id.toString() === lote.tipoFruta);
-            if (tipoFruta) {
-                lote.tipoFruta = tipoFruta.tipoFruta;
+            const tipoFrutaFound = tipoFrutas.find(u => u._id.toString() === lotePlano.tipoFruta);
+            if (tipoFrutaFound) {
+                lotePlano.tipoFruta = tipoFrutaFound; // Ahora sí, sin miedo
             }
-            result.push(lote);
+            result.push(lotePlano);
         }
         return result;
     }
-    static async obtenerRecordLotesIngresolote_EF1_EF8(page, resultsPerPage) {
-        const skip = (page - 1) * resultsPerPage;
-        const data = await UnionsRepository.obtenerUnionRecordLotesIngresoLoteEF8({ operacionRealizada: "crearLote" }, skip, resultsPerPage);
+    static async obtenerRecordLotesIngresolote_EF1_EF8(filtro) {
+        const { fechaInicio, fechaFin, tipoFruta2 = {} } = filtro;
+        let query1 = {
+            operacionRealizada: "crearLote",
+        }
+        let query2 = {}
+
+        query1 = filtroFechaInicioFin(fechaInicio, fechaFin, query1, 'documento.fecha_ingreso_inventario')
+        query2 = filtroFechaInicioFin(fechaInicio, fechaFin, query2, 'fecha_ingreso_inventario')
+
+        if (
+            tipoFruta2._id !== undefined &&
+            tipoFruta2._id !== null &&
+            !(typeof tipoFruta2 === "object" && Object.keys(tipoFruta2).length === 0)
+        ) {
+            query1.tipoFruta = tipoFruta2.tipoFruta;
+            query2.tipoFruta = tipoFruta2._id;
+        }
+
+        console.log("query1", query1);
+        console.log("query2", query2);
+        const data = await UnionsRepository.obtenerUnionRecordLotesIngresoLoteEF8( query1, query2);
+        console.log(data);
 
         const proveedoresids = [];
         const usersId = [];
@@ -1189,13 +1218,18 @@ export class InventariosService {
             user
         })
 
-        await Promise.all([
+        const [, , registroCanastillas,] = await Promise.all([
             this.ajustarCanastillasProveedorCliente(datos.predio, -canastillasPropias),
             this.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", canastillasPropias),
             CanastillasRepository.post_registro(dataRegistro),
             VariablesDelSistema.modificar_canastillas_inventario(canastillasPrestadas, "canastillasPrestadas"),
         ])
 
+        return registroCanastillas;
 
     }
+    // static async modificarIngresoCanastillas(data) {
+    //     const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)
+    //     const canastillasPrestadas = Number(datos.canastillasPrestadas || 0) + Number(datos.canastillasVaciasPrestadas || 0)
+    // }
 }

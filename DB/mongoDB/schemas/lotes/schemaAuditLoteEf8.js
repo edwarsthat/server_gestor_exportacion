@@ -3,6 +3,12 @@ const { Schema } = mongoose;
 
 export const defineAuditLogsLoteEF8 = async (conn) => {
 
+    const ChangeSchema = new Schema({
+        field: String,
+        before: mongoose.Schema.Types.Mixed,
+        after: mongoose.Schema.Types.Mixed
+    }, { _id: false });
+    
     const AuditLogSchema = new Schema({
         coleccion: String,
         documentId: mongoose.Schema.Types.ObjectId,
@@ -10,11 +16,7 @@ export const defineAuditLogsLoteEF8 = async (conn) => {
         user: String,
         action: String,
         timestamp: { type: Date, default: Date.now },
-        changes: [{
-            field: String,
-            before: mongoose.Schema.Types.Mixed,
-            after: mongoose.Schema.Types.Mixed
-        }],
+        changes: [ChangeSchema],
     }, { timestamps: true });
 
 

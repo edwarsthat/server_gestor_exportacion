@@ -376,7 +376,7 @@ export class LotesRepository {
         };
 
         try {
-            let documento = await db.Lotes.findOneAndUpdate(filter, update, { ...finalOptions, new: true });
+            let documento = await db.LotesEF8.findOneAndUpdate(filter, update, { ...finalOptions, new: true });
             if (!documento) throw new Error('Lote no encontrado');
 
             return documento;

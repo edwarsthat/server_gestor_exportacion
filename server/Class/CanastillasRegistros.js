@@ -51,5 +51,23 @@ export class CanastillasRepository {
             throw new ConnectionDBError(522, `Error obteniendo canastillas ${err.message}`);
         }
     }
+    static async actualizar_registro(filter, update, options = {}, session = null) {
+
+        const finalOptions = {
+            new: true,
+            ...options,
+            ...(session && { session })
+        };
+
+        try {
+            let documento = await db.RegistrosCanastillas.findOneAndUpdate(filter, update, { ...finalOptions, new: true });
+            if (!documento) throw new Error('Registro no encontrado');
+
+            return documento;
+
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+        }
+    }
 }
 

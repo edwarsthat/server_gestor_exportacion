@@ -5,12 +5,7 @@ export const defineRegistroCanastillas = async (conn) => {
 
     const cantidadSchema = new Schema({
         propias: { type: Number, default: 0 },
-        prestadas: [
-            {
-                cantidad: Number,
-                propietario: String
-            }
-        ]
+        prestadas: { type: Number, default: 0 },
     }, { _id: false })
 
     const canastillasRegistrosSchema = new Schema({

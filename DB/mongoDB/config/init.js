@@ -68,6 +68,7 @@ import { defineInventarioDescarte } from '../schemas/inventarios/SchemaInventari
 import { defineTipoFrutas } from '../schemas/catalogs/schemaTipoFruta.js';
 import { defineLoteEf8 } from '../schemas/lotes/schemaLoteEf8.js';
 import { defineSeriales } from '../schemas/seriales/SerialesSchema.js';
+import { defineAuditLogsLoteEF8 } from '../schemas/lotes/schemaAuditLoteEf8.js';
 
 export const db = {};
 
@@ -223,6 +224,7 @@ const defineSchemasProceso = async (sysConn) => {
         // 1. Primero definimos el esquema de auditoría ya que otros lo necesitan
         console.log("⚡ Definiendo AuditLog...");
         const AuditLog = await defineAuditLogs(sysConn)
+        const AuditLoteEF8 = await defineAuditLogsLoteEF8(sysConn);
         console.log("✅ AuditLog definido");
 
         // 2. Esquemas relacionados con clientes (base para otras dependencias)
@@ -303,7 +305,7 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("✅ recordLotes definido");
 
         console.log("⚡ Definiendo Lotes EF8...");
-        db.LotesEF8 = await defineLoteEf8(sysConn);
+        db.LotesEF8 = await defineLoteEf8(sysConn, AuditLoteEF8);
         console.log("✅ Lotes EF8 definido");
 
         // 9. Esquemas de registro de transacciones

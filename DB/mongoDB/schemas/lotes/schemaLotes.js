@@ -13,6 +13,7 @@
  */
 
 import mongoose from "mongoose";
+import { diffObjects } from "../utils/utils.js";
 const { Schema } = mongoose;
 
 /**
@@ -27,19 +28,6 @@ const { Schema } = mongoose;
  *
  * @see https://mongoosejs.com/docs/models.html
  */
-
-function diffObjects(obj1, obj2, path = "") {
-  const changes = [];
-  for (const key of new Set([...Object.keys(obj1), ...Object.keys(obj2)])) {
-    const fullPath = path ? `${path}.${key}` : key;
-    if (typeof obj1[key] === "object" && typeof obj2[key] === "object" && obj1[key] && obj2[key]) {
-      changes.push(...diffObjects(obj1[key], obj2[key], fullPath));
-    } else if (obj1[key] !== obj2[key]) {
-      changes.push({ field: fullPath, before: obj1[key], after: obj2[key] });
-    }
-  }
-  return changes;
-}
 
 
 export const defineLotes = async (conn, AuditLog) => {
@@ -213,7 +201,6 @@ export const defineLotes = async (conn, AuditLog) => {
 
     // let newKilos = 0
     // const actions = ["put_proceso_aplicaciones_descarteLavado", "put_proceso_aplicaciones_descarteEncerado"]
-    console.log("this.options.action", this.options.action)
     if (
       this.options.action !== "put_calidad_informes_aprobacionComercial" &&
       this.options.action !== "put_calidad_informes_loteFinalizarInforme" &&

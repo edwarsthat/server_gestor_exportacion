@@ -1,14 +1,14 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 
 export class UnionsRepository {
-    static async obtenerUnionRecordLotesIngresoLoteEF8(query = {}, skip, resultsPerPage) {
+    static async obtenerUnionRecordLotesIngresoLoteEF8(query1, query2) {
         return await db.recordLotes.aggregate([
-            { $match: query },
+            { $match: query1 },
             {
                 $unionWith: {
                     coll: "loteef8",
                     pipeline: [
-                        { $match: {} },
+                        { $match: query2 },
                         {
                             $lookup: {
                                 from: "proveedors",           
@@ -21,8 +21,6 @@ export class UnionsRepository {
                 }
             },
             { $sort: { createdAt: -1 } },
-            { $skip: skip },
-            { $limit: resultsPerPage }
         ]).exec();
 
     }
