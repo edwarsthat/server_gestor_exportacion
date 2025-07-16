@@ -551,17 +551,6 @@ export class InventariosService {
      * @throws {Error} Si los kilos a modificar son mayores que el inventario disponible
      * @throws {Error} Si la transacción falla por concurrencia
      *
-     * @example
-     * await InventariosService.modificar_inventario_registro_cambioFruta(
-     *   {
-     *     descarteLavado: { descarteGeneral: 10 },
-     *     descarteEncerado: { descarteGeneral: 5 },
-     *     tipoFruta: 'Naranja'
-     *   },
-     *   { tipoFruta: 'Limon' },
-     *   { descarteGeneral: 8 },
-     *   { descarteGeneral: 4 }
-     * );
      */
     static async modificar_inventario_registro_cambioFruta(registro, newRegistro, descarteLavado, descarteEncerado) {
 
@@ -810,36 +799,6 @@ export class InventariosService {
      * @throws {Error} Si falla alguna de las operaciones de actualización del inventario
      * @throws {Error} Si los parámetros proporcionados son inválidos
      *
-     * @example
-     * // Ingresar 25 canastillas al cuarto de desverdizado
-     * await InventariosService.modificarInventarioIngresoDesverdizado(
-     *   25,                              // canastillas
-     *   "507f1f77bcf86cd799439013",     // cuartoId
-     *   "507f1f77bcf86cd799439012"      // loteId
-     * );
-     *
-     * @example
-     * // Uso típico dentro del flujo de desverdizado
-     * try {
-     *   await InventariosService.modificarInventarioIngresoDesverdizado(
-     *     canastillas,
-     *     cuartoId,
-     *     loteId
-     *   );
-     *   console.log('Inventario actualizado correctamente');
-     * } catch (error) {
-     *   console.error('Error al actualizar inventario:', error.message);
-     * }
-     *
-     * @since 1.0.0
-     * @see {@link VariablesDelSistema.modificarInventario} Para modificación del inventario general
-     * @see {@link RedisRepository.update_inventarioDesverdizado} Para actualización del inventario de desverdizado
-     * @see {@link InventariosRepository.put_inventarios_frutaSinProcesar_desverdizado} Método que utiliza esta función
-     *
-     * @performance
-     * - Operaciones paralelas usando Promise.all() para mejor rendimiento
-     * - Tiempo típico de ejecución: < 100ms
-     * - Operaciones atómicas para mantener consistencia de datos
      */
     static async modificarInventarioIngresoDesverdizado(canastillas, cuartoId, loteId) {
 
@@ -965,18 +924,18 @@ export class InventariosService {
         return loteVaciando[0];
     }
     static async construir_ef8_lote(data, enf, precio, user) {
-        const totalCanastillas =
-            Number(data.canastillasPropias || 0) + Number(data.canastillasPrestadas || 0) +
-            Number(data.canastillasVaciasPropias || 0) + Number(data.canastillasVaciasPrestadas || 0);
+        const totalCanastillas = Number(data.canastillasPropias || 0) + Number(data.canastillasVaciasPropias || 0);
+        const totalCanastillasPrestadas = Number(data.canastillasVaciasPrestadas || 0) + Number(data.canastillasPrestadas || 0);
         const total = Number(data.descarteGeneral || 0) + Number(data.balin || 0) + Number(data.pareja || 0);
         const promedio = totalCanastillas > 0 ? total / totalCanastillas : 0;
 
         const loteEF8 = {
             balin: data.balin || 0,
             canastillas: totalCanastillas || 0,
+            canastillasPrestadas: totalCanastillasPrestadas || 0,
             descarteGeneral: Number(data.descarteGeneral || 0),
             enf: enf,
-            fecha_ingreso_inventario: colombiaToUTC(data.fechaIngreso || Date.now()),
+            fecha_ingreso_inventario: colombiaToUTC(data.fecha_ingreso_inventario || Date.now()),
             numeroPrecintos: Number(data.numeroPrecintos || 0),
             numeroRemision: data.numeroRemision,
             observaciones: data.observaciones || '',
@@ -1076,10 +1035,12 @@ export class InventariosService {
             query.tipoFruta = tipoFruta2._id;
         }
 
-
         const lotes = await LotesRepository.getLotesEF8({
-            query: query
+            query: query,
+            limit: 'all',
+            sort: { fecha_ingreso_inventario: -1 }
         });
+
         const usersId = [];
 
         for (const lote of lotes) {

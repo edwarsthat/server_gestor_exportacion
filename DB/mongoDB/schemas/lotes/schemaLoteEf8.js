@@ -8,6 +8,7 @@ export const defineLoteEf8 = async (conn, AuditLog) => {
     const LoteEf8Schema = new Schema({
         balin: { type: Number, default: 0 },
         canastillas: { type: Number, default: 0 },
+        canastillasPrestadas: { type: Number, default: 0 },
         descarteGeneral: { type: Number, default: 0 },
         enf: { type: String },
         fecha_creacion: { type: Date, default: () => new Date() },

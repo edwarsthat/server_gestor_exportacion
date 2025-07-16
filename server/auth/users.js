@@ -9,18 +9,20 @@ const permisos_generales = new Set([
     "obtener_status_proceso",
     "obtener_info_mi_cuenta",
     "modificar_mi_password",
-    "get_calidad_formulario_limpiezaDiaria_numeroElementos",
-    "get_calidad_formulario_limpiezaMensual_numeroElementos",
-    "get_calidad_formulario_controlPlagas_numeroElementos",
+
     "obtener_cantidad_usuarios",
-    "get_inventarios_historiales_listasDeEmpaque_numeroRegistros",
     "obtener_cantidad_historial_espera_descargue",
     "obtener_cantidad_historial_ingreso_inventario",
     "get_comercial_precios_cantidad_registros",
-    "get_comercial_formularios_reclamacionesCalidad_numeroElementos",
     "get_inventarios_historiales_numeroCanastillas_registros",
-
     "get_info_formulario_inspeccion_fruta",
+
+    //numero de elementos
+    "get_inventarios_historiales_listasDeEmpaque_numeroRegistros",
+    "get_comercial_formularios_reclamacionesCalidad_numeroElementos",
+    "get_calidad_formulario_limpiezaDiaria_numeroElementos",
+    "get_calidad_formulario_limpiezaMensual_numeroElementos",
+    "get_calidad_formulario_controlPlagas_numeroElementos",
     "get_transporte_registros_programacion_mula_numeroElementos",
     "get_transporte_registros_exportacion_numeroElementos",
     "get_transporte_registros_inspeccionMula_numeroElementos",
@@ -35,6 +37,7 @@ const permisos_generales = new Set([
     "get_inventarios_historiales_numero_DespachoDescarte",
     "get_calidad_reclamaciones_contenedores_numeroElementos",
     "get_transporte_registros_entregaPrecintos_numeroElementos",
+    "get_inventarios_historiales_numeroRegistros_inventarioDescartes",
     //obteniendo constantes
     "get_constantes_sistema_clasificacion_descarte",
     "get_constantes_sistema_observaciones_calidad",

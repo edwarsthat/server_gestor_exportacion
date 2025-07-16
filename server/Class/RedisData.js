@@ -255,6 +255,37 @@ export class RedisRepository {
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
     }
+    static async get_inventarioDescarte_dia_salida() {
+        let cliente
+        try {
+            cliente = await getRedisClient();
+            // Prepara todas las promesas para ejecutarlas en paralelo
+            const tipoFrutas = await cargarTipoFrutas();
+            const promesas = tipoFrutas.map(fruta => (
+                Promise.all([
+                    cliente.hGetAll(`salidaInventarioDescarte:${fruta}:descarteLavado:`),
+                    cliente.hGetAll(`salidaInventarioDescarte:${fruta}:descarteEncerado:`)
+                ]).then(([descarteLavado, descarteEncerado]) => ({
+                    fruta,
+                    descarteLavado,
+                    descarteEncerado
+                }))
+            ));
+
+            const resultados = await Promise.all(promesas);
+
+            // Transforma el array de resultados en un objeto con cada fruta como key
+            const inventario = {};
+            resultados.forEach(({ fruta, descarteLavado, descarteEncerado }) => {
+                inventario[fruta] = { descarteLavado, descarteEncerado };
+            });
+
+            return inventario
+
+        } catch (err) {
+            throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
+        }
+    }
     static async get_inventarioDescarte_porTipoFruta(tipoFruta, logId = null) {
         try {
 

@@ -186,6 +186,14 @@ export const apiSocketInventarios = {
         const response = await InventariosRepository.put_inventarios_registros_fruta_descompuesta(data)
         return successResponseRoutes(response)
     },
+    get_inventarios_historiales_registros_inventarioDescartes: async (data) => {
+        const response = await InventariosRepository.get_inventarios_historiales_registros_inventarioDescartes(data)
+        return successResponseRoutes(response)
+    },
+    get_inventarios_historiales_numeroRegistros_inventarioDescartes: async (data) => {
+        const response = await InventariosRepository.get_inventarios_historiales_numeroRegistros_inventarioDescartes(data)
+        return successResponseRoutes(response)
+    },
     //#endregion
     //#region ingresoInventario
     get_inventarios_ingresos_ef: async () => {
