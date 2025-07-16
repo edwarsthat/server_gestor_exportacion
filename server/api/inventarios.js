@@ -1962,6 +1962,7 @@ export class InventariosRepository {
             await InventariosHistorialRepository.crearInventarioDescarte({ inventario, kilos_ingreso: ingresos, kilos_salida: salidas })
 
             await RedisRepository.reiniciarDescarteIngresos()
+            await RedisRepository.reiniciarDescarteSalidas()
 
         } catch (err) {
             if (err.status === 500) {
