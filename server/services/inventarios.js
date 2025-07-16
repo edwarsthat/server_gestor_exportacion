@@ -13,7 +13,7 @@ import { LotesRepository } from "../Class/Lotes.js";
 import { PreciosRepository } from "../Class/Precios.js";
 import { ProveedoresRepository } from "../Class/Proveedores.js";
 import { RedisRepository } from "../Class/RedisData.js";
-import { UnionsRepository } from "../Class/unions.js";
+import { UnionsRepository } from "../Class/Unions.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
