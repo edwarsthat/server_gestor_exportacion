@@ -56,10 +56,8 @@ export class InventariosService {
             fecha_ingreso_inventario: fecha,
         };
     }
-    static async incrementarEF(ef) {
-        if (ef.startsWith("EF1")) return VariablesDelSistema.incrementarEF1();
-        if (ef.startsWith("EF8")) return VariablesDelSistema.incrementarEF8();
-        throw new Error(`Código EF no válido para incrementar: ${ef}`);
+    static async incrementarEF() {
+        VariablesDelSistema.incrementarEF1();
     }
     static async crearRegistroInventarioCanastillas(
         {
@@ -1093,10 +1091,7 @@ export class InventariosService {
             query2.tipoFruta = tipoFruta2._id;
         }
 
-        console.log("query1", query1);
-        console.log("query2", query2);
         const data = await UnionsRepository.obtenerUnionRecordLotesIngresoLoteEF8( query1, query2);
-        console.log(data);
 
         const proveedoresids = [];
         const usersId = [];

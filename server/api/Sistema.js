@@ -17,6 +17,9 @@ import { procesoEventEmitter } from '../../events/eventos.js';
 import { db } from '../../DB/mongoDB/config/init.js';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { dataService } from '../services/data.js';
+import { LogsRepository } from '../Class/LogsSistema.js';
+import { registrarPasoLog } from './helper/logs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -247,15 +250,25 @@ export class SistemaRepository {
         }
     }
     static async put_sistema_parametros_configuracionSeriales_EF8(req) {
+        let log
         try {
+            const { user } = req
+            log = await LogsRepository.create({
+                user: user._id,
+                action: "put_sistema_parametros_configuracionSeriales_EF8",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
             const { serial } = req.data
-            await VariablesDelSistema.modificar_serial(serial, "ef8")
+            await dataService.modificar_ef8_serial(serial, log)
 
         } catch (err) {
+            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
             if (err.status === 523) {
                 throw err
             }
             throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     static async get_sistema_parametros_configuracionSeriales_Celifrut() {

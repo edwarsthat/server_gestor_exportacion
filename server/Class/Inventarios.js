@@ -4,10 +4,12 @@ import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 export class InventariosHistorialRepository {
     static async crearInventarioDescarte(data) {
         try {
-            const { inventario, kilos_ingreso = 0, kilos_salida = 0, fecha } = data;
-
+            const { inventario, kilos_ingreso = 0, kilos_salida = 0 } = data;
+            const fecha = new Date();
+            fecha.setDate(fecha.getDate() - 1);
+            
             const nuevoInventario = new db.InventarioDescarte({
-                fecha: fecha || new Date(),
+                fecha: fecha,
                 inventario,
                 kilos_ingreso,
                 kilos_salida

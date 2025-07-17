@@ -82,11 +82,6 @@ export class InventariosValidations {
     }
     static post_inventarios_ingreso_lote() {
         return z.object({
-            ef: safeString("ef")
-                .refine(val => val.startsWith("EF1") || val.startsWith("EF8"), {
-                    message: "EF debe comenzar con EF1 o EF8"
-                }),
-
             fecha_estimada_llegada: safeString("fecha_estimada_llegada")
                 .refine(val => !isNaN(Date.parse(val)), {
                     message: "La fecha estimada de llegada no es válida"

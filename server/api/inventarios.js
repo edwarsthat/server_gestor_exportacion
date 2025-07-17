@@ -10,7 +10,6 @@ import { InsumosRepository } from "../Class/Insumos.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { InventariosValidations } from "../validations/inventarios.js";
-import { generarCodigoEF } from "./helper/inventarios.js";
 import { filtroFechaInicioFin } from "./utils/filtros.js";
 import { transformObjectInventarioDescarte } from "./utils/objectsTransforms.js";
 import { InventariosService } from "../services/inventarios.js";
@@ -1181,14 +1180,21 @@ export class InventariosRepository {
         }
     }
     static async put_inventarios_historiales_ingresoFruta_modificar(req) {
+        let log
+
         try {
             const { user } = req;
             const { type } = req.data
-
+            log = await LogsRepository.create({
+                user: user._id,
+                action: "put_inventarios_historiales_ingresoFruta_modificar",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
             if (type === 'loteEF1') {
                 const { action, data, _idLote, _idRecord, __v } = req.data
 
                 InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar(req.data)
+                await registrarPasoLog(log._id, "InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar", "Completado");
 
                 const queryLote = {
                     ...data,
@@ -1200,22 +1206,32 @@ export class InventariosRepository {
                 await InventariosService.modificarLote_regresoHistorialFrutaIngreso(
                     _idLote, queryLote, user, action
                 )
+                await registrarPasoLog(log._id, "InventariosService.modificarLote_regresoHistorialFrutaIngreso", "Completado");
 
                 await InventariosService.modificarRecordLote_regresoHistorialFrutaIngreso(
                     _idRecord, __v, data
                 )
+                await registrarPasoLog(log._id, "InventariosService.modificarRecordLote_regresoHistorialFrutaIngreso", "Completado");
+
             } else if (type === 'loteEF8') {
 
                 const { data, _id } = req.data
 
                 InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar_EF8(data)
                 const oldLoteEf8 = await LotesRepository.getLotesEF8({ ids: [_id] })
+                await registrarPasoLog(log._id, "LotesRepository.getLotesEF8", "Completado");
+
                 const oldTipoFruta = await TiposFruta.get_tiposFruta({ ids: [oldLoteEf8[0].tipoFruta] })
+                await registrarPasoLog(log._id, "TiposFruta.get_tiposFruta", "Completado");
 
                 const loteEF8 = await LotesRepository.actualizar_lote_EF8({ _id: _id }, data, { user: user.user._id, action: data.action })
+                await registrarPasoLog(log._id, "LotesRepository.actualizar_lote_EF8", "Completado");
+
                 const newTipoFruta = await TiposFruta.get_tiposFruta({ ids: [loteEF8.tipoFruta] })
+                await registrarPasoLog(log._id, "TiposFruta.get_tiposFruta", "Completado");
 
                 const registroIngresoCanastillas = await CanastillasRepository.get_registros_canastillas({ ids: [loteEF8.registroCanastillas] })
+                await registrarPasoLog(log._id, "CanastillasRepository.get_registros_canastillas", "Completado");
 
                 if (
                     registroIngresoCanastillas[0].cantidad.propias != data.canastillas ||
@@ -1227,9 +1243,16 @@ export class InventariosRepository {
                     )
 
                     await InventariosService.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", Number(-registroIngresoCanastillas[0].cantidad.propias))
+                    await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+
                     await InventariosService.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", Number(data.canastillas))
+                    await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+
                     await VariablesDelSistema.modificar_canastillas_inventario(-Number(registroIngresoCanastillas[0].cantidad.prestadas), "canastillasPrestadas")
+                    await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");
+
                     await VariablesDelSistema.modificar_canastillas_inventario(Number(data.canastillasPrestadas), "canastillasPrestadas")
+                    await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");
 
                 }
 
@@ -1245,7 +1268,10 @@ export class InventariosRepository {
                 }
                 //se restan los datos antiguos del lote y se suman los nuevos
                 await InventariosService.ingresarDescarteEf8(oldKilos, oldTipoFruta[0].tipoFruta)
+                await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
+
                 await InventariosService.ingresarDescarteEf8(newKilos, newTipoFruta[0].tipoFruta)
+                await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
 
             }
 
@@ -1688,8 +1714,7 @@ export class InventariosRepository {
     static async get_inventarios_ingresos_ef() {
         try {
             const enf1 = await VariablesDelSistema.generarEF1();
-            const enf8 = await VariablesDelSistema.generarEF8();
-            return { ef1: enf1, ef8: enf8 }
+            return { ef1: enf1 }
         }
         catch (err) {
             if (err.status === 506) {
@@ -1705,7 +1730,7 @@ export class InventariosRepository {
 
             const datosValidados = InventariosValidations.post_inventarios_ingreso_lote().parse(datos)
 
-            const enf = await generarCodigoEF(datos.ef, datos.fecha_estimada_llegada)
+            const enf = await VariablesDelSistema.generarEF1(datos.fecha_estimada_llegada)
             const { precioId, proveedor } = await InventariosService.obtenerPrecioProveedor(datos.predio, datos.tipoFruta)
 
             if (datos.GGN)

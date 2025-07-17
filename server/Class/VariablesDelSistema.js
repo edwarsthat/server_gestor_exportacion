@@ -62,38 +62,6 @@ export class VariablesDelSistema {
     }
   }
 
-  static async generarEF8(fecha_ingreso = new Date()) {
-    try {
-
-      const idsJSON = fs.readFileSync(pathIDs);
-      const ids = JSON.parse(idsJSON);
-
-      let fecha = new Date(fecha_ingreso);
-      let year = fecha.getFullYear().toString().slice(-2);
-      let month = String(fecha.getMonth() + 1).padStart(2, "0");
-      let enf;
-      if (ids.ef8 < 10) {
-        enf = "EF8-" + year + month + "0" + ids.ef8;
-      } else {
-        enf = "EF8-" + year + month + ids.ef8;
-      }
-      return enf;
-    } catch (e) {
-      throw new ProcessError(506, `Error creando la EF1: ${e.message}`)
-    }
-  }
-  static async incrementarEF8() {
-    try {
-      const idsJSON = fs.readFileSync(pathIDs);
-      const ids = JSON.parse(idsJSON);
-      ids.ef8 += 1;
-      const newidsJSON = JSON.stringify(ids);
-      fs.writeFileSync(pathIDs, newidsJSON);
-    } catch (err) {
-      throw new ProcessError(411, `Error incrementando el EF1 ${err.message}`)
-    }
-  }
-
   static async modificar_serial(enf, key) {
     try {
       const idsJSON = fs.readFileSync(pathIDs);
@@ -105,8 +73,6 @@ export class VariablesDelSistema {
       throw new ProcessError(523, `Error modificando el ${key} ${err.message}`)
     }
   }
-
-
 
   static async procesarEF1(lote, logId) {
     try {
