@@ -440,7 +440,7 @@ export class RedisRepository {
                 .map(([key, valor]) => {
                     const [tipoDescarte, campo] = key.split(":");
                     if (inventario.includes(campo)) {
-                        cliente.hIncrBy(`salidaInventarioDescarte:${tipoFruta}:${tipoDescarte}`, campo, valor)
+                        cliente.hIncrBy(`salidaInventarioDescarte:${tipoFruta}:${tipoDescarte}:`, campo, valor)
                     }
                 });
 
