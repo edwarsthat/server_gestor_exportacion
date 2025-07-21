@@ -1,7 +1,9 @@
+import Mongoose from 'mongoose'
 import { ProcessError } from "../../Error/ProcessError.js";
 import { procesoEventEmitter } from "../../events/eventos.js";
 import { IndicadoresRepository } from "../Class/Indicadores.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
+import { LotesRepository } from "../Class/Lotes.js";
 // import { LotesRepository } from "../Class/Lotes.js";
 // import { UsuariosRepository } from "../Class/Usuarios.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
@@ -100,82 +102,6 @@ export class IndicadoresAPIRepository {
             throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
         }
     }
-    // static async get_indicadores_operaciones_lotes(req) {
-    //     try {
-    //         const { filtro } = req.data
-    //         const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
-
-    //         let query = {}
-
-    //         query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha_ingreso_inventario")
-
-    //         // Filtro por tipoFruta
-    //         if (tipoFruta && tipoFruta.length > 0) {
-    //             query.tipoFruta = {
-    //                 $all: tipoFruta,          // Debe contener todos los elementos del filtro
-    //             };
-    //         }
-
-    //         query.fecha_finalizado_proceso = { $exists: true }
-
-    //         const registros = await LotesRepository.getLotes({
-    //             query: query,
-    //             limit: 'all',
-    //             select: {
-    //                 fecha_ingreso_inventario: 1,
-    //                 fecha_finalizado_proceso: 1,
-    //             }
-    //         })
-
-    //         const new_registros = registros.map(lote => {
-    //             const fechaInicio = new Date(lote.fecha_ingreso_inventario)
-    //             const fechaFin = new Date(lote.fecha_finalizado_proceso)
-
-    //             const diferencia = Math.abs(fechaFin - fechaInicio)
-
-    //             const dias = diferencia / (1000 * 60 * 60)
-
-    //             return { ...lote._doc, dias_inicio_fin: dias }
-    //         })
-
-
-    //         return new_registros
-    //     } catch (err) {
-    //         if (err.status === 522) {
-    //             throw err
-    //         }
-    //         throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
-    //     }
-    // }
-    // static async get_indicadores_operaciones_noCalidad(req) {
-    //     try {
-    //         const { filtro } = req.data
-    //         const { fechaInicio, fechaFin, tipoFruta } = filtro || {};
-
-    //         let query = {}
-
-    //         query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha")
-
-    //         // Filtro por tipoFruta
-    //         if (tipoFruta && tipoFruta.length > 0) {
-    //             query.tipoFruta = {
-    //                 $all: tipoFruta,          // Debe contener todos los elementos del filtro
-    //             };
-    //         }
-
-    //         const registros = await UsuariosRepository.obtener_volante_calidad({
-    //             query: query,
-    //             limit: 'all'
-    //         })
-
-    //         return registros
-    //     } catch (err) {
-    //         if (err.status === 522) {
-    //             throw err
-    //         }
-    //         throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
-    //     }
-    // }
     //#endregion
     static async post_indicadores_eficiencia_operativa_registro() {
         try {
@@ -198,9 +124,6 @@ export class IndicadoresAPIRepository {
             throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
         }
     }
-
-
-
     static async reiniciarValores_proceso(keysExportacion) {
         let log
         try {
@@ -273,7 +196,6 @@ export class IndicadoresAPIRepository {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
-
     static async sys_indicadores_eficiencia_fruta_kilos_procesados() {
         try {
             const indicador = await IndicadoresRepository.get_indicadores({
@@ -291,6 +213,46 @@ export class IndicadoresAPIRepository {
             if (err.status === 525) {
                 throw err
             }
+            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_indicadores_operaciones_rendimientoPredios(req) {
+        const startTime = Date.now();
+
+        try {
+            const { filtro } = req.data
+            const { fechaInicio, fechaFin, proveedor } = filtro || {};
+            let query = { predio: new Mongoose.Types.ObjectId(proveedor) }
+            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_creacion')
+
+            const camposDescartes = [
+                "descarteLavado.balin",
+                "descarteLavado.descarteGeneral",
+                "descarteLavado.descompuesta",
+                "descarteLavado.hojas",
+                "descarteLavado.pareja",
+                "descarteLavado.piel",
+                "descarteEncerado.balin",
+                "descarteEncerado.descarteGeneral",
+                "descarteEncerado.descompuesta",
+                "descarteEncerado.extra",
+                "descarteEncerado.pareja",
+                "descarteEncerado.suelo"
+            ];
+
+            const [lotes, totalKilosIngreso, totalKilosProcesados, totalKilosExportacion, totalKilosDescarte] = await Promise.all([
+                LotesRepository.get_Lotes_strict({ query: query }),
+                LotesRepository.sumar_elemento(query, ['kilos']),
+                LotesRepository.sumar_elemento(query, ['kilosVaciados']),
+                LotesRepository.sumar_elemento(query, ['calidad1', 'calidad15', 'calidad2']),
+                LotesRepository.sumar_elemento(query, camposDescartes),
+            ])
+
+            return { lotes, totalKilosIngreso, totalKilosProcesados, totalKilosExportacion, totalKilosDescarte };
+
+        } catch (err) {
+            const errorDuration = Date.now() - startTime;
+            console.log(`[${new Date().toISOString()}] Error en get_indicadores_operaciones_rendimientoPredios - Duración hasta error: ${errorDuration}ms - Error: ${err.message}`);
             throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
         }
     }

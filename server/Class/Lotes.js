@@ -315,6 +315,24 @@ export class LotesRepository {
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
+    static async sumar_elemento(filter, elements) {
+        try {
+
+            const addArray = elements.map(c => ({ $ifNull: [`$${c}`, 0] }));
+
+            const result = await db.Lotes.aggregate([
+                { $match: filter },
+                { $project: { sumaElementos: { $add: addArray } } },
+                { $group: { _id: null, totalKilos: { $sum: '$sumaElementos' } } }
+            ])
+
+            console.log(`Resultado de la suma:`, result);
+            return result[0]?.totalKilos || 0;
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
+        }
+    }
     //#region EF8
     static async crear_lote_EF8(data, user, logId = null) {
         try {
