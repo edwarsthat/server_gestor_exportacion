@@ -1087,7 +1087,7 @@ export class InventariosService {
             tipoFruta2._id !== null &&
             !(typeof tipoFruta2 === "object" && Object.keys(tipoFruta2).length === 0)
         ) {
-            query1.tipoFruta = tipoFruta2.tipoFruta;
+            query1["documento.tipoFruta"] = tipoFruta2.tipoFruta;
             query2.tipoFruta = tipoFruta2._id;
         }
 
