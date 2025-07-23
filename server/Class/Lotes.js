@@ -4,7 +4,21 @@ import { ProcessError } from "../../Error/ProcessError.js";
 import fs from 'fs';
 import { registrarPasoLog } from "../api/helper/logs.js";
 
-
+const camposDescartes = [
+    "descarteLavado.balin",
+    "descarteLavado.descarteGeneral",
+    "descarteLavado.descompuesta",
+    "descarteLavado.hojas",
+    "descarteLavado.pareja",
+    "descarteLavado.piel",
+    "descarteEncerado.balin",
+    "descarteEncerado.descarteGeneral",
+    "descarteEncerado.descompuesta",
+    "descarteEncerado.extra",
+    "descarteEncerado.pareja",
+    "descarteEncerado.suelo",
+    "frutaNacional"
+];
 
 export class LotesRepository {
     static async addLote(data, user) {
@@ -326,8 +340,65 @@ export class LotesRepository {
                 { $group: { _id: null, totalKilos: { $sum: '$sumaElementos' } } }
             ])
 
-            console.log(`Resultado de la suma:`, result);
             return result[0]?.totalKilos || 0;
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
+        }
+    }
+    static async eficiencia_lote(query) {
+        try {
+            const result = await db.Lotes.aggregate([
+                { $match: query },
+                {
+                    $group: {
+                        _id: null,
+                        totalKilosIngreso: { $sum: { $ifNull: ["$kilos", 0] } },
+                        totalKilosProcesados: { $sum: { $ifNull: ["$kilosVaciados", 0] } },
+                        totalKilosExportacion: {
+                            $sum: {
+                                $add: [
+                                    { $ifNull: ["$calidad1", 0] },
+                                    { $ifNull: ["$calidad15", 0] },
+                                    { $ifNull: ["$calidad2", 0] }
+                                ]
+                            }
+                        },
+                        totalKilosDescarte: {
+                            $sum: {
+                                $add: camposDescartes.map(campo => ({ $ifNull: [`$${campo}`, 0] }))
+                            }
+                        }
+                    }
+                }
+            ]);
+            return result[0]
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
+        }
+    }
+    static async eficiencia_lote_calidad(query) {
+        try {
+            const result = await db.Lotes.aggregate([
+                { $match: query },
+                {
+                    $group: {
+                        _id: null,
+                        totalKilosIngreso: { $sum: { $ifNull: ["$kilos", 0] } },
+                        totalKilosProcesados: { $sum: { $ifNull: ["$kilosVaciados", 0] } },
+                        totalCalidad1: { $sum: { $ifNull: ["$calidad1", 0] } },
+                        totalCalidad15: { $sum: { $ifNull: ["$calidad15", 0] } },
+                        totalCalidad2: { $sum: { $ifNull: ["$calidad2", 0] } },
+                        totalKilosDescarte: {
+                            $sum: {
+                                $add: camposDescartes.map(campo => ({ $ifNull: [`$${campo}`, 0] }))
+                            }
+                        }
+                    }
+                }
+            ]);
+            return result[0]
 
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);

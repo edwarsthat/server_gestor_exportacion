@@ -5,9 +5,14 @@ export const addHours = (date, hours) => {
 };
 
 export function getColombiaDate(date = new Date()) {
-    // Devuelve un objeto Date con la hora local Colombia (UTC-5) basada en la fecha dada
-    const utc = date.getTime() + (date.getTimezoneOffset() * 60000); // pasa a UTC
-    // Colombia está en UTC-5:00, así que restamos 5 horas
+    // Asegurarse de que sea un objeto Date válido
+    const d = new Date(date);
+    if (isNaN(d.getTime())) {
+        throw new Error('Fecha inválida proporcionada');
+    }
+
+    // Convertir a UTC y restar 5 horas para hora de Colombia
+    const utc = d.getTime() + d.getTimezoneOffset() * 60000;
     return new Date(utc - (5 * 60 * 60 * 1000));
 }
 

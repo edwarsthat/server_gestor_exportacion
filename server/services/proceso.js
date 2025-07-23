@@ -241,7 +241,6 @@ class ProcesoService {
     }
     static async restarItem_lote(lote, copiaItemSeleccionado, kilos, contenedor, logContext) {
 
-        console.log(lote)
         lote[calidadFile[copiaItemSeleccionado.calidad]] -= kilos
 
         const query = {
@@ -635,7 +634,6 @@ class ProcesoService {
         //se obtiene el lote
         const lote = await LotesRepository.getLotes({
             ids: [palletSeleccionado.lote],
-            select: { predio: 1, [calidadFile[palletSeleccionado.calidad]]: 1, exportacionGGN: 1, finalizado: 1, enf: 1 }
         });
 
         return {

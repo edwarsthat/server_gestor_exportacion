@@ -969,7 +969,7 @@ export class InventariosService {
             tipoFruta2._id !== null &&
             !(typeof tipoFruta2 === "object" && Object.keys(tipoFruta2).length === 0)
         ) {
-            query.tipoFruta = tipoFruta2._id;
+            query["documento.tipoFruta"] = tipoFruta2.tipoFruta;
         }
 
         const lotes = await RecordLotesRepository.getRecordLotes({

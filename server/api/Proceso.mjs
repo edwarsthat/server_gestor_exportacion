@@ -674,7 +674,6 @@ export class ProcesoRepository {
             const { contenedor, lote } = await ProcesoService.obtenerContenedorLote(_id, pallet, seleccion);
             await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLote", "Completado", `Contenedor: ${_id}, Pallet: ${pallet}, Selección: ${seleccion} - Lote: ${lote[0]._id}`);
 
-            console.log(lote)
             if (checkFinalizadoLote(lote[0])) {
                 throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
             }

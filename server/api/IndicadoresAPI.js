@@ -11,6 +11,7 @@ import { IndicadoresService } from "../services/indicadores.js";
 import { IndicadoresValidations } from "../validations/indicadores.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { filtroFechaInicioFin } from "./utils/filtros.js";
+import { TiposFruta } from '../store/TipoFruta.js';
 
 export class IndicadoresAPIRepository {
     //#region operaciones
@@ -221,34 +222,50 @@ export class IndicadoresAPIRepository {
 
         try {
             const { filtro } = req.data
-            const { fechaInicio, fechaFin, proveedor } = filtro || {};
+            const { fechaInicio, fechaFin, proveedor, tipoFruta2, calidad } = filtro || {};
+            console.log(filtro)
             let query = { predio: new Mongoose.Types.ObjectId(proveedor) }
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_creacion')
 
-            const camposDescartes = [
-                "descarteLavado.balin",
-                "descarteLavado.descarteGeneral",
-                "descarteLavado.descompuesta",
-                "descarteLavado.hojas",
-                "descarteLavado.pareja",
-                "descarteLavado.piel",
-                "descarteEncerado.balin",
-                "descarteEncerado.descarteGeneral",
-                "descarteEncerado.descompuesta",
-                "descarteEncerado.extra",
-                "descarteEncerado.pareja",
-                "descarteEncerado.suelo"
-            ];
+            if (tipoFruta2?._id) {
+                const arrTipoFruta = await TiposFruta.get_tiposFruta({ ids: [tipoFruta2._id] });
+                query.tipoFruta = arrTipoFruta[0].tipoFruta;
+            }
+            console.log(query)
+            let queryFunction 
 
-            const [lotes, totalKilosIngreso, totalKilosProcesados, totalKilosExportacion, totalKilosDescarte] = await Promise.all([
+            if(calidad.length > 0) {
+                queryFunction = LotesRepository.eficiencia_lote_calidad(query);
+            } else {
+                queryFunction = LotesRepository.eficiencia_lote(query);
+            }
+            
+            const [
+                lotes,
+                { 
+                    totalKilosIngreso = 0, 
+                    totalKilosProcesados = 0, 
+                    totalKilosExportacion = 0, 
+                    totalKilosDescarte = 0,
+                    totalCalidad1 = 0, 
+                    totalCalidad15 = 0, 
+                    totalCalidad2 = 0,
+                } = {}
+            ] =await Promise.all([
                 LotesRepository.get_Lotes_strict({ query: query }),
-                LotesRepository.sumar_elemento(query, ['kilos']),
-                LotesRepository.sumar_elemento(query, ['kilosVaciados']),
-                LotesRepository.sumar_elemento(query, ['calidad1', 'calidad15', 'calidad2']),
-                LotesRepository.sumar_elemento(query, camposDescartes),
+                queryFunction,
             ])
 
-            return { lotes, totalKilosIngreso, totalKilosProcesados, totalKilosExportacion, totalKilosDescarte };
+            return { 
+                lotes, 
+                totalKilosIngreso, 
+                totalKilosProcesados, 
+                totalKilosExportacion, 
+                totalKilosDescarte,
+                totalCalidad1,
+                totalCalidad15,
+                totalCalidad2
+            };
 
         } catch (err) {
             const errorDuration = Date.now() - startTime;
