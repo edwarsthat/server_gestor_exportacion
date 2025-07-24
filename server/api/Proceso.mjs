@@ -501,6 +501,7 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoService.modificarLoteModificarItemListaEmpaque", "Completado");
 
             //se mira si es fruta de hoy para restar de las variables del proceso
+            console.log("caja a modificar", palletSeleccionado)
             const fechaSeleccionada = getColombiaDate(palletSeleccionado.fecha)
             const hoy = getColombiaDate();
             // Ajustamos la fecha seleccionada restando 5 horas:
