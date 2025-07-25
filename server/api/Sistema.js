@@ -195,7 +195,13 @@ export class SistemaRepository {
         try {
             const { user } = req
             const { data } = req.data
-            let record = new db.recordLotes({
+            await LotesRepository.actualizar_lote(
+                { _id: data },
+                { finalizado: false },
+                { action: "habilitarPredio" }
+            );
+
+            const record = new db.recordLotes({
                 operacionRealizada: "vaciarLote",
                 user: user,
                 documento: {

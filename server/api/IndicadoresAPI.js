@@ -224,6 +224,15 @@ export class IndicadoresAPIRepository {
             const { filtro } = req.data
             const { fechaInicio, fechaFin, proveedor, tipoFruta2 } = filtro || {};
             console.log(filtro)
+            
+            // Validar que la fechaInicio no sea anterior al 2025
+            if (fechaInicio) {
+                const fechaInicioDate = new Date(fechaInicio);
+                if (fechaInicioDate.getFullYear() < 2025) {
+                    throw new ProcessError(400, "No se pueden traer datos tan viejos. La fecha de inicio debe ser del año 2025 en adelante.");
+                }
+            }
+            
             let query = { predio: new Mongoose.Types.ObjectId(proveedor) }
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_creacion')
 
