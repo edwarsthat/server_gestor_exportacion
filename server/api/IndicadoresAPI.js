@@ -222,7 +222,7 @@ export class IndicadoresAPIRepository {
 
         try {
             const { filtro } = req.data
-            const { fechaInicio, fechaFin, proveedor, tipoFruta2, calidad } = filtro || {};
+            const { fechaInicio, fechaFin, proveedor, tipoFruta2 } = filtro || {};
             console.log(filtro)
             let query = { predio: new Mongoose.Types.ObjectId(proveedor) }
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_creacion')
@@ -231,15 +231,6 @@ export class IndicadoresAPIRepository {
                 const arrTipoFruta = await TiposFruta.get_tiposFruta({ ids: [tipoFruta2._id] });
                 query.tipoFruta = arrTipoFruta[0].tipoFruta;
             }
-            console.log(query)
-            let queryFunction 
-
-            if(calidad.length > 0) {
-                queryFunction = LotesRepository.eficiencia_lote_calidad(query);
-            } else {
-                queryFunction = LotesRepository.eficiencia_lote(query);
-            }
-            
             const [
                 lotes,
                 { 
@@ -252,9 +243,11 @@ export class IndicadoresAPIRepository {
                     totalCalidad2 = 0,
                 } = {}
             ] =await Promise.all([
-                LotesRepository.get_Lotes_strict({ query: query }),
-                queryFunction,
+                LotesRepository.get_Lotes_strict({ query: query, limit:'all' }),
+                LotesRepository.eficiencia_lote_calidad(query),
             ])
+
+            const {  calibres, calibresTotal } = await IndicadoresService.obtener_calibres_lotes_contenedores(lotes);
 
             return { 
                 lotes, 
@@ -264,7 +257,9 @@ export class IndicadoresAPIRepository {
                 totalKilosDescarte,
                 totalCalidad1,
                 totalCalidad15,
-                totalCalidad2
+                totalCalidad2,
+                calibres,
+                calibresTotal,
             };
 
         } catch (err) {

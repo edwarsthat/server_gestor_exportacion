@@ -899,6 +899,7 @@ export class InventariosRepository {
                     kilosVaciados: kilosVaciados,
                     __v: 1,
                 },
+                finalizado: false,
                 fechaProceso: new Date()
             }
             await LotesRepository.modificar_lote(_id, query, "vaciarLote", user._id, __v);

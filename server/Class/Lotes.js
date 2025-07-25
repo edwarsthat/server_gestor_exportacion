@@ -390,6 +390,15 @@ export class LotesRepository {
                         totalCalidad1: { $sum: { $ifNull: ["$calidad1", 0] } },
                         totalCalidad15: { $sum: { $ifNull: ["$calidad15", 0] } },
                         totalCalidad2: { $sum: { $ifNull: ["$calidad2", 0] } },
+                        totalKilosExportacion: {
+                            $sum: {
+                                $add: [
+                                    { $ifNull: ["$calidad1", 0] },
+                                    { $ifNull: ["$calidad15", 0] },
+                                    { $ifNull: ["$calidad2", 0] }
+                                ]
+                            }
+                        },
                         totalKilosDescarte: {
                             $sum: {
                                 $add: camposDescartes.map(campo => ({ $ifNull: [`$${campo}`, 0] }))
