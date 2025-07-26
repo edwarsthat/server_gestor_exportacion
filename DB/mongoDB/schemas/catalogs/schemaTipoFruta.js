@@ -10,6 +10,7 @@ export const defineTipoFrutas = async (conn) => {
         defectos: [String],
         rengoDeshidratacionPositiva: { type: Number, required: true, default: 2 },
         rengoDeshidratacionNegativa: { type: Number, required: true, default: -1 },
+        calibres: [String],
         createdAt: { type: Date, default: () => new Date() }
     });
 

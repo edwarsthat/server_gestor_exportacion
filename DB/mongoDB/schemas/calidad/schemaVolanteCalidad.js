@@ -7,6 +7,7 @@ export const defineVolanteCalidad = async (conn) => {
         tipoFruta: String,
         unidades: Number,
         defectos: Number,
+        calibre: String,
         fecha: { type: Date, default: () => Date.now() },
         operario: { type: Schema.Types.ObjectId, ref: "usuario" },
         responsable: { type: Schema.Types.ObjectId, ref: "usuario" },

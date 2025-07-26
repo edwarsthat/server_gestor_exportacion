@@ -479,8 +479,12 @@ export class ProcesoRepository {
             const { contenedor, lote } = await ProcesoService.obtenerContenedorLote(_id, pallet, seleccion);
             await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLote", "Completado", `Contenedor: ${_id}, Pallet: ${pallet}, Selección: ${seleccion} - Lote: ${lote._id}`);
 
-            if (checkFinalizadoLote(lote[0])) {
-                throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
+            const palletSeleccionadoComp = contenedor[0].pallets[pallet].EF1[seleccion];
+            
+            if (palletSeleccionadoComp.tipoCaja !== tipoCaja || palletSeleccionadoComp.calidad !== calidad || palletSeleccionadoComp.cajas !== cajas) {
+                if (checkFinalizadoLote(lote[0])) {
+                    throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
+                }
             }
 
             const { palletsModificados, copiaPallet } = await ProcesoService.crearCopiaProfundaPallets(contenedor[0]);
@@ -1123,7 +1127,7 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
 
             lotes.forEach(lote => {
-                if(checkFinalizadoLote(lote)) {
+                if (checkFinalizadoLote(lote)) {
                     throw new ProcessError(400, `El lote ${lote.enf} ya se encuentra finalizado, no se puede modificar`);
                 }
             })

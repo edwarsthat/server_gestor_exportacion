@@ -69,6 +69,7 @@ import { defineTipoFrutas } from '../schemas/catalogs/schemaTipoFruta.js';
 import { defineLoteEf8 } from '../schemas/lotes/schemaLoteEf8.js';
 import { defineSeriales } from '../schemas/seriales/SerialesSchema.js';
 import { defineAuditLogsLoteEF8 } from '../schemas/lotes/schemaAuditLoteEf8.js';
+import { defineCuartosFrios } from '../schemas/catalogs/schemaCuartosFrios.js';
 
 export const db = {};
 
@@ -428,6 +429,10 @@ const defineSchemasCatalogo = async (sysConn) => {
             console.log("⚡ Definiendo Cuartos desverdizado...");
             db.CuartosDesverdizados = await defineCuartosdesverdizado(sysConn);
             console.log("✅ Cuartos desverdizados definidos");
+
+            console.log("⚡ Definiendo Cuartos Frios...");
+            db.CuartosFrios = await defineCuartosFrios(sysConn);
+            console.log("✅ Cuartos Frios definidos");
 
             console.log("⚡ Definiendo Tipo frutas...");
             db.TipoFrutas = await defineTipoFrutas(sysConn);

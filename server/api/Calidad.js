@@ -599,6 +599,9 @@ export class CalidadRepository {
         try {
             const user = req.user
             const { data } = req.data
+            console.log(data)
+            CalidadValidationsRepository.post_calidad_ingresos_volanteCalidad().parse(data);
+
             const volante_calidad = {
                 ...data,
                 responsable: user._id
@@ -775,7 +778,8 @@ export class CalidadRepository {
     //#region formulario
     static async get_calidad_formulario_volanteCalidad(req) {
         try {
-            const { tipoFruta, fechaInicio, fechaFin } = req.data;
+            const { filtro } = req.data
+            const { tipoFruta, fechaInicio, fechaFin, operario } = filtro;
             let query = {}
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha")
@@ -784,8 +788,13 @@ export class CalidadRepository {
                 query.tipoFruta = tipoFruta
             }
 
+            if (operario !== '') {
+                query.operario = operario
+            }
+
             const volanteCalidad = await UsuariosRepository.obtener_volante_calidad({
-                query: query
+                query: query,
+                limit: 'all'
             });
             return volanteCalidad
         } catch (err) {
