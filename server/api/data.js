@@ -7,6 +7,7 @@ import { Seriales } from "../Class/Seriales.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { dataService } from "../services/data.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
+import { CuartosFrios } from "../store/CuartosFrios.js";
 
 
 export class dataRepository {
@@ -184,6 +185,16 @@ export class dataRepository {
         try {
             const EF8 = await dataService.get_ef8_serial();
             return EF8
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_data_cuartosFrios() {
+        try {
+            return await CuartosFrios.get_cuartosFrios();
         } catch (err) {
             if (err.status === 522) {
                 throw err

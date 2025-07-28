@@ -944,6 +944,19 @@ export class InventariosRepository {
         }
 
     }
+    static async put_inventarios_pallet_eviarCuartoFrio(req) {
+        try {
+            console.log("put_inventarios_pallet_eviarCuartoFrio", req.data);
+        } catch (err) {
+
+            if (err.status === 470) {
+                throw err;
+            }
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            throw new Error(`Code ${err.code}: ${err.message}`);
+
+        }
+    }
     //? test
     static async sys_reiniciar_inventario_descarte() {
         try {

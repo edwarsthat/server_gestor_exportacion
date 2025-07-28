@@ -104,6 +104,10 @@ export const apiSocketInventarios = {
         await InventariosRepository.put_inventarios_frutaDesverdizado_mover(data)
         return successResponseRoutes()
     },
+    put_inventarios_pallet_eviarCuartoFrio: async (data) => {
+        await InventariosRepository.put_inventarios_pallet_eviarCuartoFrio(data)
+        return successResponseRoutes()
+    },
     //#endregion
     //#region historiales
     get_inventarios_historialProcesado_frutaProcesada: async (data) => {
