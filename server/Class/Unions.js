@@ -2,8 +2,16 @@ import { db } from "../../DB/mongoDB/config/init.js";
 
 export class UnionsRepository {
     static async obtenerUnionRecordLotesIngresoLoteEF8(query1, query2) {
-        return await db.recordLotes.aggregate([
+        return await db.Lotes.aggregate([
             { $match: query1 },
+            {
+                $lookup: {
+                    from: "proveedors",
+                    localField: "predio",
+                    foreignField: "_id",
+                    as: "predioInfo"
+                }
+            },
             {
                 $unionWith: {
                     coll: "loteef8",
@@ -11,10 +19,10 @@ export class UnionsRepository {
                         { $match: query2 },
                         {
                             $lookup: {
-                                from: "proveedors",           
-                                localField: "predio",      
-                                foreignField: "_id",       
-                                as: "predioInfo"           
+                                from: "proveedors",
+                                localField: "predio",
+                                foreignField: "_id",
+                                as: "predioInfo"
                             }
                         }
                     ]

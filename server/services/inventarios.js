@@ -44,16 +44,18 @@ export class InventariosService {
         return { precioId: precio[0]._id, proveedor: proveedor };
 
     }
-    static async construirQueryIngresoLote(datos, enf, precioId) {
+    static async construirQueryIngresoLote(datos, enf, precioId, tipoFruta, user) {
         const fecha = new Date(datos.fecha_estimada_llegada);
 
         return {
             ...datos,
+            tipoFruta: tipoFruta._id,
             precio: precioId,
             enf,
             fecha_salida_patio: fecha,
             fecha_ingreso_patio: fecha,
             fecha_ingreso_inventario: fecha,
+            user: user._id
         };
     }
     static async incrementarEF() {
@@ -199,13 +201,10 @@ export class InventariosService {
             throw new Error("El GGN del proveedor ya expiró.");
         }
 
-
         if (
             proveedor[0].GGN.code &&
             proveedor[0].GGN.tipo_fruta.includes(tipoFruta)
         ) return true
-
-
 
         //poner filtro de la fecha
         throw new Error("El proveedor no tiene GGN para ese tipo de fruta")
@@ -959,37 +958,29 @@ export class InventariosService {
     }
     static async obtenerRecordLotesIngresoLote(filtro) {
         const { fechaInicio, fechaFin, tipoFruta2 = {} } = filtro;
-        let query = {
-            operacionRealizada: "crearLote",
-        }
-        query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'documento.fecha_ingreso_inventario')
+        let query = {}
+        query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_estimada_llegada')
 
         if (
+            tipoFruta2 &&
             tipoFruta2._id !== undefined &&
             tipoFruta2._id !== null &&
             !(typeof tipoFruta2 === "object" && Object.keys(tipoFruta2).length === 0)
         ) {
-            query["documento.tipoFruta"] = tipoFruta2.tipoFruta;
+            query.tipoFruta = tipoFruta2._id;
         }
 
-        const lotes = await RecordLotesRepository.getRecordLotes({
+        const lotes = await LotesRepository.getLotes({
             query: query,
+            limit: 'all',
+            sort: { fecha_estimada_llegada: -1 }
         });
 
-        const proveedoresids = [];
         const usersId = [];
 
         for (const lote of lotes) {
-            proveedoresids.push(lote.documento.predio.toString());
             usersId.push(lote.user.toString());
         }
-
-        const proveedoresSet = new Set(proveedoresids)
-        const proveedoresArr = [...proveedoresSet]
-
-        const proveedores = await ProveedoresRepository.get_proveedores({
-            ids: proveedoresArr
-        })
 
         const usersIdSet = new Set(usersId)
         const usersIdArr = [...usersIdSet]
@@ -998,25 +989,22 @@ export class InventariosService {
             ids: usersIdArr,
             getAll: true
         })
+        const tipoFruta = await dataRepository.get_data_tipoFruta2()
 
         const result = [];
         for (const lote of lotes) {
-            const proveedor = proveedores.find(proveedor =>
-                proveedor._id.toString() === lote.documento.predio.toString()
-            );
 
             const usuario = user.find(u => u._id.toString() === lote.user.toString());
-
-            if (proveedor && usuario) {
-                delete lote.documento.predio0;
-                lote.documento.predio = {};
-                lote.documento.predio.PREDIO = proveedor.PREDIO;
-                lote.documento.predio.GGN = proveedor.GGN;
-                lote.documento.predio._id = proveedor._id;
+            const tipoFrutaFound = tipoFruta.find(u => u._id.toString() === lote.tipoFruta.toString());
+            if (usuario) {
                 lote.user = usuario.nombre + " " + usuario.apellido;
+            }
+            if (tipoFrutaFound) {
+                lote.tipoFruta = tipoFrutaFound.tipoFruta;
             }
             result.push(lote);
         }
+        console.info(`[INVENTARIO] Se obtuvieron ${result} lotes de ingreso.`);
         return result;
     }
     static async obtenerRecordLotesIngresoLoteEF8(filtro) {
@@ -1074,12 +1062,10 @@ export class InventariosService {
     }
     static async obtenerRecordLotesIngresolote_EF1_EF8(filtro) {
         const { fechaInicio, fechaFin, tipoFruta2 = {} } = filtro;
-        let query1 = {
-            operacionRealizada: "crearLote",
-        }
+        let query1 = {}
         let query2 = {}
 
-        query1 = filtroFechaInicioFin(fechaInicio, fechaFin, query1, 'documento.fecha_ingreso_inventario')
+        query1 = filtroFechaInicioFin(fechaInicio, fechaFin, query1, 'fecha_ingreso_inventario')
         query2 = filtroFechaInicioFin(fechaInicio, fechaFin, query2, 'fecha_ingreso_inventario')
 
         if (
@@ -1087,28 +1073,21 @@ export class InventariosService {
             tipoFruta2._id !== null &&
             !(typeof tipoFruta2 === "object" && Object.keys(tipoFruta2).length === 0)
         ) {
-            query1["documento.tipoFruta"] = tipoFruta2.tipoFruta;
+            query1.tipoFruta = tipoFruta2._id;
             query2.tipoFruta = tipoFruta2._id;
         }
 
-        const data = await UnionsRepository.obtenerUnionRecordLotesIngresoLoteEF8( query1, query2);
+        const data = await UnionsRepository.obtenerUnionRecordLotesIngresoLoteEF8(query1, query2);
 
-        const proveedoresids = [];
         const usersId = [];
         const tipoFrutaId = [];
 
+
         for (const lote of data) {
-            if (Object.hasOwnProperty.call(lote, 'documento')) {
-                proveedoresids.push(lote.documento.predio.toString());
-                usersId.push(lote.user.toString());
-            } else {
-                usersId.push(lote.user.toString());
-                tipoFrutaId.push(lote.tipoFruta);
-            }
+            usersId.push(lote.user.toString());
+            tipoFrutaId.push(lote.tipoFruta);
         }
 
-        const proveedoresSet = new Set(proveedoresids)
-        const proveedoresArr = [...proveedoresSet]
         const usersIdSet = new Set(usersId)
         const usersIdArr = [...usersIdSet]
         const tipoFrutaIdSet = new Set(tipoFrutaId)
@@ -1121,42 +1100,27 @@ export class InventariosService {
         const tipoFrutas = await dataRepository.get_data_tipoFruta2({
             ids: tipoFrutaIdArr
         })
-        const proveedores = await ProveedoresRepository.get_proveedores({
-            ids: proveedoresArr
-        })
+
 
         const result = [];
 
         for (const lote of data) {
-            if (Object.hasOwnProperty.call(lote, 'documento')) {
-                const proveedor = proveedores.find(proveedor =>
-                    proveedor._id.toString() === lote.documento.predio.toString()
-                );
 
-                const usuario = user.find(u => u._id.toString() === lote.user.toString());
-
-                if (proveedor && usuario) {
-                    delete lote.documento.predio0;
-                    lote.documento.predio = {};
-                    lote.documento.predio.PREDIO = proveedor.PREDIO;
-                    lote.documento.predio.GGN = proveedor.GGN;
-                    lote.documento.predio._id = proveedor._id;
-                    lote.user = usuario.nombre + " " + usuario.apellido;
-                }
-                result.push(lote);
-            } else {
-                const usuario = user.find(u => u._id.toString() === lote.user);
-                if (usuario) {
-                    lote.user = usuario.nombre + " " + usuario.apellido;
-                }
-                const tipoFruta = tipoFrutas.find(u => u._id.toString() === lote.tipoFruta);
-                if (tipoFruta) {
-                    lote.tipoFruta = tipoFruta;
-                }
-                lote.predio = lote.predioInfo[0] || {};
-                result.push(lote);
+            const usuario = user.find(u => u._id.toString() === lote.user);
+            if (usuario) {
+                lote.user = usuario.nombre + " " + usuario.apellido;
             }
+            const tipoFruta = tipoFrutas.find(u => u._id.toString() === lote.tipoFruta);
+            if (tipoFruta) {
+                lote.tipoFruta = tipoFruta;
+            }
+            lote.predio = lote.predioInfo[0] || {};
+            result.push(lote);
+
         }
+
+        console.log(result);
+
         return result;
     }
     static async ingresarCanasillas(datos, user) {

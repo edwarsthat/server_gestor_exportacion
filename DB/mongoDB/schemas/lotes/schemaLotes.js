@@ -135,16 +135,33 @@ export const defineLotes = async (conn, AuditLog) => {
     },
   }, { _id: false })
 
+  const exportacionSchema = new Schema(
+    {},
+    {
+      _id: false,
+      strict: false
+    }
+  )
 
+  exportacionSchema.add(
+    new Map([
+      [
+        String, // Nivel 1: contenedor
+        new Map([
+          [
+            String, // Nivel 2: calidad
+            new Map([[String, Number]])
+          ]
+        ])
+      ]
+    ])
+  );
 
   const dataSchema = new Schema({
 
     aprobacionComercial: { type: Boolean, default: false }, //es la aprobacion antes de enviarlo a contabilidad
     aprobacionProduccion: { type: Boolean, default: false }, //es la aprobacion antes de aprobacion comercial
     calidad: calidadSchema,
-    calidad1: { type: Number, default: 0 },
-    calidad15: { type: Number, default: 0 },
-    calidad2: { type: Number, default: 0 },
     canastillas: { type: Number, default: 0 },
     canastillas_estimadas: Number,
     clasificacionCalidad: { type: String, default: "N/A" },
@@ -189,6 +206,11 @@ export const defineLotes = async (conn, AuditLog) => {
     promedio: Number,
     rendimiento: { type: Number, default: 0 },
     tipoFruta: String,
+    user: String,
+
+    calidad1: { type: Number, default: 0 },
+    calidad15: { type: Number, default: 0 },
+    calidad2: { type: Number, default: 0 },
 
   }, { versionKey: '__v' });
 
@@ -205,10 +227,10 @@ export const defineLotes = async (conn, AuditLog) => {
       this.options.action !== "put_calidad_informes_aprobacionComercial" &&
       this.options.action !== "put_calidad_informes_loteFinalizarInforme" &&
       this.options.action !== "put_comercial_precios_precioLotes" &&
-      this.options.action !== "put_comercial_registroPrecios_proveedores_comentario"  &&
+      this.options.action !== "put_comercial_registroPrecios_proveedores_comentario" &&
       this.options.action !== "post_comercial_precios_add_precio" &&
       this.options.action !== "put_comercial_precios_proveedores_precioFijo" &&
-      this.options.action !== "put_comercial_precios_precioLotes" 
+      this.options.action !== "put_comercial_precios_precioLotes"
     ) {
 
       update.aprobacionProduccion = false

@@ -30,5 +30,9 @@ export const apiSocketData = {
     get_data_EF8: async () => {
         const response = await dataRepository.get_data_EF8()
         return successResponseRoutes(response)
+    },
+    get_data_EF1: async () => {
+        const response = await dataRepository.get_data_EF1()
+        return successResponseRoutes(response)
     }
 }

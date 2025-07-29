@@ -58,6 +58,7 @@ const permisos_generales = new Set([
 
     //seriales
     "get_data_EF8",
+    "get_data_EF1",
 
     //fotos
     "get_transporte_registros_entregaPrecintos_fotos",

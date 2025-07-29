@@ -52,10 +52,10 @@ export class dataService {
             throw new Error("No se encontraron registros de EF1");
         }
         if (EF1.length > 1) {
-            throw new Error("Se encontraron múltiples registros de EF8, se esperaba uno solo");
+            throw new Error("Se encontraron múltiples registros de EF1, se esperaba uno solo");
         }
         if (!EF1[0].serial || typeof EF1[0].serial !== 'number') {
-            throw new Error("El campo 'serial' no es un número o no existe en el registro de EF8");
+            throw new Error("El campo 'serial' no es un número o no existe en el registro de EF1");
         }
         if (fecha) {
             fecha = new Date(fecha);

@@ -1169,8 +1169,6 @@ export class InventariosRepository {
     }
     static async get_inventarios_historiales_ingresoFruta_registros(req) {
         try {
-            console.log("get_inventarios_historiales_ingresoFruta_registros", req);
-
             const { data } = req
             const { filtro } = data;
 
@@ -1738,22 +1736,38 @@ export class InventariosRepository {
         }
     }
     static async post_inventarios_ingreso_lote(req) {
+        const { user } = req;
+        let log
+
         try {
-            const { data, user } = req;
+            log = await LogsRepository.create({
+                user: user._id,
+                action: "post_inventarios_ingreso_lote",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
+            const { data } = req;
             const { dataLote: datos, dataCanastillas } = data
 
             const datosValidados = InventariosValidations.post_inventarios_ingreso_lote().parse(datos)
+            await registrarPasoLog(log._id, "InventariosValidations.post_inventarios_ingreso_lote", "Completado");
 
-            const enf = await VariablesDelSistema.generarEF1(datos.fecha_estimada_llegada)
-            const { precioId, proveedor } = await InventariosService.obtenerPrecioProveedor(datos.predio, datos.tipoFruta)
+            const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(datosValidados.tipoFruta, log._id)
+            console.log("tipoFruta", tipoFruta);
+            const [{precioId, proveedor}, ef1] = await Promise.all([
+                InventariosService.obtenerPrecioProveedor(datosValidados.predio, tipoFruta[0].tipoFruta),
+                dataService.get_ef1_serial(data.fecha_estimada_llegada, log._id),
+            ])
+            await registrarPasoLog(log._id, "Promise.all obtener precio, proveedor, ef1 y tipo de fruta", "Completado");
 
             if (datos.GGN)
-                await InventariosService.validarGGN(proveedor, datos.tipoFruta, user)
+                await InventariosService.validarGGN(proveedor, tipoFruta[0].tipoFruta, user)
 
-            const query = await InventariosService.construirQueryIngresoLote(datosValidados, enf, precioId);
+            const query = await InventariosService.construirQueryIngresoLote(datosValidados, ef1, precioId, tipoFruta[0], user);
             const lote = await LotesRepository.addLote(query, user);
+            await registrarPasoLog(log._id, "LotesRepository.addLote", "Completado");
 
             await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
+            await registrarPasoLog(log._id, "VariablesDelSistema.ingresarInventario", "Completado");
 
             //Se crean los datos del registro de canastillas
 
@@ -1767,21 +1781,25 @@ export class InventariosRepository {
                 accion: "ingreso",
                 user
             })
+            await registrarPasoLog(log._id, "InventariosService.crearRegistroInventarioCanastillas", "Completado");
 
             await InventariosService
                 .ajustarCanastillasProveedorCliente(datos.predio, -Number(dataCanastillas.canastillasPropias))
+            await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
 
             await InventariosService
-                .ajustarCanastillasProveedorCliente(
-                    "65c27f3870dd4b7f03ed9857", Number(dataCanastillas.canastillasPropias)
-                )
+                .ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", Number(dataCanastillas.canastillasPropias))
+            await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
 
             await CanastillasRepository.post_registro(dataRegistro)
+            await registrarPasoLog(log._id, "CanastillasRepository.post_registro", "Completado");
 
             await VariablesDelSistema
                 .modificar_canastillas_inventario(dataCanastillas.canastillasPrestadas, "canastillasPrestadas")
+            await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");
 
-            await InventariosService.incrementarEF(datos.ef)
+            await dataRepository.incrementar_ef1_serial()
+            await registrarPasoLog(log._id, "dataService.incrementar_ef1_serial", "Completado");
 
             procesoEventEmitter.emit("server_event", {
                 action: "add_lote",

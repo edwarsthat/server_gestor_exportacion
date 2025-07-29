@@ -192,6 +192,17 @@ export class dataRepository {
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async get_data_EF1() {
+        try {
+            const EF1 = await dataService.get_ef1_serial();
+            return EF1
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
     static async get_data_cuartosFrios() {
         try {
             return await CuartosFrios.get_cuartosFrios();
@@ -206,6 +217,19 @@ export class dataRepository {
         try {
             await Seriales.modificar_seriales(
                 { name: "EF8-" },
+                { $inc: { serial: 1 } }
+            )
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async incrementar_ef1_serial() {
+        try {
+            await Seriales.modificar_seriales(
+                { name: "EF1-" },
                 { $inc: { serial: 1 } }
             )
         } catch (err) {

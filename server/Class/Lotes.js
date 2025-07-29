@@ -26,8 +26,6 @@ export class LotesRepository {
             const lote = new db.Lotes(data);
             lote._user = user;
             const saveLote = await lote.save();
-            let record = new db.recordLotes({ operacionRealizada: 'crearLote', user: user, documento: saveLote })
-            await record.save();
             return saveLote
         } catch (err) {
             throw new PostError(409, `Error agregando lote ${err.message}`);
@@ -67,6 +65,7 @@ export class LotesRepository {
 
             const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
 
+
             const lotes = await db.Lotes.find(lotesQuery)
                 .select(select)
                 .sort(sort)
@@ -74,6 +73,8 @@ export class LotesRepository {
                 .skip(skip)
                 .populate(populate)
                 .exec();
+
+
 
             return lotes
 
