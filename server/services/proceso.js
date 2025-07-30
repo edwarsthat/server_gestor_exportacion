@@ -603,7 +603,7 @@ class ProcesoService {
     }
     static async modificarLotedescartes(_id, query, user, action) {
 
-        const lote = await LotesRepository.getLotes({ ids: [_id] })
+        const lote = await LotesRepository.getLotes2({ ids: [_id] })
         const result = checkFinalizadoLote(lote)
         if (result) {
             throw new ProcessError(400, `El lote ${lote[0].nombre} ya se encuentra finalizado, no se puede modificar`);

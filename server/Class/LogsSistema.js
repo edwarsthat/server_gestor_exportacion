@@ -55,6 +55,7 @@ export class LogsRepository {
                     extra: data.descarteEncerado?.extra || 0,
                     descompuesta: data.descarteEncerado?.descompuesta || 0,
                     suelo: data.descarteEncerado?.suelo || 0,
+                    frutaNacional: data.frutaNacional || 0,
                 },
                 descarteLavado: {
                     descarteGeneral: data.descarteLavado?.descarteGeneral || 0,
@@ -79,7 +80,6 @@ export class LogsRepository {
             throw err;
         }
     }
-
     static async getReportesIngresoDescarte(filter = {}, options = {}) {
         try {
             const reportes = await db.IngresoDescartes.find(filter, null, options)

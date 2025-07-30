@@ -979,7 +979,9 @@ export class InventariosService {
         const usersId = [];
 
         for (const lote of lotes) {
-            usersId.push(lote.user.toString());
+            if (lote?.user) {
+                usersId.push(lote.user.toString());
+            }
         }
 
         const usersIdSet = new Set(usersId)
@@ -994,7 +996,7 @@ export class InventariosService {
         const result = [];
         for (const lote of lotes) {
 
-            const usuario = user.find(u => u._id.toString() === lote.user.toString());
+            const usuario = user.find(u => u._id.toString() === lote?.user?.toString());
             const tipoFrutaFound = tipoFruta.find(u => u._id.toString() === lote.tipoFruta.toString());
             if (usuario) {
                 lote.user = usuario.nombre + " " + usuario.apellido;
@@ -1084,8 +1086,12 @@ export class InventariosService {
 
 
         for (const lote of data) {
-            usersId.push(lote.user.toString());
-            tipoFrutaId.push(lote.tipoFruta);
+            if (lote?.user) {
+                usersId.push(lote.user.toString());
+            }
+            if (lote?.tipoFruta) {
+                tipoFrutaId.push(lote.tipoFruta);
+            }
         }
 
         const usersIdSet = new Set(usersId)
@@ -1101,12 +1107,11 @@ export class InventariosService {
             ids: tipoFrutaIdArr
         })
 
-
         const result = [];
 
         for (const lote of data) {
 
-            const usuario = user.find(u => u._id.toString() === lote.user);
+            const usuario = user.find(u => u._id.toString() === lote?.user);
             if (usuario) {
                 lote.user = usuario.nombre + " " + usuario.apellido;
             }
@@ -1116,7 +1121,6 @@ export class InventariosService {
             }
             lote.predio = lote.predioInfo[0] || {};
             result.push(lote);
-
         }
 
         console.log(result);

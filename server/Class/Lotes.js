@@ -3,6 +3,7 @@ import { PostError, PutError, ConnectionDBError } from "../../Error/ConnectionEr
 import { ProcessError } from "../../Error/ProcessError.js";
 import fs from 'fs';
 import { registrarPasoLog } from "../api/helper/logs.js";
+import { tipoFrutaCache } from "../cache/tipoFruta.js";
 
 const camposDescartes = [
     "descarteLavado.balin",
@@ -272,6 +273,45 @@ export class LotesRepository {
         }
     }
 
+
+    static async getLotes2(options = {}) {
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { fecha_creacion: -1, fechaIngreso: -1 },
+            limit = 50,
+            skip = 0,
+            populate = { path: 'predio', select: 'PREDIO ICA GGN SISPAP' }
+        } = options;
+
+        try {
+            let lotesQuery = { ...query };
+
+            if (ids.length > 0) {
+                lotesQuery._id = { $in: ids };
+            }
+
+            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
+
+            const lotes = await db.Lotes.find(lotesQuery)
+                .select(select)
+                .sort(sort)
+                .limit(limitToUse)
+                .skip(skip)
+                .populate(populate)
+                .lean()
+                .exec();
+
+            for (const lote of lotes) {
+                lote.tipoFruta = tipoFrutaCache.getTipoFruta(lote.tipoFruta);
+            }
+
+            return lotes
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
+        }
+    }
     static async actualizar_lote(filter, update, options = {}, session = null, calculateFields = true) {
         // ...toda la magia anterior...
         /**
@@ -311,7 +351,7 @@ export class LotesRepository {
                 if (kilos > 0) {
                     const total = calidad1 + calidad15 + calidad2 + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional;
                     deshidratacion = 100 - (total * 100) / kilos;
-                    rendimiento = ((calidad1 + calidad15 + calidad2) * 100) / kilosVaciados;
+                    rendimiento = kilosVaciados === 0 ? 0 : (((calidad1 + calidad15 + calidad2) * 100) / kilosVaciados);
                 }
 
                 // 3. Si hay que actualizar la deshidratación, hazlo solo si cambia
@@ -414,6 +454,7 @@ export class LotesRepository {
             throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
         }
     }
+
     //#region EF8
     static async crear_lote_EF8(data, user, logId = null) {
         try {
