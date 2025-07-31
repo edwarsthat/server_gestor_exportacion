@@ -15,6 +15,10 @@ export const apiSocketData = {
         const response = await dataRepository.get_data_tipoFruta()
         return successResponseRoutes(response)
     },
+    get_data_tipoFruta2: async () => {
+        const response = await dataRepository.get_data_tipoFruta2()
+        return successResponseRoutes(response)
+    },
     get_data_clientesNacionales: async () => {
         const response = await dataRepository.get_data_clientesNacionales()
         return successResponseRoutes(response)

@@ -10,6 +10,7 @@ export const defineAuditDescartes = async (conn) => {
         descompuesta: { type: Number, default: 0 },
         piel: { type: Number, default: 0 },
         hojas: { type: Number, default: 0 },
+        frutaNacional: { type: Number, default: 0 },
     }, { _id: false });
 
 

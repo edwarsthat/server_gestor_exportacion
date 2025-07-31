@@ -362,7 +362,16 @@ export class LotesRepository {
                         { ...finalOptions, new: true }
                     );
                 }
+
             }
+
+            documento = await db.Lotes.findById(documento._id)
+                .populate({ path: 'predio', select: 'PREDIO ICA GGN SISPAP' })
+                .lean()
+                .exec();
+
+            documento.tipoFruta = tipoFrutaCache.getTipoFruta(documento.tipoFruta);
+
             return documento;
 
         } catch (err) {

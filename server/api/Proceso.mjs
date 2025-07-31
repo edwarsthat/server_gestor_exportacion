@@ -156,14 +156,14 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
 
             await Promise.all([
-                RedisRepository.put_inventarioDescarte(data, 'descarteLavado:', lote.tipoFruta, log._id),
-                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta, kilos),
+                RedisRepository.put_inventarioDescarte(data, 'descarteLavado:', lote.tipoFruta.tipoFruta, log._id),
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta.tipoFruta, kilos),
                 LogsRepository.createReporteIngresoDescarte({
                     user: user.user,
                     userID: user._id,
                     loteID: lote._id,
                     enf: lote.enf,
-                    tipoFruta: lote.tipoFruta,
+                    tipoFruta: lote.tipoFruta.tipoFruta,
                     descarteEncerado: {},
                     descarteLavado: data
                 })
@@ -238,14 +238,14 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
 
             await Promise.all([
-                RedisRepository.put_inventarioDescarte(data, 'descarteEncerado:', lote.tipoFruta),
-                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta, kilos),
+                RedisRepository.put_inventarioDescarte(data, 'descarteEncerado:', lote.tipoFruta.tipoFruta),
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta.tipoFruta, kilos),
                 LogsRepository.createReporteIngresoDescarte({
                     user: user.user,
                     userID: user._id,
                     loteID: lote._id,
                     enf: lote.enf,
-                    tipoFruta: lote.tipoFruta,
+                    tipoFruta: lote.tipoFruta.tipoFruta,
                     descarteLavado: {},
                     descarteEncerado: data
                 })

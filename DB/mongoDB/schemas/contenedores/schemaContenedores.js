@@ -98,6 +98,7 @@ export const defineContenedores = async (conn, AuditLog) => {
 
   const infoContenedorSchema = new Schema({
     clienteInfo: { type: Schema.Types.ObjectId, ref: "Cliente" },
+    createdAt: { type: Date, default: () => new Date() },
     fechaCreacion: Date,
     fechaInicio: Date,
     fechaInicioReal: Date,
@@ -105,7 +106,7 @@ export const defineContenedores = async (conn, AuditLog) => {
     fechaEstimadaCargue: Date,
     fechaSalida: Date,
     ultimaModificacion: Date,
-    tipoFruta: String,
+    tipoFruta: [String],
     tipoCaja: [String],
     calidad: [String],
     sombra: String,

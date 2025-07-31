@@ -55,7 +55,8 @@ const permisos_generales = new Set([
     "get_data_clientesNacionales",
     "get_data_proveedores",
     "get_data_cuartosFrios",
-
+    "get_data_tipoFruta2",
+    
     //seriales
     "get_data_EF8",
     "get_data_EF1",

@@ -193,4 +193,27 @@ export class ComercialValidationsRepository {
             fecha: z.date().optional(), // default will be set in your DB schema
         })
     }
+    static post_comercial_contenedor() {
+        return z.object({
+            cliente: z.string().min(1, "El cliente es obligatorio"),
+            numeroContenedor: z.string().min(1, "El número de contenedor es obligatorio")
+                .refine(val => !isNaN(Number(val)) && Number(val) > 0, "El número de contenedor debe ser un número válido mayor a cero"),
+            tipoFruta: z.array(z.string()).min(1, "Debe seleccionar al menos un tipo de fruta"),
+            fechaInicioProceso: z.string().min(1, "La fecha de inicio de proceso es obligatoria"),
+            fechaEstimadaCargue: z.string().min(1, "La fecha estimada de cargue es obligatoria"),
+            calidad: z.array(z.string()).min(1, "Debe seleccionar al menos una opción de calidad"),
+            calibres: z.array(z.string()).min(1, "Debe seleccionar al menos un calibre"),
+            tipoCaja: z.array(z.string()).min(1, "Debe seleccionar al menos un tipo de caja"),
+            sombra: z.string().optional(),
+            defecto: z.string().optional(),
+            mancha: z.string().optional(),
+            verdeManzana: z.string().optional(),
+            numeroPallets: z.string().min(1, "El número de pallets es obligatorio")
+                .refine(val => !isNaN(Number(val)) && Number(val) > 0, "El número de pallets debe ser un número válido mayor a cero"),
+            cajasTotal: z.string().min(1, "El total de cajas es obligatorio")
+                .refine(val => !isNaN(Number(val)) && Number(val) > 0, "El total de cajas debe ser un número válido mayor a cero"),
+            RTO: z.string().optional(),
+            observaciones: z.string().min(1, "Las observaciones son obligatorias")
+        })
+    }
 }

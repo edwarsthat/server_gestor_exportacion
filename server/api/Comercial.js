@@ -13,6 +13,7 @@ import { getISOWeek } from 'date-fns';
 import { z, ZodError } from 'zod';
 import nodemailer from 'nodemailer';
 import config from "../../src/config/index.js";
+import { ComercialService } from "../services/comercial.js";
 const { EMAIL, PASSWORD_EMAIL } = config;
 
 
@@ -402,10 +403,13 @@ export class ComercialRepository {
     //#region ingresos
     static async post_comercial_contenedor(req) {
         try {
-            const { data: datos, user } = req
-            const { data, action } = datos
+            const { user } = req
+            const { data, action } = req.data
 
-            const newCont = await ContenedoresRepository.crearContenedor(data, user._id);
+            ComercialValidationsRepository.post_comercial_contenedor().parse(data);
+
+            const objCont = await ComercialService.crear_contenedor(data)
+            const newCont = await ContenedoresRepository.crearContenedor(objCont, user._id);
 
             const documento = {
                 modelo: "Cliente",
@@ -421,6 +425,7 @@ export class ComercialRepository {
             )
 
         } catch (err) {
+            console.log(err)
             if (err.status === 521) {
                 throw err
             }
