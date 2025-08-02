@@ -19,6 +19,7 @@ export class tipoFrutaCache {
                     const id = item._id;
                     tipoFrutaMap[id] = {
                         tipoFruta: item.tipoFruta,
+                        _id: item._id
                     };
                 });
 

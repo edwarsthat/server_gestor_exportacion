@@ -340,6 +340,8 @@ export class LotesRepository {
                 const kilos = get('kilos');
                 const kilosVaciados = get('kilosVaciados');
 
+                const exportacionPlano = documento.exportacion?.toObject?.() ?? documento.exportacion;
+
                 const sumarDescartes = (desc) =>
                     desc ? Object.values(desc._doc ? desc._doc : desc).reduce((acu, item) => acu + (item ?? 0), 0) : 0;
 
@@ -349,7 +351,12 @@ export class LotesRepository {
                 let deshidratacion = 100;
                 let rendimiento = 0;
                 if (kilos > 0) {
-                    const total = calidad1 + calidad15 + calidad2 + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional;
+
+                    const exportacionTotal = Object.values(exportacionPlano).reduce((acu1, contenedor) =>
+                        acu1 += Object.values(contenedor).reduce((acu2, item) => acu2 += (item ?? 0), 0), 0)
+
+                    console.log('Exportación Total:', exportacionTotal);
+                    const total = exportacionTotal + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional;
                     deshidratacion = 100 - (total * 100) / kilos;
                     rendimiento = kilosVaciados === 0 ? 0 : (((calidad1 + calidad15 + calidad2) * 100) / kilosVaciados);
                 }

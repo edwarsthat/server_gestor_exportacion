@@ -1,10 +1,5 @@
 import { z } from 'zod';
-import { readFileSync } from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const tiposFruta = JSON.parse(readFileSync(join(__dirname, '../../constants/tipo_fruta.json'), 'utf8'));
 import { getErrorMessages, safeString, optionalSafeString } from './utils/validationFunctions.js';
 
 export class ProcesoValidations {
@@ -16,9 +11,7 @@ export class ProcesoValidations {
             calidad: z.string().min(1),
             calibre: z.string(),
             tipoCaja: z.string(),
-            tipoFruta: z.enum(tiposFruta, {
-                errorMap: () => ({ message: `El tipo de fruta debe ser uno de los siguientes valores: ${tiposFruta.join(', ')}` })
-            }),
+            tipoFruta:  z.string().min(1),
             fecha: z.string(),
         });
 

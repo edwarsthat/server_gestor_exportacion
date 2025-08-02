@@ -173,6 +173,7 @@ export const defineLotes = async (conn, AuditLog) => {
     directoNacional: { type: Number, default: 0 },
     enf: { type: String },
     exportacionDetallada: exportacionDetalladaSchema,
+    exportacion: exportacionSchema,
     fecha_creacion: { type: Date, default: () => new Date() },
     fecha_estimada_llegada: { type: Date },
     fechaIngreso: { type: Date },
