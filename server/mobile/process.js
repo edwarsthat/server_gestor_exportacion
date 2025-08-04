@@ -9,50 +9,6 @@ export const routerProceso = express.Router();
 
 
 //#region PUT
-routerProceso.put("/ingresar_descarte_lavado", async (req, res) => {
-    try {
-        const token = req.headers['authorization'];
-        const user = await UserRepository.authenticateToken(token);
-
-        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
-
-        const data = {
-            data: req.body,
-            user: user
-        }
-
-        await ProcesoRepository.put_proceso_aplicaciones_descarteLavado(data)
-
-
-        res.send({ status: 200, message: 'Ok' })
-    } catch (err) {
-        console.log(`Code ${err.status}: ${err.message}`)
-        res.json({ status: err.status, message: err.message })
-    }
-})
-
-routerProceso.put("/ingresar_descarte_encerado", async (req, res) => {
-    try {
-        const token = req.headers['authorization'];
-        console.log(token)
-
-        const user = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
-
-        const data = {
-            data: req.body,
-            user: user
-        }
-
-        await ProcesoRepository.put_proceso_aplicaciones_descarteEncerado(data)
-
-
-        res.send({ status: 200, message: 'Ok' })
-    } catch (err) {
-        console.log(`Code ${err.status}: ${err.message}`)
-        res.json({ status: err.status, message: err.message })
-    }
-})
 
 routerProceso.put("/add-fotos-calidad", async (req, res) => {
     try {

@@ -141,6 +141,8 @@ export class ProcesoRepository {
                 action: "put_proceso_aplicaciones_descarteLavado",
                 acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
             })
+            const logData = { logId: log._id, user: user, action: "put_proceso_aplicaciones_descarteLavado" }
+
             ProcesoValidations.put_proceso_aplicaciones_descarteLavado().parse(req.data)
             await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteLavado", "Completado");
 
@@ -156,8 +158,8 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
 
             await Promise.all([
-                RedisRepository.put_inventarioDescarte(data, 'descarteLavado:', lote.tipoFruta.tipoFruta, log._id),
-                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta.tipoFruta, kilos),
+                RedisRepository.put_inventarioDescarte(data, 'descarteLavado:', lote.tipoFruta.tipoFruta, logData),
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta.tipoFruta, kilos, logData.logId),
                 LogsRepository.createReporteIngresoDescarte({
                     user: user.user,
                     userID: user._id,
@@ -166,7 +168,7 @@ export class ProcesoRepository {
                     tipoFruta: lote.tipoFruta.tipoFruta,
                     descarteEncerado: {},
                     descarteLavado: data
-                })
+                }, log._id)
             ])
             await registrarPasoLog(log._id, "Promise.all", "Completado");
 
@@ -215,6 +217,8 @@ export class ProcesoRepository {
                 action: "put_proceso_aplicaciones_descarteEncerado",
                 acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
             })
+            const logData = { logId: log._id, user: user, action: "put_proceso_aplicaciones_descarteEncerado" }
+
             ProcesoValidations.put_proceso_aplicaciones_descarteEncerado().parse(req.data)
             await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteEncerado", "Completado");
 
@@ -238,8 +242,8 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
 
             await Promise.all([
-                RedisRepository.put_inventarioDescarte(data, 'descarteEncerado:', lote.tipoFruta.tipoFruta),
-                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta.tipoFruta, kilos),
+                RedisRepository.put_inventarioDescarte(data, 'descarteEncerado:', lote.tipoFruta.tipoFruta, logData),
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta.tipoFruta, kilos, logData.logId),
                 LogsRepository.createReporteIngresoDescarte({
                     user: user.user,
                     userID: user._id,
@@ -248,7 +252,7 @@ export class ProcesoRepository {
                     tipoFruta: lote.tipoFruta.tipoFruta,
                     descarteLavado: {},
                     descarteEncerado: data
-                })
+                }, logData.logId)
             ])
             await registrarPasoLog(log._id, "Promise.all", "Completado");
 

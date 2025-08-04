@@ -24,7 +24,7 @@ export class RedisRepository {
  *   'descarteLavado'
  * );
  */
-    static async put_inventarioDescarte(data, tipoDescarte, tipoFruta) {
+    static async put_inventarioDescarte(data, tipoDescarte, tipoFruta, logData = null) {
         let cliente
         try {
             cliente = await getRedisClient();
@@ -41,6 +41,10 @@ export class RedisRepository {
                 });
 
             await Promise.all(tareas);
+
+            if(logData) {
+                await registrarPasoLog(logData.logId, "RedisRepository.put_inventarioDescarte", "Completado", `Tipo de descarte: ${tipoDescarte}, Tipo de fruta: ${tipoFruta}`);
+            }
 
         } catch (err) {
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)

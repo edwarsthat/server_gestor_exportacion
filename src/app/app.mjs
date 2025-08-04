@@ -8,7 +8,7 @@ import helmet from 'helmet';
 import { routerPythonData } from "../../server/routes/pythonServer.js";
 import { routerVariablesdelSistema } from "../../server/mobile/variablesDelSistema.mjs";
 import { routerProceso } from "../../server/mobile/process.js";
-import { routerProceso2 } from "../../server/routes/Proceso.js";
+import { routerProceso2 } from "../../server/routes/https/proceso.js";
 import { routerIndicadores } from "../../server/routes/https/indicadores.js";
 import { routerComercial } from "../../server/routes/comercial.js";
 import { routerSistema } from "../../server/mobile/sistema.js";

@@ -1,5 +1,4 @@
 import express from 'express';
-import { SistemaRepository } from '../api/Sistema.js';
 import { LotesRepository } from '../Class/Lotes.js';
 
 export const routerAPI = express.Router();
