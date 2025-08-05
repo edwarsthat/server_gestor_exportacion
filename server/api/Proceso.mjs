@@ -623,13 +623,13 @@ export class ProcesoRepository {
 
             const { contenedor, lotes, itemsDelete } = await ProcesoService.obtenerContenedorLotes(_id, pallet, seleccionOrdenado);
             await registrarPasoLog(log._id, "ProcesoValidations.obtenerContenedorLotes", "Completado");
+            console.log(lotes)
 
             lotes.forEach(lote => {
                 if (checkFinalizadoLote(lote)) {
                     throw new ProcessError(400, `El lote ${lote.enf} ya se encuentra finalizado, no se puede modificar`);
                 }
             })
-
             const { palletsModificados, copiaPallet } = await ProcesoService.crearCopiaProfundaPallets(contenedor[0]);
             await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
 
@@ -757,6 +757,7 @@ export class ProcesoRepository {
                 action: "mover_item_entre_contenedores",
                 acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
             })
+            const logContext = { logId: log._id, user, action }
             const { _id: id1, pallet: pallet1 } = contenedor1
             const { _id: id2, pallet: pallet2 } = contenedor2
             if (id1 === id2 && pallet1 === pallet2) {
@@ -772,62 +773,8 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
 
             if (lotes.length > 0) {
-
-                const oldLotes = lotes.map(l => ({ _id: l._id, enf: l.enf, contenedores: l.contenedores }));
-                const operationsLotes = [];
-
-                // have_lote_GGN_export(lote[0].predio, contenedor[0], copiaPalletSeleccionado)
-                for (let i = 0; i < seleccionOrdenado.length; i++) {
-
-                    // se mira si el item pasa a un contenedor GGN y se agrega o se quita
-                    const itemSplice = palletsModificados1[pallet1].EF1.splice(seleccionOrdenado[i], 1)[0]
-                    const lote = lotes.find(l => l._id.toString() === itemSplice.lote)
-
-
-                    const oldGGN = have_lote_GGN_export(lote, contenedores[index1], palletsModificados1)
-                    const GGN = have_lote_GGN_export(lote, contenedores[index2], palletsModificados2)
-
-                    if (((oldGGN !== GGN) || !lote.contenedores.includes(id2)) && lote.finalizado) {
-                        throw new ProcessError(400, `El lote ${lote.enf} ya se encuentra finalizado, no se puede modificar`);
-                    }
-
-                    palletsModificados2[pallet2].EF1.push({ ...itemSplice, GGN });
-
-                    const kilos = itemSplice.cajas * Number(itemSplice.tipoCaja.split('-')[1].replace(",", "."))
-
-                    let updateLote = { $addToSet: { contenedores: id2 } };
-                    if (oldGGN && !GGN) {
-                        updateLote.$inc = { kilosGGN: -kilos };
-                    } else if (!oldGGN && GGN) {
-                        updateLote.$inc = { kilosGGN: kilos };
-                    }
-                    operationsLotes.push({ updateOne: { filter: { _id: lote._id }, update: updateLote } });
-                }
-
-                await LotesRepository.bulkWrite(operationsLotes);
-
-                const newLotes = lotes.map(i => {
-                    return {
-                        _id: i._id,
-                        enf: i.enf,
-                        contenedores: contenedores[index2].numeroContenedor,
-                    }
-                })
-
-                // Registrar modificación de los lotes
-                const documentosAfectadosLotes = newLotes.map(l => ({
-                    modelo: "Lote", // o el nombre del modelo que estés utilizando
-                    documentoId: l._id,
-                    descripcion: `Se agrego nuevo contenedor en el enf ${l.enf}`,
-                }));
-
-                await RecordModificacionesRepository.post_record_contenedor_modification(
-                    action,
-                    user,
-                    documentosAfectadosLotes, // aquí pasas el array de documentos afectados
-                    oldLotes,
-                    newLotes,
-                    { contenedor1, contenedor2, action, user }
+                await ProcesoService.mover_kilos_lotes_entrcontenedores(
+                    contenedores, index1, index2, contenedor1, contenedor2, seleccionOrdenado, palletsModificados1, palletsModificados2, lotes, logContext
                 );
             }
 
@@ -858,6 +805,8 @@ export class ProcesoRepository {
 
         } catch (err) {
             console.log(err)
+            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
+
             if (
                 err.status === 610 ||
                 err.status === 523
@@ -865,6 +814,8 @@ export class ProcesoRepository {
                 throw err
             }
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     /**

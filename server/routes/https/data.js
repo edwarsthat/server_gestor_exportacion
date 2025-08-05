@@ -22,6 +22,7 @@ routerDataSys.get("/get_data_tipoFruta", async (req, res) => {
 routerDataSys.get("/get_data_tipoFruta2", async (req, res) => {
     try {
         const response = await dataRepository.get_data_tipoFruta2()
+        console.log('get_data_tipoFruta2', response)
         res.send({ status: 200, message: 'Ok', data: response })
     } catch (err) {
         res.json({ status: err.status, message: err.message })
