@@ -15,6 +15,8 @@ import { z } from "zod";
 
 import { fileURLToPath } from 'url';
 import { CalidadService } from "../services/calidad.js";
+import { LogsRepository } from "../Class/LogsSistema.js";
+import { registrarPasoLog } from "./helper/logs.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -135,7 +137,7 @@ export class CalidadRepository {
             const query = {
                 enf: { $regex: '^E', $options: 'i' }
             }
-            const lotes = await LotesRepository.getLotes({
+            const lotes = await LotesRepository.getLotes2({
                 query: query,
                 skip: (page - 1) * resultsPerPage,
                 select: {
@@ -166,8 +168,8 @@ export class CalidadRepository {
                     observaciones: 1,
                     flag_is_favorita: 1,
                     flag_balin_free: 1,
-                    fecha_finalizado_proceso:1,
-                    fecha_aprobacion_comercial:1
+                    fecha_finalizado_proceso: 1,
+                    fecha_aprobacion_comercial: 1
 
                 },
                 limit: resultsPerPage,
@@ -459,7 +461,7 @@ export class CalidadRepository {
                 ]
             }
             const select = { enf: 1, calidad: 1, tipoFruta: 1, __v: 1 }
-            const lotes = await LotesRepository.getLotes({ query: query, select: select })
+            const lotes = await LotesRepository.getLotes2({ query: query, select: select })
             return lotes
         } catch (err) {
             if (err.status === 522) {
@@ -469,19 +471,46 @@ export class CalidadRepository {
         }
     }
     static async put_calidad_ingresos_calidadInterna(req) {
+        const { user } = req
+        let log
         try {
-            const { data: datos, user } = req
-            const { _id, data, action } = datos
-            await LotesRepository.modificar_lote_proceso(_id, data, action, user.user);
+            log = await LogsRepository.create({
+                user: user,
+                action: "put_calidad_ingresos_calidadInterna",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
+            const { _id, data, action } = req.data
+
+            CalidadValidationsRepository.put_calidad_ingresos_calidadInterna().parse(data);
+            await registrarPasoLog(log._id, "Validación de datos completada", "Completado");
+
+            const query = await CalidadService.crear_query_calidad_interna(data, user);
+            await registrarPasoLog(log._id, "CalidadService.crear_query_calidad_interna", "Completado");
+
+            await LotesRepository.actualizar_lote(
+                { _id: _id },
+                query,
+                {
+                    new: true,
+                    user: user._id,
+                    action: action
+                }
+            );
+            await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado");
+
             procesoEventEmitter.emit("server_event", {
                 action: "calidad_interna",
                 data: {}
             });
         } catch (err) {
+            console.error("Error en put_calidad_ingresos_calidadInterna:", err);
+            await registrarPasoLog(log._id, "Error en put_calidad_ingresos_calidadInterna", "Error");
             if (err.status === 523) {
                 throw err
             }
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "Fin de la función put_calidad_ingresos_calidadInterna", "Completado");
         }
     }
     static async get_calidad_ingresos_inspeccionFruta() {
@@ -599,7 +628,6 @@ export class CalidadRepository {
         try {
             const user = req.user
             const { data } = req.data
-            console.log(data)
             CalidadValidationsRepository.post_calidad_ingresos_volanteCalidad().parse(data);
 
             const volante_calidad = {

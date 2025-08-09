@@ -18,6 +18,8 @@ export const defineTipoFrutas = async (conn) => {
         rengoDeshidratacionNegativa: { type: Number, required: true, default: -1 },
         calibres: [String],
         calidades: [calidadesSchema],
+        codExportacion: String,
+        codNacional: String,
         createdAt: { type: Date, default: () => new Date() }
     });
 

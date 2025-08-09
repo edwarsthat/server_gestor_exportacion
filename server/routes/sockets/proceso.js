@@ -72,6 +72,10 @@ export const apiSocketProceso = {
     put_proceso_aplicaciones_listaEmpaque_modificarItems: async (data) => {
         await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_modificarItems(data)
         return successResponseRoutes()
+    },
+    put_proceso_add_pallet_listaempaque: async (data) => {
+        await ProcesoRepository.put_proceso_add_pallet_listaempaque(data)
+        return successResponseRoutes()
     }
 
     //#endregion

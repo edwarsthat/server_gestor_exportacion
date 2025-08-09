@@ -1,10 +1,7 @@
 import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { ProcessError } from "../../Error/ProcessError.js";
-import { readFileSync } from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
-import { checkFinalizadoLote, deshidratacionLote, rendimientoLote } from "../api/utils/lotesFunctions.js";
+import { checkFinalizadoLote } from "../api/utils/lotesFunctions.js";
 import { have_lote_GGN_export } from "../controllers/validations.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
@@ -12,8 +9,6 @@ import { RedisRepository } from "../Class/RedisData.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
 import { getColombiaDate } from "../api/utils/fechas.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const calidadFile = JSON.parse(readFileSync(join(__dirname, '../../constants/calidad.json'), 'utf8'));
 
 class ProcesoService {
     static async getContenedorAndLote(loteID, ContenedorID) {
@@ -194,8 +189,6 @@ class ProcesoService {
             const path2 = `exportacion.${id2}.${calidad}`;
 
             updateLote.$inc = { [path1]: -kilos, [path2]: kilos };
-
-            console.log(updateLote)
 
             if (oldGGN && !GGN) {
                 updateLote.$inc = { kilosGGN: -kilos };
@@ -535,57 +528,88 @@ class ProcesoService {
 
 
     }
-    static async modificarLotesModificarItemsListaEmpaque(lotes, copiaPallet, palletsModificados, seleccion, pallet, contenedor, logID = null) {
-        const lotesModificados = JSON.parse(JSON.stringify(lotes));
+    static async modificarLotesModificarItemsListaEmpaque(
+        lotes, copiaPallet, palletsModificados, seleccion, pallet, contenedor, logID = null
+    ) {
+        // Helper: saca el multiplicador de "12x-4,5" -> 4.5
+        const parseMult = (tipoCaja) => {
+            if (!tipoCaja || typeof tipoCaja !== "string") return 0;
+            const parts = tipoCaja.split("-");
+            if (parts.length < 2) return 0;
+            const n = parseFloat(parts[1].replace(",", "."));
+            return Number.isFinite(n) ? n : 0;
+        };
 
-        for (let i = 0; i < seleccion.length; i++) {
-            const itemSeleccionadoOld = copiaPallet[pallet].EF1[seleccion[i]];
-            const itemSeleccionadoNew = palletsModificados[pallet].EF1[seleccion[i]];
+        const contId = contenedor && contenedor[0] && contenedor[0]._id;
+        if (!contId) throw new Error("contenedor inválido");
 
-            if (itemSeleccionadoOld.tipoCaja !== itemSeleccionadoNew.tipoCaja ||
-                itemSeleccionadoOld.calidad !== itemSeleccionadoNew.calidad) {
-                const oldKilos = itemSeleccionadoOld.cajas * Number(itemSeleccionadoOld.tipoCaja.split("-")[1].replace(",", "."));
-                const newKilos = itemSeleccionadoNew.cajas * Number(itemSeleccionadoNew.tipoCaja.split("-")[1].replace(",", "."));
+        // Mapa para evitar findIndex por iteración
+        const lotesById = new Map(lotes.map(l => [String(l._id), l]));
 
-                const loteIndex = lotesModificados.findIndex(lote => lote._id.toString() === itemSeleccionadoOld.lote);
-                lotesModificados[loteIndex][calidadFile[itemSeleccionadoOld.calidad]] += - oldKilos;
-                lotesModificados[loteIndex][calidadFile[itemSeleccionadoNew.calidad]] += newKilos;
+        const updates = [];
 
-                lotesModificados[loteIndex].deshidratacion = await deshidratacionLote(lotesModificados[loteIndex])
-                lotesModificados[loteIndex].rendimiento = await rendimientoLote(lotesModificados[loteIndex])
+        for (const sel of seleccion) {
+            const oldItem = copiaPallet?.[pallet]?.EF1?.[sel];
+            const newItem = palletsModificados?.[pallet]?.EF1?.[sel];
+            if (!oldItem || !newItem) continue;
 
-                // si se restan los kilos ggn
-                if (have_lote_GGN_export(lotesModificados[loteIndex], contenedor, itemSeleccionadoOld)) {
-                    lotesModificados[loteIndex].kilosGGN += - oldKilos;
-                    lotesModificados[loteIndex].kilosGGN += newKilos;
-                }
+            if (oldItem.tipoCaja === newItem.tipoCaja && oldItem.calidad === newItem.calidad) {
+                continue;
             }
+
+            const oldKg = (oldItem.cajas || 0) * parseMult(oldItem.tipoCaja);
+            const newKg = (newItem.cajas || 0) * parseMult(newItem.tipoCaja);
+            const delta = newKg - oldKg;
+            if (!delta) continue; 
+
+            const query = { $inc: {} };
+
+            if (oldItem.calidad !== newItem.calidad) {
+                query.$inc[`exportacion.${contId}.${oldItem.calidad}`] = -oldKg;
+                query.$inc[`exportacion.${contId}.${newItem.calidad}`] = newKg;
+            } else {
+                query.$inc[`exportacion.${contId}.${oldItem.calidad}`] = delta;
+            }
+
+            const loteDoc = lotesById.get(String(oldItem.lote));
+            if (loteDoc && have_lote_GGN_export(loteDoc, contenedor[0], oldItem)) {
+                query.$inc.kilosGGN = (query.$inc.kilosGGN || 0) + delta;
+            }
+
+            updates.push(
+                LotesRepository.actualizar_lote(
+                    { _id: oldItem.lote },
+                    query,
+                    { user: logID && logID.user, action: logID && logID.action }
+                )
+            );
         }
 
-
-        const operations = lotesModificados.map(loteDoc => ({
-            updateOne: {
-                filter: { _id: loteDoc._id },
-                update: {
-                    $set: {
-                        calidad1: loteDoc.calidad1,
-                        calidad15: loteDoc.calidad15,
-                        calidad2: loteDoc.calidad2,
-                        kilosGGN: loteDoc.kilosGGN,
-                        deshidratacion: loteDoc.deshidratacion,
-                        rendimiento: loteDoc.rendimiento
-                    }
-                }
+        if (updates.length === 0) {
+            if (logID) {
+                await registrarPasoLog(
+                    logID.logId,
+                    "modificarLotesModificarItemsListaEmpaque",
+                    "Sin cambios",
+                    `No hubo deltas en el pallet ${pallet}`
+                );
             }
-        }));
+            return;
+        }
 
-        await LotesRepository.bulkWrite(operations);
+        // Corre todos los updates en paralelo; para ≤10 está perfecto
+        await Promise.all(updates);
 
         if (logID) {
-            await registrarPasoLog(logID, "modificarLotesModificarItemsListaEmpaque", "Completado", `se modificaron los lotes de los items seleccionados en el pallet ${pallet}`);
+            await registrarPasoLog(
+                logID.logId,
+                "modificarLotesModificarItemsListaEmpaque",
+                "Completado",
+                `Se modificaron ${updates.length} item(s) del pallet ${pallet}`
+            );
         }
-
     }
+
     static async modificarIndicadorExportacion(palletsModificados, copiaPallet, seleccion, pallet, logID = null) {
 
         const cliente = await RedisRepository.getClient()
@@ -658,6 +682,139 @@ class ProcesoService {
         )
 
         return loteModificado;
+    }
+    static async restar_mover_modificar_contenedor(
+        contenedores, index1, index2, contenedor1, contenedor2,
+        seleccionOrdenado, palletsModificados1, palletsModificados2, copiaPallets1, copiaPallets2, newCajas, cajas, GGN, logContext
+    ) {
+
+        const { _id: id1, pallet: pallet1 } = contenedor1
+        const { _id: id2, pallet: pallet2 } = contenedor2
+
+        const itemSeleccionado = palletsModificados1[pallet1].EF1[seleccionOrdenado[0]];
+
+        // se busca si el elemento del contenedor2 tiene un elemento igual
+        const index = palletsModificados2[pallet2].EF1.findIndex(item => (
+            item.lote === itemSeleccionado.lote &&
+            item.calidad === itemSeleccionado.calidad &&
+            item.calibre === itemSeleccionado.calibre &&
+            item.tipoCaja === itemSeleccionado.tipoCaja
+        ))
+
+        if (newCajas === 0) {
+
+            // si no se encuentra se agrega un nuevo item a EF1
+            if (index === -1) {
+                const itemSplice = palletsModificados1[pallet1].EF1.splice(seleccionOrdenado[0], 1)[0]
+                palletsModificados2[pallet2].EF1.push({ ...itemSplice, GGN });
+            }
+            // si si, se agregan las nuevas cajas a el item de EF1
+            else {
+                palletsModificados2[pallet2].EF1[index].cajas += cajas
+                palletsModificados1[pallet1].EF1.splice(seleccionOrdenado[0], 1);
+            }
+
+        } else {
+            itemSeleccionado.cajas = newCajas
+            // si no se encuentra se agrega un nuevo item a EF1
+            if (index === -1) {
+                const itemCopia = JSON.parse(JSON.stringify(itemSeleccionado));
+                itemCopia.cajas = cajas
+                palletsModificados2[pallet2].EF1.push(itemCopia);
+
+                itemSeleccionado.cajas = newCajas
+            } else {
+                palletsModificados2[pallet2].EF1[index].cajas += cajas
+                itemSeleccionado.cajas = newCajas
+            }
+        }
+
+        // Construye dinámicamente el objeto $set
+        const update1 = { $set: {} };
+        update1.$set[`pallets.${pallet2}`] = palletsModificados2[pallet2];
+
+        const update2 = { $set: {} };
+        update2.$set[`pallets.${pallet1}`] = palletsModificados1[pallet1];
+
+        // BulkWrite sólo toca ese índice en cada documento
+        const operations = [
+            {
+                updateOne: {
+                    filter: { _id: contenedores[index2]._id },
+                    update: update1
+                }
+            },
+            {
+                updateOne: {
+                    filter: { _id: contenedores[index1]._id },
+                    update: update2
+                }
+            }
+        ];
+
+        await ContenedoresRepository.bulkWrite(operations)
+
+        const documentosAfectados = [
+            {
+                modelo: "Contenedor",
+                documentoId: id1,
+                descripcion: `Se movio los item ${seleccionOrdenado} en el pallet ${pallet1}`,
+            },
+            {
+                modelo: "Contenedor",
+                documentoId: id2,
+                descripcion: `Se le agregaron item al  pallet ${pallet1}`,
+            },
+        ]
+
+        const antes = [
+            copiaPallets1[pallet1], copiaPallets2[pallet2]
+        ]
+
+        const despues = [
+            palletsModificados1[pallet1], palletsModificados2[pallet2]
+        ]
+        // Registrar modificación
+        await RecordModificacionesRepository.post_record_contenedor_modification(
+            logContext.action,
+            logContext.user,
+            documentosAfectados,
+            antes,
+            despues,
+            { contenedor1, contenedor2, action: logContext.action, user: logContext.user }
+        );
+        await registrarPasoLog(logContext.logId, "ProcesoService.restar_mover_modificar_contenedor", "Completado", `Se movieron los items ${seleccionOrdenado} de ${id1} a ${id2} en el pallet ${pallet1} y se agregaron ${cajas} cajas al pallet ${pallet2}`);
+
+    }
+    static async restar_mover_modificar_lote(contenedores, index1, index2, itemSeleccionado, kilos, GGN, oldGGN, logContext) {
+
+        if (contenedores[index1]._id.toString() === contenedores[index2]._id.toString()) return;
+        //Se modifican los lotes
+        const path1 = `exportacion.${contenedores[index1]._id}.${itemSeleccionado.calidad}`;
+        const path2 = `exportacion.${contenedores[index2]._id}.${itemSeleccionado.calidad}`;
+        let query = {
+            $inc: {
+                [path1]: -kilos,
+                [path2]: kilos,
+            },
+            $addToSet: { contenedores: contenedores[index2]._id }
+        }
+
+
+        if (GGN !== oldGGN) {
+            if (GGN && !oldGGN) {
+                query.$inc = { kilosGGN: kilos }
+            } else if (!GGN && oldGGN) {
+                query.$inc = { kilosGGN: -kilos }
+            }
+        }
+        await LotesRepository.actualizar_lote(
+            { _id: itemSeleccionado.lote },
+            query,
+            { new: true, user: logContext.user, action: logContext.action }
+        );
+        await registrarPasoLog(logContext.logId, "ProcesoService.restar_mover_modificar_lote", "Completado", `Se modificaron los lotes ${contenedores[index1]._id} y ${contenedores[index2]._id}`);
+
     }
 
     // mirar si se puede usar en otro lado

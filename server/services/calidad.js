@@ -28,4 +28,20 @@ export class CalidadService {
             fileName: url.split('/').pop(),
         };
     }
+    static async crear_query_calidad_interna(data, user) {
+        return {
+            "calidad.calidadInterna.zumo": Number(data.zumo),
+            "calidad.calidadInterna.peso": Number(data.peso),
+            "calidad.calidadInterna.brix": (Number(data.brix1) + Number(data.brix2) + Number(data.brix3)) / 3,
+            "calidad.calidadInterna.acidez": (Number(data.acidez1) + Number(data.acidez2) + Number(data.acidez3)) / 3,
+            "calidad.calidadInterna.semillas": Boolean(data.semillas),
+            "calidad.calidadInterna.ratio":
+                (Number(data.brix1) / Number(data.acidez1) +
+                    Number(data.brix2) / Number(data.acidez2) +
+                    Number(data.brix3) / Number(data.acidez3)) / 3,
+            "calidad.calidadInterna.fecha": new Date().toUTCString(),
+            "calidad.calidadInterna.calidad": data.calidad,
+            "calidad.calidadInterna.user": user._id
+        }
+    }
 }

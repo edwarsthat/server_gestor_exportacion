@@ -38,6 +38,9 @@ export const defineLotes = async (conn, AuditLog) => {
     ratio: Number,
     peso: Number,
     zumo: Number,
+    user: String,
+    semillas: Boolean,
+    calidad: { type: String, default: "N/A" },
     fecha: { type: Date, default: Date.now }
   }, { _id: false });
 
@@ -164,7 +167,6 @@ export const defineLotes = async (conn, AuditLog) => {
     calidad: calidadSchema,
     canastillas: { type: Number, default: 0 },
     canastillas_estimadas: Number,
-    clasificacionCalidad: { type: String, default: "N/A" },
     contenedores: [String],
     descarteEncerado: descarteEnceradoSchema,
     descarteLavado: descarteLavadoSchema,

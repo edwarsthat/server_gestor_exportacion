@@ -895,16 +895,19 @@ export class InventariosRepository {
             const lote = await LotesRepository.getLotes2({ ids: [_id] });
             await registrarPasoLog(log._id, "LotesRepository.getLotes", "Completado",);
 
+            console.log("kilosVaciados:", kilosVaciados);
+
             await Promise.all([
                 VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario, log._id),
-                VariablesDelSistema.procesarEF1(lote[0], inventario, log._id),
                 VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString(), log._id),
-                VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta, kilosVaciados, log._id)
+                VariablesDelSistema.procesarEF1(lote[0], log._id),
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta._id.toString(), kilosVaciados, log._id)
             ])
             await registrarPasoLog(log._id, "Promise.all", "Completado");
 
             await LotesRepository.actualizar_lote({ _id: loteAnterior._id }, { finalizado: true })
             await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Se actualizó el lote ${loteAnterior._id} a finalizado: true`);
+
 
             //para lista de empaque
             procesoEventEmitter.emit("predio_vaciado", {
