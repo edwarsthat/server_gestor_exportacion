@@ -903,23 +903,43 @@ export class InventariosService {
     static async ingresar_salida_inventario_descartes() {
     }
     static async probar_deshidratacion_loteProcesando(user) {
-        const predioVaciando = await VariablesDelSistema.obtenerEF1proceso()
+        const predioVaciando = await VariablesDelSistema.obtenerEF1proceso();
+        if (!predioVaciando) {
+            throw new InventariosLogicError(404, "No hay EF1 en proceso.");
+        }
+
         const loteVaciando = await LotesRepository.getLotes({ ids: [predioVaciando._id] });
-        if (user.Rol > 0) {
-            if (
-                loteVaciando &&
-                loteVaciando.length > 0 &&
-                typeof loteVaciando[0].deshidratacion === 'number' &&
-                (loteVaciando[0].deshidratacion > 3 || loteVaciando[0].deshidratacion < -1)
-            ) {
+        const lote = loteVaciando?.[0];
+        if (!lote) {
+            throw new InventariosLogicError(404, "No se encontró el lote en proceso.");
+        }
+
+        // Cargos con vía rápida
+        const PERM_1 = "66c75d2daa4aa86aef8ff013";
+        const PERM_2 = "66c79242f9cbdcf56b82dc58";
+
+        // Pueden saltarse la validación si:
+        // - Rol > 0  O  - Cargo está en la lista permitida
+        const puedeOmitirValidacion =
+            Number(user?.Rol) === 0 || [PERM_1, PERM_2].includes(user?.cargo);
+
+        if (!puedeOmitirValidacion) {
+            const d = lote.deshidratacion;
+            const esNumero = typeof d === "number" && Number.isFinite(d);
+
+            // Solo valida si hay número; fuera de [-1, 3] => error
+            if (esNumero && (d > 3 || d < -1)) {
                 throw new InventariosLogicError(
                     470,
-                    `El lote no se puede vaciar porque la deshidratacion de  ${predioVaciando.enf} - ${predioVaciando.nombrePredio}  no está en el rango correcto.`
+                    `El lote no se puede vaciar porque la deshidratación de ${predioVaciando.enf} - ${predioVaciando.nombrePredio} no está en el rango permitido.`
                 );
             }
         }
-        return loteVaciando[0];
+
+        return lote;
     }
+
+
     static async construir_ef8_lote(data, enf, precio, user) {
         const totalCanastillas = Number(data.canastillasPropias || 0) + Number(data.canastillasVaciasPropias || 0);
         const totalCanastillasPrestadas = Number(data.canastillasVaciasPrestadas || 0) + Number(data.canastillasPrestadas || 0);
