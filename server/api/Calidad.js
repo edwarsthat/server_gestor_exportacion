@@ -165,6 +165,7 @@ export class CalidadRepository {
                     aprobacionComercial: 1,
                     aprobacionProduccion: 1,
                     exportacionDetallada: 1,
+                    exportacion: 1,
                     observaciones: 1,
                     flag_is_favorita: 1,
                     flag_balin_free: 1,

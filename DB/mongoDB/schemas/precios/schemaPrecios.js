@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 const { Schema } = mongoose;
 
 export const definePrecios = async (conn) => {
-    
+
     const calidadesSchema = new Schema({
         _id: { type: Schema.Types.ObjectId, required: true, auto: true },
         nombre: { type: String, required: true },
@@ -10,12 +10,26 @@ export const definePrecios = async (conn) => {
         precio: { type: Number, required: true },
     })
 
+    const exportacionSchema = new Schema(
+        {},
+        {
+            _id: false,
+            strict: false
+        }
+    )
+
+    exportacionSchema.add(
+        new Map([[String, Number]])
+    );
+
+
     const PreciosSchema = new Schema({
         fecha: { type: Date, default: () => new Date() },
         tipoFruta: String,
         "1": { type: Number, default: 0 },
         "15": { type: Number, default: 0 },
         "2": { type: Number, default: 0 },
+        exportacion: exportacionSchema,
         frutaNacional: { type: Number, default: 0 },
         descarte: { type: Number, default: 0 },
         predios: [String],
@@ -25,7 +39,7 @@ export const definePrecios = async (conn) => {
         comentario: String
     })
 
-    const Precios = conn.model("precio", PreciosSchema);
-    return Precios;
+const Precios = conn.model("precio", PreciosSchema);
+return Precios;
 }
 

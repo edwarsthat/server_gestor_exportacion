@@ -905,9 +905,11 @@ export class InventariosRepository {
             ])
             await registrarPasoLog(log._id, "Promise.all", "Completado");
 
-            await LotesRepository.actualizar_lote({ _id: loteAnterior._id }, { finalizado: true })
-            await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Se actualizó el lote ${loteAnterior._id} a finalizado: true`);
+            if (!loteAnterior === "No vaceo") {
+                await LotesRepository.actualizar_lote({ _id: loteAnterior._id }, { finalizado: true })
+                await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Se actualizó el lote ${loteAnterior._id} a finalizado: true`);
 
+            }
 
             //para lista de empaque
             procesoEventEmitter.emit("predio_vaciado", {
@@ -980,25 +982,36 @@ export class InventariosRepository {
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha')
 
             const recordLotes = await RecordLotesRepository.getVaciadoRecord({ query: query })
-            const [lotesIds, usuariosIds] = recordLotes.map(lote => [lote.documento._id, lote.user]);
+            const lotesIds = recordLotes.map(lote => lote.documento._id);
+            const usuariosIds = recordLotes.map(lote => lote.user);
+
+            console.log("lotesIds:", lotesIds);
+            console.log("usuarios:", usuariosIds);
+
             const arrUsers = [...new Set(usuariosIds)];
+            const arrLotes = [...new Set(lotesIds)];
+
+            console.log("lotes:", arrLotes);
+            console.log("usuarios:", arrUsers);
 
             const [lotes, usuarios] = await Promise.all([
                 LotesRepository.getLotes2({
-                    ids: lotesIds,
-                    limit: recordLotes.length,
+                    ids: arrLotes,
+                    limit: "all",
                     select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1, GGN: 1 }
                 }),
                 UsuariosRepository.get_users({
-                    ids: arrUsers,
+                    ids:  arrUsers,
+                    limit: "all"
                 })
             ]);
-
-
+            console.log("lotes:", lotes);
+            console.log("usuarios:", usuarios);
 
             const resultado = recordLotes.map(item => {
                 const lote = lotes.find(lote => lote._id.toString() === item.documento._id);
                 const user = usuarios.find(user => user._id.toString() === item.user.toString());
+
                 if (lote) {
                     if (Object.prototype.hasOwnProperty.call(item.documento, "$inc")) {
                         item.documento = { ...lote, kilosVaciados: item.documento.$inc.kilosVaciados, }
@@ -1013,6 +1026,7 @@ export class InventariosRepository {
             console.log(resultado);
             return resultado
         } catch (err) {
+            console.log(err)
             if (err.status === 522) {
                 throw err
             }

@@ -14,6 +14,8 @@ import { z, ZodError } from 'zod';
 import nodemailer from 'nodemailer';
 import config from "../../src/config/index.js";
 import { ComercialService } from "../services/comercial.js";
+import { LogsRepository } from "../Class/LogsSistema.js";
+import { registrarPasoLog } from "./helper/logs.js";
 const { EMAIL, PASSWORD_EMAIL } = config;
 
 
@@ -605,10 +607,15 @@ export class ComercialRepository {
     //#endregion
 
     static async post_comercial_precios_add_precio(req) {
+        let log
+        const { user } = req
         try {
-            const { data: datos, user } = req;
-
-            const { data } = datos
+            log = await LogsRepository.create({
+                user: user._id,
+                action: "mover_item_entre_contenedores",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
+            const { data } = req.data;
             const [yearStr, weekStr] = data.week.split("-W");
             const year = parseInt(yearStr, 10);
             const week = parseInt(weekStr, 10);
@@ -616,60 +623,61 @@ export class ComercialRepository {
             data.week = week
             data.year = year
 
-            ComercialValidationsRepository.val_post_comercial_precios_add_precio(data);
+            ComercialValidationsRepository.val_post_comercial_precios_add_precio().parse(data);
+            await registrarPasoLog(log._id, "ComercialValidationsRepository.val_post_comercial_precios_add_precio", "Completado");
 
             const precio = await PreciosRepository.post_precio(data)
+            await registrarPasoLog(log._id, "PreciosRepository.post_precio", "Completado");
+
+            // const query = {
+            //     _id: { $in: data.predios }
+            // }
+
+            // const new_data = { [`precio.${data.tipoFruta}`]: precio._id }
+
+            // await ProveedoresRepository.modificar_varios_proveedores(
+            //     query, new_data
+            // )
 
 
-            const query = {
-                _id: { $in: data.predios }
-            }
+            // const simple = new Date(year, 0, 1 + (week - 1) * 7);
+            // const dow = simple.getDay();
 
-            const new_data = { [`precio.${data.tipoFruta}`]: precio._id }
+            // const ISOweekStart = new Date(simple);
+            // if (dow === 0) {
+            //     ISOweekStart.setDate(simple.getDate() - 6);
+            // } else {
+            //     ISOweekStart.setDate(simple.getDate() - (dow - 1));
+            // }
 
-            await ProveedoresRepository.modificar_varios_proveedores(
-                query, new_data
-            )
+            // const ISOweekEnd = new Date(ISOweekStart);
+            // ISOweekEnd.setDate(ISOweekStart.getDate() + 7);
 
+            // let lotesQuery = {}
 
-            const simple = new Date(year, 0, 1 + (week - 1) * 7);
-            const dow = simple.getDay();
+            // lotesQuery = filtroFechaInicioFin(ISOweekStart, ISOweekEnd, lotesQuery, "fecha_ingreso_patio")
 
-            const ISOweekStart = new Date(simple);
-            if (dow === 0) {
-                ISOweekStart.setDate(simple.getDate() - 6);
-            } else {
-                ISOweekStart.setDate(simple.getDate() - (dow - 1));
-            }
+            // lotesQuery.tipoFruta = data.tipoFruta
 
-            const ISOweekEnd = new Date(ISOweekStart);
-            ISOweekEnd.setDate(ISOweekStart.getDate() + 7);
-
-            let lotesQuery = {}
-
-            lotesQuery = filtroFechaInicioFin(ISOweekStart, ISOweekEnd, lotesQuery, "fecha_ingreso_patio")
-
-            lotesQuery.tipoFruta = data.tipoFruta
-
-            const lotes = await LotesRepository.getLotes({
-                query: lotesQuery,
-                select: { predio: 1, precio: 1, tipoFruta: 1 }
-            })
+            // const lotes = await LotesRepository.getLotes({
+            //     query: lotesQuery,
+            //     select: { predio: 1, precio: 1, tipoFruta: 1 }
+            // })
 
 
-            for (const lote of lotes) {
+            // for (const lote of lotes) {
 
-                if (precio.predios.includes(lote.predio._id.toString())) {
-                    lote.precio = precio._id
+            //     if (precio.predios.includes(lote.predio._id.toString())) {
+            //         lote.precio = precio._id
 
-                    await LotesRepository.actualizar_lote(
-                        { _id: lote._id },
-                        lote,
-                        { user: user._id, action: "post_comercial_precios_add_precio" },
-                        null, false
-                    )
-                }
-            }
+            //         await LotesRepository.actualizar_lote(
+            //             { _id: lote._id },
+            //             lote,
+            //             { user: user._id, action: "post_comercial_precios_add_precio" },
+            //             null, false
+            //         )
+            //     }
+            // }
 
 
         } catch (err) {

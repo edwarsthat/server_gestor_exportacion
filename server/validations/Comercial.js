@@ -108,15 +108,21 @@ export class ComercialValidationsRepository {
         }
 
     }
-    static val_post_comercial_precios_add_precio(data) {
-        if (!Object.prototype.hasOwnProperty.call(data, "tipoFruta"))
-            throw new Error("Ingrese un tipo de fruta")
-        if (data.tipoFruta === '')
-            throw new Error("Ingrese un tipo de fruta")
-        if (!Object.prototype.hasOwnProperty.call(data, "week"))
-            throw new Error("Ingrese la semana del año")
-        if (data.tipoFruta === '')
-            throw new Error("Ingrese la semana del año")
+    static val_post_comercial_precios_add_precio() {
+        // Validador para strings que representen números >= 0
+        const numericString = z.string().refine((value) => {
+            if (value === "") return false
+            const n = Number(value)
+            return !Number.isNaN(n) && n >= 0
+        }, { message: "Debe ser un número mayor o igual a 0" })
+
+        return z.object({
+            tipoFruta: z.string().trim().min(1, "Campo requerido"), // obligatorio no vacío
+            frutaNacional: numericString, // string numérico >= 0
+            descarte: numericString, // string numérico >= 0
+            week: z.string().trim().min(1, "Campo requerido"), // obligatorio no vacío
+            comentario: z.string(), // resto: solo string
+        }).catchall(numericString)
 
     }
     static val_post_comercial_precios_add_precio_lote(data) {

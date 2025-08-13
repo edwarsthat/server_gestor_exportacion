@@ -42,7 +42,6 @@ export class UsuariosRepository {
             populate = { path: 'cargo' },
             limit = 50,
             skip = 0,
-            getAll = false,
         } = options;
         try {
             let usuariosQuery = { ...query };
@@ -50,20 +49,19 @@ export class UsuariosRepository {
             if (ids.length > 0) {
                 usuariosQuery._id = { $in: ids };
             }
+
+            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
+
             // Construimos la query base
-            let mongoQuery = db.Usuarios.find(usuariosQuery)
+            let usuarios = db.Usuarios.find(usuariosQuery)
                 .select(select)
                 .sort(sort)
+                .limit(limitToUse)
                 .populate(populate)
-                .skip(skip);
+                .skip(skip)
+                .exec();
 
-            // Si no se quiere todo, aplicamos el limit
-            if (!getAll) {
-                mongoQuery = mongoQuery.limit(limit);
-            }
-
-            const usuario = await mongoQuery.exec();
-            return usuario
+            return usuarios
 
         } catch (err) {
             console.log(err)

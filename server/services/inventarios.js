@@ -905,13 +905,13 @@ export class InventariosService {
     static async probar_deshidratacion_loteProcesando(user) {
         const predioVaciando = await VariablesDelSistema.obtenerEF1proceso();
         if (!predioVaciando) {
-            throw new InventariosLogicError(404, "No hay EF1 en proceso.");
+            return "No vaceo"
         }
 
         const loteVaciando = await LotesRepository.getLotes({ ids: [predioVaciando._id] });
         const lote = loteVaciando?.[0];
         if (!lote) {
-            throw new InventariosLogicError(404, "No se encontró el lote en proceso.");
+            return "No vaceo"
         }
 
         // Cargos con vía rápida
