@@ -38,6 +38,7 @@ const permisos_generales = new Set([
     "get_calidad_reclamaciones_contenedores_numeroElementos",
     "get_transporte_registros_entregaPrecintos_numeroElementos",
     "get_inventarios_historiales_numeroRegistros_inventarioDescartes",
+    "get_comercial_precios_registros_precios_proveedores_numeroElementos",
     //obteniendo constantes
     "get_constantes_sistema_clasificacion_descarte",
     "get_constantes_sistema_observaciones_calidad",

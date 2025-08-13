@@ -623,7 +623,6 @@ export class ProcesoRepository {
 
             const { contenedor, lotes, itemsDelete } = await ProcesoService.obtenerContenedorLotes(_id, pallet, seleccionOrdenado);
             await registrarPasoLog(log._id, "ProcesoValidations.obtenerContenedorLotes", "Completado");
-            console.log(lotes)
 
             lotes.forEach(lote => {
                 if (checkFinalizadoLote(lote)) {
@@ -1092,7 +1091,6 @@ export class ProcesoRepository {
             );
 
             // Registrar modificación Contenedores
-            console.log("Registro de modificación de contenedor");
             await RecordModificacionesRepository.post_record_contenedor_modification(
                 action,
                 user,
@@ -1105,7 +1103,6 @@ export class ProcesoRepository {
                 newContenedor.pallets,
                 { _id, action } 
             );
-            console.log("Registro de modificación de contenedor completado");
             procesoEventEmitter.emit("listaempaque_update");
 
         } catch (err) {

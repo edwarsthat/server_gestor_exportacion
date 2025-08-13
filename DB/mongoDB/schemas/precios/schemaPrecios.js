@@ -26,9 +26,6 @@ export const definePrecios = async (conn) => {
     const PreciosSchema = new Schema({
         fecha: { type: Date, default: () => new Date() },
         tipoFruta: String,
-        "1": { type: Number, default: 0 },
-        "15": { type: Number, default: 0 },
-        "2": { type: Number, default: 0 },
         exportacion: exportacionSchema,
         frutaNacional: { type: Number, default: 0 },
         descarte: { type: Number, default: 0 },

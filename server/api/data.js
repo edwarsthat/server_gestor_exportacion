@@ -123,7 +123,6 @@ export class dataRepository {
             })
             return clientesNacionales
         } catch (err) {
-            console.log(err)
             if (
                 err.status === 522
             ) {

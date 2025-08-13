@@ -109,21 +109,33 @@ export class ComercialValidationsRepository {
 
     }
     static val_post_comercial_precios_add_precio() {
-        // Validador para strings que representen números >= 0
-        const numericString = z.string().refine((value) => {
-            if (value === "") return false
-            const n = Number(value)
-            return !Number.isNaN(n) && n >= 0
-        }, { message: "Debe ser un número mayor o igual a 0" })
+        const nonNeg = z.coerce.number().min(0, { message: "Debe ser un número mayor o igual a 0" });
 
         return z.object({
-            tipoFruta: z.string().trim().min(1, "Campo requerido"), // obligatorio no vacío
-            frutaNacional: numericString, // string numérico >= 0
-            descarte: numericString, // string numérico >= 0
-            week: z.string().trim().min(1, "Campo requerido"), // obligatorio no vacío
-            comentario: z.string(), // resto: solo string
-        }).catchall(numericString)
+            tipoFruta: z.string().trim().min(1, "Campo requerido"),
 
+            // números (acepta "123" o 123 y te entrega number)
+            frutaNacional: nonNeg,
+            descarte: nonNeg,
+
+            // week y year: aceptan number o string, y te los entrego como string
+            week: z.union([z.string(), z.number()]).transform(v => String(v).trim()).pipe(
+                z.string().min(1, "Campo requerido")
+            ),
+            year: z.union([z.string(), z.number()]).transform(v => String(v).trim()),
+
+            // predios: puede llegar como "A,B" o ["A","B"] — normalizamos a string[]
+            predios: z.union([
+                z.string().transform(s => s.split(",").map(x => x.trim()).filter(Boolean)),
+                z.array(z.string())
+            ]).default([]),
+
+            // comentario opcional
+            comentario: z.string().optional().default(""),
+        })
+        // Elige una:
+        // .strict()       // rechaza campos desconocidos
+        // .passthrough()  // deja pasar campos extra sin validar
     }
     static val_post_comercial_precios_add_precio_lote(data) {
 
@@ -134,13 +146,13 @@ export class ComercialValidationsRepository {
 
     }
     static val_get_comercial_precios_registros_filtro(data) {
-        const filtrosTypes = ["fechaInicio", "fechaFin", "tipoFruta", "proveedor"]
+        const filtrosTypes = ["fechaInicio", "fechaFin", "tipoFruta2", "proveedor"]
         for (const key in data) {
             if (!filtrosTypes.includes(key)) {
                 throw new Error(`El filtro ${key} no es permitido`)
             }
 
-            if (key === "tipoFruta") {
+            if (key === "tipoFruta2") {
                 if (typeof data[key] !== "string") {
                     throw new Error(`El filtro ${key} debe ser de tipo string`)
                 }

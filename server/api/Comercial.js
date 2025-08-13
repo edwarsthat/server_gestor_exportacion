@@ -248,7 +248,6 @@ export class ComercialRepository {
                 "Creacion de cliente"
             )
         } catch (err) {
-            console.log(err)
             if (err.status === 521) {
                 throw err
             }
@@ -427,7 +426,6 @@ export class ComercialRepository {
             )
 
         } catch (err) {
-            console.log(err)
             if (err.status === 521) {
                 throw err
             }
@@ -439,7 +437,6 @@ export class ComercialRepository {
             const { user } = req
             const { data, action } = req.data
 
-            console.log(req)
             const parsedData = ComercialValidationsRepository.val_post_comercial_clienteNacional().parse(data);
             const cliente = await ClientesRepository.post_cliente_nacional(parsedData);
 
@@ -457,7 +454,6 @@ export class ComercialRepository {
             )
 
         } catch (err) {
-            console.log(err)
             if (err.status === 521) {
                 throw err
             }
@@ -626,70 +622,88 @@ export class ComercialRepository {
             ComercialValidationsRepository.val_post_comercial_precios_add_precio().parse(data);
             await registrarPasoLog(log._id, "ComercialValidationsRepository.val_post_comercial_precios_add_precio", "Completado");
 
-            const precio = await PreciosRepository.post_precio(data)
+            console.log("Validaciones completadas", req.data);
+
+            const exportacion = {};
+            for (const key in data) {
+                if (key.startsWith("exportacion.")) {
+                    const subKey = key.split(".")[1];
+                    exportacion[subKey] = Number(data[key]);
+                    delete data[key];
+                }
+            }
+
+            const precio = await PreciosRepository.post_precio({ ...data, exportacion })
             await registrarPasoLog(log._id, "PreciosRepository.post_precio", "Completado");
 
-            // const query = {
-            //     _id: { $in: data.predios }
-            // }
+            const query = {
+                _id: { $in: data.predios }
+            }
 
-            // const new_data = { [`precio.${data.tipoFruta}`]: precio._id }
+            const new_data = { [`precio.${data.tipoFruta}`]: precio._id }
 
-            // await ProveedoresRepository.modificar_varios_proveedores(
-            //     query, new_data
-            // )
-
-
-            // const simple = new Date(year, 0, 1 + (week - 1) * 7);
-            // const dow = simple.getDay();
-
-            // const ISOweekStart = new Date(simple);
-            // if (dow === 0) {
-            //     ISOweekStart.setDate(simple.getDate() - 6);
-            // } else {
-            //     ISOweekStart.setDate(simple.getDate() - (dow - 1));
-            // }
-
-            // const ISOweekEnd = new Date(ISOweekStart);
-            // ISOweekEnd.setDate(ISOweekStart.getDate() + 7);
-
-            // let lotesQuery = {}
-
-            // lotesQuery = filtroFechaInicioFin(ISOweekStart, ISOweekEnd, lotesQuery, "fecha_ingreso_patio")
-
-            // lotesQuery.tipoFruta = data.tipoFruta
-
-            // const lotes = await LotesRepository.getLotes({
-            //     query: lotesQuery,
-            //     select: { predio: 1, precio: 1, tipoFruta: 1 }
-            // })
+            await ProveedoresRepository.modificar_varios_proveedores(
+                query, new_data
+            )
+            await registrarPasoLog(log._id, "ProveedoresRepository.modificar_varios_proveedores", "Completado");
 
 
-            // for (const lote of lotes) {
+            const simple = new Date(year, 0, 1 + (week - 1) * 7);
+            const dow = simple.getDay();
 
-            //     if (precio.predios.includes(lote.predio._id.toString())) {
-            //         lote.precio = precio._id
+            const ISOweekStart = new Date(simple);
+            if (dow === 0) {
+                ISOweekStart.setDate(simple.getDate() - 6);
+            } else {
+                ISOweekStart.setDate(simple.getDate() - (dow - 1));
+            }
 
-            //         await LotesRepository.actualizar_lote(
-            //             { _id: lote._id },
-            //             lote,
-            //             { user: user._id, action: "post_comercial_precios_add_precio" },
-            //             null, false
-            //         )
-            //     }
-            // }
+            const ISOweekEnd = new Date(ISOweekStart);
+            ISOweekEnd.setDate(ISOweekStart.getDate() + 7);
+
+            let lotesQuery = {}
+
+            lotesQuery = filtroFechaInicioFin(ISOweekStart, ISOweekEnd, lotesQuery, "fecha_ingreso_patio")
+
+            lotesQuery.tipoFruta = data.tipoFruta
+
+            const lotes = await LotesRepository.getLotes({
+                query: lotesQuery,
+                select: { predio: 1, precio: 1, tipoFruta: 1 }
+            })
+            await registrarPasoLog(log._id, "LotesRepository.getLotes", "Completado");
+
+
+            for (const lote of lotes) {
+
+                if (precio.predios.includes(lote.predio._id.toString())) {
+                    lote.precio = precio._id
+
+                    await LotesRepository.actualizar_lote(
+                        { _id: lote._id },
+                        lote,
+                        { user: user._id, action: "post_comercial_precios_add_precio" },
+                        null, false
+                    )
+                }
+            }
+            await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado");
 
 
         } catch (err) {
+            await registrarPasoLog(log._id, "Error en post_comercial_precios_add_precio", "Completado");
 
             if (err.status === 521) {
                 throw err
             }
             throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "post_comercial_precios_add_precio", "Finalizado");
         }
     }
     static async put_comercial_precios_precioLotes(req) {
         try {
+            console.log(req)
             const { data: datos, user } = req
             const { data, action } = datos
 
@@ -711,18 +725,20 @@ export class ComercialRepository {
 
             ComercialValidationsRepository.val_post_comercial_precios_add_precio_lote(data);
 
-            const precio = await PreciosRepository.post_precio({ ...data, tipoFruta: lotes[0].tipoFruta })
+            const exportacion = {};
+            for (const key in data) {
+                if (key.startsWith("exportacion.")) {
+                    const subKey = key.split(".")[1];
+                    exportacion[subKey] = Number(data[key]);
+                    delete data[key];
+                }
+            }
+
+            const precio = await PreciosRepository.post_precio({ ...data, tipoFruta: lotes[0].tipoFruta, exportacion })
 
             for (const lote of lotes) {
 
                 lote.precio = precio._id
-
-                // await LotesRepository.modificar_lote_proceso(
-                //     lote._id,
-                //     lote,
-                //     "Cambiar precio lote",
-                //     user.user
-                // )
 
                 await LotesRepository.actualizar_lote(
                     { _id: lote._id },
@@ -842,16 +858,16 @@ export class ComercialRepository {
     }
     static async get_comercial_precios_registros_precios_proveedores(req) {
         try {
+            console.log(req)
 
             const { page = 1, filtro } = req.data || {}
             const resultsPerPage = 50;
             const skip = (page - 1) * resultsPerPage;
 
-            ComercialValidationsRepository
-                .val_get_comercial_precios_registros_filtro(filtro);
+            // ComercialValidationsRepository
+            //     .val_get_comercial_precios_registros_filtro(filtro);
 
             let query = { skip };
-            let queryNumber = {}
 
             if (filtro) {
 
@@ -861,8 +877,8 @@ export class ComercialRepository {
                 filter = filtroPorSemana(filtro.fechaInicio, filtro.fechaFin, filter);
 
                 // Asigna tipoFruta si existe
-                if (filtro.tipoFruta) {
-                    filter.tipoFruta = filtro.tipoFruta;
+                if (filtro.tipoFruta2 && Object.keys(filtro.tipoFruta2).length > 0) {
+                    filter.tipoFruta = filtro.tipoFruta2;
                 }
                 // Asigna proveedor en filter.predios si existe
                 if (filtro.proveedor) {
@@ -870,20 +886,52 @@ export class ComercialRepository {
                 }
 
                 query = { skip, query: filter };
-                queryNumber = filter;
 
             }
 
             const registros = await PreciosRepository.get_precios(query)
-            const response = await PreciosRepository.get_cantidad_precios(queryNumber)
 
-            return { registros: registros, numeroRegistros: response }
+            return registros
         } catch (err) {
             console.log(err)
             if (err.status === 522) {
                 throw err
             }
             throw new ProcessError(480, `${err.type}: ${err.message}`)
+        }
+    }
+    static async get_comercial_precios_registros_precios_proveedores_numeroElementos(req) {
+        try {
+            console.log(req)
+
+            const { filtro } = req.data || {}
+
+            if (filtro) {
+
+                let filter = {};
+                // Actualiza filter con el manejo de fechas.
+
+                filter = filtroPorSemana(filtro.fechaInicio, filtro.fechaFin, filter);
+
+                // Asigna tipoFruta si existe
+                if (filtro.tipoFruta2 && Object.keys(filtro.tipoFruta2).length > 0) {
+                    filter.tipoFruta = filtro.tipoFruta2;
+                }
+                // Asigna proveedor en filter.predios si existe
+                if (filtro.proveedor) {
+                    filter.predios = { $in: filtro.proveedor };
+                }
+
+                const response = await PreciosRepository.get_cantidad_precios(filter)
+                return response
+            }
+
+        }
+        catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
 

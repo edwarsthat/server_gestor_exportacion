@@ -35,7 +35,6 @@ export class IndicadoresAPIRepository {
 
             return registros
         } catch (err) {
-            console.log(`Error en get_indicadores_operaciones_eficienciaOperativa: ${err.message}`);
             await registrarPasoLog(log._id, "Error", "Fallido", err.message);
             if (err.status === 522) {
                 throw err
@@ -223,7 +222,6 @@ export class IndicadoresAPIRepository {
         try {
             const { filtro } = req.data
             const { fechaInicio, fechaFin, proveedor, tipoFruta2 } = filtro || {};
-            console.log(filtro)
             
             // Validar que la fechaInicio no sea anterior al 2025
             if (fechaInicio) {

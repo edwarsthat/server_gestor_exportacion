@@ -895,8 +895,6 @@ export class InventariosRepository {
             const lote = await LotesRepository.getLotes2({ ids: [_id] });
             await registrarPasoLog(log._id, "LotesRepository.getLotes", "Completado",);
 
-            console.log("kilosVaciados:", kilosVaciados);
-
             await Promise.all([
                 VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario, log._id),
                 VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString(), log._id),
@@ -985,14 +983,8 @@ export class InventariosRepository {
             const lotesIds = recordLotes.map(lote => lote.documento._id);
             const usuariosIds = recordLotes.map(lote => lote.user);
 
-            console.log("lotesIds:", lotesIds);
-            console.log("usuarios:", usuariosIds);
-
             const arrUsers = [...new Set(usuariosIds)];
             const arrLotes = [...new Set(lotesIds)];
-
-            console.log("lotes:", arrLotes);
-            console.log("usuarios:", arrUsers);
 
             const [lotes, usuarios] = await Promise.all([
                 LotesRepository.getLotes2({
@@ -1005,8 +997,6 @@ export class InventariosRepository {
                     limit: "all"
                 })
             ]);
-            console.log("lotes:", lotes);
-            console.log("usuarios:", usuarios);
 
             const resultado = recordLotes.map(item => {
                 const lote = lotes.find(lote => lote._id.toString() === item.documento._id);
@@ -1023,7 +1013,6 @@ export class InventariosRepository {
                 }
                 return null
             }).filter(item => item !== null);
-            console.log(resultado);
             return resultado
         } catch (err) {
             console.log(err)
@@ -1389,7 +1378,6 @@ export class InventariosRepository {
             if (_id) query._id = _id;
             else if (!EF) query.enf = { $regex: '^E', $options: 'i' }
 
-            console.log(query)
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, tipoFecha)
 
             const lotes = await LotesRepository.getLotes2({
@@ -1767,7 +1755,6 @@ export class InventariosRepository {
             await registrarPasoLog(log._id, "InventariosValidations.post_inventarios_ingreso_lote", "Completado");
 
             const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(datosValidados.tipoFruta, log._id)
-            console.log("tipoFruta", tipoFruta);
             const [{ precioId, proveedor }, ef1] = await Promise.all([
                 InventariosService.obtenerPrecioProveedor(datosValidados.predio, tipoFruta[0].tipoFruta),
                 dataService.get_ef1_serial(data.fecha_estimada_llegada, log._id),

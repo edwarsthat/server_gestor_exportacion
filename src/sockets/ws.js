@@ -77,11 +77,12 @@ export function initSockets(io) {
         console.log("an user has connected");
         console.log("Conexiones activas:", io.engine.clientsCount);
 
+        const authenticatedUser = socket.user;
+
         const handleRequest = async (data, callback, repository) => {
             try {
 
-                const user = await UserRepository.authenticateToken(data.token)
-                data.user = user;
+                data.user = authenticatedUser;
 
                 const autorizado2 = await UserRepository.autentificacionPermisos2(data);
                 if (!autorizado2) {

@@ -372,7 +372,6 @@ export class CalidadRepository {
             return true
 
         } catch (err) {
-            console.log(err)
             if (err.status === 523 || err.status === 522) {
                 throw err
             }
