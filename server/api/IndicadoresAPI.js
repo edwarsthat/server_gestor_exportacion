@@ -222,7 +222,7 @@ export class IndicadoresAPIRepository {
         try {
             const { filtro } = req.data
             const { fechaInicio, fechaFin, proveedor, tipoFruta2 } = filtro || {};
-            
+
             // Validar que la fechaInicio no sea anterior al 2025
             if (fechaInicio) {
                 const fechaInicioDate = new Date(fechaInicio);
@@ -230,7 +230,7 @@ export class IndicadoresAPIRepository {
                     throw new ProcessError(400, "No se pueden traer datos tan viejos. La fecha de inicio debe ser del año 2025 en adelante.");
                 }
             }
-            
+
             let query = { predio: new Mongoose.Types.ObjectId(proveedor) }
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_creacion')
 
@@ -240,33 +240,34 @@ export class IndicadoresAPIRepository {
             }
             const [
                 lotes,
-                { 
-                    totalKilosIngreso = 0, 
-                    totalKilosProcesados = 0, 
-                    totalKilosExportacion = 0, 
+                {
+                    totalKilosIngreso = 0,
+                    totalKilosProcesados = 0,
+
                     totalKilosDescarte = 0,
-                    totalCalidad1 = 0, 
-                    totalCalidad15 = 0, 
-                    totalCalidad2 = 0,
                 } = {}
-            ] =await Promise.all([
-                LotesRepository.get_Lotes_strict({ query: query, limit:'all' }),
+            ] = await Promise.all([
+                LotesRepository.get_Lotes_strict({ query: query, limit: 'all' }),
                 LotesRepository.eficiencia_lote_calidad(query),
             ])
 
-            const {  calibres, calibresTotal } = await IndicadoresService.obtener_calibres_lotes_contenedores(lotes);
 
-            return { 
-                lotes, 
-                totalKilosIngreso, 
-                totalKilosProcesados, 
-                totalKilosExportacion, 
+
+            const [{ calibres, calibresTotal }, { totalKilosExportacion, calidades, calidadesIds }] = await Promise.all([
+                IndicadoresService.obtener_calibres_lotes_contenedores(lotes),
+                IndicadoresService.obtenerExportacionLotes(lotes)
+            ])
+
+            return {
+                lotes,
+                totalKilosIngreso,
+                totalKilosProcesados,
+                totalKilosExportacion,
                 totalKilosDescarte,
-                totalCalidad1,
-                totalCalidad15,
-                totalCalidad2,
                 calibres,
                 calibresTotal,
+                calidades,
+                calidadesIds
             };
 
         } catch (err) {

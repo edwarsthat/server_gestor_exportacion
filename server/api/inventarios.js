@@ -72,7 +72,8 @@ export class InventariosRepository {
                     enf: 1,
                     kilosVaciados: 1,
                     not_pass: 1,
-                    GGN: 1
+                    GGN: 1,
+                    calidad: 1,
                 }
             });
 

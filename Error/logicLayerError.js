@@ -51,6 +51,14 @@ class GestionCuentasLogicError extends Error {
         this.message = message
     }
 }
+class ContabilidadLogicError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Logica contabilidad error"
+        this.status = code
+        this.message = message
+    }
+}
 
 
 export {
@@ -59,5 +67,6 @@ export {
     SistemaLogicError,
     ComercialLogicError,
     DataLogicError,
-    GestionCuentasLogicError
+    GestionCuentasLogicError,
+    ContabilidadLogicError
 }

@@ -307,7 +307,7 @@ class ProcesoService {
 
         VariablesDelSistema.sumarMetricaSimpleDirect("kilosProcesadosHoy", tipoFruta, kilos, multi);
         VariablesDelSistema.sumarMetricaSimpleDirect("kilosExportacionHoy", tipoFruta, kilos, multi);
-        VariablesDelSistema.sumarMetricaSimpleDirect(`exportacion:${tipoFruta}:calidad${calidad}`, calibre, kilos, multi);
+        VariablesDelSistema.sumarMetricaSimpleDirect(`exportacion:${tipoFruta}:${calidad}`, calibre, kilos, multi);
 
         const results = await multi.exec();
         console.info("Resultados de Redis:", results);
@@ -636,14 +636,14 @@ class ProcesoService {
                 ) {
                     const kilosOld = itemSeleccionadoOld.cajas * Number(itemSeleccionadoOld.tipoCaja.split("-")[1].replace(",", "."));
                     VariablesDelSistema.sumarMetricaSimpleDirect(
-                        `exportacion:${itemSeleccionadoOld.tipoFruta}:calidad${itemSeleccionadoOld.calidad}`,
+                        `exportacion:${itemSeleccionadoOld.tipoFruta}:${itemSeleccionadoOld.calidad}`,
                         itemSeleccionadoOld.calibre,
                         -kilosOld,
                         multi
                     );
                     const kilosNew = itemSeleccionadoNew.cajas * Number(itemSeleccionadoNew.tipoCaja.split("-")[1].replace(",", "."));
                     VariablesDelSistema.sumarMetricaSimpleDirect(
-                        `exportacion:${itemSeleccionadoNew.tipoFruta}:calidad${itemSeleccionadoNew.calidad}`,
+                        `exportacion:${itemSeleccionadoNew.tipoFruta}:${itemSeleccionadoNew.calidad}`,
                         itemSeleccionadoNew.calibre,
                         kilosNew,
                         multi
@@ -951,7 +951,7 @@ class ProcesoService {
 
             VariablesDelSistema.sumarMetricaSimpleDirect("kilosProcesadosHoy", tipoFruta, Number(kilos), multi);
             VariablesDelSistema.sumarMetricaSimpleDirect("kilosExportacionHoy", tipoFruta, Number(kilos), multi);
-            VariablesDelSistema.sumarMetricaSimpleDirect(`exportacion:${tipoFruta}:calidad${calidad}`, calibre, Number(kilos), multi);
+            VariablesDelSistema.sumarMetricaSimpleDirect(`exportacion:${tipoFruta}:${calidad}`, calibre, Number(kilos), multi);
 
             const results = await multi.exec();
             console.info("Resultados de Redis:", results);

@@ -83,5 +83,23 @@ export class IndicadoresService {
         console.log("Calibres totales:", calibresTotal);
         return { lotesDict, calibres: Array.from(calibres), calibresTotal }
     }
+    static async obtenerExportacionLotes(lotes){
+        let totalKilosExportacion = 0;
+        const calidades = {}
+        const calidadesIds = new Set();
+        for (const lote of lotes){
+            if(!lote.exportacion || Object.keys(lote.exportacion).length === 0) continue;
+            for(const cont of Object.values(lote.exportacion)){
+                if(Object.keys(cont).length === 0) continue;
+                for(const [calidad, kilos] of Object.entries(cont)){
+                    if(!calidades[calidad]) calidades[calidad] = 0;
+                    calidades[calidad] += kilos;
+                    totalKilosExportacion += kilos;
+                    calidadesIds.add(calidad);
+                }
+            }
+        }
+        return { totalKilosExportacion, calidades, calidadesIds: Array.from(calidadesIds) };
+    }
 
 }

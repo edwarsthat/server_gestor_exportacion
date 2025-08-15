@@ -6,6 +6,7 @@ import { UserRepository } from "../../server/auth/users.js";
 import { apiSocket } from "../../server/desktop/reduce.js";
 import { apiSocketCalidad } from "../../server/routes/sockets/calidad.js";
 import { apiSocketComercial } from "../../server/routes/sockets/comercial.js";
+import { apiSocketContabilidad } from "../../server/routes/sockets/contabilidad.js";
 import { apiSocketData } from "../../server/routes/sockets/data.js";
 import { apiSocketGestionCuentas } from "../../server/routes/sockets/gestionCuentas.js";
 import { apiSockectIndicadores } from "../../server/routes/sockets/indicadores.js";
@@ -128,6 +129,8 @@ export function initSockets(io) {
                 handleRequest(data, callback, apiSocketTransporte);
             } else if (dominio === "python") {
                 handleRequest(data, callback, apiSocketPython);
+            } else if (dominio === "contabilidad") {
+                handleRequest(data, callback, apiSocketContabilidad);
             }
             else {
                 handleRequest(data, callback, apiSocket);

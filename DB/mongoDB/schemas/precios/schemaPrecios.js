@@ -10,23 +10,10 @@ export const definePrecios = async (conn) => {
         precio: { type: Number, required: true },
     })
 
-    const exportacionSchema = new Schema(
-        {},
-        {
-            _id: false,
-            strict: false
-        }
-    )
-
-    exportacionSchema.add(
-        new Map([[String, Number]])
-    );
-
-
     const PreciosSchema = new Schema({
         fecha: { type: Date, default: () => new Date() },
         tipoFruta: String,
-        exportacion: exportacionSchema,
+        exportacion: { type: Map, of: Number },
         frutaNacional: { type: Number, default: 0 },
         descarte: { type: Number, default: 0 },
         predios: [String],
@@ -36,7 +23,7 @@ export const definePrecios = async (conn) => {
         comentario: String
     })
 
-const Precios = conn.model("precio", PreciosSchema);
-return Precios;
+    const Precios = conn.model("precio", PreciosSchema);
+    return Precios;
 }
 

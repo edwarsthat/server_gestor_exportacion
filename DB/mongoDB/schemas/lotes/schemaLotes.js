@@ -211,10 +211,6 @@ export const defineLotes = async (conn, AuditLog) => {
     tipoFruta: String,
     user: String,
 
-    calidad1: { type: Number, default: 0 },
-    calidad15: { type: Number, default: 0 },
-    calidad2: { type: Number, default: 0 },
-
   }, { versionKey: '__v' });
 
 

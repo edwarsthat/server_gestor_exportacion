@@ -334,9 +334,6 @@ export class LotesRepository {
 
                 const frutaNacional = get('frutaNacional');
                 const directoNacional = get('directoNacional');
-                const calidad1 = get('calidad1');
-                const calidad15 = get('calidad15');
-                const calidad2 = get('calidad2');
                 const kilos = get('kilos');
                 const kilosVaciados = get('kilosVaciados');
 
@@ -358,7 +355,7 @@ export class LotesRepository {
                     console.log('Exportación Total:', exportacionTotal);
                     const total = exportacionTotal + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional;
                     deshidratacion = 100 - (total * 100) / kilos;
-                    rendimiento = kilosVaciados === 0 ? 0 : (((calidad1 + calidad15 + calidad2) * 100) / kilosVaciados);
+                    rendimiento = kilosVaciados === 0 ? 0 : ((exportacionTotal * 100) / kilosVaciados);
                 }
 
                 // 3. Si hay que actualizar la deshidratación, hazlo solo si cambia
@@ -444,18 +441,6 @@ export class LotesRepository {
                         _id: null,
                         totalKilosIngreso: { $sum: { $ifNull: ["$kilos", 0] } },
                         totalKilosProcesados: { $sum: { $ifNull: ["$kilosVaciados", 0] } },
-                        totalCalidad1: { $sum: { $ifNull: ["$calidad1", 0] } },
-                        totalCalidad15: { $sum: { $ifNull: ["$calidad15", 0] } },
-                        totalCalidad2: { $sum: { $ifNull: ["$calidad2", 0] } },
-                        totalKilosExportacion: {
-                            $sum: {
-                                $add: [
-                                    { $ifNull: ["$calidad1", 0] },
-                                    { $ifNull: ["$calidad15", 0] },
-                                    { $ifNull: ["$calidad2", 0] }
-                                ]
-                            }
-                        },
                         totalKilosDescarte: {
                             $sum: {
                                 $add: camposDescartes.map(campo => ({ $ifNull: [`$${campo}`, 0] }))

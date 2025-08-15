@@ -176,7 +176,7 @@ export class CalidadRepository {
                 limit: resultsPerPage,
                 populate: [
                     { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' },
-                    { path: 'precio', select: '1 2 15 frutaNacional descarte' }
+                    { path: 'precio', select: 'exportacion frutaNacional descarte' }
                 ]
 
             })
@@ -245,87 +245,56 @@ export class CalidadRepository {
         }
     }
     static async put_calidad_informes_loteFinalizarInforme(req) {
+        const { user } = req;
+        let log
         try {
-            const { data, user: userInfo } = req
-            const { _id, action, precio, contenedores } = data
-            const { user } = userInfo
-
-
-            const exportacion = {}
-            const lote = await LotesRepository.getLotes({ ids: [_id] })
-            const contenedoresData = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                ids: contenedores,
+            log = await LogsRepository.create({
+                user: user._id,
+                action: "put_calidad_informes_loteFinalizarInforme",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
             })
-            const numeroCont = contenedoresData.length;
-            for (let nCont = 0; nCont < numeroCont; nCont++) {
-                const contActual = contenedoresData[nCont].toObject();
-                const numeroPallets = contActual.pallets.length;
+            const logData = { logId: log._id, user: user, action: "put_calidad_informes_loteFinalizarInforme" }
 
-                // return
-                for (let nPallets = 0; nPallets < numeroPallets; nPallets++) {
-                    const palletActual = contActual.pallets[nPallets].get('EF1')
-                    const numeroItems = palletActual.length
-                    if (numeroItems <= 0) continue
+            const { _id, contenedores } = req.data
 
-                    for (let nItems = 0; nItems < numeroItems; nItems++) {
-                        const itemActual = palletActual[nItems]
-                        if (itemActual.lote === _id) {
-                            if (!Object.prototype.hasOwnProperty.call(exportacion, contActual._id)) {
-                                exportacion[contActual._id] = {}
-                            }
-                            if (!Object.prototype.hasOwnProperty.call(exportacion[contActual._id], itemActual.calidad)) {
-                                exportacion[contActual._id][itemActual.calidad] = 0
-                            }
-                            const mult = Number(itemActual.tipoCaja.split('-')[1].replace(",", "."))
-                            const kilos = mult * itemActual.cajas
 
-                            exportacion[contActual._id][itemActual.calidad] += kilos
-                        }
-                    }
-                }
-            }
-            let query
-            if (typeof precio === 'object') {
-                query = {
-                    precio: precio,
-                    aprobacionProduccion: true,
-                    fecha_finalizado_proceso: new Date()
-                }
-            } else {
-                query = {
-                    aprobacionProduccion: true,
-                    fecha_finalizado_proceso: new Date()
-                }
-            }
-
-            let setCont = new Set()
-            Object.keys(exportacion).forEach(cont => {
-                Object.keys(exportacion[cont]).forEach(calidad => {
-                    let llave = calidad
-                    if (calidad === "1.5") {
-                        llave = "15"
-                    }
-                    query[`exportacionDetallada.any.${cont}.${llave}`] = exportacion[cont][calidad]
-                    setCont.add(cont)
+            const [lote, contenedoresData] = await Promise.all([
+                LotesRepository.getLotes2({ ids: [_id] }),
+                ContenedoresRepository.get_Contenedores_sin_lotes({
+                    ids: contenedores,
+                    select: { infoContenedor: 1, numeroContenedor: 1, pallets: 1 }
                 })
-            })
-            const contArr = [...setCont]
+            ])
+            await registrarPasoLog(logData.logId, "getLotes2 AND get_Contenedores_sin_lotes", "Completado");
 
-            const arrayDelete = contArr.filter(cont => lote[0].contenedores.includes(cont))
-            query.contenedores = arrayDelete
 
-            // await LotesRepository.modificar_lote_proceso(_id, query, action, user)
+            const [exportacion] = await Promise.all([
+                CalidadService.obtenerExportacionContenedores(contenedoresData, _id, logData),
+                CalidadService.borrarContenedoresCalidadesCero(lote[0], logData)
+            ]);
+
+            let query = {
+                aprobacionProduccion: true,
+                fecha_finalizado_proceso: new Date()
+            }
+
+            await CalidadService.compararExportacionLoteVsListaEmpaque(exportacion, lote[0], query, logData)
 
             await LotesRepository.actualizar_lote(
                 { _id },
                 query,
-                { new: true, user: user, action: action }
+                { new: true, user: user, action: "put_calidad_informes_loteFinalizarInforme" }
             );
+            await registrarPasoLog(logData.logId, "LotesRepository.actualizar_lote", "Completado");
+
         } catch (err) {
+            await registrarPasoLog(log._id, "put_calidad_informes_loteFinalizarInforme", "Error", `${err.message}`);
             if (err.status === 523 || err.status === 522) {
                 throw err
             }
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "put_calidad_informes_loteFinalizarInforme", "Completado");
         }
 
     }
