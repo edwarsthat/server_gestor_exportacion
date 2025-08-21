@@ -7,7 +7,8 @@ export const defineTipoFrutas = async (conn) => {
     const calidadesSchema = new Schema({
         _id: { type: Schema.Types.ObjectId, required: true, auto: true },
         nombre: { type: String, required: true },
-        descripcion: { type: String, required: true }
+        descripcion: { type: String, required: true },
+        importancia: { type: Number, required: true }
     })
 
     const TipoFrutaSchema = new Schema({
