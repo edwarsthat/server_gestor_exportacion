@@ -276,7 +276,7 @@ export class InventariosRepository {
             const [, , loteCreado] = await Promise.all([
                 RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', data.tipoFruta),
                 RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', data.tipoFruta),
-                InventariosService.crear_lote_celifrut(tipoFruta, total, _id),
+                InventariosService.crear_lote_celifrut(tipoFruta._id, total, _id),
                 RedisRepository.salidas_inventario_descartes(data, data.tipoFruta),
 
             ])
