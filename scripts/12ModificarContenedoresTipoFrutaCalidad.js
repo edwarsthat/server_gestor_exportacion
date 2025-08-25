@@ -4,8 +4,11 @@ import { defineTipoFrutas } from "../DB/mongoDB/schemas/catalogs/schemaTipoFruta
 import { defineContenedores } from "../DB/mongoDB/schemas/contenedores/schemaContenedores.js";
 
 async function modificar_tipoFruta() {
-    const db = await connectProcesoDB("mongodb://localhost:27017/proceso");
-    const dbC = await connectCatalogosDB("mongodb://localhost:27017/catalogos");
+    // const db = await connectProcesoDB("mongodb://localhost:27017/proceso");
+    // const dbC = await connectCatalogosDB("mongodb://localhost:27017/catalogos");
+
+    const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/proceso?authSource=admin")
+    const dbC = await connectCatalogosDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/catalogos?authSource=admin");
 
     try {
         const ContenedoresDb = await defineContenedores(db);
@@ -28,7 +31,7 @@ async function modificar_tipoFruta() {
             if (!contenedor.infoContenedor && !contenedor.infoContenedor.calidad && !contenedor.infoContenedor.tipoFruta) continue;
             const arrCalidad = []
             const tipoFrutaCont = contenedor.infoContenedor.tipoFruta;
-            const idNuevoFruta = tipoFrutaCont === 'Mixto' ?  ["686e6b450c34dee069775d4e", "686e6b940c34dee069775d4f"] : [mapNombreAId.get(String(tipoFrutaCont).trim())];
+            const idNuevoFruta = tipoFrutaCont === 'Mixto' ? ["686e6b450c34dee069775d4e", "686e6b940c34dee069775d4f"] : [mapNombreAId.get(String(tipoFrutaCont).trim())];
 
 
             for (const calidad of contenedor.infoContenedor.calidad) {

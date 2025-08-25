@@ -2,7 +2,9 @@ import { connectProcesoDB } from "../DB/mongoDB/config/config.js";
 import { defineIndicadores } from "../DB/mongoDB/schemas/indicadores/schemaIndicadoresProceso.js";
 
 async function modificar_indicadores_tipoFrutaCalidad() {
-    const db = await connectProcesoDB("mongodb://localhost:27017/proceso");
+    // const db = await connectProcesoDB("mongodb://localhost:27017/proceso");
+
+    const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/proceso?authSource=admin")
 
     try {
         const indicadoresDB = await defineIndicadores(db);
