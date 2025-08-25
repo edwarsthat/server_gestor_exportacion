@@ -4,11 +4,8 @@ import { defineContenedores } from "../DB/mongoDB/schemas/contenedores/schemaCon
 import { defineLotes } from "../DB/mongoDB/schemas/lotes/schemaLotes.js";
 
 async function modificar_exportacion() {
-    // const db = await connectProcesoDB("mongodb://localhost:27017/proceso");
-    // const dbC = await connectCatalogosDB("mongodb://localhost:27017/catalogos");
-
-    const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/proceso?authSource=admin")
-    const dbC = await connectCatalogosDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/catalogos?authSource=admin");
+    const db = await connectProcesoDB("mongodb://localhost:27017/proceso");
+    const dbC = await connectCatalogosDB("mongodb://localhost:27017/catalogos");
 
     try {
         const LoteDB = await defineLotes(db);

@@ -4,11 +4,9 @@ import { defineTipoFrutas } from "../DB/mongoDB/schemas/catalogs/schemaTipoFruta
 import { defineContenedores } from "../DB/mongoDB/schemas/contenedores/schemaContenedores.js";
 
 async function modificar_tipoFruta() {
-    // const db = await connectProcesoDB("mongodb://localhost:27017/proceso");
-    // const dbC = await connectCatalogosDB("mongodb://localhost:27017/catalogos");
+    const db = await connectProcesoDB("mongodb://localhost:27017/proceso");
+    const dbC = await connectCatalogosDB("mongodb://localhost:27017/catalogos");
 
-    const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/proceso?authSource=admin")
-    const dbC = await connectCatalogosDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/catalogos?authSource=admin");
 
     try {
         const ContenedoresDb = await defineContenedores(db);
