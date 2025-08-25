@@ -270,12 +270,13 @@ export class InventariosRepository {
             InventariosValidations.put_inventarios_frutaDescarte_reprocesarFruta().parse(data)
 
             const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(data)
+            const tipoFruta = await TiposFruta.get_tiposFruta({tipoFruta:data.tipoFruta});
 
             //se modifica el inventario
             const [, , loteCreado] = await Promise.all([
                 RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', data.tipoFruta),
                 RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', data.tipoFruta),
-                InventariosService.crear_lote_celifrut(data.tipoFruta, total, _id),
+                InventariosService.crear_lote_celifrut(tipoFruta, total, _id),
                 RedisRepository.salidas_inventario_descartes(data, data.tipoFruta),
 
             ])
