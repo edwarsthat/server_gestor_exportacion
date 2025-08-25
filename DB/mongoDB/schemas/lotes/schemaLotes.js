@@ -229,7 +229,8 @@ export const defineLotes = async (conn, AuditLog) => {
       this.options.action !== "put_comercial_registroPrecios_proveedores_comentario" &&
       this.options.action !== "post_comercial_precios_add_precio" &&
       this.options.action !== "put_comercial_precios_proveedores_precioFijo" &&
-      this.options.action !== "put_comercial_precios_precioLotes"
+      this.options.action !== "put_calidad_informe_noPagarBalinLote" &&
+      this.options.action !== "put_comercial_precios_precioLotes" 
     ) {
 
       update.aprobacionProduccion = false
