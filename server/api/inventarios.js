@@ -22,6 +22,7 @@ import { registrarPasoLog } from "./helper/logs.js";
 import { dataRepository } from "./data.js";
 import { TiposFruta } from "../store/TipoFruta.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
+import mongoose from "mongoose";
 
 
 export class InventariosRepository {
@@ -986,6 +987,7 @@ export class InventariosRepository {
             const usuariosIds = recordLotes.map(lote => lote.user);
 
             const arrUsers = [...new Set(usuariosIds)];
+            const arrUsersFiltrado = arrUsers.filter(user => mongoose.isObjectIdOrHexString(user));
             const arrLotes = [...new Set(lotesIds)];
 
             const [lotes, usuarios] = await Promise.all([
@@ -995,7 +997,7 @@ export class InventariosRepository {
                     select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1, GGN: 1 }
                 }),
                 UsuariosRepository.get_users({
-                    ids:  arrUsers,
+                    ids:  arrUsersFiltrado,
                     limit: "all"
                 })
             ]);
