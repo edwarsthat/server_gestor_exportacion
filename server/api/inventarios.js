@@ -271,7 +271,7 @@ export class InventariosRepository {
             InventariosValidations.put_inventarios_frutaDescarte_reprocesarFruta().parse(data)
 
             const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(data)
-            const tipoFruta = await TiposFruta.get_tiposFruta({ tipoFruta: data.tipoFruta });
+            const tipoFruta = await TiposFruta.get_tiposFruta({tipoFruta:data.tipoFruta});
 
             //se modifica el inventario
             const [, , loteCreado] = await Promise.all([
@@ -997,7 +997,7 @@ export class InventariosRepository {
                     select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1, GGN: 1 }
                 }),
                 UsuariosRepository.get_users({
-                    ids: arrUsersFiltrado,
+                    ids:  arrUsersFiltrado,
                     limit: "all"
                 })
             ]);
@@ -1007,23 +1007,13 @@ export class InventariosRepository {
                 const user = usuarios.find(user => user._id.toString() === item.user.toString());
 
                 if (lote) {
-                    if (user) {
-                        if (Object.prototype.hasOwnProperty.call(item.documento, "$inc")) {
-                            item.documento = { ...lote, kilosVaciados: item.documento.$inc.kilosVaciados, }
-                            return { ...item._doc, user: user.nombre + " " + user.apellido }
-                        }
-                        else {
-                            return { ...item._doc, user: user.nombre + " " + user.apellido }
-                        }
-                    } else {
-                        if (Object.prototype.hasOwnProperty.call(item.documento, "$inc")) {
-                            item.documento = { ...lote, kilosVaciados: item.documento.$inc.kilosVaciados, }
-                            return { ...item._doc, user: user.nombre + " " + user.apellido }
-                        } else {
-                            return { ...item._doc }
-                        }
+                    if (Object.prototype.hasOwnProperty.call(item.documento, "$inc")) {
+                        item.documento = { ...lote, kilosVaciados: item.documento.$inc.kilosVaciados, }
+                        return { ...item._doc, user: user?.nombre || "" + " " + user?.apellido || "" }
                     }
-
+                    else {
+                        return { ...item._doc, user: user?.nombre || "" + " " + user?.apellido || "" }
+                    }
                 }
                 return null
             }).filter(item => item !== null);
