@@ -1373,7 +1373,7 @@ export class InventariosRepository {
             if (tipoFecha === 'fecha_creacion') {
                 sort = { [`${tipoFecha}`]: -1 };
             }
-            if (tipoFruta2) query.tipoFruta = tipoFruta2;
+            if (Object.keys(tipoFruta2).length > 0) query.tipoFruta = tipoFruta2;
             if (proveedor) query.predio = proveedor;
             if (GGN) query.GGN = GGN;
             if (EF) query.enf = EF;
