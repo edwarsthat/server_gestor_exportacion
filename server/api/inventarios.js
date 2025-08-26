@@ -1368,14 +1368,16 @@ export class InventariosRepository {
                 fechaInicio,
                 proveedor,
                 tipoFecha,
-                tipoFruta2
+                tipoFruta2 = {}
             } = data;
+
+            console.log(tipoFruta2)
             let query = {}
             let sort
             if (tipoFecha === 'fecha_creacion') {
                 sort = { [`${tipoFecha}`]: -1 };
             }
-            if (Object.keys(tipoFruta2).length > 0) query.tipoFruta = tipoFruta2;
+            if (tipoFruta2 && Object.keys(tipoFruta2).length > 0) query.tipoFruta = tipoFruta2;
             if (proveedor) query.predio = proveedor;
             if (GGN) query.GGN = GGN;
             if (EF) query.enf = EF;
