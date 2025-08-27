@@ -358,10 +358,19 @@ export class CalidadRepository {
 
             const query = { flag_balin_free: !lote[0].flag_balin_free };
 
-            await LotesRepository.modificar_lote_proceso(
-                _id, query, action, user
+            await LotesRepository.actualizar_lote(
+                { _id: lote[0]._id },
+                query,
+                {
+                    new: true,
+                    user: user._id,
+                    action: action
+                }
             )
+
+
         } catch (err) {
+            console.log(err)
             if (err.status === 523 || err.status === 522) {
                 throw err
             }
