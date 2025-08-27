@@ -634,7 +634,7 @@ export class CalidadRepository {
                         { cargo: "66c513dcb7dca1eebff39a96" }
                     ]
                 },
-                getAll: true,
+                limit: "all"
             });
             return usuarios
         } catch (err) {
