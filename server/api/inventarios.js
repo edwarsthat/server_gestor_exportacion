@@ -909,7 +909,6 @@ export class InventariosRepository {
             if (!loteAnterior === "No vaceo") {
                 await LotesRepository.actualizar_lote({ _id: loteAnterior._id }, { finalizado: true })
                 await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Se actualizó el lote ${loteAnterior._id} a finalizado: true`);
-
             }
 
             //para lista de empaque

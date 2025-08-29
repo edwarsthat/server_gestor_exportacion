@@ -66,7 +66,7 @@ export class ConstantesDelSistema {
         try {
             const filter = _id ? { _id } : {}; // Si hay _id, filtra; si no, tráeme todo.
             const registros = await db.TipoFrutas.find(filter).exec();
-
+  
             if (logId) {
                 await registrarPasoLog(logId, "ConstantesDelSistema.get_constantes_sistema_tipo_frutas2", "Completado");
             }
