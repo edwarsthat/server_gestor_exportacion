@@ -187,12 +187,13 @@ export class VariablesDelSistema {
    */
     try {
       cliente = await getRedisClient();
+
       await cliente.hSet("predioProcesandoDescartes", {
         _id: lote._id.toString(),
         enf: lote.enf,
         predio: lote.predio._id.toString(),
         nombrePredio: lote.predio.PREDIO,
-        tipoFruta: lote.tipoFruta._id.toString(),
+        tipoFruta: lote.tipoFruta.toString(),
       });
 
     } catch (err) {

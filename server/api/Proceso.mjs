@@ -895,7 +895,7 @@ export class ProcesoRepository {
             }
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
         }
-    } 0
+    } 
     static async put_proceso_aplicaciones_listaEmpaque_liberarPallet(req) {
         const { user } = req;
         const { _id, pallet, item, action } = req.data;
