@@ -785,13 +785,13 @@ export class CalidadRepository {
     static async get_calidad_formulario_volanteCalidad(req) {
         try {
             const { filtro } = req.data
-            const { tipoFruta, fechaInicio, fechaFin, operario } = filtro;
+            const { tipoFruta2, fechaInicio, fechaFin, operario } = filtro;
             let query = {}
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha")
 
-            if (tipoFruta !== '') {
-                query.tipoFruta = tipoFruta
+            if (tipoFruta2 && Object.keys(tipoFruta2).length > 0) {
+                query.tipoFruta = tipoFruta2
             }
 
             if (operario !== '') {

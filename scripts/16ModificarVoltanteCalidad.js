@@ -1,27 +1,25 @@
-// scripts/11ModificarTipoDefFrutaLotes.mjs
-import { connectProcesoDB, connectCatalogosDB } from "../DB/mongoDB/config/config.js";
+import { connectCatalogosDB, connectSistemaDB } from "../DB/mongoDB/config/config.js";
+import { defineVolanteCalidad } from "../DB/mongoDB/schemas/calidad/schemaVolanteCalidad.js";
 import { defineTipoFrutas } from "../DB/mongoDB/schemas/catalogs/schemaTipoFruta.js";
-import { defineLotes } from "../DB/mongoDB/schemas/lotes/schemaLotes.js";
 
-async function modificar_tipoFruta() {
-    const db = await connectProcesoDB("mongodb://localhost:27017/proceso");
+async function modificar_indicadores_tipoFrutaCalidad() {
+    const db = await connectSistemaDB("mongodb://localhost:27017/sistema");
     const dbC = await connectCatalogosDB("mongodb://localhost:27017/catalogos");
 
     try {
-        const LoteDB = await defineLotes(db);
+        const volanteDB = await defineVolanteCalidad(db);
         const TipoFrutaDB = await defineTipoFrutas(dbC);
 
         // 1) Trae catálogo y crea un mapa: nombre -> ObjectId
         const tipoFrutas = await TipoFrutaDB.find({}, { _id: 1, tipoFruta: 1 }).lean().exec();
         const mapNombreAId = new Map(tipoFrutas.map(tf => [String(tf.tipoFruta).trim(), tf._id]));
 
-        // 2) Trae SOLO lo necesario de lotes
-        const lotes = await LoteDB.find({}, { _id: 1, tipoFruta: 1 }).lean().exec();
+        const volantes = await volanteDB.find({ tipoFruta: { $in: ["Limon", "Naranja"] } }, { _id: 1, tipoFruta: 1 }).lean().exec();
 
         // 3) Arma operaciones en bloque
         const ops = [];
-        for (const lote of lotes) {
-            const actual = lote.tipoFruta;
+        for (const volante of volantes) {
+            const actual = volante.tipoFruta;
             // Si ya es ObjectId, sáltalo (evita re-escribir lo mismo)
             const esObjectId = actual && typeof actual === "object" && actual._bsontype === "ObjectID";
 
@@ -30,7 +28,7 @@ async function modificar_tipoFruta() {
                 if (idNuevo) {
                     ops.push({
                         updateOne: {
-                            filter: { _id: lote._id },
+                            filter: { _id: volante._id },
                             update: { $set: { tipoFruta: idNuevo } }
                         }
                     });
@@ -44,20 +42,18 @@ async function modificar_tipoFruta() {
         }
 
         // 4) Ejecuta el bulk
-        const res = await LoteDB.bulkWrite(ops, { ordered: false });
+        const res = await volanteDB.bulkWrite(ops, { ordered: false });
         console.log(`Actualización completada ✓
 - matched:   ${res.matchedCount ?? res.result?.nMatched ?? 0}
 - modified:  ${res.modifiedCount ?? res.result?.nModified ?? 0}
 - upserts:   ${res.upsertedCount ?? 0}
 - ops totales: ${ops.length}`);
-
     } catch (err) {
         console.error("Error en la migración de tipoFruta → ObjectId:", err);
         process.exitCode = 1;
     } finally {
         await db.close().catch(() => { });
-        await dbC.close().catch(() => { });
     }
 }
 
-modificar_tipoFruta();
+modificar_indicadores_tipoFrutaCalidad();
