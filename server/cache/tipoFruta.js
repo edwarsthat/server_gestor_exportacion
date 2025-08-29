@@ -21,11 +21,13 @@ export class tipoFrutaCache {
                         tipoFruta: item.tipoFruta,
                         _id: item._id,
                         codNacional: item.codNacional,
-                        codExportacion: item.codExportacion
+                        codExportacion: item.codExportacion,
+                        valorPromedio: item.valorPromedio
                     };
                 });
 
                 console.log(`[CACHE] TipoFruta cache cargado exitosamente en intento ${intento}`);
+                console.log(tipoFrutaMap);
                 return;
 
             } catch (err) {

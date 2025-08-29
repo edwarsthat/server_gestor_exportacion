@@ -223,6 +223,7 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteEncerado", "Completado");
 
             const { _id, data, action } = req.data;
+            console.log(data)
 
             const keys = Object.keys(data);
             const query = { $inc: {} };
