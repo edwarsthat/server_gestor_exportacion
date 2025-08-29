@@ -990,7 +990,7 @@ export class InventariosService {
             query.tipoFruta = tipoFruta2._id;
         }
 
-        const lotes = await LotesRepository.getLotes({
+        const lotes = await LotesRepository.getLotes2({
             query: query,
             limit: 'all',
             sort: { fecha_estimada_llegada: -1 }
