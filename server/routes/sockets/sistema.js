@@ -42,6 +42,10 @@ export const apiSocketSistema = {
         const response = await SistemaRepository.put_sistema_habilitarInstancias_habilitarPredio(data);
         return successResponseRoutes(response)
     },
+    put_sistema_reiniciar_orden_vaceo: async () => {
+        const response = await SistemaRepository.put_sistema_reiniciar_orden_vaceo();
+        return successResponseRoutes(response)
+    },
 
     //#region modificar seriales
     get_sistema_parametros_configuracionSeriales_EF1: async () => {

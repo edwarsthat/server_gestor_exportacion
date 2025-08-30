@@ -220,6 +220,16 @@ export class SistemaRepository {
             throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async put_sistema_reiniciar_orden_vaceo() {
+        try {
+            await VariablesDelSistema.put_inventario_inventarios_orden_vaceo_modificar([])
+        } catch (err) {
+            if (err.status === 531) {
+                throw err
+            }
+            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
     //#endregion
     //#region modificar seriales
     static async get_sistema_parametros_configuracionSeriales_EF1() {
