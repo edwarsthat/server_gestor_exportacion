@@ -193,7 +193,7 @@ export class VariablesDelSistema {
         enf: lote.enf,
         predio: lote.predio._id.toString(),
         nombrePredio: lote.predio.PREDIO,
-        tipoFruta: lote.tipoFruta._id.toString(),
+        tipoFruta: lote?.tipoFruta?._id?.toString() ?? lote.tipoFruta.toString(),
       });
 
     } catch (err) {
