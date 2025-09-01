@@ -259,27 +259,15 @@ export class InventariosService {
     }
     static async modificarLote_regresoHistorialFrutaIngreso(_id, queryLote, user, action) {
 
-        const lote = await LotesRepository.getLotes({ ids: [_id] })
-
-        const newLote = await LotesRepository.modificar_lote_proceso(
-            _id,
+        const lote = await LotesRepository.actualizar_lote(
+            { _id: _id },
             queryLote,
-            "Modificacion ingreso fruta",
-            user.user
-        )
-
-        await RecordModificacionesRepository.post_record_contenedor_modification(
-            action,
-            user,
             {
-                modelo: "Lote",
-                documentoId: lote[0]._id,
-                descripcion: `Modificacion de ingreso de lote`,
-            },
-            lote,
-            newLote,
-            { _id, action, queryLote }
-        );
+                new: true,
+                user: user,
+                action: action
+            }
+        )
 
         return lote
     }

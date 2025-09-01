@@ -1075,7 +1075,7 @@ export class InventariosRepository {
                 acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
             })
             if (type === 'loteEF1') {
-                const { action, data, _idLote, _idRecord, __v } = req.data
+                const { action, data, _id} = req.data
 
                 InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar(req.data)
                 await registrarPasoLog(log._id, "InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar", "Completado");
@@ -1088,14 +1088,10 @@ export class InventariosRepository {
                 }
 
                 await InventariosService.modificarLote_regresoHistorialFrutaIngreso(
-                    _idLote, queryLote, user, action
+                    _id, queryLote, user, action
                 )
                 await registrarPasoLog(log._id, "InventariosService.modificarLote_regresoHistorialFrutaIngreso", "Completado");
 
-                await InventariosService.modificarRecordLote_regresoHistorialFrutaIngreso(
-                    _idRecord, __v, data
-                )
-                await registrarPasoLog(log._id, "InventariosService.modificarRecordLote_regresoHistorialFrutaIngreso", "Completado");
 
             } else if (type === 'loteEF8') {
 

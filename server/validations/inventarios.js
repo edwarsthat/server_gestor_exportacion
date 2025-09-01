@@ -208,28 +208,24 @@ export class InventariosValidations {
     }
     static put_inventarios_historiales_ingresoFruta_modificar() {
         return z.object({
-            _idLote: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
-            _idRecord: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
-            data: z.object({
-                enf: z.string().min(1, "El codigo del lote no puede ir vacio").optional(),
-                predio: z.string().min(1, "Debe seleccionar un predio").optional(),
-                canastillas: z.number()
-                    .lte(0, "Debe ingresar un número mayor o igual a cero")
-                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" }).optional(),
-                kilos: z.number()
-                    .lte(0, "Debe ingresar un número mayor o igual a cero")
-                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" }).optional(),
+            enf: z.string().min(1, "El codigo del lote no puede ir vacio").optional(),
+            predio: z.string().min(1, "Debe seleccionar un predio").optional(),
+            canastillas: z.number()
+                .lte(0, "Debe ingresar un número mayor o igual a cero")
+                .refine(val => !isNaN(val), { message: "Debe ser un número válido" }).optional(),
+            kilos: z.number()
+                .lte(0, "Debe ingresar un número mayor o igual a cero")
+                .refine(val => !isNaN(val), { message: "Debe ser un número válido" }).optional(),
 
-                tipoFruta: z.string().min(1, "Se debe seleccionar un tipo de fruta").optional(),
-                observaciones: z.string().optional().optional(),
-                placa: z.string().min(1, "La placa es obligatoria").optional(),
-                fecha_ingreso_inventario: z.string()
-                    .min(1, "La fecha estimada de llegada es obligatoria")
-                    .refine(val => !isNaN(Date.parse(val)), {
-                        message: "La fecha no es válida",
-                    }).optional(),
-                GGN: z.string().min(1, "El GGN es obligatorio").transform(val => val === "true").optional(),
-            })
+            tipoFruta: z.string().min(1, "Se debe seleccionar un tipo de fruta").optional(),
+            observaciones: z.string().optional().optional(),
+            placa: z.string().min(1, "La placa es obligatoria").optional(),
+            fecha_ingreso_inventario: z.string()
+                .min(1, "La fecha estimada de llegada es obligatoria")
+                .refine(val => !isNaN(Date.parse(val)), {
+                    message: "La fecha no es válida",
+                }).optional(),
+            GGN: z.string().min(1, "El GGN es obligatorio").transform(val => val === "true").optional(),
         })
     }
     static put_inventarios_historiales_ingresoFruta_modificar_EF8() {
