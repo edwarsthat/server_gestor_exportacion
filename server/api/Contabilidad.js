@@ -19,6 +19,7 @@ export class ContabilidadRepository {
                     enf: 1,
                     tipoFruta: 1,
                     calidad: 1,
+                    canastillas: 1,
                     __v: 1,
                     deshidratacion: 1,
                     directoNacional: 1,
@@ -39,9 +40,7 @@ export class ContabilidadRepository {
                     fecha_creacion: 1,
                     fecha_estimada_llegada: 1,
                     exportacion:1,
-                    calidad1: 1,
-                    calidad15: 1,
-                    calidad2: 1,
+                    numeroRemision:1,
 
                     aprobacionProduccion: 1,
                     exportacionDetallada: 1,

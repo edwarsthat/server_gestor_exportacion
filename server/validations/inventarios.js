@@ -86,7 +86,7 @@ export class InventariosValidations {
                 .refine(val => !isNaN(Date.parse(val)), {
                     message: "La fecha estimada de llegada no es válida"
                 }),
-
+            numeroRemision: z.string().min(1, "El número de remisión es obligatorio"),
             kilos: z.coerce.number()
                 .gt(0, "Los kilos no pueden ser cero")
                 .transform(val => Number(val)),
