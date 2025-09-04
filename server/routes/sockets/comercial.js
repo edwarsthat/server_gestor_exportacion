@@ -98,6 +98,10 @@ export const apiSocketComercial = {
     get_comercial_precios_registros_precios_proveedores_numeroElementos: async (data) => {
         const response = await ComercialRepository.get_comercial_precios_registros_precios_proveedores_numeroElementos(data)
         return successResponseRoutes(response)
-    }
+    },
     //#endregion
+    get_comercial_costo_contenedores: async (data) => {
+        const response = await ComercialRepository.get_comercial_costo_contenedores(data)
+        return successResponseRoutes(response)
+    }
 }

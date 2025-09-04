@@ -902,7 +902,6 @@ export class ComercialRepository {
     }
     static async get_comercial_precios_registros_precios_proveedores_numeroElementos(req) {
         try {
-            console.log(req)
 
             const { filtro } = req.data || {}
 
@@ -934,6 +933,55 @@ export class ComercialRepository {
             throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async get_comercial_costo_contenedores(req) {
+        try {
+            const { data } = req;
+            const { contenedores, fechaInicio, fechaFin, clientes, tipoFruta } = data
+            let query = {
+                "infoContenedor.cerrado": true
+            }
+
+            //por numero de contenedores
+            if (contenedores.length > 0) {
+                query.numeroContenedor = { $in: contenedores }
+            }
+            //por clientes
+            if (clientes.length > 0) {
+                query["infoContenedor.clienteInfo"] = { $in: clientes }
+            }
+            //por tipo de fruta
+            if (tipoFruta !== '') {
+                query["infoContenedor.tipoFruta"] = tipoFruta
+            }
+
+            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'infoContenedor.fechaCreacion')
+
+            const cont = await ContenedoresRepository.getContenedores({
+                query: query,
+                select: {
+                    numeroContenedor: 1,
+                    infoContenedor: 1,
+                    pallets: 1
+                },
+                limit: 'all'
+            });
+            const { dataPallets, lotes } = await ComercialService.get_lotes_de_contenedores(cont);
+            const dataPalletsLength = Object.keys(dataPallets).length
+            if (dataPalletsLength === 1) {
+                return await ComercialService.poner_precio_lotes(lotes, dataPallets);
+            } else if (dataPalletsLength > 1) {
+                return await ComercialService.poner_precio_contenedores(lotes, dataPallets);
+            }
+
+            return false
+        } catch (error) {
+            if (error.status === 522) {
+                throw error
+            }
+            throw new ComercialLogicError(480, `Error ${error.type}: ${error.message}`)
+        }
+    }
+
 
     static async obtener_clientes_historial_contenedores() {
         try {

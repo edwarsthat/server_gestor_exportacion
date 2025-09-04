@@ -182,11 +182,14 @@ export class ContenedoresRepository {
             if (ids.length > 0) {
                 contenedorQuery._id = { $in: ids };
             }
+
+            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
+
             const contenedores = await db.Contenedores.find(contenedorQuery)
                 .select(select)
                 .populate(populate)
                 .sort(sort)
-                .limit(limit)
+                .limit(limitToUse)
                 .skip(skip)
                 .exec();
 
