@@ -23,6 +23,7 @@ import { dataRepository } from "./data.js";
 import { TiposFruta } from "../store/TipoFruta.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import mongoose from "mongoose";
+import { ContenedoresService } from "../services/contenedores.js";
 
 
 export class InventariosRepository {
@@ -271,7 +272,7 @@ export class InventariosRepository {
             InventariosValidations.put_inventarios_frutaDescarte_reprocesarFruta().parse(data)
 
             const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(data)
-            const tipoFruta = await TiposFruta.get_tiposFruta({tipoFruta:data.tipoFruta});
+            const tipoFruta = await TiposFruta.get_tiposFruta({ tipoFruta: data.tipoFruta });
 
             //se modifica el inventario
             const [, , loteCreado] = await Promise.all([
@@ -996,7 +997,7 @@ export class InventariosRepository {
                     select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1, GGN: 1 }
                 }),
                 UsuariosRepository.get_users({
-                    ids:  arrUsersFiltrado,
+                    ids: arrUsersFiltrado,
                     limit: "all"
                 })
             ]);
@@ -1075,7 +1076,7 @@ export class InventariosRepository {
                 acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
             })
             if (type === 'loteEF1') {
-                const { action, data, _id} = req.data
+                const { action, data, _id } = req.data
 
                 InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar(req.data)
                 await registrarPasoLog(log._id, "InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar", "Completado");
@@ -1192,6 +1193,7 @@ export class InventariosRepository {
             });
             return historial;
         } catch (err) {
+            
             if (err.status === 523) {
                 throw err
             }
@@ -1252,8 +1254,12 @@ export class InventariosRepository {
             const cont = await ContenedoresRepository.getContenedores({
                 query: query
             });
-            return cont
+
+            const resumenContenedores = ContenedoresService.obtenerResumen(cont)
+
+            return { ...resumenContenedores, contenedores: cont }
         } catch (err) {
+            console.log(err)
             if (err.status === 522) {
                 throw err
             }
