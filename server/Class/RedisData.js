@@ -42,7 +42,7 @@ export class RedisRepository {
 
             await Promise.all(tareas);
 
-            if(logData) {
+            if (logData) {
                 await registrarPasoLog(logData.logId, "RedisRepository.put_inventarioDescarte", "Completado", `Tipo de descarte: ${tipoDescarte}, Tipo de fruta: ${tipoFruta}`);
             }
 
@@ -70,23 +70,34 @@ export class RedisRepository {
      *   'Naranja'
      * );
      */
-    static async put_reprocesoDescarte(data, tipoDescarte, tipoFruta, multi = null) {
-        const key = `inventarioDescarte:${tipoFruta}:${tipoDescarte}`;
+    static async put_reprocesoDescarte(data, tipoDescarte, tipoFruta, multi = null, logContext = null) {
         let cliente;
         try {
+
+            const key = `inventarioDescarte:${tipoFruta}:${tipoDescarte}`;
+
             cliente = await getRedisClient();
             if (multi) {
                 // Solo agregas los comandos a la transacción, NO ejecutas nada aquí
                 for (const [campo, valor] of Object.entries(data)) {
-                    multi.hIncrBy(key, campo, -valor);
+                    const num = isNaN(parseInt(valor, 10)) ? 0 : parseInt(valor, 10);
+                    multi.hIncrBy(key, campo, -num);
                 }
             } else {
                 // Ejecutas los comandos inmediatamente
                 const tareas = Object.entries(data)
-                    .map(([campo, valor]) => cliente.hIncrBy(key, campo, -valor));
+                    .map(([campo, valor]) => {
+                        const num = isNaN(parseInt(valor, 10)) ? 0 : parseInt(valor, 10);
+                        cliente.hIncrBy(key, campo, -num);
+                    });
                 await Promise.all(tareas);
             }
+
+            if (logContext) {
+                await registrarPasoLog(logContext.logId, "RedisData.put_reprocesoDescarte", "Completado");
+            }
         } catch (err) {
+            await registrarPasoLog(logContext.logId, "RedisData.put_reprocesoDescarte", "Error", `Error ingresando descarte ${err}`);
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
     }
@@ -433,7 +444,7 @@ export class RedisRepository {
             throw new ConnectRedisError(502, `Error borrando descarte ${err}`);
         }
     }
-    static async salidas_inventario_descartes(data, tipoFruta) {
+    static async salidas_inventario_descartes(data, tipoFruta, logContext = null) {
         let cliente
         try {
             cliente = await getRedisClient();
@@ -442,13 +453,19 @@ export class RedisRepository {
 
             const tareas = Object.entries(data)
                 .map(([key, valor]) => {
+                    const num = isNaN(parseInt(valor, 10)) ? 0 : parseInt(valor, 10);
                     const [tipoDescarte, campo] = key.split(":");
                     if (inventario.includes(campo)) {
-                        cliente.hIncrBy(`salidaInventarioDescarte:${tipoFruta}:${tipoDescarte}:`, campo, valor)
+                        cliente.hIncrBy(`salidaInventarioDescarte:${tipoFruta}:${tipoDescarte}:`, campo, num)
                     }
                 });
 
             await Promise.all(tareas);
+
+            if (logContext) {
+                await registrarPasoLog(logContext.logId, "RedisData.salidas_inventario_descartes", "Completado");
+            }
+
 
         } catch (err) {
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)

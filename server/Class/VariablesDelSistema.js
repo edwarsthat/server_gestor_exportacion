@@ -546,13 +546,11 @@ export class VariablesDelSistema {
      */
   static async reprocesar_predio_celifrut(lote, kilosTotal) {
     try {
-
       const cliente = await getRedisClient();
       const kilosReprocesadorExist = await cliente.exists("kilosReprocesadorHoy");
       if (kilosReprocesadorExist !== 1) {
         await cliente.set("kilosReprocesadorHoy", 0);
       }
-
       let kilosReprocesadosHoy = await cliente.get("kilosReprocesadorHoy");
 
       if (isNaN(kilosReprocesadosHoy)) {
@@ -564,13 +562,12 @@ export class VariablesDelSistema {
       await cliente.set("descarteLavado", 0);
       await cliente.set("descarteEncerado", 0);
       await cliente.hSet("predioProcesandoDescartes", {
-        _id: lote._id.toString(),
-        enf: lote.enf,
-        predio: "Celifrut",
+        _id: String(lote._id),
+        enf: String(lote.enf ?? ''),
+        predio: String(lote.predio),     // aquí ya es un ObjectId plano → conviértelo directo
         nombrePredio: "Celifrut",
-        tipoFruta: lote.tipoFruta,
+        tipoFruta: String(lote.tipoFruta), // igual, puede ser ObjectId
       });
-
 
     } catch (err) {
       throw new ProcessError(518, `Error modificando las variables del sistema: ${err.name}`)

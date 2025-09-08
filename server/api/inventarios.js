@@ -265,27 +265,41 @@ export class InventariosRepository {
      * }
      */
     static async put_inventarios_frutaDescarte_reprocesarFruta(req) {
+        let log
+        const { user } = req;
+
         try {
+            log = await LogsRepository.create({
+                user: user,
+                action: "put_inventarios_frutaDescarte_reprocesarFruta",
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
+            const logContext = { logId: log._id, user, action: "put_inventarios_frutaDescarte_reprocesarFruta" };
+
             const { data } = req.data
             const { _id } = req.user
 
             InventariosValidations.put_inventarios_frutaDescarte_reprocesarFruta().parse(data)
+            await registrarPasoLog(log._id, "Validación de datos completada", "Completado");
 
             const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(data)
-            const tipoFruta = await TiposFruta.get_tiposFruta({ tipoFruta: data.tipoFruta });
+            await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
+
+            const tipoFruta = await TiposFruta.get_tiposFruta({ query: { tipoFruta: data.tipoFruta } });
+            await registrarPasoLog(log._id, "TiposFruta.get_tiposFruta", "Completado");
 
             //se modifica el inventario
-            const [, , loteCreado] = await Promise.all([
-                RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', data.tipoFruta),
-                RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', data.tipoFruta),
-                InventariosService.crear_lote_celifrut(tipoFruta[0]._id, total, _id),
-                RedisRepository.salidas_inventario_descartes(data, data.tipoFruta),
+            const [loteCreado] = await Promise.all([
+                InventariosService.crear_lote_celifrut(tipoFruta._id, total, _id, logContext),
+                RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', data.tipoFruta, null, logContext),
+                RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', data.tipoFruta, null, logContext),
+                RedisRepository.salidas_inventario_descartes(data, data.tipoFruta, logContext),
 
             ])
-
-
+            console.log("Lote creado para reproceso de descartes:", loteCreado);
             // Ahora loteCreado tiene el lote REAL
             await VariablesDelSistema.reprocesar_predio_celifrut(loteCreado, total)
+            await registrarPasoLog(log._id, "VariablesDelSistema.reprocesar_predio_celifrut", "Completado");
 
             procesoEventEmitter.emit("server_event", {
                 action: "descarte_change",
@@ -295,10 +309,15 @@ export class InventariosRepository {
             return loteCreado._id
 
         } catch (err) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
+
             if (err.status === 518 || err.status === 413) {
                 throw err
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     static async put_inventarios_frutaDescarte_reprocesarCelifrut(req) {
@@ -319,7 +338,7 @@ export class InventariosRepository {
             }
 
 
-            await LotesRepository.modificar_lote(newLote._id.toString(), query, "vaciarLote", user, newLote.__v);
+            await LotesRepository.modificar_lote(newLote._id.toString(), query, { user: user, action: "vaciarLote" });
             await VariablesDelSistema.incrementar_codigo_celifrut();
 
 
@@ -352,6 +371,7 @@ export class InventariosRepository {
 
             }
         } catch (err) {
+            console.log(err)
             if (
                 err.status === 518 ||
                 err.status === 413 ||
@@ -874,7 +894,7 @@ export class InventariosRepository {
     static async put_inventarios_ordenVaceo_vacear(req) {
         let log
         const { user, data } = req;
-        const { _id, kilosVaciados, inventario, __v } = data;
+        const { _id, kilosVaciados, inventario } = data;
         try {
             log = await LogsRepository.create({
                 user: user._id,
@@ -888,12 +908,11 @@ export class InventariosRepository {
             const query = {
                 $inc: {
                     kilosVaciados: kilosVaciados,
-                    __v: 1,
                 },
                 finalizado: false,
                 fechaProceso: new Date()
             }
-            await LotesRepository.modificar_lote(_id, query, "vaciarLote", user._id, __v);
+            await LotesRepository.modificar_lote(_id, query, { user: user, action: "vaciarLote" });
             await registrarPasoLog(log._id, "LotesRepository.modificar_lote", "Completado", `Se modificó el lote con ID ${_id} para vaciarlo, kilosVaciados: ${kilosVaciados}`);
 
             const lote = await LotesRepository.getLotes2({ ids: [_id] });
@@ -1193,7 +1212,7 @@ export class InventariosRepository {
             });
             return historial;
         } catch (err) {
-            
+
             if (err.status === 523) {
                 throw err
             }
@@ -1255,9 +1274,13 @@ export class InventariosRepository {
                 query: query
             });
 
-            const resumenContenedores = ContenedoresService.obtenerResumen(cont)
+            const [resumenContenedores, resumenPredios, numerosContenedores] = await Promise.all([
+                ContenedoresService.obtenerResumen(cont),
+                ContenedoresService.obtenerResumenPredios(cont),
+                cont.map(contenedor => contenedor.numeroContenedor)
+            ])
 
-            return { ...resumenContenedores, contenedores: cont }
+            return { ...resumenContenedores, resumenPredios: resumenPredios, contenedores: numerosContenedores }
         } catch (err) {
             console.log(err)
             if (err.status === 522) {
@@ -1568,29 +1591,30 @@ export class InventariosRepository {
     }
     static async put_inventarios_historialDirectoNacional_modificarHistorial(data) {
         try {
-            const { _id, directoNacional, inventario, __v, action, historialLote } = data.data;
+            const { _id, directoNacional, inventario, action, historialLote } = data.data;
             const { _idRecord, kilosHistorial, __vHistorial } = historialLote;
             const user = data.user.user;
             const queryLote = {
                 $inc: {
                     directoNacional: directoNacional,
-                    __v: 1
                 }
             }
             const queryRecord = {
                 $inc: {
                     "documento.$inc.directoNacional": kilosHistorial,
-                    __v: 1
                 }
             }
-            //se modifica el lote y el inventario
-            await VariablesDelSistema.modificarInventario(_id, -inventario);
-            const lote = await LotesRepository.modificar_lote(_id, queryLote, action, user, __v);
-            await LotesRepository.deshidratacion(lote);
 
+            await Promise.all([
+                VariablesDelSistema.modificarInventario(_id, -inventario),
+                LotesRepository.actualizar_lote(
+                    { _id: _id },
+                    queryLote,
+                    { user: user._id, action: action }
+                ),
+                RecordLotesRepository.modificarRecord(_idRecord, queryRecord, __vHistorial)
+            ])
 
-            //se modifica el registro
-            await RecordLotesRepository.modificarRecord(_idRecord, queryRecord, __vHistorial);
             return { status: 200, message: 'Ok' }
         } catch (err) {
             if (
