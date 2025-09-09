@@ -76,7 +76,12 @@ export const apiSocketProceso = {
     put_proceso_add_pallet_listaempaque: async (data) => {
         await ProcesoRepository.put_proceso_add_pallet_listaempaque(data)
         return successResponseRoutes()
-    }
-
+    },
     //#endregion
+    //#region registros trazabilidad
+    get_proceso_registros_trazabilidad_ef1: async (data) => {
+        await ProcesoRepository.get_proceso_registros_trazabilidad_ef1(data)
+        return successResponseRoutes()
+    }
+    // #endregion
 }
