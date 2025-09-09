@@ -225,6 +225,7 @@ const defineSchemasProceso = async (sysConn) => {
         // 1. Primero definimos el esquema de auditoría ya que otros lo necesitan
         console.log("⚡ Definiendo AuditLog...");
         const AuditLog = await defineAuditLogs(sysConn)
+        db.AuditLog = AuditLog;
         const AuditLoteEF8 = await defineAuditLogsLoteEF8(sysConn);
         console.log("✅ AuditLog definido");
 

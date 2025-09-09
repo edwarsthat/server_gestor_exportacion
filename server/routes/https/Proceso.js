@@ -126,3 +126,19 @@ routerProceso2.put("/put_proceso_aplicaciones_descarteEncerado", async (req, res
         res.json({ status: err.status, message: err.message })
     }
 })
+
+routerProceso2.get("/get_proceso_registros_trazabilidad_ef1", async (req, res) => {
+    try {
+        //autentificacion
+        // const token = req.headers['authorization'];
+        // const user = await UserRepository.authenticateToken(token);
+        // await UserRepository.autentificacionPermisosHttps(user.cargo, req.body.action)
+        const reqBody = req.body
+        const response = await ProcesoRepository.get_proceso_registros_trazabilidad_ef1(reqBody)
+
+        res.send({ status: 200, message: 'Ok', data: response })
+    } catch (err) {
+        console.log(`Code ${err.status}: ${err.message}`)
+        res.json({ status: err.status, message: err.message })
+    }
+})

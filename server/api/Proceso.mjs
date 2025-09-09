@@ -1427,6 +1427,32 @@ export class ProcesoRepository {
 
     //#endregion
 
+    //#region registros trazabilidad
+    static async get_proceso_registros_trazabilidad_ef1(req) {
+        try {
+            const { data } = req
+            const lote = await LotesRepository.getLotes({ query: data })
+            if(lote.length === 0){
+                throw new ProcessError(400, "No se encontro el lote")
+            }
+            const query = {
+                documentId: lote[0]._id
+            }
+            const registros = await RecordLotesRepository.getAuditLogsEf1({ query: query })
+            return registros
+        } catch (error) {
+            if (
+                error.status === 610 ||
+                error.status === 523 ||
+                error.status === 522
+            ) {
+                throw error
+            }
+            throw new ProcessError(470, `Error ${error.type}: ${error.message}`)
+        }
+    }
+    // #endregion
+
     // #region PUT
     static async lote_recepcion_pendiente(req) {
         const { user, data } = req

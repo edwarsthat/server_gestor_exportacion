@@ -119,4 +119,39 @@ export class RecordLotesRepository {
         if (bussyIds.has(id)) throw new ItemBussyError(413, "Elemento no disponible por el momento");
         bussyIds.add(id)
     }
+    static async getAuditLogsEf1(options = {}) {
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { createdAt: -1 },
+            limit = "all",
+            skip = 0,
+
+        } = options;
+        try {
+            let lotesQuery = { ...query };
+
+            if (ids.length > 0) {
+                lotesQuery._id = { $in: ids };
+            }
+
+            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
+
+
+            const lotes = await db.AuditLog.find(lotesQuery)
+                .select(select)
+                .sort(sort)
+                .limit(limitToUse)
+                .skip(skip)
+                .exec();
+
+
+
+            return lotes
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
+        }
+    }
 }
