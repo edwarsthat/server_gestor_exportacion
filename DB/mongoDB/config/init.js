@@ -252,7 +252,7 @@ const defineSchemasProceso = async (sysConn) => {
 
         // 4. Esquemas de descartes (dependen de clientes)
         console.log("⚡ Definiendo historialDespachoDescarte...");
-        db.historialDespachoDescarte = await defineHistorialDespachoDescarte(sysConn, AuditLog);
+        db.historialDespachoDescarte = await defineHistorialDespachoDescarte(sysConn);
         console.log("✅ historialDespachoDescarte definido");
 
         console.log("⚡ Definiendo historialDescarte...");
@@ -260,7 +260,7 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("✅ historialDescarte definido");
 
         console.log("⚡ Definiendo frutaDescompuesta...");
-        db.frutaDescompuesta = await defineFrutaDescompuesta(sysConn, AuditLog);
+        db.frutaDescompuesta = await defineFrutaDescompuesta(sysConn);
         console.log("✅ frutaDescompuesta definido");
 
         // 5. Esquemas independientes
@@ -286,7 +286,7 @@ const defineSchemasProceso = async (sysConn) => {
 
         // 6. Esquemas relacionados con contenedores (dependen de lotes)
         console.log("⚡ Definiendo Contenedores...");
-        db.Contenedores = await defineContenedores(sysConn, AuditLog);
+        db.Contenedores = await defineContenedores(sysConn);
         console.log("✅ Contenedores definido");
 
         console.log("⚡ Definiendo recordContenedores...");
