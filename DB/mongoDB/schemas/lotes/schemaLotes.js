@@ -229,7 +229,7 @@ export const defineLotes = async (conn, AuditLog) => {
       this.options.action !== "put_comercial_registroPrecios_proveedores_comentario" &&
       this.options.action !== "post_comercial_precios_add_precio" &&
       this.options.action !== "put_comercial_precios_proveedores_precioFijo" &&
-      this.options.action !== "put_calidad_informe_noPagarBalinLote" 
+      this.options.action !== "put_calidad_informe_noPagarBalinLote"
     ) {
 
       update.aprobacionProduccion = false
@@ -240,6 +240,7 @@ export const defineLotes = async (conn, AuditLog) => {
 
   dataSchema.post('findOneAndUpdate', async function (res) {
     try {
+      if (this.options?.skipAudit) return;
       if (this._oldValue && res) {
         // Solo los cambios, no el pergamino completo
         const cambios = diffObjects(this._oldValue, res.toObject());
@@ -248,9 +249,9 @@ export const defineLotes = async (conn, AuditLog) => {
             collection: 'Lote',
             documentId: res._id,
             operation: 'update',
-            user: this.options.user, // Pasar el usuario como opción
-            action: this.options.action, // Pasar la acción como opción
-            changes: cambios, // Aquí los cambios puntuales
+            user: this.options.user,
+            action: this.options.action,
+            changes: cambios,
             description: 'Actualización de lote'
           });
         }

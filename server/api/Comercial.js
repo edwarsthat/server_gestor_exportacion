@@ -622,8 +622,6 @@ export class ComercialRepository {
             ComercialValidationsRepository.val_post_comercial_precios_add_precio().parse(data);
             await registrarPasoLog(log._id, "ComercialValidationsRepository.val_post_comercial_precios_add_precio", "Completado");
 
-            console.log("Validaciones completadas", req.data);
-
             const exportacion = {};
             for (const key in data) {
                 if (key.startsWith("exportacion.")) {
@@ -703,7 +701,6 @@ export class ComercialRepository {
     }
     static async put_comercial_precios_precioLotes(req) {
         try {
-            console.log(req)
             const { data: datos, user } = req
             const { data, action } = datos
 
@@ -858,8 +855,6 @@ export class ComercialRepository {
     }
     static async get_comercial_precios_registros_precios_proveedores(req) {
         try {
-            console.log(req)
-
             const { page = 1, filtro } = req.data || {}
             const resultsPerPage = 50;
             const skip = (page - 1) * resultsPerPage;

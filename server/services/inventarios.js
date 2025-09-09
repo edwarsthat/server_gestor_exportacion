@@ -1,5 +1,6 @@
 import { InventariosLogicError } from "../../Error/logicLayerError.js";
 import { dataRepository } from "../api/data.js";
+import { registrarPasoLog } from "../api/helper/logs.js";
 import { obtenerEstadoDesdeAccionCanastillasInventario } from "../api/utils/diccionarios.js";
 import { colombiaToUTC } from "../api/utils/fechas.js";
 import { filtroFechaInicioFin } from "../api/utils/filtros.js";
@@ -314,27 +315,35 @@ export class InventariosService {
     static async procesar_formulario_inventario_descarte(data) {
         const descarteLavado = {};
         const descarteEncerado = {};
-        let totalDescarte = 0;
+        let total = 0;
 
-        Object.entries(data).forEach(([key, value]) => {
-            if (key === 'tipoFruta') return;
-            const [tipo, subtipo] = key.split(':');
-            const valorNumerico = value === '' ? 0 : parseInt(value);
-
-            if (tipo === 'descarteLavado') {
-                descarteLavado[subtipo] = valorNumerico;
-                totalDescarte += valorNumerico;
-            } else if (tipo === 'descarteEncerado') {
-                descarteEncerado[subtipo] = valorNumerico;
-                totalDescarte += valorNumerico;
+        Object.keys(data).forEach(key => {
+            if (key.startsWith('descarteLavado:')) {
+                const campo = key.replace('descarteLavado:', '');
+                // Asegurar que sea un entero válido
+                const valor = parseInt(data[key], 10);
+                if (!isNaN(valor) && Number.isInteger(valor) && valor >= 0) {
+                    descarteLavado[campo] = valor;
+                    total += valor;
+                } else {
+                    console.warn(`Valor inválido para ${key}: ${data[key]}`);
+                    descarteLavado[campo] = 0;
+                }
+            } else if (key.startsWith('descarteEncerado:')) {
+                const campo = key.replace('descarteEncerado:', '');
+                // Asegurar que sea un entero válido
+                const valor = parseInt(data[key], 10);
+                if (!isNaN(valor) && Number.isInteger(valor) && valor >= 0) {
+                    descarteEncerado[campo] = valor;
+                    total += valor;
+                } else {
+                    console.warn(`Valor inválido para ${key}: ${data[key]}`);
+                    descarteEncerado[campo] = 0;
+                }
             }
         });
 
-        return {
-            descarteLavado,
-            descarteEncerado,
-            total: totalDescarte
-        };
+        return { descarteLavado, descarteEncerado, total };
     }
     /**
      * Crea un nuevo lote de reproceso para Celifrut con un código autogenerado.
@@ -356,38 +365,46 @@ export class InventariosService {
      *   user: 'Juan'
      * });
      */
-    static async crear_lote_celifrut(tipoFruta, kilos, user) {
+    static async crear_lote_celifrut(tipoFruta, kilos, user, logContext = null) {
+        try {
+            const codigo = await VariablesDelSistema.generar_codigo_celifrut()
 
-        const codigo = await VariablesDelSistema.generar_codigo_celifrut()
+            const lote = {
+                enf: codigo,
+                predio: '65c27f3870dd4b7f03ed9857',
+                canastillas: '0',
+                kilos: kilos,
+                placa: 'AAA000',
+                tipoFruta: tipoFruta,
+                observaciones: 'Reproceso',
+                promedio: Number(kilos) / (tipoFruta === 'Naranja' ? 19 : 20),
+                "fecha_estimada_llegada": new Date(),
+                "fecha_ingreso_patio": new Date(),
+                "fecha_salida_patio": new Date(),
+                "fecha_ingreso_inventario": new Date(),
+            }
 
-        const lote = {
-            enf: codigo,
-            predio: '65c27f3870dd4b7f03ed9857',
-            canastillas: '0',
-            kilos: kilos,
-            placa: 'AAA000',
-            tipoFruta: tipoFruta,
-            observaciones: 'Reproceso',
-            promedio: Number(kilos) / (tipoFruta === 'Naranja' ? 19 : 20),
-            "fecha_estimada_llegada": new Date(),
-            "fecha_ingreso_patio": new Date(),
-            "fecha_salida_patio": new Date(),
-            "fecha_ingreso_inventario": new Date(),
+            const newLote = await LotesRepository.addLote(lote, user);
+
+            const query = {
+                $inc: {
+                    kilosVaciados: newLote.kilos,
+                },
+                fechaProceso: new Date()
+            }
+
+            await LotesRepository.modificar_lote({_id: newLote._id.toString()}, query, { user: user, action: "vaciarLote" });
+            await VariablesDelSistema.incrementar_codigo_celifrut();
+
+            if (logContext) {
+                await registrarPasoLog(logContext.logId, "inventarioServices.crear_lote_celifrut", "Completado");
+            }
+
+            return newLote
+        } catch (error) {
+            console.error("Error creando lote Celifrut:", error);
+            throw new Error(`Error creando lote Celifrut: ${error.message}`);
         }
-
-        const newLote = await LotesRepository.addLote(lote, user);
-
-        const query = {
-            $inc: {
-                kilosVaciados: newLote.kilos,
-                __v: 1,
-            },
-            fechaProceso: new Date()
-        }
-
-        await LotesRepository.modificar_lote(newLote._id.toString(), query, "vaciarLote", user, newLote.__v);
-        await VariablesDelSistema.incrementar_codigo_celifrut();
-        return newLote
     }
     /**
      * Revisa y compara los cambios entre un registro existente de despacho de descarte y los nuevos datos.

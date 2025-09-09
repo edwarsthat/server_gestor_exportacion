@@ -118,27 +118,34 @@ export class LotesRepository {
             throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
         }
     }
-    static async modificar_lote(id, query, action, user, __v = 0) {
+    static async modificar_lote(id, update, options = {}, session = null) {
         /**
          * Modifica un lote en la base de datos de MongoDB.
          *
          * @param {string} id - ID del lote a modificar.
-         * @param {Object} query - Objeto con los cambios a aplicar al lote.
+         * @param {Object} update - Objeto con los cambios a aplicar al lote.
          * @param {string} action - Descripción de la acción realizada.
          * @param {string} user - Usuario que realiza la acción.
          * @returns {Promise<Object>} - Promesa que resuelve al objeto del lote modificado.
          * @throws {PutError} - Lanza un error si ocurre un problema al modificar el lote.
          */
         try {
+            console.log(options)
+            const finalOptions = {
+                new: true,
+                ...options,
+                ...(session && { session })
+            };
 
-            const lote = await db.Lotes.findOneAndUpdate({ _id: id, __v: __v }, query, { new: true });
+
+            const lote = await db.Lotes.findOneAndUpdate({ _id: id }, update, { ...finalOptions, new: true });
             const lote_obj = new Object(lote.toObject());
 
-            let record = new db.recordLotes({ operacionRealizada: action, user: user, documento: { ...query, _id: id } })
+            let record = new db.recordLotes({ operacionRealizada: options.action, user: options.user, documento: { ...update, _id: id } })
             await record.save()
             return lote_obj;
         } catch (err) {
-            throw new PutError(523, `Error ${err.name} -- ${id} - ${query}`);
+            throw new PutError(523, `Error ${err.name} -- ${id} - ${update}`);
         }
     }
     static async modificar_lote_proceso(id, query, action, user) {
@@ -352,7 +359,6 @@ export class LotesRepository {
                     const exportacionTotal = exportacionPlano ? Object.values(exportacionPlano).reduce((acu1, contenedor) =>
                         acu1 += Object.values(contenedor).reduce((acu2, item) => acu2 += (item ?? 0), 0), 0) : 0;
 
-                    console.log('Exportación Total:', exportacionTotal);
                     const total = exportacionTotal + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional;
                     deshidratacion = 100 - (total * 100) / kilos;
                     rendimiento = kilosVaciados === 0 ? 0 : ((exportacionTotal * 100) / kilosVaciados);
@@ -363,7 +369,12 @@ export class LotesRepository {
                     documento = await db.Lotes.findOneAndUpdate(
                         filter,
                         { deshidratacion, rendimiento },
-                        { ...finalOptions, new: true }
+                        {
+                            ...finalOptions,
+                            new: true,
+                            skipAudit: true,
+                            action: 'system:recalc_desh_rend'
+                        }
                     );
                 }
 

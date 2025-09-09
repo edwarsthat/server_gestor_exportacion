@@ -85,7 +85,7 @@ export class VariablesDelSistema {
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis ${err.name}`)
     } finally {
-      await registrarPasoLog(logId, "LotesRepository.procesarEF1", "Completado");
+      await registrarPasoLog(logId, "procesarEF1.procesarEF1", "Completado");
     }
   }
   static async obtenerEF1proceso() {
@@ -387,7 +387,7 @@ export class VariablesDelSistema {
       throw new ProcessError(518, `Error modificando datos del inventario json ${err.name}`)
     } finally {
       inventarioFleg = false
-      await registrarPasoLog(LogId, "LotesRepository.modificarInventario", "Completado");
+      await registrarPasoLog(LogId, "VariablesDelSistema.modificarInventario", "Completado");
     }
   }
 
@@ -473,7 +473,7 @@ export class VariablesDelSistema {
       throw new ProcessError(410, "Error Obteniendo datos de la orden de vaceo" + err.message)
     } finally {
       ordenVaceoFlag = false
-      await registrarPasoLog(logId, "LotesRepository.borrarDatoOrdenVaceo", "Completado");
+      await registrarPasoLog(logId, "VariablesDelSistema.borrarDatoOrdenVaceo", "Completado");
 
     }
   }
@@ -546,13 +546,11 @@ export class VariablesDelSistema {
      */
   static async reprocesar_predio_celifrut(lote, kilosTotal) {
     try {
-
       const cliente = await getRedisClient();
       const kilosReprocesadorExist = await cliente.exists("kilosReprocesadorHoy");
       if (kilosReprocesadorExist !== 1) {
         await cliente.set("kilosReprocesadorHoy", 0);
       }
-
       let kilosReprocesadosHoy = await cliente.get("kilosReprocesadorHoy");
 
       if (isNaN(kilosReprocesadosHoy)) {
@@ -564,13 +562,12 @@ export class VariablesDelSistema {
       await cliente.set("descarteLavado", 0);
       await cliente.set("descarteEncerado", 0);
       await cliente.hSet("predioProcesandoDescartes", {
-        _id: lote._id.toString(),
-        enf: lote.enf,
-        predio: "Celifrut",
+        _id: String(lote._id),
+        enf: String(lote.enf ?? ''),
+        predio: String(lote.predio),     // aquí ya es un ObjectId plano → conviértelo directo
         nombrePredio: "Celifrut",
-        tipoFruta: lote.tipoFruta,
+        tipoFruta: String(lote.tipoFruta), // igual, puede ser ObjectId
       });
-
 
     } catch (err) {
       throw new ProcessError(518, `Error modificando las variables del sistema: ${err.name}`)
