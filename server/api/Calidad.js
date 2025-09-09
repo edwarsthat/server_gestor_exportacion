@@ -70,14 +70,13 @@ export class CalidadRepository {
     static async put_calidad_historial_calidadInterna(req) {
         try {
             const { data: datos, user } = req
-            const { action, _id, __v, data } = datos
-            await LotesRepository.modificar_lote(
-                _id,
+            const { action, _id, data } = datos
+
+            await LotesRepository.actualizar_lote(
+                { _id: _id },
                 data,
-                action,
-                user._id,
-                __v
-            )
+                { new: true, user: user, action: action }
+            );
         } catch (err) {
             if (err.status === 524) {
                 throw err
@@ -112,14 +111,13 @@ export class CalidadRepository {
     static async put_calidad_historial_clasficacionDescarte(req) {
         try {
             const { data: datos, user } = req
-            const { action, _id, __v, data } = datos
-            await LotesRepository.modificar_lote(
-                _id,
+            const { action, _id, data } = datos
+
+            await LotesRepository.actualizar_lote(
+                { _id: _id },
                 data,
-                action,
-                user,
-                __v
-            )
+                { new: true, user: user, action: action }
+            );
         } catch (err) {
             if (err.status === 524) {
                 throw err
@@ -404,16 +402,17 @@ export class CalidadRepository {
     static async put_calidad_ingresos_clasificacionDescarte(req) {
         try {
             CalidadValidationsRepository.put_calidad_ingresos_clasificacionDescarte().parse(req.data);
-            const user = req.user._id;
+            const user = req.user;
             const { action, data, _id } = req.data;
             const query = {
                 ...data,
-                'calidad.clasificacionCalidad.fecha': new Date(),
-                $inc: {
-                    __v: 1
-                }
+                'calidad.clasificacionCalidad.fecha': new Date()
             }
-            await LotesRepository.modificar_lote_proceso(_id, query, action, user);
+            await LotesRepository.actualizar_lote(
+                { _id: _id },
+                query,
+                { new: true, user: user, action: action }
+            );
         } catch (err) {
             if (err.status === 523 || err.status === 522) {
                 throw err
@@ -534,11 +533,17 @@ export class CalidadRepository {
                             ...data,
                             'calidad.inspeccionIngreso.fecha': new Date(),
                             not_pass: true,
-                            $inc: {
-                                __v: 1
-                            }
                         }
-                        await LotesRepository.modificar_lote_proceso(_id, query, action, user);
+                        await LotesRepository.actualizar_lote(
+                            { _id: _id },
+                            query,
+                            {
+                                new: true,
+                                user: user,
+                                action: action
+                            }
+                        );
+
                         procesoEventEmitter.emit("server_event", {
                             action: "inspeccion_fruta",
                             data: {}
@@ -554,11 +559,16 @@ export class CalidadRepository {
                     ...data,
                     'calidad.inspeccionIngreso.fecha': new Date(),
                     not_pass: true,
-                    $inc: {
-                        __v: 1
-                    }
                 }
-                await LotesRepository.modificar_lote_proceso(_id, query, action, user);
+                await LotesRepository.actualizar_lote(
+                    { _id: _id },
+                    query,
+                    {
+                        new: true,
+                        user: user,
+                        action: action
+                    }
+                );
                 procesoEventEmitter.emit("server_event", {
                     action: "inspeccion_fruta",
                     data: {}
@@ -570,11 +580,16 @@ export class CalidadRepository {
                 ...data,
                 'calidad.inspeccionIngreso.fecha': new Date(),
                 not_pass: false,
-                $inc: {
-                    __v: 1
-                }
             }
-            await LotesRepository.modificar_lote_proceso(_id, query, action, user);
+            await LotesRepository.actualizar_lote(
+                { _id: _id },
+                query,
+                {
+                    new: true,
+                    user: user,
+                    action: action
+                }
+            );
 
             procesoEventEmitter.emit("server_event", {
                 action: "inspeccion_fruta",
@@ -995,9 +1010,15 @@ export class CalidadRepository {
             clasificacionCalidad,
             not_pass: false
         }
-        await LotesRepository.modificar_lote_proceso(
-            _id, query, action, user
-        )
+        await LotesRepository.actualizar_lote(
+            { _id: _id },
+            query,
+            {
+                new: true,
+                user: user,
+                action: action
+            }
+        );
         procesoEventEmitter.emit("server_event", {
             action: "derogar_lote",
             data: {}
@@ -1014,9 +1035,15 @@ export class CalidadRepository {
             "calidad.calidadInterna.fecha": new Date(),
             "calidad.fotosCalidad.fecha": new Date(),
         }
-        await LotesRepository.modificar_lote_proceso(
-            _id, query, action, user
-        )
+        await LotesRepository.actualizar_lote(
+            { _id: _id },
+            query,
+            {
+                new: true,
+                user: user,
+                action: action
+            }
+        );
         await VariablesDelSistema.modificarInventario(_id, Number(canastillas));
         procesoEventEmitter.emit("server_event", {
             action: "derogar_lote",

@@ -85,7 +85,7 @@ export class VariablesDelSistema {
     } catch (err) {
       throw new ConnectRedisError(419, `Error con la conexion con redis ${err.name}`)
     } finally {
-      await registrarPasoLog(logId, "LotesRepository.procesarEF1", "Completado");
+      await registrarPasoLog(logId, "procesarEF1.procesarEF1", "Completado");
     }
   }
   static async obtenerEF1proceso() {
@@ -387,7 +387,7 @@ export class VariablesDelSistema {
       throw new ProcessError(518, `Error modificando datos del inventario json ${err.name}`)
     } finally {
       inventarioFleg = false
-      await registrarPasoLog(LogId, "LotesRepository.modificarInventario", "Completado");
+      await registrarPasoLog(LogId, "VariablesDelSistema.modificarInventario", "Completado");
     }
   }
 
@@ -473,7 +473,7 @@ export class VariablesDelSistema {
       throw new ProcessError(410, "Error Obteniendo datos de la orden de vaceo" + err.message)
     } finally {
       ordenVaceoFlag = false
-      await registrarPasoLog(logId, "LotesRepository.borrarDatoOrdenVaceo", "Completado");
+      await registrarPasoLog(logId, "VariablesDelSistema.borrarDatoOrdenVaceo", "Completado");
 
     }
   }
