@@ -198,7 +198,7 @@ export class SistemaRepository {
             await LotesRepository.actualizar_lote(
                 { _id: data },
                 { finalizado: false },
-                { action: "habilitarPredio" }
+                { action: "habilitarPredio", user: user }
             );
 
             const record = new db.recordLotes({

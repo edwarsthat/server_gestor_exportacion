@@ -63,7 +63,12 @@ export class ProcesoRepository {
                 ...fotos,
                 "calidad.fotosCalidad.fechaIngreso": Date.now(),
             }
-            await LotesRepository.modificar_lote_proceso(_id, query, "Agregar foto calidad", user._id);
+
+            await LotesRepository.actualizar_lote(
+                { _id: _id },
+                query,
+                { new: true, user: user, action: "post_proceso_aplicaciones_fotoCalidad" }
+            );
         } catch (err) {
             if (err.status === 523) {
                 throw err
@@ -154,6 +159,7 @@ export class ProcesoRepository {
                 query.$inc[`descarteLavado.${keys[i]}`] = Math.round(data[keys[i]]);
                 kilos += Math.round(data[keys[i]]);
             }
+
             const lote = await ProcesoService.modificarLotedescartes(_id, query, user, action)
             await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
 
@@ -177,6 +183,7 @@ export class ProcesoRepository {
                 data: {}
             });
         } catch (err) {
+            await registrarPasoLog(log._id, "Error", "Errado", err.message);
 
             const criticalStatus = new Set([523, 515, 518, 532, 400]);
             if (err && criticalStatus.has(err.status)) {
@@ -262,6 +269,7 @@ export class ProcesoRepository {
                 data: {}
             });
         } catch (err) {
+            await registrarPasoLog(log._id, "Error", "Errado", err.message);
             const criticalStatus = new Set([523, 515, 518, 532, 400]);
             if (err && criticalStatus.has(err.status)) {
                 throw err;
@@ -896,7 +904,7 @@ export class ProcesoRepository {
             }
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
         }
-    } 
+    }
     static async put_proceso_aplicaciones_listaEmpaque_liberarPallet(req) {
         const { user } = req;
         const { _id, pallet, item, action } = req.data;
@@ -1102,7 +1110,7 @@ export class ProcesoRepository {
                 },
                 contenedor[0].pallets,
                 newContenedor.pallets,
-                { _id, action } 
+                { _id, action }
             );
             procesoEventEmitter.emit("listaempaque_update");
 
@@ -1469,7 +1477,7 @@ export class ProcesoRepository {
     }
     static async modificar_historial_lote_ingreso_inventario(data, user) {
         try {
-            const { query, _id, __v, lote, action } = data
+            const { query, lote, action } = data
 
             if (Number(query.canastillas) === 0) {
                 throw new Error("Error, modificar_historial_lote_ingreso_inventario, canastillas estan en cero")
@@ -1488,9 +1496,11 @@ export class ProcesoRepository {
                 }
             })
 
-            await RecordLotesRepository.modificarRecord(_id, queryModificar, __v)
-
-            await LotesRepository.modificar_lote_proceso(lote, query, action, user.user)
+            await LotesRepository.actualizar_lote(
+                { _id: lote },
+                query,
+                { new: true, user: user, action: action }
+            );
 
             await VariablesDelSistema.ingresarInventario(lote, Number(query.canastillas));
 
@@ -1506,7 +1516,7 @@ export class ProcesoRepository {
         const user = req.user.user;
         const data = req.data
 
-        const { _id, infoSalidaDirectoNacional, directoNacional, inventario, __v, action } = data;
+        const { _id, infoSalidaDirectoNacional, directoNacional, inventario, action } = data;
         const query = {
             $inc: {
                 directoNacional: directoNacional,
@@ -1514,7 +1524,12 @@ export class ProcesoRepository {
             },
             infoSalidaDirectoNacional: infoSalidaDirectoNacional
         };
-        const lote = await LotesRepository.modificar_lote(_id, query, action, user, __v);
+
+        const lote = await LotesRepository.actualizar_lote(
+            { _id: _id },
+            query,
+            { new: true, user: user, action: action }
+        );
 
         await VariablesDelSistema.modificarInventario(_id, inventario);
         await LotesRepository.deshidratacion(lote);
