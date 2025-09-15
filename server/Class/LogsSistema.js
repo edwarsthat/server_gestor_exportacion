@@ -12,14 +12,15 @@ function logErrorToFile(err, context = "") {
 }
 
 export class LogsRepository {
-    static async create(data) {
+    static async create(data, options = {}) {
         try {
             const log = new db.Logs(data);
-            const saveLote = await log.save();
+            const saveLote = await log.save(options);
             return saveLote
         } catch (err) {
             logErrorToFile(err, "LogsRepository.create");
             console.error("Error creating log:", err);
+            throw err;
         }
     }
     static async actualizar(filter, update, options = {}) {

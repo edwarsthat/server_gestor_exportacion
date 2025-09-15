@@ -75,12 +75,12 @@ export const defineContenedores = async (conn) => {
   );
 
   const EF1Schema = new Schema({
-    _id: { type: Schema.Types.ObjectId, auto: true },
+    // _id: { type: Schema.Types.ObjectId, auto: true },
     lote: { type: Schema.Types.ObjectId, ref: "Lote" },
     cajas: Number,
     tipoCaja: String,
-    calibre: Number,
-    calidad: Number,
+    calibre: String,
+    calidad: String,
     fecha: Date,
     tipoFruta: String,
     SISPAP: Boolean,
@@ -90,11 +90,9 @@ export const defineContenedores = async (conn) => {
   const subSchema = new Schema(
     {
       settings: settingsSchema,
-      EF1: [{ type: Map, of: EF1Schema }],
+      EF1: [EF1Schema],
       listaLiberarPallet: listaLiberarPalletSchema,
-    },
-    { _id: false },
-  );
+    });
 
   const infoContenedorSchema = new Schema({
     clienteInfo: { type: Schema.Types.ObjectId, ref: "Cliente" },
@@ -208,7 +206,7 @@ export const defineContenedores = async (conn) => {
 
   const listaEmpaqueSchema = new Schema({
     numeroContenedor: Number,
-    pallets: [{ type: Map, of: subSchema }],
+    pallets: [subSchema],
     infoContenedor: infoContenedorSchema,
     infoTractoMula: schemaInfoMula,
     infoExportacion: schemaInfoExportacion,

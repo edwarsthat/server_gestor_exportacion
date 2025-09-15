@@ -8,6 +8,8 @@ import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { RedisRepository } from "../Class/RedisData.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
 import { getColombiaDate } from "../api/utils/fechas.js";
+import { UsuariosRepository } from "../Class/Usuarios.js";
+import { normalizeEF1Item } from "./helpers/contenedores.js";
 
 
 class ProcesoService {
@@ -40,7 +42,7 @@ class ProcesoService {
         const lotes = await LotesRepository.getLotes2({
             ids: [loteID]
         });
-
+        console.log("se obtiene el lote", lotes)
         // Validar que se encontró el lote
         if (!lotes || lotes.length === 0) {
             throw new ProcessError(404, `No se encontró el lote con ID: ${loteID}`);
@@ -299,7 +301,6 @@ class ProcesoService {
 
     }
     static async ingresarDataExportacionDiaria(tipoFruta, calidad, calibre, kilos, logId = null) {
-        console.info(`Ingresar exportacion ${kilos} a la fruta ${tipoFruta} con calidad ${calidad} y calibre ${calibre}`)
 
         const cliente = await RedisRepository.getClient()
 
@@ -321,6 +322,7 @@ class ProcesoService {
     }
     static async modifiarContenedorPalletsListaEmpaque(lotes, palletsModificados, copiaPallets, pallet, item, _id, GGN, logData) {
         const { user, action } = logData
+
         const palletSeleccionado = palletsModificados[pallet].EF1;
         // Actualizar contenedor con pallets modificados
         const { lote, calibre, calidad, cajas } = item
@@ -329,18 +331,20 @@ class ProcesoService {
             data.calidad === calidad &&
             data.calibre === calibre
         )
+
         if (index === -1) {
-            const itemnuevo = {
+            const itemnuevo = normalizeEF1Item({
                 ...item,
-                fecha: new Date(),
-                SISPAP: lotes[0].predio.SISPAP,
+                SISPAP: lotes?.[0]?.predio?.SISPAP ?? false,
                 GGN
-            }
+            })
             palletSeleccionado.push(itemnuevo)
 
         } else {
             palletSeleccionado[index].cajas += cajas
         }
+
+        console.log("palletSeleccionado", palletSeleccionado)
 
         await ContenedoresRepository.actualizar_contenedor(
             { _id },
@@ -560,7 +564,7 @@ class ProcesoService {
             const oldKg = (oldItem.cajas || 0) * parseMult(oldItem.tipoCaja);
             const newKg = (newItem.cajas || 0) * parseMult(newItem.tipoCaja);
             const delta = newKg - oldKg;
-            if (!delta) continue; 
+            if (!delta) continue;
 
             const query = { $inc: {} };
 
@@ -828,7 +832,8 @@ class ProcesoService {
             }
         })
         const palletsModificados = contenedor[0].pallets;
-        const palletSeleccionado = palletsModificados[pallet].get('EF1')[seleccion];
+        const palletSeleccionado = palletsModificados[pallet].EF1[seleccion];
+
 
         //se obtiene el lote
         const lote = await LotesRepository.getLotes2({
@@ -858,7 +863,7 @@ class ProcesoService {
 
         for (let i = 0; i < len; i++) {
             const index = seleccion[i];
-            const ef1Array = palletsModificados[pallet].get('EF1');
+            const ef1Array = palletsModificados[pallet].EF1;
             lotesIds.push(ef1Array[index].lote);
             itemsDelete.push(ef1Array[index]);
         }
@@ -912,16 +917,19 @@ class ProcesoService {
     }
     static async crearCopiaProfundaPallets(contenedor) {
         // Convertimos a objeto plano si es un documento Mongoose
-        const contenedorObj = contenedor?.toObject?.() ? contenedor.toObject() : contenedor;
+        const contenedorObj = contenedor.toObject({
+            transform: (_, ret) => {
+                if (ret.lote?.toString) ret.lote = ret.lote.toString();
+                if (ret._id?.toString) ret._id = ret._id.toString();
+                if (ret.tipoFruta?.toString) ret.tipoFruta = ret.tipoFruta.toString();
+                if (ret.calidad?.toString) ret.calidad = ret.calidad.toString();
+                return ret;
+            }
+        });
 
-        // Convertimos cada pallet (si es Map) a objeto plano
-        const palletsPlanos = contenedorObj.pallets.map(pallet =>
-            pallet instanceof Map ? Object.fromEntries(pallet) : pallet
-        );
-
-        // Clonamos profundamente para trabajar sin mutar los originales
-        const palletsModificados = structuredClone(palletsPlanos);
-        const copiaPallet = structuredClone(palletsPlanos);
+        // Ya no necesitas verificar Map, son arrays directos
+        const palletsModificados = structuredClone(contenedorObj.pallets);
+        const copiaPallet = structuredClone(contenedorObj.pallets);
 
         return {
             palletsModificados,
@@ -961,6 +969,31 @@ class ProcesoService {
 
             await registrarPasoLog(logId, "modificarIndicadoresFecha", "Completado", `se modificaron ${kilos} kilos de la fruta ${tipoFruta} con calidad ${calidad} y calibre ${calibre}`);
 
+        }
+    }
+    static async obtenerUsuariosRegistrosTrazabilidadEf1(registros) {
+        const usuariosIds = new Set();
+
+        for (const registro of registros) {
+            if (registro.usuario) {
+                usuariosIds.add(registro.usuario.toString());
+            }
+        }
+        console.log(usuariosIds.size)
+
+        const usuarios = await UsuariosRepository.get_users({
+            ids: Array.from(usuariosIds),
+            limit: 'all'
+        })
+        console.log(usuarios.length)
+        for (const registro of registros) {
+            console.log(registro.user)
+            if (registro.user) {
+                const usuario = usuarios.find(u => u._id.toString() === registro.user.toString());
+                console.log(usuario)
+                registro.user = usuario.usuario || registro.user;
+
+            }
         }
     }
 }

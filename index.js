@@ -33,12 +33,18 @@ const { PORT, HOST } = config;
 
 const server = http.createServer(app);
 
+
 import { initMongoDB } from './DB/mongoDB/config/init.js';
 import { initSockets } from './src/sockets/ws.js';
 import { initCronJobs } from './src/cron/jobs.js';
 import { initRustRcp } from './config/grpcRust.js';
 import { tipoFrutaCache } from './server/cache/tipoFruta.js';
 import { initCronCache } from './src/cron/cache.js';
+
+
+
+
+
 
 (async () => {
     try {
@@ -60,9 +66,9 @@ import { initCronCache } from './src/cron/cache.js';
         server.listen(PORT, HOST, () => {
             console.log(`El servidor está escuchando en el puerto ${PORT} y la dirección IP ${HOST}.`);
         });
-        // server.listen(3010, '0.0.0.0', () => {
-        //     console.log('Server running on port 3010');
-        // });
+        server.listen(3010, '0.0.0.0', () => {
+            console.log('Server running on port 3010');
+        });
 
     } catch (err) {
         console.error('Error al iniciar el servidor:', err);

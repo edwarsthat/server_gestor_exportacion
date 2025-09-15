@@ -70,6 +70,7 @@ import { defineLoteEf8 } from '../schemas/lotes/schemaLoteEf8.js';
 import { defineSeriales } from '../schemas/seriales/SerialesSchema.js';
 import { defineAuditLogsLoteEF8 } from '../schemas/lotes/schemaAuditLoteEf8.js';
 import { defineCuartosFrios } from '../schemas/catalogs/schemaCuartosFrios.js';
+import { defineAuditCuartosFrios } from '../schemas/audit/AuditCuartosFrios.js';
 
 export const db = {};
 
@@ -223,13 +224,20 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("🔍 Iniciando definición de schemas proceso...");
 
         // 1. Primero definimos el esquema de auditoría ya que otros lo necesitan
+
         console.log("⚡ Definiendo AuditLog...");
         const AuditLog = await defineAuditLogs(sysConn)
         db.AuditLog = AuditLog;
         const AuditLoteEF8 = await defineAuditLogsLoteEF8(sysConn);
+        const AuditCuartosFrios = await defineAuditCuartosFrios(sysConn);
+
+        
         console.log("✅ AuditLog definido");
 
         // 2. Esquemas relacionados con clientes (base para otras dependencias)
+        console.log("⚡ Definiendo Cuartos Frios...");
+        db.CuartosFrios = await defineCuartosFrios(sysConn, AuditCuartosFrios);
+        console.log("✅ Cuartos Frios definidos");
         console.log("⚡ Definiendo Clientes...");
         db.Clientes = await defineClientes(sysConn);
         console.log("✅ Clientes definido");
@@ -427,13 +435,13 @@ const defineSchemasCatalogo = async (sysConn) => {
         try {
             console.log("🔍 Iniciando definición de schemas sistema...");
 
+
+
             console.log("⚡ Definiendo Cuartos desverdizado...");
             db.CuartosDesverdizados = await defineCuartosdesverdizado(sysConn);
             console.log("✅ Cuartos desverdizados definidos");
 
-            console.log("⚡ Definiendo Cuartos Frios...");
-            db.CuartosFrios = await defineCuartosFrios(sysConn);
-            console.log("✅ Cuartos Frios definidos");
+
 
             console.log("⚡ Definiendo Tipo frutas...");
             db.TipoFrutas = await defineTipoFrutas(sysConn);

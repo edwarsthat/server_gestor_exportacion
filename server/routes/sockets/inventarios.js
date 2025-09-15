@@ -108,6 +108,18 @@ export const apiSocketInventarios = {
         await InventariosRepository.put_inventarios_pallet_eviarCuartoFrio(data)
         return successResponseRoutes()
     },
+    get_inventarios_cuartosFrios_listaEmpaque: async () => {
+        const response = await InventariosRepository.get_inventarios_cuartosFrios_listaEmpaque()
+        return successResponseRoutes(response)
+    },
+    get_inventarios_cuartosFrios: async () => {
+        const response = await InventariosRepository.get_inventarios_cuartosFrios()
+        return successResponseRoutes(response)
+    },
+    get_inventarios_cuartosFrios_detalles: async (data) => {
+        const response = await InventariosRepository.get_inventarios_cuartosFrios_detalles(data)
+        return successResponseRoutes(response)
+    },
     //#endregion
     //#region historiales
     get_inventarios_historialProcesado_frutaProcesada: async (data) => {

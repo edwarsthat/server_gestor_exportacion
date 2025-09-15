@@ -230,7 +230,6 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteEncerado", "Completado");
 
             const { _id, data, action } = req.data;
-            console.log(data)
 
             const keys = Object.keys(data);
             const query = { $inc: {} };
@@ -352,7 +351,7 @@ export class ProcesoRepository {
     static async put_proceso_aplicaciones_listaEmpaque_addSettings(req) {
         try {
             const { user } = req;
-            const { _id, pallet, settings, action } = req.data;
+            const { _id, pallet, settings, action, itemCalidad } = req.data;
             const { tipoCaja, calidad, calibre } = settings;
 
             const query = {}
@@ -370,8 +369,10 @@ export class ProcesoRepository {
             // Crear copia profunda de los pallets
             const palletsModificados = JSON.parse(JSON.stringify(contenedor[0].pallets));
             const palletSeleccionado = palletsModificados[pallet].settings;
+            const palletSeleccionadoComp = palletsModificados[pallet].listaLiberarPallet;
 
             Object.assign(palletSeleccionado, { calidad, calibre, tipoCaja });
+            Object.assign(palletSeleccionadoComp, { ...itemCalidad });
 
             query.pallets = palletsModificados
 
@@ -381,6 +382,8 @@ export class ProcesoRepository {
             )) {
                 query["infoContenedor.fechaInicioReal"] = new Date();
             }
+
+            console.log("query", query.pallets[pallet]);
 
             // Actualizar contenedor con pallets modificados
             await ContenedoresRepository.actualizar_contenedor(
@@ -1431,14 +1434,18 @@ export class ProcesoRepository {
     static async get_proceso_registros_trazabilidad_ef1(req) {
         try {
             const { data } = req
-            const lote = await LotesRepository.getLotes({ query: data })
-            if(lote.length === 0){
+            const { filtro } = data
+            const { EF } = filtro
+            const lote = await LotesRepository.getLotes({ query: { enf: EF } })
+            if (lote.length === 0) {
                 throw new ProcessError(400, "No se encontro el lote")
             }
             const query = {
                 documentId: lote[0]._id
             }
             const registros = await RecordLotesRepository.getAuditLogsEf1({ query: query })
+
+            await ProcesoService.obtenerUsuariosRegistrosTrazabilidadEf1(registros)
             return registros
         } catch (error) {
             if (

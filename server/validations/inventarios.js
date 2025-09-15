@@ -622,4 +622,22 @@ export class InventariosValidations {
 
         });
     }
+    static put_inventarios_pallet_eviarCuartoFrio() {
+        return z.object({
+            seleccion: z.array(z.string().min(1)),
+            cuartoFrio: z.string().min(1),
+            items: z.array(z.object({
+                _id: z.string().regex(/^[0-9a-fA-F]{24}$/),
+                GGN: z.boolean(),
+                SISPAP: z.boolean(),
+                tipoFruta: z.string().regex(/^[0-9a-fA-F]{24}$/),
+                fecha: z.string().min(1),
+                calidad: z.string().regex(/^[0-9a-fA-F]{24}$/),
+                calibre: z.string().min(1),
+                tipoCaja: z.string(),
+                cajas: z.number().int().positive(),
+                lote: z.object({}).optional(),
+            })),
+        })
+    }
 }

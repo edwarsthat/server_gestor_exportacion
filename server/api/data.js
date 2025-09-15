@@ -202,9 +202,11 @@ export class dataRepository {
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_data_cuartosFrios() {
+    static async get_data_cuartosFrios(req) {
         try {
-            return await CuartosFrios.get_cuartosFrios();
+            console.log(req)
+            const { query, select } = req;
+            return await CuartosFrios.get_cuartosFrios({ query: query, select: select });
         } catch (err) {
             if (err.status === 522) {
                 throw err

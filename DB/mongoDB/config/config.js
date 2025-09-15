@@ -1,4 +1,9 @@
+
+
+
 import config from "../../../src/config/index.js";
+
+
 const { MONGODB_PROCESO, MONGODB_SISTEMA, MONGODB_CATALOGOS } = config;
 /**
  * @module DB/mongoDB/config/config
@@ -111,5 +116,4 @@ export const disconnectDB = (db) => {
     }
   });
 };
-
 

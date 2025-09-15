@@ -10,7 +10,9 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "lint": "eslint . --fix",
-    "iniciar-inventario": "node scripts/InicializarInventario.js"
+    "iniciar-inventario": "node scripts/InicializarInventario.js",
+    "start-db": "powershell -ExecutionPolicy Bypass -File ./config/start-databases.ps1",
+    "stop-db": "powershell -Command \"Stop-Process -Name mongod -Force\""
   },
   "type": "module",
   "author": "Edwar Stheven Ariza Torres",

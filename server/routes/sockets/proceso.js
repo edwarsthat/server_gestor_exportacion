@@ -80,8 +80,8 @@ export const apiSocketProceso = {
     //#endregion
     //#region registros trazabilidad
     get_proceso_registros_trazabilidad_ef1: async (data) => {
-        await ProcesoRepository.get_proceso_registros_trazabilidad_ef1(data)
-        return successResponseRoutes()
+        const response = await ProcesoRepository.get_proceso_registros_trazabilidad_ef1(data)
+        return successResponseRoutes(response)
     }
     // #endregion
 }

@@ -393,7 +393,7 @@ export class InventariosService {
                 fechaProceso: new Date()
             }
 
-            await LotesRepository.modificar_lote({_id: newLote._id.toString()}, query, { user: user, action: "vaciarLote" });
+            await LotesRepository.modificar_lote({ _id: newLote._id.toString() }, query, { user: user, action: "vaciarLote" });
             await VariablesDelSistema.incrementar_codigo_celifrut();
 
             if (logContext) {
@@ -1176,6 +1176,28 @@ export class InventariosService {
 
         return registroCanastillas;
 
+    }
+    static async itemsCuartosFrios(items, contenedores) {
+        const out = [];
+        for (const contenedor of contenedores) {
+            if (!contenedor.pallets) continue;
+            for (const [index, pallet] of contenedor.pallets.entries()) {
+                if (!pallet.EF1) continue;
+                for (const item of pallet.EF1) {
+                    if (!item) continue;
+
+                    if (items.includes(item._id.toString())) {
+                        out.push({
+                            ...item,
+                            contenedor: contenedor.numeroContenedor,
+                            pallet: index,
+                        });
+                    }
+                }
+
+            }
+        }
+        return out;
     }
     // static async modificarIngresoCanastillas(data) {
     //     const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)

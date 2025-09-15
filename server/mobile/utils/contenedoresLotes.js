@@ -7,9 +7,10 @@ const oobtener_datos_lotes_to_listaEmpaque = async (contenedores) => {
         const lotes = await LotesRepository.getLotes2({ query: query, limit: "all" })
         for (let i = 0; i < contenedores.length; i++) {
             for (let j = 0; j < contenedores[i].pallets.length; j++) {
-                for (let n = 0; n < contenedores[i].pallets[j].get("EF1").length; n++) {
-                    const lote = lotes.find(item => item._id.toString() === contenedores[i].pallets[j].get("EF1")[n].lote);
-                    contenedores[i].pallets[j].get("EF1")[n].lote = typeof lote === "object" ?
+                for (let n = 0; n < contenedores[i].pallets[j]["EF1"].length; n++) {
+
+                    const lote = lotes.find(item => item._id.toString() === contenedores[i].pallets[j]["EF1"][n].lote.toString());
+                    contenedores[i].pallets[j]["EF1"][n].lote = 
                         {
                             enf: lote.enf,
                             predio: lote.predio.PREDIO,
@@ -19,12 +20,12 @@ const oobtener_datos_lotes_to_listaEmpaque = async (contenedores) => {
                             predioID: lote.predio._id,
                             SISPAP: lote.predio.SISPAP,
                         }
-                        :
-                        contenedores[i].pallets[j].get("EF1")[n].lote;
+
                 }
             }
-            contenedores[i].pallets = contenedores[i].pallets.map(pallet => Object.fromEntries(pallet));
+
         }
+            console.log(contenedores[0].pallets[0].EF1[0].lote)
         return contenedores;
     } catch (e) {
         console.error(e);

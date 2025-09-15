@@ -8,9 +8,7 @@ export class tipoFrutaCache {
     static async cargar(reintentos = 5, delayMs = 1000) {
         for (let intento = 1; intento <= reintentos; intento++) {
             try {
-
                 const tipoFruta = await TiposFruta.get_tiposFruta();
-
                 if (!tipoFruta || tipoFruta.length === 0) {
                     throw new Error("No se encontraron tipos de fruta para guardar en Redis");
                 }
