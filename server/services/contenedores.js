@@ -133,7 +133,7 @@ export class ContenedoresService {
                         const item = ca[key]
                         item.cajasP = (item.cajas * 100) / cajasTotal
                         item.kilosP = (item.kilos * 100) / kilosTotal
-                        if(tipo === 'calibre'){
+                        if (tipo === 'calibre') {
                             Object.keys(item.calidad).forEach(key2 => {
                                 const item2 = item.calidad[key2]
                                 item2.cajasP = ((item2.cajas * 100) / cajasTotal)
@@ -148,5 +148,49 @@ export class ContenedoresService {
         // console.log(resumen)
         return { resumen, totalCalidades: [...TotalCalidades], totalCalibres: [...TotalCalibres] };
     }
+    static obtenerResumenPredios = (cont) => {
+        const predios = {}
+        cont.forEach(contenedor => {
+            contenedor.pallets.forEach(pallet => {
+                pallet.EF1.forEach(item => {
+                    if (item.lote?._id) {
 
+                        if (!Object.prototype.hasOwnProperty.call(predios, item.lote._id)) {
+                            predios[item.lote._id] = {
+                                enf: item.lote.enf,
+                                predio: item.lote.predio,
+                                tipoFruta: item.tipoFruta
+                            }
+                            predios[item.lote._id].cont = {}
+                            predios[item.lote._id].calibres = {}
+
+                        }
+                        if (!Object.prototype.hasOwnProperty.call(predios[item.lote._id].cont, contenedor._id)) {
+                            predios[item.lote._id].cont[contenedor._id] = {
+                                numero: contenedor.numeroContenedor,
+                                kilos: 0,
+                                cajas: 0
+                            }
+                        }
+                        if (!Object.prototype.hasOwnProperty.call(predios[item.lote._id].calibres, item.calibre)) {
+                            predios[item.lote._id].calibres[item.calibre] = {
+                                kilos: 0,
+                                cajas: 0
+                            }
+                        }
+                        if (item.tipoCaja !== null) {
+                            predios[item.lote._id].cont[contenedor._id].cajas += item.cajas
+                            predios[item.lote._id].calibres[item.calibre].cajas += item.cajas
+
+                            const mult = item.tipoCaja.split('-')[1].replace(",", ".")
+                            const kilos = item.cajas * Number(mult)
+                            predios[item.lote._id].cont[contenedor._id].kilos += kilos
+                            predios[item.lote._id].calibres[item.calibre].kilos += kilos
+                        }
+                    }
+                })
+            })
+        })
+        return predios
+    }
 }

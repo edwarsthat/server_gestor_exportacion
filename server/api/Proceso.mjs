@@ -750,16 +750,6 @@ export class ProcesoRepository {
         procesoEventEmitter.emit("listaempaque_update");
 
     }
-    /**
-     * Mueve uno o varios ítems seleccionados de un pallet de un contenedor a otro pallet de otro contenedor.
-     * Actualiza los pallets de ambos contenedores y registra los cambios en los lotes y en los contenedores.
-     * Si el item pasa a un contenedor GGN, ajusta los kilosGGN en el lote correspondiente.
-     *
-     * @param {Object} contenedor1 - Contenedor origen (de donde se extraen los ítems). Debe incluir el array 'seleccionado' con los índices a mover.
-     * @param {Object} contenedor2 - Contenedor destino (donde se agregan los ítems).
-     * @param {string} action - Acción para el registro de auditoría.
-     * @param {Object} user - Usuario que realiza la acción.
-     */
     static async mover_item_entre_contenedores(contenedor1, contenedor2, action, user) {
         let log
         try {
@@ -829,18 +819,6 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
-    /**
-     * Mueve una cantidad de cajas de un item de un pallet de un contenedor a otro pallet de otro contenedor.
-     * Si el número de cajas en el origen llega a 0, el item se elimina del pallet origen.
-     * Si el item ya existe en el pallet destino, suma las cajas; si no, lo crea.
-     * También actualiza los kilos GGN si corresponde y registra las modificaciones.
-     *
-     * @param {Object} contenedor1 - Contenedor origen (de donde se restan cajas).
-     * @param {Object} contenedor2 - Contenedor destino (donde se suman cajas).
-     * @param {number} cajas - Cantidad de cajas a mover.
-     * @param {string} action - Acción para el registro de auditoría.
-     * @param {Object} user - Usuario que realiza la acción.
-     */
     static async restar_mover_contenedor_contenedor(contenedor1, contenedor2, cajas, action, user) {
         let log
 

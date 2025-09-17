@@ -168,27 +168,6 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-
-    /**
-     * Maneja el despacho de fruta descartada del inventario.
-     * Este método realiza las siguientes operaciones:
-     * 1. Valida los datos del despacho
-     * 2. Crea un nuevo registro de despacho
-     * 3. Actualiza el inventario de descartes en Redis
-     * 
-     * @param {Object} req - Objeto de solicitud
-     * @param {Object} req.user - Información del usuario que realiza la operación
-     * @param {Object} req.user.user - Datos del usuario
-     * @param {Object} req.data - Datos del despacho
-     * @param {Object} req.data.data - Información específica del despacho
-     * @param {Object} req.data.inventario - Estado actual del inventario
-     * @param {string} req.data.inventario.tipoFruta - Tipo de fruta a despachar
-     * 
-     * @throws {InventariosLogicError} Si hay errores en la validación o el procesamiento
-     * @throws {Error} Si hay errores en la conexión con Redis o en la creación del despacho
-     * 
-     * @emits {server_event} Emite un evento "descarte_change" cuando se completa el despacho
-     */
     static async put_inventarios_frutaDescarte_despachoDescarte(req) {
         let descarteLavado, descarteEncerado, tipoFruta
         try {
@@ -235,38 +214,6 @@ export class InventariosRepository {
         }
 
     }
-    /**
-     * Procesa la fruta descartada para su reproceso. Este método realiza tres operaciones principales:
-     * 1. Procesa los datos del formulario de descarte
-     * 2. Modifica el inventario de descarte en Redis
-     * 3. Crea un nuevo lote para el reproceso
-     * 
-     * @param {Object} req - Objeto de solicitud
-     * @param {Object} req.data - Datos de la solicitud
-     * @param {Object} req.data.data - Datos del formulario de descarte
-     * @param {string} req.data.data.tipoFruta - Tipo de fruta a reprocesar ('Naranja' o 'Limon')
-     * @param {Object} req.data.data - Campos de descarte con formato 'tipo:subtipo'
-     * @param {Object} req.user - Información del usuario que realiza la operación
-     * @throws {InventariosLogicError} Si hay errores en la validación o el procesamiento
-     * @throws {Error} Si hay errores en la conexión con Redis o en la creación del lote
-     * @emits {server_event} Emite un evento "descarte_change" cuando se completa el despacho
-     * 
-     * @example
-     * // Ejemplo de datos de entrada
-     * {
-     *   data: {
-     *     data: {
-     *       tipoFruta: 'Naranja',
-     *       'descarteLavado:general': '10',
-     *       'descarteEncerado:balin': '5'
-     *     },
-     *     user: {
-     *       _id: '123',
-     *       user: 'Juan'
-     *     }
-     *   }
-     * }
-     */
     static async put_inventarios_frutaDescarte_reprocesarFruta(req) {
         let log
         const { user } = req;
@@ -520,94 +467,6 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, err.message)
         }
     }
-    /**
-     * Obtiene los datos completos de los lotes que están actualmente en proceso de desverdizado.
-     * Esta función combina información del inventario de desverdizado en Redis con los datos
-     * completos de los lotes desde la base de datos MongoDB.
-     * 
-     * @async
-     * @static
-     * @method get_inventarios_frutaDesverdizando_lotes
-     * 
-     * @description
-     * Este método realiza las siguientes operaciones principales:
-     * 1. **Obtención del inventario de desverdizado**: Recupera el estado actual del inventario
-     *    de desverdizado desde Redis, que contiene la distribución de lotes por cuartos
-     * 2. **Extracción de IDs**: Procesa la estructura del inventario para extraer todos los
-     *    IDs únicos de lotes que están en proceso de desverdizado
-     * 3. **Consulta paralela**: Realiza consultas simultáneas para obtener:
-     *    - Datos completos de los lotes desde MongoDB
-     *    - Información de los cuartos de desverdizado (aunque actualmente no se usan los cuartosIds)
-     * 4. **Combinación de datos**: Retorna un objeto que combina toda la información necesaria
-     *    para la gestión del inventario de desverdizado
-     * 
-     * @returns {Promise<Object>} Objeto con la información completa del inventario de desverdizado
-     * @returns {Array<Object>} return.lotes - Array con los datos completos de los lotes en desverdizado
-     * @returns {Array<Object>} return.cuartosDesverdizado - Array con información de los cuartos de desverdizado
-     * @returns {Object} return.inventarioDesverdizado - Estructura del inventario organizada por cuartos y lotes
-     * 
-     * @throws {InventariosLogicError} 470 - Error general en el procesamiento
-     * @throws {Error} 518 - Error específico de conexión o datos
-     * @throws {Error} 413 - Error específico del proceso
-     * 
-     * @example
-     * // Ejemplo de uso
-     * const inventario = await InventariosRepository.get_inventarios_frutaDesverdizando_lotes();
-     * 
-     * // Estructura del resultado:
-     * {
-     *   lotes: [
-     *     {
-     *       _id: "507f1f77bcf86cd799439012",
-     *       enf: "EF1001",
-     *       tipoFruta: "Naranja",
-     *       desverdizado: {
-     *         desverdizando: true,
-     *         canastillasIngreso: 25,
-     *         cuartoDesverdizado: ["507f1f77bcf86cd799439013"]
-     *       }
-     *       // ... otros campos del lote
-     *     }
-     *   ],
-     *   cuartosDesverdizado: [
-     *     // ... datos de los cuartos
-     *   ],
-     *   inventarioDesverdizado: {
-     *     "507f1f77bcf86cd799439013": {  // ID del cuarto
-     *       "507f1f77bcf86cd799439012": 25  // ID del lote: canastillas
-     *     }
-     *   }
-     * }
-     * 
-     * @example
-     * // Uso típico en el frontend para mostrar lotes en desverdizado
-     * try {
-     *   const { lotes, inventarioDesverdizado } = await this.get_inventarios_frutaDesverdizando_lotes();
-     *   
-     *   // Procesar lotes para mostrar en la interfaz
-     *   const lotesConInventario = lotes.map(lote => ({
-     *     ...lote,
-     *     canastillasEnDesverdizado: this.calcularCanastillasEnDesverdizado(lote._id, inventarioDesverdizado)
-     *   }));
-     * } catch (error) {
-     *   console.error('Error al obtener inventario de desverdizado:', error);
-     * }
-     * 
-     * @since 1.0.0
-     * @see {@link RedisRepository.get_inventario_desverdizado} Para obtener el inventario desde Redis
-     * @see {@link LotesRepository.getLotes} Para obtener los datos completos de los lotes
-     * @see {@link CuartosDesverdizados.get_cuartosDesverdizados} Para obtener información de cuartos
-     * 
-     * @performance
-     * - Usa consultas paralelas con Promise.all() para optimizar el rendimiento
-     * - Estructura de datos eficiente usando Set para IDs únicos
-     * - Tiempo típico de ejecución: 50-200ms dependiendo de la cantidad de lotes
-     * 
-     * @note
-     * - El inventario de desverdizado se mantiene en Redis para acceso rápido
-     * - La estructura del inventario es: cuartoId -> loteId -> canastillas
-     * - Los cuartosIds se extraen pero actualmente no se utilizan en la consulta
-     */
     static async get_inventarios_frutaDesverdizando_lotes() {
         try {
             const inventario = await RedisRepository.get_inventario_desverdizado();
@@ -667,154 +526,6 @@ export class InventariosRepository {
         return resultado
 
     }
-    /**
- * Procesa el ingreso de fruta sin procesar al proceso de desverdizado.
- * 
- * @async
- * @static
- * @method put_inventarios_frutaSinProcesar_desverdizado
- * 
- * @param {Object} req - Objeto de solicitud
- * @param {Object} req.user - Información del usuario que realiza la operación
- * @param {string} req.user.user - ID del usuario que ejecuta la acción
- * @param {Object} req.data - Datos de la operación de desverdizado
- * @param {string} req.data._id - ID del lote a procesar (loteId)
- * @param {Object} req.data.desverdizado - Información del proceso de desverdizado
- * @param {number} req.data.desverdizado.canastillas - Cantidad de canastillas a ingresar al desverdizado
- * @param {string} req.data.desverdizado._id - ID del cuarto de desverdizado (cuartoId)
- * @param {string} req.data.action - Acción que se está realizando para el historial
- * 
- * @description
- * Este método realiza las siguientes operaciones principales:
- * 1. **Validación**: Valida los datos de entrada usando el esquema de validación correspondiente
- * 2. **Actualización del lote**: Modifica el documento del lote con:
- *    - Incrementa las canastillas de ingreso al desverdizado
- *    - Marca el lote como "desverdizando"
- *    - Agrega el cuarto de desverdizado al array de cuartos
- * 3. **Modificación del inventario**: Actualiza el inventario de desverdizado en Redis
- * 4. **Emisión de eventos**: Notifica los cambios a través del sistema de eventos
- * 
- * @throws {InventariosLogicError} 470 - Error general en la validación o procesamiento
- * @throws {Error} 518 - Error específico de conexión o datos
- * @throws {Error} 413 - Error específico del proceso
- * 
- * @fires procesoEventEmitter#server_event - Emite evento "inventario_frutaSinProcesar" 
- * @fires procesoEventEmitter#server_event - Emite evento "inventario_desverdizado"
- * 
- * @example
- * // Ejemplo de uso
- * const req = {
- *   user: {
- *     user: "507f1f77bcf86cd799439011"
- *   },
- *   data: {
- *     _id: "507f1f77bcf86cd799439012", // ID del lote
- *     desverdizado: {
- *       canastillas: 25,
- *       _id: "507f1f77bcf86cd799439013" // ID del cuarto
- *     },
- *     action: "ingreso_desverdizado"
- *   }
- * };
- * 
- * await InventariosRepository.put_inventarios_frutaSinProcesar_desverdizado(req);
- * 
- * @since 1.0.0
- * @see {@link InventariosValidations.put_inventarios_frutaSinProcesar_desverdizado} Para validaciones
- * @see {@link InventariosService.modificarInventarioIngresoDesverdizado} Para modificación de inventario
- * @see {@link LotesRepository.actualizar_lote} Para actualización de lotes
- */
-    static async put_inventarios_frutaSinProcesar_desverdizado(req) {
-        try {
-
-            const { user } = req.user;
-            const { _id: loteId, desverdizado, action } = req.data
-            const { canastillas, _id: cuartoId } = desverdizado;
-
-            InventariosValidations.put_inventarios_frutaSinProcesar_desverdizado().parse(req.data);
-            const updatePipeline = [
-                {
-                    $set: {
-                        'desverdizado.canastillasIngreso': {
-                            $add: ['$desverdizado.canastillasIngreso', parseInt(canastillas)]
-                        },
-                        'desverdizado.desverdizando': true,
-                        'desverdizado.cuartoDesverdizado': {
-                            $cond: [
-                                {
-                                    $in: [
-                                        cuartoId,
-                                        { $ifNull: ['$desverdizado.cuartoDesverdizado', []] }
-                                    ]
-                                },
-                                { $ifNull: ['$desverdizado.cuartoDesverdizado', []] },
-                                { $concatArrays: [{ $ifNull: ['$desverdizado.cuartoDesverdizado', []] }, [cuartoId]] }
-                            ]
-                        },
-                        'desverdizado.fechaIngreso': {
-                            $ifNull: ['$desverdizado.fechaIngreso', new Date()]
-                        }
-                    }
-                }
-            ];
-
-
-            await Promise.all([
-                InventariosService.modificarInventarioIngresoDesverdizado(canastillas, cuartoId, loteId),
-                LotesRepository.actualizar_lote(
-                    { _id: loteId },
-                    updatePipeline,
-                    { user: user._id, action: action }
-                )
-            ])
-
-            procesoEventEmitter.emit("server_event", {
-                action: "inventario_frutaSinProcesar",
-                data: {}
-            });
-            procesoEventEmitter.emit("server_event", {
-                action: "inventario_desverdizado",
-                data: {}
-            });
-
-        } catch (err) {
-            if (err.status === 518 || err.status === 413) {
-                throw err
-            }
-            const message = typeof err.message === "string" ? err.message : "Error inesperado";
-            throw new InventariosLogicError(470, `Error ${err.type || "interno"}: ${message}`);
-        }
-    }
-    /**
-     * Mueve fruta del inventario de desverdizado hacia diferentes destinos.
-     * 
-     * Este método gestiona el movimiento de fruta desde el inventario de desverdizado hacia
-     * otros inventarios o entre cuartos de desverdizado. Soporta dos tipos principales de
-     * operaciones: devolver fruta al inventario sin procesar o mover fruta entre cuartos
-     * de desverdizado diferentes.
-     * 
-     * El método actualiza tanto los registros en Redis (inventario de desverdizado) como
-     * en MongoDB (datos del lote), manteniendo la sincronización entre ambos sistemas
-     * y emitiendo eventos para notificar los cambios a otros componentes del sistema.
-     * 
-     * @static
-     * @async
-     * @param {Object} req - Objeto de solicitud con los datos de la operación de movimiento
-     * @param {Object} req.user - Información del usuario que realiza la operación
-     * @param {string} req.user._id - ID del usuario que ejecuta la acción
-     * @param {Object} req.data - Datos específicos de la operación de movimiento
-     * @param {string} req.data._id - ID del lote que se está moviendo
-     * @param {string} req.data.cuarto - ID del cuarto de desverdizado de origen
-     * @param {string} req.data.action - Descripción de la acción realizada para el historial
-     * @param {Object} req.data.data - Detalles específicos del movimiento
-     * @param {string} req.data.data.destino - Destino del movimiento ("inventarioFrutaSinProcesar" o ID de cuarto destino)
-     * @param {number} req.data.data.cantidad - Cantidad de canastillas a mover
-     * @returns {Promise<void>} Promesa que se resuelve cuando el movimiento se completa exitosamente
-     * @throws {InventariosLogicError} 470 - Error general en la validación o procesamiento
-     * @throws {Error} 518 - Error específico de conexión o datos
-     * @throws {Error} 413 - Error específico del proceso
-     * 
- **/
     static async put_inventarios_frutaDesverdizado_mover(req) {
         try {
 
@@ -1094,6 +805,64 @@ export class InventariosRepository {
         } catch (err) {
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_inventarios_cuartosFrios_salida_item(req) {
+        const { user } = req;
+        let log;
+
+        log = await LogsRepository.create({
+            user: user,
+            action: "put_inventarios_pallet_eviarCuartoFrio",
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
+
+        const session = await db.CuartosFrios?.db.startSession();
+
+        if (!session) {
+            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
+        }
+
+        try {
+            await session.withTransaction(async () => {
+                const { itemsIds, cuartoId } = req.data.data
+
+                const contenedores = await ContenedoresRepository.getContenedores({
+                    query: { "pallets.EF1._id": { $in: itemsIds } }, select: { numeroContenedor: 1, pallets: 1 }
+                });
+
+                const items = await InventariosService.itemsCuartosFrios(itemsIds, contenedores)
+                const { out, operation } = await InventariosService.sumatorias_items_cuartosFrios(items)
+                const itemsIdsLimpios = items.map(it => it._id)
+
+                await CuartosFrios.actualizar_cuartoFrio(
+                    { _id: cuartoId },
+                    {
+                        $pull: {
+                            inventario: { $in: itemsIdsLimpios }
+                        },
+                        $inc: out
+
+                    },
+                    {
+                        action: "Salida",
+                        operation: operation,
+                        description: 'Salida del cuarto => ' + cuartoId,
+                        user: user._id,
+                        session
+                    }
+                );
+            })
+
+        } catch (err) {
+            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await session.endSession();
+            if (log) {
+                await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
+            }
         }
     }
 
@@ -1735,32 +1504,6 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    /**
- * Actualiza un registro de despacho de descarte en el inventario.
- * 
- * @param {Object} req - Objeto de solicitud
- * @param {Object} req.user - Información del usuario que realiza la acción
- * @param {Object} req.data - Datos de la actualización
- * @param {string} req.data.action - Acción que se está realizando
- * @param {Object} req.data.data - Datos del formulario de descarte
- * @param {string} req.data._id - ID del registro a actualizar
- * 
- * @throws {InventariosLogicError} 470 - Error general en la lógica del inventario
- * @throws {Error} 521 - Error específico del proceso
- * @throws {Error} 518 - Error específico del proceso
- * 
- * @fires procesoEventEmitter#descarte_change
- * 
- * @description
- * Este método realiza las siguientes operaciones:
- * 1. Valida los datos del formulario de descarte
- * 2. Separa los datos entre inventario y registro nuevo
- * 3. Procesa el formulario para calcular descartes y total
- * 4. Revisa cambios en fruta e inventario
- * 5. Modifica el inventario si hay cambios
- * 6. Actualiza el registro con los nuevos datos
- * 7. Emite un evento de cambio de descarte
- */
     static async put_inventarios_historiales_despachoDescarte(req) {
         try {
             let { user } = req

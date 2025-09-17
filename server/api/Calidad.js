@@ -255,27 +255,31 @@ export class CalidadRepository {
             const { _id, contenedores } = req.data
 
 
-            const [lote, contenedoresData] = await Promise.all([
-                LotesRepository.getLotes2({ ids: [_id] }),
-                ContenedoresRepository.get_Contenedores_sin_lotes({
-                    ids: contenedores,
-                    select: { infoContenedor: 1, numeroContenedor: 1, pallets: 1 }
-                })
-            ])
-            await registrarPasoLog(logData.logId, "getLotes2 AND get_Contenedores_sin_lotes", "Completado");
-
-
-            const [exportacion] = await Promise.all([
-                CalidadService.obtenerExportacionContenedores(contenedoresData, _id, logData),
-                CalidadService.borrarContenedoresCalidadesCero(lote[0], logData)
-            ]);
-
+            console.log(contenedores)
             let query = {
                 aprobacionProduccion: true,
                 fecha_finalizado_proceso: new Date()
             }
+            if (contenedores && contenedores.length > 0) {
 
-            await CalidadService.compararExportacionLoteVsListaEmpaque(exportacion, lote[0], query, logData)
+                const [lote, contenedoresData] = await Promise.all([
+                    LotesRepository.getLotes2({ ids: [_id] }),
+                    ContenedoresRepository.get_Contenedores_sin_lotes({
+                        ids: contenedores,
+                        select: { infoContenedor: 1, numeroContenedor: 1, pallets: 1 }
+                    })
+                ])
+                await registrarPasoLog(logData.logId, "getLotes2 AND get_Contenedores_sin_lotes", "Completado");
+
+
+                const [exportacion] = await Promise.all([
+                    CalidadService.obtenerExportacionContenedores(contenedoresData, _id, logData),
+                    CalidadService.borrarContenedoresCalidadesCero(lote[0], logData)
+                ]);
+
+                await CalidadService.compararExportacionLoteVsListaEmpaque(exportacion, lote[0], query, logData)
+
+            }
 
             await LotesRepository.actualizar_lote(
                 { _id },

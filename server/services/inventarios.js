@@ -18,6 +18,7 @@ import { UnionsRepository } from "../Class/Unions.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
+import { parseMultTipoCaja } from "./helpers/contenedores.js";
 
 
 export class InventariosService {
@@ -1198,6 +1199,22 @@ export class InventariosService {
             }
         }
         return out;
+    }
+    static async sumatorias_items_cuartosFrios(items) {
+        const out = {}
+        let operation = "";
+
+        for (const item of items) {
+            const { tipoCaja, cajas, tipoFruta } = item;
+            if (!out[`totalFruta.${tipoFruta}.cajas`]) out[`totalFruta.${tipoFruta}.cajas`] = 0;
+            if (!out[`totalFruta.${tipoFruta}.kilos`]) out[`totalFruta.${tipoFruta}.kilos`] = 0;
+            const mult = parseMultTipoCaja(tipoCaja);
+            out[`totalFruta.${tipoFruta}.kilos`] -= (cajas * mult);
+            out[`totalFruta.${tipoFruta}.cajas`] -= cajas;
+            operation += `${cajas} cajas de ${tipoCaja}, `
+
+        }   
+        return { operation, out };
     }
     // static async modificarIngresoCanastillas(data) {
     //     const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)

@@ -64,6 +64,7 @@ export class CalidadService {
         const exportacion = {}
 
         const numeroCont = contenedoresData.length;
+        
         for (let nCont = 0; nCont < numeroCont; nCont++) {
             const contActual = contenedoresData[nCont].toObject();
             const numeroPallets = contActual.pallets.length;
