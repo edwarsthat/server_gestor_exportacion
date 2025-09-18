@@ -230,6 +230,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.AuditLog = AuditLog;
         const AuditLoteEF8 = await defineAuditLogsLoteEF8(sysConn);
         const AuditCuartosFrios = await defineAuditCuartosFrios(sysConn);
+        db.AuditCuartosFrios = AuditCuartosFrios;
 
         
         console.log("✅ AuditLog definido");

@@ -25,7 +25,6 @@ const oobtener_datos_lotes_to_listaEmpaque = async (contenedores) => {
             }
 
         }
-            console.log(contenedores[0].pallets[0].EF1[0].lote)
         return contenedores;
     } catch (e) {
         console.error(e);

@@ -106,13 +106,13 @@ export class ContenedoresService {
                     arrFecha.forEach(fecha => {
                         const arrCalibre = [...calibreSet]
                         arrCalibre.forEach(cal => {
-                            if (resumen[fruta][fecha].calibre[cal]) {
+                            if (resumen?.[fruta]?.[fecha]?.calibre?.[cal]) {
                                 resumen[fruta][fecha].calibre[cal].pallet += 1
                             }
                         })
                         const arrCalidad = [...calidadSet]
                         arrCalidad.forEach(cal => {
-                            if (resumen[fruta][fecha].calidad[cal]) {
+                            if (resumen?.[fruta]?.[fecha]?.calidad?.[cal]) {
                                 resumen[fruta][fecha].calidad[cal].pallet += 1
                             }
                         })

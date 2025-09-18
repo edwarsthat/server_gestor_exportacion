@@ -737,6 +737,12 @@ export class InventariosRepository {
 
             await registrarPasoLog(log._id, "Transacción completada", "Completado");
 
+            procesoEventEmitter.emit("server_event", {
+                action: "lista_empaque_update",
+            });
+            procesoEventEmitter.emit("listaempaque_update");
+
+
             return true;
 
         } catch (err) {
@@ -813,7 +819,7 @@ export class InventariosRepository {
 
         log = await LogsRepository.create({
             user: user,
-            action: "put_inventarios_pallet_eviarCuartoFrio",
+            action: "put_inventarios_cuartosFrios_salida_item",
             acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
         });
 
@@ -826,7 +832,7 @@ export class InventariosRepository {
         try {
             await session.withTransaction(async () => {
                 const { itemsIds, cuartoId } = req.data.data
-
+                console.log("itemsIds", itemsIds)
                 const contenedores = await ContenedoresRepository.getContenedores({
                     query: { "pallets.EF1._id": { $in: itemsIds } }, select: { numeroContenedor: 1, pallets: 1 }
                 });
@@ -853,6 +859,13 @@ export class InventariosRepository {
                     }
                 );
             })
+
+            procesoEventEmitter.emit("server_event", {
+                action: "lista_empaque_update",
+            });
+            procesoEventEmitter.emit("listaempaque_update");
+
+            return true
 
         } catch (err) {
             await registrarPasoLog(log._id, "Error", "Fallido", err.message);
@@ -1325,13 +1338,50 @@ export class InventariosRepository {
         }
 
     }
-    static async put_inventarios_ordenVaceo_modificar(data) {
+    static async get_inventarios_registros_cuartosFrios(req) {
+        try {
+            const { data } = req
+            const { page } = data;
+            const resultsPerPage = 50;
 
-        await VariablesDelSistema.put_inventario_inventarios_orden_vaceo_modificar(data.data.data)
-        procesoEventEmitter.emit("server_event", {
-            action: "modificar_orden_vaceo",
-            data: {}
-        });
+            const historial = await InventariosHistorialRepository.get_registrosCuartosFrios({
+                skip: (page - 1) * resultsPerPage,
+                limit: resultsPerPage,
+            });
+
+            const usersIds = historial.map(item => item.user);
+            const arrUsers = [...new Set(usersIds)];
+            const arrUsersFiltrado = arrUsers.filter(user => mongoose.isObjectIdOrHexString(user));
+
+            const usuarios = await UsuariosRepository.get_users({
+                ids: arrUsersFiltrado,
+                limit: "all"
+            });
+
+            historial.forEach(item => {
+                const user = usuarios.find(user => user._id.toString() === item.user.toString());
+                item.user = user?.nombre || "" + " " + user?.apellido || ""
+            })
+            
+            return historial;
+        } catch (err) {
+
+            if (err.status === 523) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+        static async get_inventarios_historiales_numeroRegistros_cuartosFrios() {
+        try {
+            const cantidad = await InventariosHistorialRepository.get_numero_registros_cuartosFrios();
+            return cantidad;
+        } catch (err) {
+            if (err.status === 522) {
+                throw err;
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`);
+        }
     }
     static async get_inventarios_historiales_registros_inventarioDescartes(req) {
         try {
@@ -1367,6 +1417,14 @@ export class InventariosRepository {
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`);
         }
+    }
+    static async put_inventarios_ordenVaceo_modificar(data) {
+
+        await VariablesDelSistema.put_inventario_inventarios_orden_vaceo_modificar(data.data.data)
+        procesoEventEmitter.emit("server_event", {
+            action: "modificar_orden_vaceo",
+            data: {}
+        });
     }
     static async put_inventarios_historialProcesado_modificarHistorial(req) {
         try {
@@ -1606,6 +1664,7 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
+
     //#endregion
     //#region ingresos
     static async get_inventarios_ingresos_ef() {
