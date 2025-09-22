@@ -575,7 +575,7 @@ export class ProcesoRepository {
             const { palletsModificados, copiaPallet } = await ProcesoService.crearCopiaProfundaPallets(contenedor[0]);
             await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
 
-            const GGN = have_lote_GGN_export(lote, contenedor[0])
+            const GGN = have_lote_GGN_export(lote[0], contenedor[0])
 
             const palletSeleccionado = palletsModificados[pallet].EF1[seleccion];
             const copiaPalletSeleccionado = copiaPallet[pallet].EF1[seleccion];

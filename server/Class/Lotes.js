@@ -22,12 +22,14 @@ const camposDescartes = [
 ];
 
 export class LotesRepository {
-    static async addLote(data, user) {
+    static async addLote(data, user, opts = {}) {
+        const { session } = opts; 
         try {
             const lote = new db.Lotes(data);
             lote._user = user;
-            const saveLote = await lote.save();
-            return saveLote
+            
+            const saved = await lote.save({ session });
+            return saved;
         } catch (err) {
             throw new PostError(409, `Error agregando lote ${err.message}`);
         }

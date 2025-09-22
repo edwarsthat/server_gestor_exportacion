@@ -227,11 +227,13 @@ export class dataRepository {
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async incrementar_ef1_serial() {
+    static async incrementar_ef1_serial(session) {
         try {
             await Seriales.modificar_seriales(
                 { name: "EF1-" },
-                { $inc: { serial: 1 } }
+                { $inc: { serial: 1 } },
+                {},
+                session 
             )
         } catch (err) {
             if (err.status === 522) {

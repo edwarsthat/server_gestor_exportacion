@@ -1,3 +1,4 @@
+import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 import { InventariosLogicError } from "../../Error/logicLayerError.js";
 import { dataRepository } from "../api/data.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
@@ -99,36 +100,30 @@ export class InventariosService {
             destinatario: destinatario
         }
     }
-    static async ajustarCanastillasProveedorCliente(_id, cantidad) {
-        if (!_id || cantidad === 0) return;
+    static async ajustarCanastillasProveedorCliente(_id, cantidad, user, session = null) {
+        if (!_id || !Number.isFinite(cantidad) || cantidad === 0) return;
 
-        const proveedores = await ProveedoresRepository.get_proveedores({
-            ids: [_id],
-            select: { canastillas: 1 }
-        });
+        const prov = await ProveedoresRepository.actualizar_proveedores(
+            { _id: _id },
+            { $inc: { canastillas: cantidad } },
+            {session},
+        );
 
-        const clientes = await ClientesRepository.get_clientesNacionales({
-            ids: [_id],
-            select: { canastillas: 1 }
-        })
-
-        if (proveedores.length > 0) {
-            const proveedor = proveedores[0];
-            const cantidadActual = Number(proveedor.canastillas ?? 0);
-            const newCanastillas = cantidadActual + cantidad;
-            await ProveedoresRepository.modificar_proveedores(
-                { _id: proveedor._id },
-                { $set: { canastillas: newCanastillas } }
-            );
-        } else if (clientes.length > 0) {
-            const cliente = clientes[0];
-            const cantidadActual = Number(cliente.canastillas ?? 0);
-            const newCanastillas = cantidadActual + cantidad;
-            await ClientesRepository.actualizar_clienteNacional(
-                { _id: cliente._id },
-                { canastillas: newCanastillas }
-            );
+        if (prov) {
+            return prov;
         }
+
+        const cli = await ClientesRepository.actualizar_clienteNacional(
+            { _id: _id },
+            { $inc: { canastillas: cantidad } },
+            {session},
+        )
+
+        if (cli) {
+            return cli;
+        }
+
+        throw new ConnectionDBError(404, "No existe proveedor/cliente o el ajuste dejaría canastillas en negativo");
     }
     static async encontrarDestinoOrigenRegistroCanastillas(registros) {
         const destinosArr = registros.map(registro => registro.destino);
@@ -1213,7 +1208,7 @@ export class InventariosService {
             out[`totalFruta.${tipoFruta}.cajas`] -= cajas;
             operation += `${cajas} cajas de ${tipoCaja}, `
 
-        }   
+        }
         return { operation, out };
     }
     // static async modificarIngresoCanastillas(data) {

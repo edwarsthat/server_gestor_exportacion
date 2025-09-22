@@ -24,6 +24,17 @@ routerInventarios.get("/get_inventarios_frutaDescarte_fruta", async (req, res) =
         res.json({ status: err.status, message: err.message })
     }
 })
+routerInventarios.get("/get_inventarios_frutaSinProcesar_frutaEnInventario", async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        const user = await UserRepository.authenticateToken(token);
+        await UserRepository.autentificacionPermisosHttps(user.cargo, "get_inventarios_frutaDescarte_fruta")
+        const response = await InventariosRepository.get_inventarios_frutaSinProcesar_frutaEnInventario()
+        res.json({ status: 200, message: 'Ok', data: response })
+    } catch (err) {
+        res.json({ status: err.status, message: err.message })
+    }
+})
 routerInventarios.get("/get_inventarios_lotes_infoLotes", async (req, res) => {
     try {
         const token = req.headers['authorization'];

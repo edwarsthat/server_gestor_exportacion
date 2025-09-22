@@ -17,6 +17,8 @@ import { fileURLToPath } from 'url';
 import { CalidadService } from "../services/calidad.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ErrorCalidadLogicHandlers } from "./utils/errorsHandlers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -109,20 +111,45 @@ export class CalidadRepository {
         }
     }
     static async put_calidad_historial_clasficacionDescarte(req) {
-        try {
-            const { data: datos, user } = req
-            const { action, _id, data } = datos
+        const { user } = req;
+        // Validaciones básicas
+        const { action, _id, data } = req.data;
+        if (!_id || !data) {
+            throw new CalidadLogicError(400, 'ID y datos son requeridos');
+        }
 
-            await LotesRepository.actualizar_lote(
-                { _id: _id },
-                data,
-                { new: true, user: user, action: action }
-            );
-        } catch (err) {
-            if (err.status === 524) {
-                throw err
+        const log = await LogsRepository.create({
+            user: user,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
+
+        const session = await db.Lotes?.db.startSession();
+        if (!session) {
+            await LogsRepository.update(log._id, { status: "Error", error: "No se pudo iniciar la sesión DB" });
+            throw new CalidadLogicError(500, "No se pudo iniciar la sesión en la base de datos");
+        }
+        try {
+            const updatedLote = await session.withTransaction(async () => {
+                return await LotesRepository.actualizar_lote(
+                    { _id },
+                    data,
+                    { new: true, user, action, session }
+                );
+            });
+            await LogsRepository.update(log._id, { status: "Completado", completedAt: new Date() });
+            return updatedLote;
+
+        } catch (error) {
+            await ErrorCalidadLogicHandlers(error, log);
+        } finally {
+            if (session) {
+                try {
+                    await session.endSession();
+                } catch (sessionError) {
+                    console.error('Error al cerrar sesión DB:', sessionError);
+                }
             }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
     //#endregion

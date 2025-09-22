@@ -71,8 +71,11 @@ import { defineSeriales } from '../schemas/seriales/SerialesSchema.js';
 import { defineAuditLogsLoteEF8 } from '../schemas/lotes/schemaAuditLoteEf8.js';
 import { defineCuartosFrios } from '../schemas/catalogs/schemaCuartosFrios.js';
 import { defineAuditCuartosFrios } from '../schemas/audit/AuditCuartosFrios.js';
+import { defineAuditInventariosSimples } from '../schemas/audit/AuditInventariosSimples.js';
+import { defineInventarioSimple } from '../schemas/inventarios/SchemaInventariosSimples.js';
 
 export const db = {};
+export const connections = {};
 
 /**
 * Verifica si el servicio de MongoDB está corriendo y responde a conexiones.
@@ -231,14 +234,24 @@ const defineSchemasProceso = async (sysConn) => {
         const AuditLoteEF8 = await defineAuditLogsLoteEF8(sysConn);
         const AuditCuartosFrios = await defineAuditCuartosFrios(sysConn);
         db.AuditCuartosFrios = AuditCuartosFrios;
+        const AuditInventariosSimples = await defineAuditInventariosSimples(sysConn);
+        db.AuditInventariosSimples = AuditInventariosSimples;
 
-        
         console.log("✅ AuditLog definido");
-
-        // 2. Esquemas relacionados con clientes (base para otras dependencias)
+        // inventarios
         console.log("⚡ Definiendo Cuartos Frios...");
         db.CuartosFrios = await defineCuartosFrios(sysConn, AuditCuartosFrios);
         console.log("✅ Cuartos Frios definidos");
+        console.log("⚡ Definiendo Inventarios Simples...");
+        db.InventariosSimples = await defineInventarioSimple(sysConn, AuditInventariosSimples);
+        console.log("✅ Inventarios Simples definidos");
+
+
+        // Esquemas relacionados con clientes (base para otras dependencias)
+        console.log("⚡ Definiendo Tipo frutas...");
+        db.TipoFrutas2 = await defineTipoFrutas(sysConn);
+        console.log("✅ Tipo frutas definidos");
+
         console.log("⚡ Definiendo Clientes...");
         db.Clientes = await defineClientes(sysConn);
         console.log("✅ Clientes definido");
@@ -251,7 +264,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.recordClientes = await defineRecordClientes(sysConn);
         console.log("✅ recordClientes definido");
 
-        // 3. Esquemas relacionados con proveedores
+        // Esquemas relacionados con proveedores
         console.log("⚡ Definiendo Proveedores...");
         db.Proveedores = await defineproveedores(sysConn);
         console.log("✅ Proveedores definido");
@@ -260,7 +273,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.recordProveedor = await defineRecordProveedor(sysConn);
         console.log("✅ recordProveedor definido");
 
-        // 4. Esquemas de descartes (dependen de clientes)
+        // Esquemas de descartes (dependen de clientes)
         console.log("⚡ Definiendo historialDespachoDescarte...");
         db.historialDespachoDescarte = await defineHistorialDespachoDescarte(sysConn);
         console.log("✅ historialDespachoDescarte definido");
@@ -273,7 +286,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.frutaDescompuesta = await defineFrutaDescompuesta(sysConn);
         console.log("✅ frutaDescompuesta definido");
 
-        // 5. Esquemas independientes
+        // Esquemas independientes
         console.log("⚡ Definiendo Precios...");
         db.Precios = await definePrecios(sysConn);
         console.log("✅ Precios definido");
@@ -294,7 +307,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.Indicadores = await defineIndicadores(sysConn);
         console.log("✅ Indicadores definido");
 
-        // 6. Esquemas relacionados con contenedores (dependen de lotes)
+        // Esquemas relacionados con contenedores (dependen de lotes)
         console.log("⚡ Definiendo Contenedores...");
         db.Contenedores = await defineContenedores(sysConn);
         console.log("✅ Contenedores definido");
@@ -306,7 +319,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.RegistrosCanastillas = await defineRegistroCanastillas(sysConn);
         console.log("✅ RegistrosCanastillas definido");
 
-        // 8. Esquemas relacionados con lotes (dependen de proveedores y descartes)
+        // Esquemas relacionados con lotes (dependen de proveedores y descartes)
         console.log("⚡ Definiendo Lotes...");
         db.Lotes = await defineLotes(sysConn, AuditLog);
         console.log("✅ Lotes definido");
@@ -319,7 +332,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.LotesEF8 = await defineLoteEf8(sysConn, AuditLoteEF8);
         console.log("✅ Lotes EF8 definido");
 
-        // 9. Esquemas de registro de transacciones
+        // Esquemas de registro de transacciones
         console.log("⚡ Definiendo RecordModificacion...");
         db.RecordModificacion = await defineModificarElemento(sysConn);
         console.log("✅ RecordModificacion definido");
@@ -436,13 +449,9 @@ const defineSchemasCatalogo = async (sysConn) => {
         try {
             console.log("🔍 Iniciando definición de schemas sistema...");
 
-
-
             console.log("⚡ Definiendo Cuartos desverdizado...");
             db.CuartosDesverdizados = await defineCuartosdesverdizado(sysConn);
             console.log("✅ Cuartos desverdizados definidos");
-
-
 
             console.log("⚡ Definiendo Tipo frutas...");
             db.TipoFrutas = await defineTipoFrutas(sysConn);

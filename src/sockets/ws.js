@@ -98,6 +98,7 @@ export function initSockets(io) {
                 callback(response);
 
             } catch (err) {
+                console.log("Error en el manejo de la solicitud:", err);
                 await HandleErrors.addError(err);
                 callback(err);
             }

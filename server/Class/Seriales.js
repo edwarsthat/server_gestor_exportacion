@@ -21,8 +21,8 @@ export class Seriales {
                 ...options,
                 ...(session && { session })
             };
-
-            const registros = await db.Seriales.findOneAndUpdate(filter, update, { ...finalOptions, new: true });
+            const registros = await db.Seriales.findOneAndUpdate(filter, update, finalOptions);
+            if (!registros) throw new ErrorSeriales(504, "Serial no encontrado");
             return registros
 
         } catch (err) {

@@ -139,32 +139,28 @@ export class ClientesRepository {
             throw new ConnectionDBError(524, `Error obteniendo cantidad clientes ${err.mess}`);
         }
     }
-    static async actualizar_clienteNacional(filter, update, options = {}, session = null) {
-        /**
-         * Función genérica para actualizar documentos en MongoDB usando Mongoose
-         *
-         * @param {Model} model - Modelo Mongoose (db.clientes, etc.)
-         * @param {Object} filter - Objeto de filtrado para encontrar el documento
-         * @param {Object} update - Objeto con los campos a actualizar
-         * @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
-         * @param {ClientSession} session - Sesión de transacción (opcional)
-         * @returns Documento actualizado
-         */
-
-        const defaultOptions = { new: true }; // retorna el documento actualizado
-        const finalOptions = session
-            ? { ...defaultOptions, ...options, session }
-            : { ...defaultOptions, ...options };
+    static async actualizar_clienteNacional(filter, update, options = {}) {
+        const finalOptions = {
+            returnDocument: "after",
+            runValidators: true,
+            ...options,
+        };
 
         try {
-            const documentoActualizado = await db.ClientesNacionales.findOneAndUpdate(
+            const doc = await db.ClientesNacionales.findOneAndUpdate(
                 filter,
                 update,
                 finalOptions
             );
-            return documentoActualizado;
+
+            if (!doc) {
+                throw new ConnectionDBError(404, "Cliente no encontrado");
+            }
+
+            return doc;
         } catch (err) {
-            throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
+            console.error("[DB ERROR][ClientesNacionales.actualizar]", err);
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
 }

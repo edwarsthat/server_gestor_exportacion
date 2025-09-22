@@ -56,17 +56,62 @@ export class ProveedoresRepository {
 
         }
     }
-    static async modificar_proveedores(id, query, action, user) {
-        this.validateBussyIds(id)
+    static async modificar_proveedores(id, query, action, user, session = null,) {
         try {
-            const proveedor = await db.Proveedores.findOneAndUpdate({ _id: id }, query, { new: true });
-            let record = new db.recordProveedor({ operacionRealizada: action, user: user, documento: { ...query, _id: id } })
-            await record.save()
-            return proveedor
+            const options = {
+                new: true,
+                runValidators: true,
+                ...(session && { session }),
+            };
+            const proveedor = await db.Proveedores.findOneAndUpdate(
+                { _id: id },
+                query,
+                options
+            );
+
+            if (!proveedor) {
+                throw new PutError(404, "Proveedor no encontrado");
+            }
+
+            // Evita volcar operadores en el log; toma lo “humano”
+            const cambiosAplicados = query?.$set ?? query;
+
+            const record = new db.recordProveedor({
+                operacionRealizada: action,
+                user,
+                proveedor: id,
+                cambiosAplicados,
+                timestamp: new Date(),
+            });
+
+            await record.save({ session }); // <-- sesión va aquí
+
         } catch (err) {
             throw new PutError(414, `Error al modificar el dato  ${err.message}`);
-        } finally {
-            bussyIds.delete(id);
+        }
+    }
+    static async actualizar_proveedores(filter, update, options = {}) {
+        const finalOptions = {
+            returnDocument: "after",  
+            runValidators: true,       
+            ...options,                
+        };
+
+        try {
+            const doc = await db.Proveedores.findOneAndUpdate(
+                filter,
+                update,
+                finalOptions
+            );
+
+            if (!doc) {
+                throw new ConnectionDBError(404, "Proveedor no encontrado");
+            }
+
+            return doc;
+        } catch (err) {
+            console.error("[DB ERROR][Proveedores.actualizar]", err);
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
     static async modificar_varios_proveedores(query, data, action, user) {

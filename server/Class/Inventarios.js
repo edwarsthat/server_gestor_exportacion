@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 
@@ -99,5 +100,108 @@ export class InventariosHistorialRepository {
             throw new ConnectionDBError(522, `Error obteniendo la cantidad de registros de cuartos fríos ${err.message}`);
         }
     }
+
+    //#region Inventarios Simples
+    static async getInventarioFrutaSinProcesar(options = {}) {
+        const {
+            ids = [],
+            // query = {},
+            // loteFields = ["enf", "fecha_ingreso", "kilos", "predio", "canastillas"],
+            // proveedorFields = ["PREDIO", "ICA", "GGN", "SISPAP"],
+        } = options;
+
+        const _ids = ids.map(id => new mongoose.Types.ObjectId(id));
+        const pipeline = [
+            { $match: { _id: { $in: _ids } } },
+            { $project: { inventario: 1 } },
+            // Desarma el array para enriquecer cada ítem con su Lote + Proveedor
+            { $unwind: { path: "$inventario" } },
+
+            // Lookup Lote del ítem
+            {
+                $lookup: {
+                    from: "lotes",
+                    let: { loteId: "$inventario.lote" },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$loteId"] } } },
+                        {
+                            $project: {
+                                _id: 1,
+                                enf: 1,
+                                predio: 1,
+                                proveedor: 1,
+                                canastillas: 1,
+                                promedio: 1,
+                                fecha_ingreso_inventario: 1,
+                                fecha_creacion: 1,
+                                calidad: 1,
+                                tipoFruta: 1,
+                                observaciones: 1,
+                                clasificacionCalidad: 1,
+                                fecha_ingreso_patio: 1,
+                                fecha_salida_patio: 1,
+                                fecha_estimada_llegada: 1,
+                                kilosVaciados: 1,
+                                not_pass: 1,
+                                GGN: 1,
+                            }
+                        }
+                    ],
+                    as: "lote"
+                },
+            },
+
+            { $unwind: { path: "$lote", preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: "proveedors",
+                    let: { predioId: "$lote.predio" },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$predioId"] } } },
+                        { $project: { _id: 1, PREDIO: 1, ICA: 1, GGN: 1, SISPAP: 1 } }
+                    ],
+                    as: "predio"
+                }
+            },
+            { $unwind: { path: "$predio", preserveNullAndEmptyArrays: true } },
+            {
+                $set: {
+                    lote: {
+                        $mergeObjects: [
+                            "$lote",
+                            { predio: "$predio" },
+                            { canastillas: "$inventario.canastillas" }
+                        ],
+
+                    }
+                }
+            },
+            { $unset: ["predio", "inventario"] },
+            { $replaceWith: "$lote" }
+        ];
+
+        const res = await db.InventariosSimples.aggregate(pipeline).exec();
+        return res || []
+
+    }
+    static async put_inventarioSimple(filter, update, options = {}) {
+        const finalOptions = {
+            returnDocument: "after",   // equivalente a new:true pero moderno
+            runValidators: true,
+            ...options                 // aquí viaja { session, user, action, operation, skipAudit, ... }
+        };
+
+        try {
+            const documento = await db.InventariosSimples.findOneAndUpdate(
+                filter,
+                update,
+                finalOptions
+            );
+            return documento;
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+        }
+    }
+    // #endregion
 
 }

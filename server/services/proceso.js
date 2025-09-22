@@ -142,7 +142,7 @@ class ProcesoService {
             query.$inc[path] = - kilos
 
             // si se restan los kilos ggn
-            if (have_lote_GGN_export(lotes[loteIndex], contenedor, itemsDelete)) {
+            if (have_lote_GGN_export(lotes[loteIndex], contenedor[0], itemsDelete)) {
                 query.$inc.kilosGGN = - kilos
             }
 

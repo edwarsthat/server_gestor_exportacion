@@ -8,7 +8,6 @@ import { TurnoDatarepository } from './TurnoData.js';
 import { RedisRepository } from './RedisData.js';
 import { registrarPasoLog } from '../api/helper/logs.js';
 
-
 // 🪄 Magia para __dirname y __filename:
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -475,28 +474,6 @@ export class VariablesDelSistema {
       ordenVaceoFlag = false
       await registrarPasoLog(logId, "VariablesDelSistema.borrarDatoOrdenVaceo", "Completado");
 
-    }
-  }
-  static async put_inventario_inventarios_orden_vaceo_modificar(data) {
-    /**
-   * Modifica los datos de la orden de vaciado y los guarda en un archivo.
-   *
-   * @param {Object} data - Objeto que contiene los nuevos datos de la orden de vaciado.
-   * @throws {ProcessError} - Lanza un error si el archivo se está escribiendo o si ocurre un problema al modificar los datos.
-   */
-    if (ordenVaceoFlag) throw new ProcessError(413, "Error el archivo se esta escribiendo")
-    try {
-      ordenVaceoFlag = true
-
-      const ordenVaceo = data;
-
-      const newOrdenVaceoJSON = JSON.stringify(ordenVaceo);
-      fs.writeFileSync(ordenVaceoPath, newOrdenVaceoJSON);
-
-    } catch (err) {
-      throw new ProcessError(418, `Error modificando datos de la orden de vaceo ${err.name}`)
-    } finally {
-      ordenVaceoFlag = false
     }
   }
 
