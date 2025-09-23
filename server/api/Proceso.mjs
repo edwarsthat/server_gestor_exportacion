@@ -1522,35 +1522,7 @@ export class ProcesoRepository {
         }
 
     }
-    static async directoNacional(req) {
 
-        const user = req.user.user;
-        const data = req.data
-
-        const { _id, infoSalidaDirectoNacional, directoNacional, inventario, action } = data;
-        const query = {
-            $inc: {
-                directoNacional: directoNacional,
-                __v: 1
-            },
-            infoSalidaDirectoNacional: infoSalidaDirectoNacional
-        };
-
-        const lote = await LotesRepository.actualizar_lote(
-            { _id: _id },
-            query,
-            { new: true, user: user, action: action }
-        );
-
-        await VariablesDelSistema.modificarInventario(_id, inventario);
-        await LotesRepository.deshidratacion(lote);
-
-        procesoEventEmitter.emit("server_event", {
-            action: "directo_nacional",
-            data: {}
-        });
-
-    }
     // static async modificar_predio_proceso_listaEmpaque(req,) {
     //     const { data } = req
     //     VariablesDelSistema.modificar_predio_proceso_listaEmpaque(data)

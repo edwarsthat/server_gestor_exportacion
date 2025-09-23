@@ -300,13 +300,6 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    /**
-     * Procesa y registra la fruta descartada que se ha descompuesto.
-     * @param {Object} req - Objeto de solicitud con data (formulario e inventario) y user
-     * @throws {Error} Si el usuario intenta sacar más de 50 kilos sin autorización
-     * @throws {InventariosLogicError} Si hay errores en la validación o procesamiento
-     * @emits {server_event} Evento "descarte_change" al completar el proceso
-     */
     static async post_inventarios_frutaDescarte_frutaDescompuesta(req) {
         let descarteLavado, descarteEncerado, tipoFruta, total
         try {
@@ -451,6 +444,47 @@ export class InventariosRepository {
         })
         return resultado
 
+    }
+    static async put_inventarios_frutaSinProcesar_desverdizado(req) {
+        try {
+            console.log("put_inventarios_frutaSinProcesar_desverdizado", req);
+            const { user } = req.user;
+            const { _id: loteId, desverdizado, action } = req.data
+            const { canastillas, _id: cuartoId } = desverdizado;
+
+            InventariosValidations.put_inventarios_frutaSinProcesar_desverdizado().parse(req.data);
+
+            const update = {
+                '$inc': { 'desverdizado.canastillasIngreso': parseInt(canastillas) },
+                '$set': { 'desverdizado.desverdizando': true },
+                '$addToSet': { 'desverdizado.cuartoDesverdizado': cuartoId }
+            }
+
+            await Promise.all([
+                InventariosService.modificarInventarioIngresoDesverdizado(canastillas, cuartoId, loteId),
+                LotesRepository.actualizar_lote(
+                    { _id: loteId },
+                    update,
+                    { user: user._id, action: action }
+                )
+            ])
+
+            procesoEventEmitter.emit("server_event", {
+                action: "inventario_frutaSinProcesar",
+                data: {}
+            });
+            procesoEventEmitter.emit("server_event", {
+                action: "inventario_desverdizado",
+                data: {}
+            });
+
+        } catch (err) {
+            if (err.status === 518 || err.status === 413) {
+                throw err
+            }
+            const message = typeof err.message === "string" ? err.message : "Error inesperado";
+            throw new InventariosLogicError(470, `Error ${err.type || "interno"}: ${message}`);
+        }
     }
     static async put_inventarios_frutaDesverdizado_mover(req) {
         try {
@@ -803,6 +837,81 @@ export class InventariosRepository {
                 await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
             }
         }
+    }
+    static async directoNacional(req) {
+        const { user } = req;
+        const { data, lote, action } = req.data
+
+        let log;
+
+        const session = await db.Lotes.db.startSession();
+
+        if (!session) {
+            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
+        }
+
+        log = await LogsRepository.create({
+            user: user,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
+        try {
+            await session.withTransaction(async () => {
+                // Usar el mismo ID para todas las operaciones
+                const loteId = lote._id || data.lote;
+
+                const queryLote = {
+                    $inc: {
+                        directoNacional: lote.promedio * data.canastillas,
+                    },
+                    infoSalidaDirectoNacional: data
+                };
+
+                await LotesRepository.actualizar_lote(
+                    { _id: loteId },
+                    queryLote,
+                    { new: true, user: user, action: action, session: session }
+                );
+                await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Lote ${loteId} actualizado con directoNacional: ${lote.promedio * data.canastillas}`);
+
+                const descripcion = `Directo Nacional - Canastillas decrementadas: ${data.canastillas}`
+                await InventariosService.modificarRestarInventarioFrutaSinProocesar(data, user, action, loteId, log, session, descripcion);
+            });
+
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await registrarPasoLog(log._id, "Error en transacción", "Fallido", error.message);
+            throw error; // Re-lanzar el error en lugar de solo manejarlo
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
+        }
+
+        // const data = req.data
+
+        // const { _id, infoSalidaDirectoNacional, directoNacional, inventario, action } = data;
+        // const query = {
+        //     $inc: {
+        //         directoNacional: directoNacional,
+        //         __v: 1
+        //     },
+        //     infoSalidaDirectoNacional: infoSalidaDirectoNacional
+        // };
+
+        // const lote = await LotesRepository.actualizar_lote(
+        //     { _id: _id },
+        //     query,
+        //     { new: true, user: user, action: action }
+        // );
+
+        // await VariablesDelSistema.modificarInventario(_id, inventario);
+        // await LotesRepository.deshidratacion(lote);
+
+        procesoEventEmitter.emit("server_event", {
+            action: "directo_nacional",
+            data: {}
+        });
+
     }
 
     //#endregion

@@ -13,7 +13,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes(data)
     },
     put_inventarios_frutaSinProcesar_directoNacional: async (data) => {
-        await ProcesoRepository.directoNacional(data)
+        await InventariosRepository.directoNacional(data)
         return successResponseRoutes()
     },
     put_inventarios_frutaSinProcesar_desverdizado: async (data) => {

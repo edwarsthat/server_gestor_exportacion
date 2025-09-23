@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 import { InventariosLogicError } from "../../Error/logicLayerError.js";
 import { dataRepository } from "../api/data.js";
@@ -11,6 +12,7 @@ import { CanastillasRepository } from "../Class/CanastillasRegistros.js";
 import { ClientesRepository } from "../Class/Clientes.js";
 import { DespachoDescartesRepository } from "../Class/DespachoDescarte.js";
 import { FrutaDescompuestaRepository } from "../Class/FrutaDescompuesta.js";
+import { InventariosHistorialRepository } from "../Class/Inventarios.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { PreciosRepository } from "../Class/Precios.js";
 import { ProveedoresRepository } from "../Class/Proveedores.js";
@@ -106,7 +108,7 @@ export class InventariosService {
         const prov = await ProveedoresRepository.actualizar_proveedores(
             { _id: _id },
             { $inc: { canastillas: cantidad } },
-            {session},
+            { session },
         );
 
         if (prov) {
@@ -116,7 +118,7 @@ export class InventariosService {
         const cli = await ClientesRepository.actualizar_clienteNacional(
             { _id: _id },
             { $inc: { canastillas: cantidad } },
-            {session},
+            { session },
         )
 
         if (cli) {
@@ -1210,6 +1212,30 @@ export class InventariosService {
 
         }
         return { operation, out };
+    }
+    static async modificarRestarInventarioFrutaSinProocesar(data, user, action, loteId, log, session, descripcion) {
+        // Primero decrementar las canastillas
+        const updateResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+            { _id: "68cecc4cff82bb2930e43d05" },
+            { $inc: { 'inventario.$[it].canastillas': -data.canastillas } },
+            {
+                session,
+                action: action,
+                description: descripcion,
+                user: user._id,
+                arrayFilters: [{ 'it.lote': new mongoose.Types.ObjectId(loteId) }],
+            }
+        );
+        await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple_updateOne (decrementar)", "Completado", `Canastillas decrementadas: ${data.canastillas}, matchedCount: ${updateResult?.matchedCount}, modifiedCount: ${updateResult?.modifiedCount}`);
+
+        // Luego eliminar elementos con canastillas <= 0
+        const pullResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+            { _id: "68cecc4cff82bb2930e43d05" },
+            { $pull: { inventario: { lote: new mongoose.Types.ObjectId(loteId), canastillas: { $lte: 0 } } } },
+            { session, skipAudit: true, runValidators: false }
+        );
+        await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple_updateOne (pull)", "Completado", `Elementos eliminados con canastillas <= 0, matchedCount: ${pullResult?.matchedCount}, modifiedCount: ${pullResult?.modifiedCount}`);
+
     }
     // static async modificarIngresoCanastillas(data) {
     //     const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)

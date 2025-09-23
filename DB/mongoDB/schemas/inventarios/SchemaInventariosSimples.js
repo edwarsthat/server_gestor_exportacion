@@ -108,6 +108,93 @@ export const defineInventarioSimple = async (conn, AuditInventariosSimples) => {
         }
     });
 
+    InventarioSimpleSchema.pre('updateOne', async function (next) {
+        try {
+            const opts = this.getOptions?.() || this.options || {};
+            const session = opts.session;
+
+            const q = this.model.findOne(this.getFilter()); // <-- mismo filtro del update
+            if (session) q.session(session);
+
+            const docToUpdate = await q.lean();
+            this._oldValue = docToUpdate || null;  // guardar snapshot previo
+            next();
+        } catch (err) {
+            next(err);
+        }
+    });
+    // === NUEVO: Auditoría después de updateOne (leer el "después" y comparar) ===
+    InventarioSimpleSchema.post('updateOne', async function (result, next) {
+        try {
+            const opts = this.getOptions?.() || this.options || {};
+            if (opts.skipAudit) return next();
+
+            // Si no tocó nada, no auditar
+            if (!result?.acknowledged || !result?.matchedCount) return next();
+
+            const session = opts.session;
+            const user = opts.user || 'System';
+            const operation = opts.operation || 'update';
+            const action = opts.action || 'updateOne';
+
+            // Leemos el documento actualizado con el MISMO filtro y sesión
+            const q = this.model.findOne(this.getFilter());
+            if (session) q.session(session);
+
+            const newValue = await q.lean();
+            const oldValue = this._oldValue || null;
+
+            // --- mismo cálculo de deltas que ya usas en findOneAndUpdate ---
+            const toArr = (v) => Array.isArray(v?.inventario) ? v.inventario : [];
+            const sum = arr => arr.reduce((a, it) => a + (Number(it.canastillas) || 0), 0);
+
+            const oldArr = toArr(oldValue);
+            const newArr = toArr(newValue);
+
+            const totalBefore = sum(oldArr);
+            const totalAfter = sum(newArr);
+            const deltaTotal = totalAfter - totalBefore;
+
+            const mapByLote = (arr) => {
+                const m = new Map();
+                for (const it of arr) m.set(String(it.lote), Number(it.canastillas) || 0);
+                return m;
+            };
+            const beforeMap = mapByLote(oldArr);
+            const afterMap = mapByLote(newArr);
+
+            const perLote = [];
+            const touched = new Set([...beforeMap.keys(), ...afterMap.keys()]);
+            for (const k of touched) {
+                const b = beforeMap.get(k) ?? 0;
+                const a = afterMap.get(k) ?? 0;
+                const d = a - b;
+                if (d !== 0) perLote.push({ lote: k, delta: d, before: b, after: a });
+            }
+
+            const description =
+                (opts.description) ??
+                `Cambio inventario: Δ=${deltaTotal} canastillas (antes ${totalBefore}, ahora ${totalAfter}). ` +
+                (perLote.length
+                    ? `Detalles: ${perLote.map(x => `[${x.lote}: ${x.before}→${x.after} (Δ${x.delta})]`).join(' ')}`
+                    : 'Sin cambios por-lote.');
+
+            // Escribe el audit en la MISMA sesión/tx
+            await AuditInventariosSimples.create([{
+                documentId: (oldValue?._id || newValue?._id),
+                operation,
+                user,
+                action,
+                description
+            }], { session });
+
+            next();
+        } catch (err) {
+            console.error('Error guardando auditoría (updateOne):', err);
+            next(err); // o next() si prefieres no romper la operación por fallar el audit
+        }
+    });
+
     const InventariosSimple = conn.model("inventarioSimple", InventarioSimpleSchema);
     return InventariosSimple;
 };

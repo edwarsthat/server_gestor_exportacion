@@ -202,6 +202,26 @@ export class InventariosHistorialRepository {
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
+    static async put_inventarioSimple_updateOne(filter, update, options = {}) {
+        // Opciones sensatas para updateOne
+        const finalOptions = {
+            // Nota: updateOne NO soporta returnDocument/new
+            runValidators: false,     // 🔑 evita el "required" en arrays embebidos
+            ...options,               // session, arrayFilters, writeConcern, etc.
+        };
+
+        try {
+            const res = await db.InventariosSimples.updateOne(filter, update, finalOptions);
+            // Opcional: asegura que sí tocó algo
+            if (res.matchedCount === 0) {
+                throw new ConnectionDBError(404, "Documento no encontrado para el filtro especificado.");
+            }
+            // Puedes decidir si exigir también modifiedCount > 0
+            return res; // { acknowledged, matchedCount, modifiedCount, upsertedId? }
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+        }
+    }
     // #endregion
 
 }
