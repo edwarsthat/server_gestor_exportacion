@@ -132,7 +132,6 @@ export class LotesRepository {
          * @throws {PutError} - Lanza un error si ocurre un problema al modificar el lote.
          */
         try {
-            console.log(options)
             const finalOptions = {
                 new: true,
                 ...options,
@@ -140,17 +139,17 @@ export class LotesRepository {
             };
 
 
-            const lote = await db.Lotes.findOneAndUpdate({ _id: id }, update, { ...finalOptions, new: true });
+            const lote = await db.Lotes.findOneAndUpdate({ _id: id }, update, finalOptions);
             const lote_obj = new Object(lote.toObject());
 
             let record = new db.recordLotes({ operacionRealizada: options.action, user: options.user, documento: { ...update, _id: id } })
-            await record.save()
+            await record.save({ session });
             return lote_obj;
         } catch (err) {
             throw new PutError(523, `Error ${err.name} -- ${id} - ${update}`);
         }
     }
-    static async modificar_lote_proceso(id, query, action, user) {
+    static async modificar_lote_proceso(id, query, action, user, session = null) {
         /**
          * Modifica un lote en la base de datos de MongoDB desde las aplicaciones
          * debido a que no requiere version del lote
@@ -163,11 +162,11 @@ export class LotesRepository {
          * @throws {PutError} - Lanza un error si ocurre un problema al modificar el lote.
          */
         try {
-            const lote = await db.Lotes.findOneAndUpdate({ _id: id, }, query, { new: true });
+            const lote = await db.Lotes.findOneAndUpdate({ _id: id, }, query, { new: true, session });
 
             const lote_obj = new Object(lote.toObject());
             let record = new db.recordLotes({ operacionRealizada: action, user: user, documento: { ...query, _id: id } })
-            await record.save()
+            await record.save({ session });
             return lote_obj;
         } catch (err) {
             throw new PutError(523, `Error  ${err.name}`);
@@ -291,7 +290,10 @@ export class LotesRepository {
             sort = { fecha_creacion: -1, fechaIngreso: -1 },
             limit = 50,
             skip = 0,
-            populate = { path: 'predio', select: 'PREDIO ICA GGN SISPAP' }
+            populate = [
+                { path: 'predio', select: 'PREDIO ICA GGN SISPAP' },
+                { path: 'tipoFruta' }
+            ]
         } = options;
 
         try {
@@ -312,10 +314,10 @@ export class LotesRepository {
                 .lean()
                 .exec();
 
-            for (const lote of lotes) {
-                lote.tipoFruta = tipoFrutaCache.getTipoFruta(lote.tipoFruta);
-            }
-
+            // for (const lote of lotes) {
+            //     lote.tipoFruta = tipoFrutaCache.getTipoFruta(lote.tipoFruta);
+            // }
+            console.log(lotes)
             return lotes
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);

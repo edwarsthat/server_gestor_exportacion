@@ -184,6 +184,17 @@ export class InventariosHistorialRepository {
         return res || []
 
     }
+    static async get_item_frutaSinProcesar(id) {
+        try {
+            const documento = await db.InventariosSimples.findOne({ _id: "68cecc4cff82bb2930e43d05" })
+                .lean()
+                .exec();
+            const item = documento.inventario.find(item => item.lote.toString() === id.toString());
+            return item;
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo el lote del inventario ${err.message}`);
+        }
+    }
     static async put_inventarioSimple(filter, update, options = {}) {
         const finalOptions = {
             returnDocument: "after",   // equivalente a new:true pero moderno
@@ -220,6 +231,29 @@ export class InventariosHistorialRepository {
             return res; // { acknowledged, matchedCount, modifiedCount, upsertedId? }
         } catch (err) {
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+        }
+    }
+    static async get_ordenVcaeo() {
+        try {
+            const data = await db.InventariosSimples.find({ _id: "68d1c0410f282bcb84388dd3" })
+                .select({ ordenVaceo: 1, _id: 0, __v:1 })
+                .lean()
+                .exec();
+            return { data: data?.[0]?.ordenVaceo || [], __v: data?.[0]?.__v || 0 };
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo la cantidad de registros de cuartos fríos ${err.message}`);
+        }
+    }
+    static async put_borrar_item_ordenVaceo(id, session = null) {
+        try {
+            const res = await db.InventariosSimples.updateOne(
+                { _id: "68d1c0410f282bcb84388dd3" },
+                { $pull: { ordenVaceo: { _id: id } }, $inc: { __v: 1 } },
+                { session }
+            );
+            return res;
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos ordenVaceo: ${err.message}`);
         }
     }
     // #endregion

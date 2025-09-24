@@ -208,7 +208,7 @@ export const defineLotes = async (conn, AuditLog) => {
     predio: { type: Schema.Types.ObjectId, ref: 'Proveedor' },
     promedio: Number,
     rendimiento: { type: Number, default: 0 },
-    tipoFruta: String,
+    tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas' },
     user: String,
 
   }, { versionKey: '__v' });

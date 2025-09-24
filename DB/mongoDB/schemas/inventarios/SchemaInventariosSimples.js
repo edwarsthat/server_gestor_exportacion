@@ -16,7 +16,8 @@ export const defineInventarioSimple = async (conn, AuditInventariosSimples) => {
         inventario: { type: [ItemInventarioSchema], default: [] },
         ordenVaceo: [{ type: Schema.Types.ObjectId, ref: "Lote" }],
     }, {
-        timestamps: { updatedAt: 'updatedAt', createdAt: false }
+        timestamps: { updatedAt: 'updatedAt', createdAt: false },
+        versionKey: '__v' 
     });
 
     // ✔ Actualiza updatedAt también en updates tipo query

@@ -249,7 +249,7 @@ const defineSchemasProceso = async (sysConn) => {
 
         // Esquemas relacionados con clientes (base para otras dependencias)
         console.log("⚡ Definiendo Tipo frutas...");
-        db.TipoFrutas2 = await defineTipoFrutas(sysConn);
+        db.TipoFrutas = await defineTipoFrutas(sysConn);
         console.log("✅ Tipo frutas definidos");
 
         console.log("⚡ Definiendo Clientes...");
@@ -452,10 +452,6 @@ const defineSchemasCatalogo = async (sysConn) => {
             console.log("⚡ Definiendo Cuartos desverdizado...");
             db.CuartosDesverdizados = await defineCuartosdesverdizado(sysConn);
             console.log("✅ Cuartos desverdizados definidos");
-
-            console.log("⚡ Definiendo Tipo frutas...");
-            db.TipoFrutas = await defineTipoFrutas(sysConn);
-            console.log("✅ Tipo frutas definidos");
 
             console.log("🎉 Todos los schemas de sistema han sido definidos correctamente.");
 

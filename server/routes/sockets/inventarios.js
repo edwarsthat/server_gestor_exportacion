@@ -3,7 +3,6 @@ import { ComercialRepository } from "../../api/Comercial.js";
 import { InventariosRepository } from "../../api/inventarios.js";
 import { ModificarRepository } from "../../api/ModificarData.js";
 import { ProcesoRepository } from "../../api/Proceso.mjs";
-import { VariablesDelSistema } from "../../Class/VariablesDelSistema.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketInventarios = {
@@ -45,7 +44,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes(resultado)
     },
     get_inventarios_ordenVaceo_ordenVaceo: async () => {
-        const oredenVaceo = await VariablesDelSistema.getOrdenVaceo()
+        const oredenVaceo = await InventariosRepository.get_inventarios_ordenVaceo()
         return successResponseRoutes(oredenVaceo)
     },
     put_inventarios_ordenVaceo_modificar: async (data) => {

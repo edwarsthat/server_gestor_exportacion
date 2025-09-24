@@ -1213,11 +1213,13 @@ export class InventariosService {
         }
         return { operation, out };
     }
-    static async modificarRestarInventarioFrutaSinProocesar(data, user, action, loteId, log, session, descripcion) {
+    static async modificarRestarInventarioFrutaSinProocesar(canastillas, user, action, loteId, log, session, descripcion) {
+        console.log(`Modificando inventario fruta sin procesar, restando ${canastillas} canastillas del lote ${loteId}`);
+        console.log(typeof canastillas)
         // Primero decrementar las canastillas
         const updateResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
             { _id: "68cecc4cff82bb2930e43d05" },
-            { $inc: { 'inventario.$[it].canastillas': -data.canastillas } },
+            { $inc: { 'inventario.$[it].canastillas': -canastillas } },
             {
                 session,
                 action: action,
@@ -1226,7 +1228,7 @@ export class InventariosService {
                 arrayFilters: [{ 'it.lote': new mongoose.Types.ObjectId(loteId) }],
             }
         );
-        await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple_updateOne (decrementar)", "Completado", `Canastillas decrementadas: ${data.canastillas}, matchedCount: ${updateResult?.matchedCount}, modifiedCount: ${updateResult?.modifiedCount}`);
+        await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple_updateOne (decrementar)", "Completado", `Canastillas decrementadas: ${canastillas}, matchedCount: ${updateResult?.matchedCount}, modifiedCount: ${updateResult?.modifiedCount}`);
 
         // Luego eliminar elementos con canastillas <= 0
         const pullResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
@@ -1236,6 +1238,77 @@ export class InventariosService {
         );
         await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple_updateOne (pull)", "Completado", `Elementos eliminados con canastillas <= 0, matchedCount: ${pullResult?.matchedCount}, modifiedCount: ${pullResult?.modifiedCount}`);
 
+    }
+    static async modificarSumarInventarioFrutaSinProocesar(canastillas, user, action, loteId, log, session, descripcion) {
+        const loteObjectId = new mongoose.Types.ObjectId(loteId);
+
+        // Update con pipeline: si existe el lote => $map + $add; si no existe => $concatArrays con el nuevo item
+        const pipelineUpdate = [
+            {
+                $set: {
+                    inventario: {
+                        $let: {
+                            vars: { existe: { $in: [loteObjectId, "$inventario.lote"] } },
+                            in: {
+                                $cond: [
+                                    "$$existe",
+                                    {
+                                        $map: {
+                                            input: "$inventario",
+                                            as: "it",
+                                            in: {
+                                                $cond: [
+                                                    { $eq: ["$$it.lote", loteObjectId] },
+                                                    {
+                                                        // Clona el item y suma canastillas
+                                                        $mergeObjects: [
+                                                            "$$it",
+                                                            { canastillas: { $add: ["$$it.canastillas", canastillas] } }
+                                                        ]
+                                                    },
+                                                    "$$it"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        $concatArrays: [
+                                            "$inventario",
+                                            [
+                                                Object.assign(
+                                                    { lote: loteObjectId, canastillas: canastillas }
+                                                )
+                                            ]
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        ];
+
+        const result = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+            { _id: "68cecc4cff82bb2930e43d05" },
+            pipelineUpdate,
+            {
+                session,
+                action,
+                description: descripcion ?? `Sumar ${canastillas} canastillas al lote ${loteId}`,
+                user: user._id,
+                runValidators: true
+            }
+        );
+
+        await registrarPasoLog(
+            log._id,
+            "InventariosHistorialRepository.put_inventarioSimple_updateOne (sumar/crear)",
+            "Completado",
+            `Suma/Alta de canastillas: ${canastillas}, matchedCount: ${result?.matchedCount}, modifiedCount: ${result?.modifiedCount}`
+        );
+
+        return result;
     }
     // static async modificarIngresoCanastillas(data) {
     //     const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)

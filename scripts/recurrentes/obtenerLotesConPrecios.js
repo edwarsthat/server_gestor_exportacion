@@ -23,7 +23,7 @@ async function obtener_lotes_precios_json() {
 
         const lotes = await LoteDB.find({
             fecha_creacion: { $gte: new Date("2025-01-01T00:00:00Z") },
-            predio: "655e68b24e055637327c2f06"
+            predio: "655e68b24e055637327c2f52"
         })
             .select({ kilos: 1, exportacion: 1, precio: 1, predio: 1, tipoFruta: 1, descarteLavado: 1, descarteEncerado: 1, frutaNacional: 1, enf: 1, directoNacional: 1 })
             .populate(populateLote)

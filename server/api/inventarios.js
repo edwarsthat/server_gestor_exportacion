@@ -98,11 +98,25 @@ export class InventariosRepository {
         }
     }
     static async put_inventarios_frutaDesverdizado_finalizar(req) {
+
+        const { data, user } = req
+        const { _id, cuarto, action } = data;
+
+        let log;
+
+        const session = await db.Lotes.db.startSession();
+
+        if (!session) {
+            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
+        }
+
+        log = await LogsRepository.create({
+            user: user,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
         try {
             InventariosValidations.put_inventarios_frutaDesverdizado_finalizar().parse(req.data)
-
-            const { data, user } = req
-            const { _id, cuarto, action } = data;
 
             await InventariosService.devolverDesverdizadoInventarioFrutaSinprocesar(cuarto, _id)
 
@@ -111,11 +125,22 @@ export class InventariosRepository {
                 "desverdizado.desverdizando": false
             }
 
-            await LotesRepository.actualizar_lote(
-                { _id: _id },
-                query,
-                { user: user._id, action: action }
-            )
+            await session.withTransaction(async () => {
+                const newLote = await LotesRepository.actualizar_lote(
+                    { _id: _id },
+                    query,
+                    { user: user._id, action: action, session }
+                )
+                await registrarPasoLog(
+                    log._id,
+                    "LotesRepository.actualizar_lote",
+                    "Completado",
+                    `Lote ${_id} actualizado con desverdizado.fechaFinalizar: ${new Date().toISOString()}`,);
+
+                const descripcion = `Desverdizado - Canastillas incrementadas: ${newLote.desverdizado.canastillasIngreso}`
+                await InventariosService.modificarSumarInventarioFrutaSinProocesar(Number(newLote.desverdizado.canastillasIngreso), user, action, _id, log, session, descripcion)
+
+            })
 
             procesoEventEmitter.emit("server_event", {
                 action: "inventario_frutaSinProcesar",
@@ -446,10 +471,23 @@ export class InventariosRepository {
 
     }
     static async put_inventarios_frutaSinProcesar_desverdizado(req) {
+        const { user } = req;
+        const { _id: loteId, desverdizado, action } = req.data
+
+        let log;
+
+        const session = await db.Lotes.db.startSession();
+
+        if (!session) {
+            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
+        }
+
+        log = await LogsRepository.create({
+            user: user,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
         try {
-            console.log("put_inventarios_frutaSinProcesar_desverdizado", req);
-            const { user } = req.user;
-            const { _id: loteId, desverdizado, action } = req.data
             const { canastillas, _id: cuartoId } = desverdizado;
 
             InventariosValidations.put_inventarios_frutaSinProcesar_desverdizado().parse(req.data);
@@ -459,15 +497,20 @@ export class InventariosRepository {
                 '$set': { 'desverdizado.desverdizando': true },
                 '$addToSet': { 'desverdizado.cuartoDesverdizado': cuartoId }
             }
+            await InventariosService.modificarInventarioIngresoDesverdizado(canastillas, cuartoId, loteId)
 
-            await Promise.all([
-                InventariosService.modificarInventarioIngresoDesverdizado(canastillas, cuartoId, loteId),
-                LotesRepository.actualizar_lote(
+            await session.withTransaction(async () => {
+                await LotesRepository.actualizar_lote(
                     { _id: loteId },
                     update,
-                    { user: user._id, action: action }
+                    { user: user._id, action: action, session }
                 )
-            ])
+                await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", `Lote ${loteId} actualizado con desverdizado.canastillasIngreso: ${canastillas}`);
+
+
+                const descripcion = `Desverdizado - Canastillas decrementadas: ${canastillas}`
+                await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(canastillas), user, action, loteId, log, session, descripcion);
+            })
 
             procesoEventEmitter.emit("server_event", {
                 action: "inventario_frutaSinProcesar",
@@ -478,47 +521,79 @@ export class InventariosRepository {
                 data: {}
             });
 
-        } catch (err) {
-            if (err.status === 518 || err.status === 413) {
-                throw err
-            }
-            const message = typeof err.message === "string" ? err.message : "Error inesperado";
-            throw new InventariosLogicError(470, `Error ${err.type || "interno"}: ${message}`);
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorInventarioLogicHandlers(error, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     static async put_inventarios_frutaDesverdizado_mover(req) {
+        const { user } = req;
+        const { _id, cuarto, action, data } = req.data;
+
+        let log;
+
+        const session = await db.Lotes.db.startSession();
+
+        if (!session) {
+            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
+        }
+
+        log = await LogsRepository.create({
+            user: user,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
         try {
 
             InventariosValidations.put_inventarios_frutaDesverdizado_mover().parse(req.data)
-            const { user } = req;
-            const { _id, cuarto, action, data } = req.data;
             const { destino, cantidad } = data;
 
             if (destino === "inventarioFrutaSinProcesar") {
                 const update = {
                     '$inc': { 'desverdizado.canastillasIngreso': parseInt(-cantidad) },
                 }
+                await InventariosService.move_desverdizado_inventario_to_frutaSinProcesar(cuarto, _id, cantidad)
+                await registrarPasoLog(
+                    log._id,
+                    "InventariosService.move_desverdizado_inventario_to_frutaSinProcesar",
+                    `Se movieron ${cantidad} canastillas del lote ${_id} del cuarto ${cuarto} al inventario de fruta sin procesar`
+                );
 
-                const [, newLote] = await Promise.all([
-                    InventariosService.move_desverdizado_inventario_to_frutaSinProcesar(cuarto, _id, cantidad),
-                    LotesRepository.actualizar_lote(
+                await session.withTransaction(async () => {
+                    const newLote = await LotesRepository.actualizar_lote(
                         { _id: _id },
                         update,
-                        { user: user._id, action: action }
+                        { user: user._id, action: action, session }
                     )
-                ])
+                    await registrarPasoLog(
+                        log._id,
+                        "LotesRepository.actualizar_lote",
+                        `Lote ${_id} actualizado con desverdizado.canastillasIngreso: -${cantidad}`
+                    );
 
+                    const descripcion = `Desverdizado - Canastillas incrementadas: ${cantidad}`
+                    await InventariosService.modificarSumarInventarioFrutaSinProocesar(Number(cantidad), user, action, _id, log, session, descripcion)
 
-                if (newLote.desverdizado.canastillasIngreso <= 0) {
-                    const update2 = {
-                        $unset: { desverdizado: "" }
+                    if (newLote.desverdizado.canastillasIngreso <= 0) {
+                        const update2 = {
+                            $unset: { desverdizado: "" }
+                        }
+                        await LotesRepository.actualizar_lote(
+                            { _id: _id },
+                            update2,
+                            { user: user._id, action: action, session }
+                        )
+
+                        await registrarPasoLog(
+                            log._id,
+                            "LotesRepository.actualizar_lote",
+                            `Lote ${_id} actualizado, se eliminó el campo desverdizado`
+                        );
                     }
-                    LotesRepository.actualizar_lote(
-                        { _id: _id },
-                        update2,
-                        { user: user._id, action: action }
-                    )
-                }
+                })
 
                 procesoEventEmitter.emit("server_event", {
                     action: "inventario_frutaSinProcesar",
@@ -538,12 +613,12 @@ export class InventariosRepository {
                 });
                 return true
             }
-        } catch (err) {
-            if (err.status === 518 || err.status === 413) {
-                throw err
-            }
-            const message = typeof err.message === "string" ? err.message : "Error inesperado";
-            throw new InventariosLogicError(470, `Error ${err.type || "interno"}: ${message}`);
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorInventarioLogicHandlers(error, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     static async set_inventarios_inventario(data) {
@@ -568,13 +643,20 @@ export class InventariosRepository {
     static async put_inventarios_ordenVaceo_vacear(req) {
         let log
         const { user, data } = req;
-        const { _id, kilosVaciados, inventario } = data;
+        const { _id, kilosVaciados, action } = data;
+
+        const session = await db.Lotes.db.startSession();
+
+        if (!session) {
+            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
+        }
+
+        log = await LogsRepository.create({
+            user: user,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
         try {
-            log = await LogsRepository.create({
-                user: user._id,
-                action: "put_inventarios_ordenVaceo_vacear",
-                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-            })
 
             const loteAnterior = await InventariosService.probar_deshidratacion_loteProcesando(user)
             await registrarPasoLog(log._id, "InventariosService.probar_deshidratacion_loteProcesando", "Completado");
@@ -586,24 +668,35 @@ export class InventariosRepository {
                 finalizado: false,
                 fechaProceso: new Date()
             }
-            await LotesRepository.modificar_lote(_id, query, { user: user, action: "vaciarLote" });
-            await registrarPasoLog(log._id, "LotesRepository.modificar_lote", "Completado", `Se modificó el lote con ID ${_id} para vaciarlo, kilosVaciados: ${kilosVaciados}`);
 
             const lote = await LotesRepository.getLotes2({ ids: [_id] });
-            await registrarPasoLog(log._id, "LotesRepository.getLotes", "Completado",);
+            await registrarPasoLog(log._id, "LotesRepository.getLotes", "Completado", `Se obtuvo el lote con ID ${_id} para vaciarlo, kilosVaciados: ${kilosVaciados}`);
 
             await Promise.all([
-                VariablesDelSistema.modificarInventario(lote[0]._id.toString(), inventario, log._id),
-                VariablesDelSistema.borrarDatoOrdenVaceo(lote[0]._id.toString(), log._id),
                 VariablesDelSistema.procesarEF1(lote[0], log._id),
-                VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta._id.toString(), kilosVaciados, log._id)
+                VariablesDelSistema.sumarMetricaSimpleAsync("kilosVaciadosHoy", lote[0].tipoFruta._id.toString(), Number(kilosVaciados), log._id)
             ])
             await registrarPasoLog(log._id, "Promise.all", "Completado");
 
-            if (!loteAnterior === "No vaceo") {
-                await LotesRepository.actualizar_lote({ _id: loteAnterior._id }, { finalizado: true })
-                await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Se actualizó el lote ${loteAnterior._id} a finalizado: true`);
-            }
+            await session.withTransaction(async () => {
+                await LotesRepository.modificar_lote(_id, query, { user: user._id, action: "vaciarLote" }, session);
+                await registrarPasoLog(log._id, "LotesRepository.modificar_lote", "Completado", `Se modificó el lote con ID ${_id} para vaciarlo, kilosVaciados: ${kilosVaciados}`);
+
+                const item = await InventariosHistorialRepository.get_item_frutaSinProcesar(_id);
+                const descripcion = `Vaceo - Canastillas decrementadas: ${item.canastillas}`
+                await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(item.canastillas), user, action, _id, log, session, descripcion);
+                await InventariosHistorialRepository.put_borrar_item_ordenVaceo(item._id);
+                await registrarPasoLog(
+                    log._id,
+                    "InventariosHistorialRepository.put_borrar_item_ordenVaceo",
+                    "Completado",
+                    `Se eliminó el item ${item._id} del inventario de fruta sin procesar`);
+
+                if (!loteAnterior === "No vaceo") {
+                    await LotesRepository.actualizar_lote({ _id: loteAnterior._id }, { finalizado: true }, { user: user, action: "finalizado", session });
+                    await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Se actualizó el lote ${loteAnterior._id} a finalizado: true`);
+                }
+            });
 
             //para lista de empaque
             procesoEventEmitter.emit("predio_vaciado", {
@@ -616,16 +709,11 @@ export class InventariosRepository {
                     predio: lote
                 }
             });
-        } catch (err) {
-            await registrarPasoLog(log._id, "Promise.all", "Error", `Error: ${err.message}`);
-
-            if (err.status === 470) {
-                throw err;
-            }
-            console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            throw new Error(`Code ${err.code}: ${err.message}`);
-
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorInventarioLogicHandlers(error, log)
         } finally {
+            await session.endSession();
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
 
@@ -875,43 +963,32 @@ export class InventariosRepository {
                 await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Lote ${loteId} actualizado con directoNacional: ${lote.promedio * data.canastillas}`);
 
                 const descripcion = `Directo Nacional - Canastillas decrementadas: ${data.canastillas}`
-                await InventariosService.modificarRestarInventarioFrutaSinProocesar(data, user, action, loteId, log, session, descripcion);
+                await InventariosService.modificarRestarInventarioFrutaSinProocesar(data.canastillas, user, action, loteId, log, session, descripcion);
             });
 
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
-            await registrarPasoLog(log._id, "Error en transacción", "Fallido", error.message);
-            throw error; // Re-lanzar el error en lugar de solo manejarlo
+            await ErrorInventarioLogicHandlers(error, log)
         } finally {
             await session.endSession();
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
-
-        // const data = req.data
-
-        // const { _id, infoSalidaDirectoNacional, directoNacional, inventario, action } = data;
-        // const query = {
-        //     $inc: {
-        //         directoNacional: directoNacional,
-        //         __v: 1
-        //     },
-        //     infoSalidaDirectoNacional: infoSalidaDirectoNacional
-        // };
-
-        // const lote = await LotesRepository.actualizar_lote(
-        //     { _id: _id },
-        //     query,
-        //     { new: true, user: user, action: action }
-        // );
-
-        // await VariablesDelSistema.modificarInventario(_id, inventario);
-        // await LotesRepository.deshidratacion(lote);
 
         procesoEventEmitter.emit("server_event", {
             action: "directo_nacional",
             data: {}
         });
 
+    }
+    static async get_inventarios_ordenVaceo() {
+        try {
+            const { data, __v } = await InventariosHistorialRepository.get_ordenVcaeo();
+            const ids = data.map(item => item.toString());
+            return { ids, __v }
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            throw error;
+        }
     }
 
     //#endregion
@@ -1455,11 +1532,11 @@ export class InventariosRepository {
     }
     static async put_inventarios_ordenVaceo_modificar(req) {
 
-        const { user, action } = req;
-        const { data } = req.data;
+        const { user } = req;
+        const { data, __v, action } = req.data;
 
         let log
-        const session = await db.Lotes.db.startSession();
+        const session = await db.InventariosSimples.db.startSession();
 
         try {
             log = await LogsRepository.create({
@@ -1469,9 +1546,24 @@ export class InventariosRepository {
             })
             const ids = data.map(item => new mongoose.Types.ObjectId(item));
             await session.withTransaction(async () => {
+
+                const documentoActual = await db.InventariosSimples.find({ _id: "68d1c0410f282bcb84388dd3" })
+                    .session(session)
+                    .select({ _id: 0, __v: 1 })
+                    .lean()
+                    .exec();
+
+                if (!documentoActual) {
+                    throw new Error('El documento no existe');
+                }
+
+                if (documentoActual[0].__v !== __v) {
+                    throw new Error(`Conflicto de versión: el documento ha sido modificado reinicie la vista`);
+                }
+
                 await InventariosHistorialRepository.put_inventarioSimple(
                     { _id: "68d1c0410f282bcb84388dd3" },
-                    { $set: { ordenVaceo: ids } },
+                    { $set: { ordenVaceo: ids }, $inc: { __v: 1 } },
                     { session, user: user._id, action: "ingreso_ordenVaceo", operation: "ingreso", skipAudit: false }
                 );
             })
@@ -1484,7 +1576,7 @@ export class InventariosRepository {
 
         } catch (err) {
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            ErrorInventarioLogicHandlers(err, log)
+            await ErrorInventarioLogicHandlers(err, log)
         } finally {
             await session.endSession();
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
@@ -1831,7 +1923,7 @@ export class InventariosRepository {
 
         } catch (err) {
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            ErrorInventarioLogicHandlers(err, log)
+            await ErrorInventarioLogicHandlers(err, log)
         } finally {
             await session.endSession();
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
