@@ -104,7 +104,12 @@ export const defineLotes = async (conn, AuditLog) => {
     nombreConductor: String,
     telefono: String,
     cedula: String,
-    remision: String
+    remision: String,
+    canastillas: Number,
+    user: String,
+    cliente: { type: Schema.Types.ObjectId, ref: 'ClientesNacionale' },
+    fecha: { type: Date, default: () => new Date() },
+    version: { type: Number, default: 1 },
   });
 
   const ParametroSchema = new mongoose.Schema({

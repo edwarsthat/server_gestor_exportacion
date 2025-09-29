@@ -134,7 +134,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes()
     },
     get_inventarios_historialDirectoNacional_registros: async (data) => {
-        const response = await InventariosRepository.put_inventarios_historialDirectoNacional_registros(data)
+        const response = await InventariosRepository.get_inventarios_historialDirectoNacional_registros(data)
         return successResponseRoutes(response)
     },
     put_inventarios_historialDirectoNacional_modificarHistorial: async (data) => {

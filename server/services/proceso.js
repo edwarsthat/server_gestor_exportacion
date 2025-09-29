@@ -5,15 +5,15 @@ import { checkFinalizadoLote } from "../api/utils/lotesFunctions.js";
 import { have_lote_GGN_export } from "../controllers/validations.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
-import { RedisRepository } from "../Class/RedisData.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
 import { getColombiaDate } from "../api/utils/fechas.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { normalizeEF1Item } from "./helpers/contenedores.js";
+import { IndicadoresAPIRepository } from "../api/IndicadoresAPI.js";
 
 
 class ProcesoService {
-    static async getContenedorAndLote(loteID, ContenedorID) {
+    static async getContenedorAndLote(loteID, ContenedorID, session = null) {
         // Validar que se proporcionaron los IDs necesarios
         if (!loteID || !ContenedorID) {
             throw new ProcessError(400, "Se requieren tanto el ID del lote como el ID del contenedor");
@@ -27,7 +27,7 @@ class ProcesoService {
                 path: 'infoContenedor.clienteInfo',
                 select: 'CLIENTE PAIS_DESTINO',
             }
-        });
+        }, { session });
 
         // Validar que se encontró el contenedor y tiene la estructura esperada
         if (!contenedor || contenedor.length === 0) {
@@ -41,8 +41,8 @@ class ProcesoService {
         //se obtiene el lote
         const lotes = await LotesRepository.getLotes2({
             ids: [loteID]
-        });
-        console.log("se obtiene el lote", lotes)
+        }, { session });
+
         // Validar que se encontró el lote
         if (!lotes || lotes.length === 0) {
             throw new ProcessError(404, `No se encontró el lote con ID: ${loteID}`);
@@ -50,7 +50,7 @@ class ProcesoService {
 
         return { contenedor, lotes };
     }
-    static async modificarLoteListaEmpaqueAddItem(calidad, kilos, lote, _id, GGN, logData) {
+    static async modificarLoteListaEmpaqueAddItem(calidad, kilos, lote, _id, GGN, logData, session) {
         const path = `exportacion.${_id}.${calidad}`;
         const query = {
             $inc: {
@@ -65,12 +65,12 @@ class ProcesoService {
         await LotesRepository.actualizar_lote(
             { _id: lote._id },
             query,
-            { user: logData.user, action: logData.action }
+            { user: logData.user, action: logData.action, session }
         );
         await registrarPasoLog(logData.logId, "ProcesoService.modificarLoteListaEmpaqueAddItem", "Completado");
         return true
     }
-    static async eliminar_items_contenedor(contenedor, palletsModificados, copiaPallet, seleccion, pallet, logContext) {
+    static async eliminar_items_contenedor(contenedor, palletsModificados, copiaPallet, seleccion, pallet, logContext, session) {
 
         //se eliminan los items del contenedor
         const len = seleccion.length;
@@ -84,7 +84,8 @@ class ProcesoService {
             { _id: contenedor._id },
             {
                 $set: { [`pallets.${pallet}`]: palletsModificados[pallet] }
-            }
+            },
+            { session: session }
         );
 
         // Registrar modificación Contenedores
@@ -98,12 +99,13 @@ class ProcesoService {
             },
             copiaPallet[pallet],
             palletsModificados[pallet],
-            { _id: contenedor._id, pallet, seleccion, action: logContext.action }
+            { _id: contenedor._id, pallet, seleccion, action: logContext.action },
+            { session: session }
         );
         await registrarPasoLog(logContext.logId, "ProcesoService.eliminar_items_contenedor", "Completado");
 
     }
-    static async restar_kilos_lote_indicadores(itemsDelete, logContext) {
+    static async restar_kilos_lote_indicadores(itemsDelete, logContext, session = null) {
 
         //se recorren para restar los kilos en los lotes
         const hoy = getColombiaDate();
@@ -121,13 +123,13 @@ class ProcesoService {
                 fechaSeleccionada.getMonth() === hoy.getMonth() &&
                 fechaSeleccionada.getDate() === hoy.getDate()
             ) {
-                await this.modificarIndicadoresFecha(itemsDelete[i], Number(-kilos), logContext.logId);
+                await this.modificarIndicadoresFecha(itemsDelete[i], Number(-kilos), logContext.logId, session);
             }
         }
         await registrarPasoLog(logContext.logId, "restar_kilos_lote_indicadores", "Completado");
 
     }
-    static async restar_kilos_lote(lotes, itemsDelete, contenedor, logContext) {
+    static async restar_kilos_lote(lotes, itemsDelete, contenedor, logContext, session) {
 
         for (let i = 0; i < itemsDelete.length; i++) {
             const { lote, calidad, tipoCaja, cajas } = itemsDelete[i]
@@ -137,7 +139,7 @@ class ProcesoService {
             const query = { $inc: {} }
 
             //se le restan los kilos a el lote correspondiente
-            const loteIndex = lotes.findIndex(item => item._id.toString() === lote)
+            const loteIndex = lotes.findIndex(item => item._id.toString() === lote.toString())
             const path = `exportacion.${contenedor[0]._id}.${calidad}`;
             query.$inc[path] = - kilos
 
@@ -152,7 +154,8 @@ class ProcesoService {
                 {
                     new: true,
                     user: logContext.user,
-                    action: logContext.action
+                    action: logContext.action,
+                    session: session
                 }
             );
         }
@@ -183,7 +186,6 @@ class ProcesoService {
             palletsModificados2[pallet2].EF1.push({ ...itemSplice, GGN });
 
             const kilos = itemSplice.cajas * Number(itemSplice.tipoCaja.split('-')[1].replace(",", "."))
-            console.log(itemSplice)
             const calidad = itemSplice.calidad;
 
             let updateLote = { $addToSet: { contenedores: id2 } };
@@ -216,7 +218,7 @@ class ProcesoService {
         }
 
     }
-    static async restarItem_contenedor(contenedor, palletsModificados, copiaPallet, pallet, seleccion, cajas, logContext) {
+    static async restarItem_contenedor(contenedor, palletsModificados, copiaPallet, pallet, seleccion, cajas, logContext, session) {
 
         const itemSeleccionado = palletsModificados[pallet].EF1[seleccion];
 
@@ -231,7 +233,8 @@ class ProcesoService {
             { _id: contenedor._id },
             {
                 $set: { [`pallets.${pallet}`]: palletsModificados[pallet] }
-            }
+            },
+            { session: session }
         );
 
         // Registrar modificación Contenedores
@@ -245,13 +248,14 @@ class ProcesoService {
             },
             copiaPallet[pallet],
             palletsModificados[pallet],
-            { action: logContext.action, _id: contenedor._id, pallet, seleccion, cajas }
+            { action: logContext.action, _id: contenedor._id, pallet, seleccion, cajas },
+            { session: session }
         );
 
         await registrarPasoLog(logContext.logId, "ProcesoService.restarItem_contenedor", "Completado");
 
     }
-    static async restarItem_lote(lote, copiaItemSeleccionado, kilos, contenedor, logContext) {
+    static async restarItem_lote(lote, copiaItemSeleccionado, kilos, contenedor, logContext, session) {
 
         const path = `exportacion.${contenedor[0]._id}.${copiaItemSeleccionado.calidad}`;
         lote[path] -= kilos
@@ -274,7 +278,8 @@ class ProcesoService {
             {
                 new: true,
                 user: logContext._id,
-                action: logContext.action
+                action: logContext.action,
+                session: session
             }
         )
         await registrarPasoLog(logContext.logId, "ProcesoService.restarItem_lote", "Completado");
@@ -300,27 +305,23 @@ class ProcesoService {
         }
 
     }
-    static async ingresarDataExportacionDiaria(tipoFruta, calidad, calibre, kilos, logId = null) {
+    static async ingresarDataExportacionDiaria(tipoFruta, calidad, calibre, kilos, logId = null, session = null) {
 
-        const cliente = await RedisRepository.getClient()
+        await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
+            {
+                $inc: {
+                    [`kilos_procesados.${tipoFruta}`]: Number(kilos),
+                    [`kilos_exportacion.${tipoFruta}.${calidad}.${calibre}`]: Number(kilos),
+                }
+            }, session
+        );
 
-        const multi = cliente.multi();
-
-        VariablesDelSistema.sumarMetricaSimpleDirect("kilosProcesadosHoy", tipoFruta, kilos, multi);
-        VariablesDelSistema.sumarMetricaSimpleDirect("kilosExportacionHoy", tipoFruta, kilos, multi);
-        VariablesDelSistema.sumarMetricaSimpleDirect(`exportacion:${tipoFruta}:${calidad}`, calibre, kilos, multi);
-
-        const results = await multi.exec();
-        console.info("Resultados de Redis:", results);
-        if (results.length === 0) {
-            throw new ProcessError(471, "Transacción Redis abortada. Revisa si hubo cambios concurrentes o tipos incorrectos en claves.");
-        }
         if (logId) {
             await registrarPasoLog(logId.logId, "ProcesoService.ingresarDataExportacionDiaria", "Completado", `Ingresados ${kilos} kilos de ${tipoFruta} calidad ${calidad} calibre ${calibre}`);
         }
         return true;
     }
-    static async modifiarContenedorPalletsListaEmpaque(lotes, palletsModificados, copiaPallets, pallet, item, _id, GGN, logData) {
+    static async modifiarContenedorPalletsListaEmpaque(lotes, palletsModificados, copiaPallets, pallet, item, _id, GGN, logData, session) {
         const { user, action } = logData
 
         const palletSeleccionado = palletsModificados[pallet].EF1;
@@ -344,13 +345,12 @@ class ProcesoService {
             palletSeleccionado[index].cajas += cajas
         }
 
-        console.log("palletSeleccionado", palletSeleccionado)
-
         await ContenedoresRepository.actualizar_contenedor(
             { _id },
             {
                 $set: { [`pallets.${pallet}.EF1`]: palletSeleccionado }
-            }
+            },
+            { session }
         );
 
         // Registrar modificación Contenedores
@@ -364,13 +364,14 @@ class ProcesoService {
             },
             copiaPallets[pallet],
             palletsModificados[pallet],
-            { _id, pallet, item, action }
+            { _id, pallet, item, action },
+            { session }
         );
 
         await registrarPasoLog(logData.logId, "ProcesoService.modifiarContenedorPalletsListaEmpaque", "Completado");
         return { GGN, }
     }
-    static async modificarContenedorModificarItemListaEmpaque(palletsModificados, palletSeleccionado, newKilos, copiaPallet, item, logData = null) {
+    static async modificarContenedorModificarItemListaEmpaque(palletsModificados, palletSeleccionado, newKilos, copiaPallet, item, logData = null, session = null) {
 
         const { _id, pallet, seleccion, data, action } = item
         const { calidad, calibre, cajas, tipoCaja } = data
@@ -386,7 +387,8 @@ class ProcesoService {
         // Actualizar contenedor con pallets modificados
         await ContenedoresRepository.actualizar_contenedor(
             { _id },
-            { pallets: palletsModificados }
+            { pallets: palletsModificados },
+            { session }
         );
 
         // Registrar modificación
@@ -400,14 +402,15 @@ class ProcesoService {
             },
             copiaPallet,
             palletSeleccionado,
-            { pallet, seleccion }
+            { pallet, seleccion },
+            { session }
         );
         if (logData) {
             await registrarPasoLog(logData.logId, "modificarLoteModificarItemListaEmpaque", "Completado", `se modificó el item seleccionado en el pallet ${pallet} con calidad ${calidad}, calibre ${calibre} y cajas ${cajas}  `);
         }
 
     }
-    static async modificarLoteModificarItemListaEmpaque(contenedorId, oldKilos, newKilos, oldCalidad, calidad, lote, GGN, logData = null) {
+    static async modificarLoteModificarItemListaEmpaque(contenedorId, oldKilos, newKilos, oldCalidad, calidad, lote, GGN, logData = null, session = null) {
 
         //se guarda el registro
         const antes = {
@@ -440,7 +443,8 @@ class ProcesoService {
             {
                 new: true,
                 user: logData._id,
-                action: logData.action
+                action: logData.action,
+                session
             }
         )
         if (logData) {
@@ -469,7 +473,7 @@ class ProcesoService {
         }
 
     }
-    static async modificarLoteEliminarItemdesktopListaEmpaque(_id, palletSeleccionado, lote, kilos, GGN, user, logId = null) {
+    static async modificarLoteEliminarItemdesktopListaEmpaque(_id, palletSeleccionado, lote, kilos, GGN, user, logId = null, session) {
         //El objeto que lleva la data vieja para el registro
         const oldDataRegistro = {
             [`exportacion.${_id}.${palletSeleccionado.calidad}`]: lote[`exportacion.${_id}.${palletSeleccionado.calidad}`]
@@ -491,7 +495,7 @@ class ProcesoService {
         await LotesRepository.actualizar_lote(
             { _id: palletSeleccionado.lote },
             query,
-            { user: user._id, action: "put_proceso_aplicaciones_listaEmpaque_eliminarItem_desktop" }
+            { user: user._id, action: "put_proceso_aplicaciones_listaEmpaque_eliminarItem_desktop", session }
         )
 
         if (logId)
@@ -499,7 +503,7 @@ class ProcesoService {
                 logId, "modificarLoteEliminarItemdesktopListaEmpaque", "Completado", `cajas eliminadas: ${palletSeleccionado.cajas}, kilos: ${kilos}, lote: ${palletSeleccionado.lote}`);
 
     }
-    static async modificarPalletModificarItemsListaEmpaque(palletsModificados, copiaPallet, pallet, seleccion, calidad, calibre, tipoCaja, _id, action, user, logID = null) {
+    static async modificarPalletModificarItemsListaEmpaque(palletsModificados, copiaPallet, pallet, seleccion, calidad, calibre, tipoCaja, _id, action, user, logID = null, session) {
 
         for (let i = 0; i < seleccion.length; i++) {
             const palletSeleccionado = palletsModificados[pallet].EF1[seleccion[i]];
@@ -509,7 +513,8 @@ class ProcesoService {
         // Actualizar contenedor con pallets modificados
         await ContenedoresRepository.actualizar_contenedor(
             { _id },
-            { pallets: palletsModificados }
+            { pallets: palletsModificados },
+            { session }
         );
 
         // Registrar modificación
@@ -523,7 +528,8 @@ class ProcesoService {
             },
             copiaPallet[pallet].EF1,
             palletsModificados[pallet].EF1,
-            { pallet, seleccion }
+            { pallet, seleccion },
+            { session }
         );
 
         if (logID) {
@@ -533,7 +539,7 @@ class ProcesoService {
 
     }
     static async modificarLotesModificarItemsListaEmpaque(
-        lotes, copiaPallet, palletsModificados, seleccion, pallet, contenedor, logID = null
+        lotes, copiaPallet, palletsModificados, seleccion, pallet, contenedor, logID = null, session
     ) {
         // Helper: saca el multiplicador de "12x-4,5" -> 4.5
         const parseMult = (tipoCaja) => {
@@ -584,7 +590,8 @@ class ProcesoService {
                 LotesRepository.actualizar_lote(
                     { _id: oldItem.lote },
                     query,
-                    { user: logID && logID.user, action: logID && logID.action }
+                    { user: logID && logID.user, action: logID && logID.action },
+                    { session }
                 )
             );
         }
@@ -614,12 +621,9 @@ class ProcesoService {
         }
     }
 
-    static async modificarIndicadorExportacion(palletsModificados, copiaPallet, seleccion, pallet, logID = null) {
+    static async modificarIndicadorExportacion(palletsModificados, copiaPallet, seleccion, pallet, logID = null, session) {
 
-        const cliente = await RedisRepository.getClient()
 
-        const multi = cliente.multi();
-        let comandosEnviados = 0;
 
         for (let i = 0; i < seleccion.length; i++) {
             const itemSeleccionadoOld = copiaPallet[pallet].EF1[seleccion[i]];
@@ -639,32 +643,37 @@ class ProcesoService {
                     itemSeleccionadoOld.calibre !== itemSeleccionadoNew.calibre
                 ) {
                     const kilosOld = itemSeleccionadoOld.cajas * Number(itemSeleccionadoOld.tipoCaja.split("-")[1].replace(",", "."));
-                    VariablesDelSistema.sumarMetricaSimpleDirect(
-                        `exportacion:${itemSeleccionadoOld.tipoFruta}:${itemSeleccionadoOld.calidad}`,
-                        itemSeleccionadoOld.calibre,
-                        -kilosOld,
-                        multi
-                    );
                     const kilosNew = itemSeleccionadoNew.cajas * Number(itemSeleccionadoNew.tipoCaja.split("-")[1].replace(",", "."));
-                    VariablesDelSistema.sumarMetricaSimpleDirect(
-                        `exportacion:${itemSeleccionadoNew.tipoFruta}:${itemSeleccionadoNew.calidad}`,
-                        itemSeleccionadoNew.calibre,
-                        kilosNew,
-                        multi
+
+                    await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
+                        {
+                            $inc: {
+                                [`kilos_exportacion.${itemSeleccionadoOld.tipoFruta}.${itemSeleccionadoOld.calidad}.${itemSeleccionadoOld.calibre}`]: Number(-kilosOld),
+                            }
+                        }, session
                     );
-                    comandosEnviados += 2
+                    await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
+                        {
+                            $inc: {
+                                [`kilos_exportacion.${itemSeleccionadoNew.tipoFruta}.${itemSeleccionadoNew.calidad}.${itemSeleccionadoNew.calibre}`]: Number(kilosNew),
+                            }
+                        }, session
+                    );
+                    // VariablesDelSistema.sumarMetricaSimpleDirect(
+                    //     `exportacion:${itemSeleccionadoOld.tipoFruta}:${itemSeleccionadoOld.calidad}`,
+                    //     itemSeleccionadoOld.calibre,
+                    //     -kilosOld,
+                    //     multi
+                    // );
+                    // VariablesDelSistema.sumarMetricaSimpleDirect(
+                    //     `exportacion:${itemSeleccionadoNew.tipoFruta}:${itemSeleccionadoNew.calidad}`,
+                    //     itemSeleccionadoNew.calibre,
+                    //     kilosNew,
+                    //     multi
+                    // );
+                    // comandosEnviados += 2
                 }
             }
-        }
-        let results = [];
-        if (comandosEnviados > 0) {
-            results = await multi.exec();
-            console.info("Resultados de Redis:", results);
-            if (results.length === 0) {
-                throw new ProcessError(471, "Transacción Redis abortada. Revisa si hubo cambios concurrentes o tipos incorrectos en claves.");
-            }
-        } else {
-            console.log("No hubo cambios que enviar a Redis, transacción vacía.");
         }
 
         if (logID) {
@@ -672,7 +681,7 @@ class ProcesoService {
         }
 
     }
-    static async modificarLotedescartes(_id, query, user, action) {
+    static async modificarLotedescartes(_id, query, user, action, session) {
         const lote = await LotesRepository.getLotes2({ ids: [_id] })
         const result = checkFinalizadoLote(lote)
         if (result) {
@@ -682,14 +691,14 @@ class ProcesoService {
         const loteModificado = await LotesRepository.actualizar_lote(
             { _id: _id },
             query,
-            { user: user._id, action: action }
+            { user: user._id, action: action, session: session }
         )
 
         return loteModificado;
     }
     static async restar_mover_modificar_contenedor(
         contenedores, index1, index2, contenedor1, contenedor2,
-        seleccionOrdenado, palletsModificados1, palletsModificados2, copiaPallets1, copiaPallets2, newCajas, cajas, GGN, logContext
+        seleccionOrdenado, palletsModificados1, palletsModificados2, copiaPallets1, copiaPallets2, newCajas, cajas, GGN, logContext, session
     ) {
 
         const { _id: id1, pallet: pallet1 } = contenedor1
@@ -756,7 +765,7 @@ class ProcesoService {
             }
         ];
 
-        await ContenedoresRepository.bulkWrite(operations)
+        await ContenedoresRepository.bulkWrite(operations, { session });
 
         const documentosAfectados = [
             {
@@ -785,12 +794,13 @@ class ProcesoService {
             documentosAfectados,
             antes,
             despues,
-            { contenedor1, contenedor2, action: logContext.action, user: logContext.user }
+            { contenedor1, contenedor2, action: logContext.action, user: logContext.user },
+            { session }
         );
         await registrarPasoLog(logContext.logId, "ProcesoService.restar_mover_modificar_contenedor", "Completado", `Se movieron los items ${seleccionOrdenado} de ${id1} a ${id2} en el pallet ${pallet1} y se agregaron ${cajas} cajas al pallet ${pallet2}`);
 
     }
-    static async restar_mover_modificar_lote(contenedores, index1, index2, itemSeleccionado, kilos, GGN, oldGGN, logContext) {
+    static async restar_mover_modificar_lote(contenedores, index1, index2, itemSeleccionado, kilos, GGN, oldGGN, logContext, session) {
 
         if (contenedores[index1]._id.toString() === contenedores[index2]._id.toString()) return;
         //Se modifican los lotes
@@ -815,14 +825,14 @@ class ProcesoService {
         await LotesRepository.actualizar_lote(
             { _id: itemSeleccionado.lote },
             query,
-            { new: true, user: logContext.user, action: logContext.action }
+            { new: true, user: logContext.user, action: logContext.action, session }
         );
         await registrarPasoLog(logContext.logId, "ProcesoService.restar_mover_modificar_lote", "Completado", `Se modificaron los lotes ${contenedores[index1]._id} y ${contenedores[index2]._id}`);
 
     }
 
     // mirar si se puede usar en otro lado
-    static async obtenerContenedorLote(_id, pallet, seleccion) {
+    static async obtenerContenedorLote(_id, pallet, seleccion, session) {
         const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
             ids: [_id],
             select: { infoContenedor: 1, pallets: 1 },
@@ -830,22 +840,20 @@ class ProcesoService {
                 path: 'infoContenedor.clienteInfo',
                 select: 'CLIENTE PAIS_DESTINO',
             }
-        })
+        }, { session })
         const palletsModificados = contenedor[0].pallets;
         const palletSeleccionado = palletsModificados[pallet].EF1[seleccion];
 
-
-        //se obtiene el lote
         const lote = await LotesRepository.getLotes2({
             ids: [palletSeleccionado.lote],
-        });
+        }, { session });
 
         return {
             contenedor, lote
         }
 
     }
-    static async obtenerContenedorLotes(_id, pallet, seleccion) {
+    static async obtenerContenedorLotes(_id, pallet, seleccion, session) {
         let lotesIds = [];
         let itemsDelete = [];
 
@@ -856,7 +864,7 @@ class ProcesoService {
                 path: 'infoContenedor.clienteInfo',
                 select: 'CLIENTE PAIS_DESTINO',
             }
-        })
+        }, { session })
         const palletsModificados = contenedor[0].pallets;
         //se eliminan los items del contenedor
         const len = seleccion.length;
@@ -875,14 +883,13 @@ class ProcesoService {
         const lotes = await LotesRepository.getLotes({
             ids: lotesArrIds,
             limite: 'all'
-        })
+        }, { session })
 
         return {
             contenedor, lotes, itemsDelete
         }
-
     }
-    static async obtenerContenedorLotesModificar(contenedor1, contenedor2) {
+    static async obtenerContenedorLotesModificar(contenedor1, contenedor2, session) {
 
         const { _id: id1, pallet: pallet1 } = contenedor1
         const { _id: id2 } = contenedor2
@@ -893,8 +900,8 @@ class ProcesoService {
             populate: {
                 path: 'infoContenedor.clienteInfo',
                 select: 'CLIENTE PAIS_DESTINO',
-            }
-        })
+            },
+        }, { session })
 
         const [index1, index2] = id1 === id2 ? [0, 0] : [
             contenedores.findIndex(c => c._id.toString() === id1),
@@ -926,7 +933,6 @@ class ProcesoService {
                 return ret;
             }
         });
-
         // Ya no necesitas verificar Map, son arrays directos
         const palletsModificados = structuredClone(contenedorObj.pallets);
         const copiaPallet = structuredClone(contenedorObj.pallets);
@@ -936,7 +942,7 @@ class ProcesoService {
             copiaPallet
         };
     }
-    static async modificarIndicadoresFecha(copiaPalletSeleccionado, kilos, logId) {
+    static async modificarIndicadoresFecha(copiaPalletSeleccionado, kilos, logId, session) {
         //se mira si es fruta de hoy para restar de las variables del proceso
         const fechaSeleccionada = getColombiaDate(copiaPalletSeleccionado.fecha)
         const hoy = getColombiaDate()
@@ -953,19 +959,14 @@ class ProcesoService {
             const calidad = copiaPalletSeleccionado.calidad;
             const calibre = copiaPalletSeleccionado.calibre;
 
-            const cliente = await RedisRepository.getClient()
-
-            const multi = cliente.multi();
-
-            VariablesDelSistema.sumarMetricaSimpleDirect("kilosProcesadosHoy", tipoFruta, Number(kilos), multi);
-            VariablesDelSistema.sumarMetricaSimpleDirect("kilosExportacionHoy", tipoFruta, Number(kilos), multi);
-            VariablesDelSistema.sumarMetricaSimpleDirect(`exportacion:${tipoFruta}:${calidad}`, calibre, Number(kilos), multi);
-
-            const results = await multi.exec();
-            console.info("Resultados de Redis:", results);
-            if (results.length === 0) {
-                throw new ProcessError(471, "Transacción Redis abortada. Revisa si hubo cambios concurrentes o tipos incorrectos en claves.");
-            }
+            await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
+                {
+                    $inc: {
+                        [`kilos_procesados.${tipoFruta}`]: Number(kilos),
+                        [`kilos_exportacion.${tipoFruta}.${calidad}.${calibre}`]: Number(kilos),
+                    }
+                }, session
+            );
 
             await registrarPasoLog(logId, "modificarIndicadoresFecha", "Completado", `se modificaron ${kilos} kilos de la fruta ${tipoFruta} con calidad ${calidad} y calibre ${calibre}`);
 
@@ -979,18 +980,13 @@ class ProcesoService {
                 usuariosIds.add(registro.usuario.toString());
             }
         }
-        console.log(usuariosIds.size)
-
         const usuarios = await UsuariosRepository.get_users({
             ids: Array.from(usuariosIds),
             limit: 'all'
         })
-        console.log(usuarios.length)
         for (const registro of registros) {
-            console.log(registro.user)
             if (registro.user) {
                 const usuario = usuarios.find(u => u._id.toString() === registro.user.toString());
-                console.log(usuario)
                 registro.user = usuario.usuario || registro.user;
 
             }

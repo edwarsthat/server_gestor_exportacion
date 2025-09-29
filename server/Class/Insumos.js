@@ -5,7 +5,7 @@ import { ItemBussyError } from "../../Error/ProcessError.js";
 let bussyIds = new Set();
 
 export class InsumosRepository {
-    static async get_insumos(options = {}) {
+    static async get_insumos(options = {}, session = null) {
 
         const {
             ids = [],
@@ -20,6 +20,7 @@ export class InsumosRepository {
             }
             const lotes = await db.Insumos.find(InsumosQuery)
                 .select(select)
+                .session(session || null)
                 .exec();
 
             return lotes

@@ -17,7 +17,6 @@ import { fileURLToPath } from 'url';
 import { CalidadService } from "../services/calidad.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
-import { db } from "../../DB/mongoDB/config/init.js";
 import { ErrorCalidadLogicHandlers } from "./utils/errorsHandlers.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -117,39 +116,19 @@ export class CalidadRepository {
         if (!_id || !data) {
             throw new CalidadLogicError(400, 'ID y datos son requeridos');
         }
-
         const log = await LogsRepository.create({
             user: user,
             action: action,
             acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
         });
-
-        const session = await db.Lotes?.db.startSession();
-        if (!session) {
-            await LogsRepository.update(log._id, { status: "Error", error: "No se pudo iniciar la sesión DB" });
-            throw new CalidadLogicError(500, "No se pudo iniciar la sesión en la base de datos");
-        }
         try {
-            const updatedLote = await session.withTransaction(async () => {
-                return await LotesRepository.actualizar_lote(
-                    { _id },
-                    data,
-                    { new: true, user, action, session }
-                );
-            });
-            await LogsRepository.update(log._id, { status: "Completado", completedAt: new Date() });
-            return updatedLote;
-
+            return await LotesRepository.actualizar_lote(
+                { _id },
+                data,
+                { new: true, user, action }
+            );
         } catch (error) {
             await ErrorCalidadLogicHandlers(error, log);
-        } finally {
-            if (session) {
-                try {
-                    await session.endSession();
-                } catch (sessionError) {
-                    console.error('Error al cerrar sesión DB:', sessionError);
-                }
-            }
         }
     }
     //#endregion
@@ -1082,7 +1061,4 @@ export class CalidadRepository {
         });
 
     }
-
-
-
 }

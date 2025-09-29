@@ -9,7 +9,8 @@ export const defineClientesNacionales = async (conn) => {
         cliente: { type: String, unique: true, required: true },
         ubicacion: String,
         canastillas: Number,
-        createdAt: { type: Date, default: () => new Date() }
+        createdAt: { type: Date, default: () => new Date() },
+        user: String
     });
 
     const Clientes = conn.model("ClientesNacionale", ClienteNacionalSchema);

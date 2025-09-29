@@ -91,15 +91,12 @@ export class RecordLotesRepository {
             throw new ConnectionDBError(522, `Error obteniendo el historial de lotes procesados ${err.message}`);
         }
     }
-    static async modificarRecord(id, query, __v = 0) {
-        this.validateBussyIds(id)
+    static async modificarRecord(id, query, __v = 0, session) {
         try {
-            const record = await db.recordLotes.findOneAndUpdate({ _id: id, __v: __v }, query, { new: true });
+            const record = await db.recordLotes.findOneAndUpdate({ _id: id, __v: __v }, query, { new: true, session });
             return record
         } catch (err) {
             throw new PutError(523, `Error al modificar el registro  ${err.essage}`);
-        } finally {
-            bussyIds.delete(id);
         }
     }
     static async obtener_cantidad_recordLote(filtro = {}) {

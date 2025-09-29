@@ -105,7 +105,7 @@ export class IndicadoresAPIRepository {
     //#endregion
     static async post_indicadores_eficiencia_operativa_registro() {
         try {
-            await IndicadoresRepository.post_indicador({ kilos_procesador: 0 })
+            await IndicadoresRepository.post_indicador()
         } catch (err) {
             if (err.status === 521) {
                 throw err
@@ -117,6 +117,28 @@ export class IndicadoresAPIRepository {
         try {
             const response = await IndicadoresRepository.get_cantidad_indicadores()
             return response;
+        } catch (err) {
+            if (err.status === 524) {
+                throw err
+            }
+            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_indicadores_actualizar_indicador(update, session = null) {
+        try {
+            const indicador = await IndicadoresRepository.actualizar_indicador(
+                {},                       
+                update,
+                {
+                    sort: { fecha_creacion: -1, _id: -1 },
+                    session
+                }
+            );
+            if (!indicador) {
+                throw new ProcessError(404, "No se encontró ningún indicador creado");
+            }
+            return indicador
+
         } catch (err) {
             if (err.status === 524) {
                 throw err
@@ -169,17 +191,12 @@ export class IndicadoresAPIRepository {
             const kilos_procesados = await IndicadoresService.procesar_metrica_hash(kilos_procesados_raw, log);
             await registrarPasoLog(log._id, "Se obtiene los kilos procesados", "Completado");
 
-            const kilos_vaciados_raw = await VariablesDelSistema.get_metrica_hash("kilosVaciadosHoy");
-            const kilos_vaciados = await IndicadoresService.procesar_metrica_hash(kilos_vaciados_raw, log);
-            await registrarPasoLog(log._id, "Se obtiene los kilos vaciados", "Completado");
-
             const [kilos_exportacion_raw, keys] = await VariablesDelSistema.get_metricas_exportacion();
             const kilos_exportacion = await IndicadoresService.procesar_exportacion_hash(kilos_exportacion_raw, log);
 
 
             await IndicadoresRepository.put_indicador(indicador[0]._id, {
                 kilos_procesados: kilos_procesados,
-                kilos_vaciados: kilos_vaciados,
                 kilos_exportacion: kilos_exportacion,
             })
             await registrarPasoLog(log._id, "Se modifica el indicador diario", "Completado");

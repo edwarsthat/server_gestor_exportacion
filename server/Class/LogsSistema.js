@@ -36,7 +36,7 @@ export class LogsRepository {
             console.error("Error updating log:", err);
         }
     }
-    static async createReporteIngresoDescarte(data, logID = null) {
+    static async createReporteIngresoDescarte(data, logID = null, session = null) {
         try {
             // Validar que los campos requeridos estén presentes
             if (!data.user || !data.userID) {
@@ -69,7 +69,7 @@ export class LogsRepository {
             };
 
             const reporte = new db.IngresoDescartes(reporteData);
-            const savedReporte = await reporte.save();
+            const savedReporte = await reporte.save({ session });
 
             if (logID) {
                 await registrarPasoLog(logID, "LogsRepository.createReporteIngresoDescarte", "Completado");

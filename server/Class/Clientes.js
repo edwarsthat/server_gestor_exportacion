@@ -94,10 +94,10 @@ export class ClientesRepository {
     }
 
     //clientes nacionales
-    static async post_cliente_nacional(data) {
+    static async post_cliente_nacional(data, session = null) {
         try {
-            const cliente = await db.ClientesNacionales.create(data);
-            return cliente.toObject({ versionKey: false });
+            const cliente = await db.ClientesNacionales(data);
+            return cliente.save({ session });
         } catch (err) {
             if (err.code === 11000) {
                 throw new PostError(521, 'Ya existe un cliente con ese identificador.')

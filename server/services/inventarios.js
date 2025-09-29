@@ -7,7 +7,6 @@ import { obtenerEstadoDesdeAccionCanastillasInventario } from "../api/utils/dicc
 import { colombiaToUTC } from "../api/utils/fechas.js";
 import { filtroFechaInicioFin } from "../api/utils/filtros.js";
 import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
-import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
 import { CanastillasRepository } from "../Class/CanastillasRegistros.js";
 import { ClientesRepository } from "../Class/Clientes.js";
 import { DespachoDescartesRepository } from "../Class/DespachoDescarte.js";
@@ -208,54 +207,7 @@ export class InventariosService {
         //poner filtro de la fecha
         throw new Error("El proveedor no tiene GGN para ese tipo de fruta")
     }
-    static async modificarLote_regresoHistorialFrutaProcesada(_id, queryLote, user, action, kilosVaciados) {
 
-        const lote = await LotesRepository.getLotes({ ids: [_id], select: { desverdizado: 1, kilosVaciados: 1, tipoFruta: 1 } })
-
-        const newLote = await LotesRepository.modificar_lote_proceso(
-            _id,
-            queryLote,
-            "Regreso de fruta procesada",
-            user.user
-        )
-
-        await RecordModificacionesRepository.post_record_contenedor_modification(
-            action,
-            user,
-            {
-                modelo: "Lote",
-                documentoId: lote[0]._id,
-                descripcion: `Kilos procesados ${lote[0].kilosVaciados} se le restaron ${kilosVaciados}`,
-            },
-            lote,
-            newLote,
-            { _id, action, kilosVaciados }
-        );
-
-        return lote
-    }
-    static async modificarInventario_regresoHistorialFrutaProcesada(lote, inventario, action, user) {
-        let inventarioOld
-        let newInventario
-        //modificar inventario
-
-        inventarioOld = await VariablesDelSistema.getInventario()
-        await VariablesDelSistema.modificarInventario(lote[0]._id, -inventario);
-        newInventario = await VariablesDelSistema.getInventario()
-
-        await RecordModificacionesRepository.post_record_contenedor_modification(
-            action,
-            user,
-            {
-                modelo: "Inventario",
-                descripcion: `Inventario modificado`,
-            },
-            inventarioOld,
-            newInventario,
-            { inventario }
-        );
-
-    }
     static async modificarLote_regresoHistorialFrutaIngreso(_id, queryLote, user, action) {
 
         const lote = await LotesRepository.actualizar_lote(
@@ -1214,12 +1166,10 @@ export class InventariosService {
         return { operation, out };
     }
     static async modificarRestarInventarioFrutaSinProocesar(canastillas, user, action, loteId, log, session, descripcion) {
-        console.log(`Modificando inventario fruta sin procesar, restando ${canastillas} canastillas del lote ${loteId}`);
-        console.log(typeof canastillas)
         // Primero decrementar las canastillas
         const updateResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
             { _id: "68cecc4cff82bb2930e43d05" },
-            { $inc: { 'inventario.$[it].canastillas': -canastillas } },
+            { $inc: { 'inventario.$[it].canastillas': -canastillas, __v: 1 } },
             {
                 session,
                 action: action,
@@ -1239,76 +1189,98 @@ export class InventariosService {
         await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple_updateOne (pull)", "Completado", `Elementos eliminados con canastillas <= 0, matchedCount: ${pullResult?.matchedCount}, modifiedCount: ${pullResult?.modifiedCount}`);
 
     }
-    static async modificarSumarInventarioFrutaSinProocesar(canastillas, user, action, loteId, log, session, descripcion) {
-        const loteObjectId = new mongoose.Types.ObjectId(loteId);
+static async modificarSumarInventarioFrutaSinProocesar(
+    canastillas, user, action, loteId, log, session, descripcion
+) {
+    const loteObjectId = new mongoose.Types.ObjectId(loteId);
 
-        // Update con pipeline: si existe el lote => $map + $add; si no existe => $concatArrays con el nuevo item
-        const pipelineUpdate = [
-            {
-                $set: {
-                    inventario: {
-                        $let: {
-                            vars: { existe: { $in: [loteObjectId, "$inventario.lote"] } },
-                            in: {
-                                $cond: [
-                                    "$$existe",
-                                    {
-                                        $map: {
-                                            input: "$inventario",
-                                            as: "it",
-                                            in: {
-                                                $cond: [
-                                                    { $eq: ["$$it.lote", loteObjectId] },
-                                                    {
-                                                        // Clona el item y suma canastillas
-                                                        $mergeObjects: [
-                                                            "$$it",
-                                                            { canastillas: { $add: ["$$it.canastillas", canastillas] } }
-                                                        ]
-                                                    },
-                                                    "$$it"
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    {
-                                        $concatArrays: [
-                                            "$inventario",
-                                            [
-                                                Object.assign(
-                                                    { lote: loteObjectId, canastillas: canastillas }
-                                                )
+    const pipelineUpdate = [
+        {
+            $set: {
+                inventario: {
+                    $let: {
+                        vars: { existe: { $in: [loteObjectId, "$inventario.lote"] } },
+                        in: {
+                            $cond: [
+                                "$$existe",
+                                {
+                                    $map: {
+                                        input: "$inventario",
+                                        as: "it",
+                                        in: {
+                                            $cond: [
+                                                { $eq: ["$$it.lote", loteObjectId] },
+                                                {
+                                                    $mergeObjects: [
+                                                        "$$it",
+                                                        {
+                                                            canastillas: {
+                                                                $add: ["$$it.canastillas", canastillas]
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                "$$it"
                                             ]
-                                        ]
+                                        }
                                     }
-                                ]
-                            }
+                                },
+                                {
+                                    $concatArrays: [
+                                        "$inventario",
+                                        [
+                                            {
+                                                lote: loteObjectId,
+                                                canastillas: canastillas
+                                            }
+                                        ]
+                                    ]
+                                }
+                            ]
                         }
                     }
-                }
+                },
+                __v: { $add: ["$__v", 1] } 
             }
-        ];
+        }
+    ];
 
-        const result = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
-            { _id: "68cecc4cff82bb2930e43d05" },
-            pipelineUpdate,
-            {
-                session,
-                action,
-                description: descripcion ?? `Sumar ${canastillas} canastillas al lote ${loteId}`,
-                user: user._id,
-                runValidators: true
-            }
-        );
+    const result = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+        { _id: "68cecc4cff82bb2930e43d05" },
+        pipelineUpdate,
+        {
+            session,
+            action,
+            description: descripcion ?? `Sumar ${canastillas} canastillas al lote ${loteId}`,
+            user: user._id,
+            runValidators: true
+        }
+    );
 
-        await registrarPasoLog(
-            log._id,
-            "InventariosHistorialRepository.put_inventarioSimple_updateOne (sumar/crear)",
-            "Completado",
-            `Suma/Alta de canastillas: ${canastillas}, matchedCount: ${result?.matchedCount}, modifiedCount: ${result?.modifiedCount}`
-        );
+    await registrarPasoLog(
+        log._id,
+        "InventariosHistorialRepository.put_inventarioSimple_updateOne (sumar/crear)",
+        "Completado",
+        `Suma/Alta de canastillas: ${canastillas}, matchedCount: ${result?.matchedCount}, modifiedCount: ${result?.modifiedCount}, versión incrementada`
+    );
 
-        return result;
+    return result;
+}
+
+    static async item_in_ordenVaceo(itemId) {
+        const ordenVaceo = await InventariosHistorialRepository.get_ordenVaceo();
+        const ids = ordenVaceo.data.map(id => id.toString());
+        if (ids.includes(itemId)) {
+            throw new Error(`EL lote ya está en la orden de vaceo, no se puede procesar como directo nacional.`);
+        }
+    }
+    static async check_inventarioVersion(idInventario, versionrequest){
+        const inventario = await InventariosHistorialRepository.get_inventario_simple(idInventario);
+        console.log(inventario.__v, versionrequest)
+        if (inventario.__v !== versionrequest) {
+            throw new Error(`La versión del inventario ha cambiado. Por favor, recargue la página e intente de nuevo.`);
+        }
+        return true
     }
     // static async modificarIngresoCanastillas(data) {
     //     const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)

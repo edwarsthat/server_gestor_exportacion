@@ -47,21 +47,7 @@ export class ContenedoresRepository {
 
         }
     }
-    static async get_Contenedores_sin_lotes(options = {}) {
-        /**
-         * Función que obtiene contenedores de la base de datos de MongoDB.
-         *
-         * @param {Object} options - Objeto de configuración para obtener los contenedores.
-         * @param {Array<string>} [options.ids=[]] - Array de IDs de los contenedores a obtener.
-         * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
-         * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
-         * @param {Object} [options.sort={ 'infoContenedor.fechaCreacion': -1 }] - Criterios de ordenación para los resultados.
-         * @param {number} [options.limit=50] - Número máximo de documentos a obtener.
-         * @param {number} [options.skip=0] - Número de documentos a omitir desde el inicio.
-         * @param {Object} [options.populate={ path: 'infoContenedor.clienteInfo', select: 'CLIENTE' }] - Configuración para la población de referencias.
-         * @returns {Promise<Array>} - Promesa que resuelve a un array de contenedores obtenidos.
-         * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al obtener los contenedores.
-         */
+    static async get_Contenedores_sin_lotes(options = {}, { session } = {}) {
         const {
             ids = [],
             query = {},
@@ -86,8 +72,8 @@ export class ContenedoresRepository {
                 .sort(sort)
                 .limit(limit)
                 .skip(skip)
+                .session(session || null)
                 .exec();
-
 
             return contenedores
 
@@ -96,20 +82,7 @@ export class ContenedoresRepository {
         }
     }
     static async get_Contenedores_sin_lotes_strict(options = {}) {
-        /**
-         * Función que obtiene contenedores de la base de datos de MongoDB.
-         *
-         * @param {Object} options - Objeto de configuración para obtener los contenedores.
-         * @param {Array<string>} [options.ids=[]] - Array de IDs de los contenedores a obtener.
-         * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
-         * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
-         * @param {Object} [options.sort={ 'infoContenedor.fechaCreacion': -1 }] - Criterios de ordenación para los resultados.
-         * @param {number} [options.limit=50] - Número máximo de documentos a obtener.
-         * @param {number} [options.skip=0] - Número de documentos a omitir desde el inicio.
-         * @param {Object} [options.populate={ path: 'infoContenedor.clienteInfo', select: 'CLIENTE' }] - Configuración para la población de referencias.
-         * @returns {Promise<Array>} - Promesa que resuelve a un array de contenedores obtenidos.
-         * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al obtener los contenedores.
-         */
+
         const {
             ids = [],
             query = {},
@@ -149,21 +122,7 @@ export class ContenedoresRepository {
     }
 
 
-    static async getContenedores(options = {}) {
-        /**
-         * Función que obtiene contenedores de la base de datos de MongoDB.
-         *
-         * @param {Object} options - Objeto de configuración para obtener los contenedores.
-         * @param {Array<string>} [options.ids=[]] - Array de IDs de los contenedores a obtener.
-         * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
-         * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
-         * @param {Object} [options.sort={ 'infoContenedor.fechaCreacion': -1 }] - Criterios de ordenación para los resultados.
-         * @param {number} [options.limit=50] - Número máximo de documentos a obtener.
-         * @param {number} [options.skip=0] - Número de documentos a omitir desde el inicio.
-         * @param {Object} [options.populate={ path: 'infoContenedor.clienteInfo', select: 'CLIENTE' }] - Configuración para la población de referencias.
-         * @returns {Promise<Array>} - Promesa que resuelve a un array de contenedores obtenidos.
-         * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al obtener los contenedores.
-         */
+    static async getContenedores(options = {}, session = null) {
         const {
             ids = [],
             query = {},
@@ -191,6 +150,7 @@ export class ContenedoresRepository {
                 .sort(sort)
                 .limit(limitToUse)
                 .skip(skip)
+                .session(session || null)
                 .exec();
 
             const new_conts = contenedores.map(contenedor => contenedor.toObject());
@@ -816,21 +776,13 @@ export class ContenedoresRepository {
 
 
 
-    static async actualizar_contenedor(filter, update, options = {}, logId = null, session = null) {
-        /**
-         * Función genérica para actualizar documentos en MongoDB usando Mongoose
-         *
-         * @param {Model} model - Modelo Mongoose (db.Contenedores, etc.)
-         * @param {Object} filter - Objeto de filtrado para encontrar el documento
-         * @param {Object} update - Objeto con los campos a actualizar
-         * @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
-         * @param {ClientSession} session - Sesión de transacción (opcional)
-         * @returns Documento actualizado
-         */
-        const defaultOptions = { new: true }; // retorna el documento actualizado
-        const finalOptions = session
-            ? { ...defaultOptions, ...options, session }
-            : { ...defaultOptions, ...options };
+    static async actualizar_contenedor(filter, update, options = {}, logId = null) {
+
+        const finalOptions = {
+            returnDocument: "after",
+            runValidators: true,
+            ...options
+        };
 
         try {
             const documentoActualizado = await db.Contenedores.findOneAndUpdate(
@@ -839,16 +791,19 @@ export class ContenedoresRepository {
                 finalOptions
             );
 
-            if(logId) await registrarPasoLog(logId, "actualizar_contenedor", "Completado", `filter: ${JSON.stringify(filter)}, update: ${JSON.stringify(update)}`);
+            if (logId) await registrarPasoLog(logId, "actualizar_contenedor", "Completado", `filter: ${JSON.stringify(filter)}, update: ${JSON.stringify(update)}`);
             return documentoActualizado;
         } catch (err) {
-            if(logId) await registrarPasoLog(logId, "actualizar_contenedor", "Error", `filter: ${JSON.stringify(filter)}, update: ${JSON.stringify(update)}, error: ${err.message}`);
+            if (logId) await registrarPasoLog(logId, "actualizar_contenedor", "Error", `filter: ${JSON.stringify(filter)}, update: ${JSON.stringify(update)}, error: ${err.message}`);
             throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
-        } 
+        }
     }
-    static async bulkWrite(operations) {
+    static async bulkWrite(operations, options = {}) {
         try {
-            const result = await db.Contenedores.bulkWrite(operations)
+            const result = await db.Contenedores.bulkWrite(
+                operations,
+                { ordered: true, ...options }
+            )
             return result;
         } catch (error) {
             throw new ConnectionDBError(523, `Error performing bulkWrite ${error.message} `);

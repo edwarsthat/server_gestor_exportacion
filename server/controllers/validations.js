@@ -1,6 +1,7 @@
 
 function have_lote_GGN_export(lote, contenedor, item="") {
     try {
+
         // Desestructurar para acceso más limpio y validación rápida
         if( !lote.GGN ) return false;
         const { GGN } = lote.predio;
@@ -15,7 +16,7 @@ function have_lote_GGN_export(lote, contenedor, item="") {
             GGN.paises.some(pais => PAIS_DESTINO.includes(pais))
 
     } catch (err) {
-        console.log("Error en validación GGN:", { error: err.message, predio: lote.predio?.GGN, tipoFruta: item?.tipoFruta });
+        console.error("Error en validación GGN:", { error: err.message, predio: lote.predio?.GGN, tipoFruta: item?.tipoFruta });
         return false;
     }
 }

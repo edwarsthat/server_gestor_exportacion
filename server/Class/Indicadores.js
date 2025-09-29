@@ -48,13 +48,31 @@ export class IndicadoresRepository {
             throw new ConnectionDBError(523, `Indicadores ->  ${err.message}`);
         }
     }
-    static async post_indicador(data) {
+    static async post_indicador() {
         try {
-            const registro = new db.Indicadores(data);
+            const registro = new db.Indicadores();
             const saveregistro = await registro.save();
             return saveregistro
         } catch (err) {
             throw new ConnectionDBError(521, `Indicadores -> ${err.message}`);
+        }
+    }
+    static async actualizar_indicador(filter, update, options = {}) {
+        const finalOptions = {
+            returnDocument: "after",  
+            runValidators: true,
+            ...options                 
+        };
+
+        try {
+            const documento = await db.Indicadores.findOneAndUpdate(
+                filter,
+                update,
+                finalOptions
+            );
+            return documento;
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
 }

@@ -3,7 +3,6 @@ import { PostError, PutError, ConnectionDBError } from "../../Error/ConnectionEr
 import { ProcessError } from "../../Error/ProcessError.js";
 import fs from 'fs';
 import { registrarPasoLog } from "../api/helper/logs.js";
-import { tipoFrutaCache } from "../cache/tipoFruta.js";
 
 const camposDescartes = [
     "descarteLavado.balin",
@@ -23,11 +22,11 @@ const camposDescartes = [
 
 export class LotesRepository {
     static async addLote(data, user, opts = {}) {
-        const { session } = opts; 
+        const { session } = opts;
         try {
             const lote = new db.Lotes(data);
             lote._user = user;
-            
+
             const saved = await lote.save({ session });
             return saved;
         } catch (err) {
@@ -49,7 +48,7 @@ export class LotesRepository {
             throw new PostError(521, `Error creando lote ${err.message}`);
         }
     }
-    static async getLotes(options = {}) {
+    static async getLotes(options = {}, { session = null } = {}) {
         const {
             ids = [],
             query = {},
@@ -57,7 +56,7 @@ export class LotesRepository {
             sort = { fecha_creacion: -1, fechaIngreso: -1 },
             limit = 50,
             skip = 0,
-            populate = { path: 'predio', select: 'PREDIO ICA GGN SISPAP' }
+            populate = [{ path: 'predio', select: 'PREDIO ICA GGN SISPAP' }, { path: 'tipoFruta' }]
         } = options;
         try {
             let lotesQuery = { ...query };
@@ -75,9 +74,8 @@ export class LotesRepository {
                 .limit(limitToUse)
                 .skip(skip)
                 .populate(populate)
+                .session(session)
                 .exec();
-
-
 
             return lotes
 
@@ -282,7 +280,7 @@ export class LotesRepository {
     }
 
 
-    static async getLotes2(options = {}) {
+    static async getLotes2(options = {}, { session = null } = {}) {
         const {
             ids = [],
             query = {},
@@ -312,31 +310,29 @@ export class LotesRepository {
                 .skip(skip)
                 .populate(populate)
                 .lean()
+                .session(session)
                 .exec();
-
-            // for (const lote of lotes) {
-            //     lote.tipoFruta = tipoFrutaCache.getTipoFruta(lote.tipoFruta);
-            // }
-            console.log(lotes)
             return lotes
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
         }
     }
-    static async actualizar_lote(filter, update, options = {}, session = null, calculateFields = true) {
-        // ...toda la magia anterior...
-        /**
-         * El update más lírico y funcional del reino Mongo.
-         */
+    static async actualizar_lote(filter, update, options = {}, calculateFields = true) {
+        const {
+            session,
+            ...restOptions
+        } = options;
+
         const finalOptions = {
             new: true,
-            ...options,
+            ...restOptions,
             ...(session && { session })
         };
 
         try {
             // 1. Actualiza el lote con los datos proporcionados y obtiene el nuevo estado
-            let documento = await db.Lotes.findOneAndUpdate(filter, update, { ...finalOptions, new: true });
+            let documento = await db.Lotes.findOneAndUpdate(filter, update, finalOptions)
+                .populate([{ path: 'predio', select: 'PREDIO ICA GGN SISPAP' }, { path: 'tipoFruta' }]);
             if (!documento) throw new Error('Lote no encontrado');
 
             if (calculateFields) {
@@ -375,21 +371,13 @@ export class LotesRepository {
                         { deshidratacion, rendimiento },
                         {
                             ...finalOptions,
-                            new: true,
                             skipAudit: true,
-                            action: 'system:recalc_desh_rend'
+                            action: 'system:recalc_desh_rend',
                         }
-                    );
+                    ).populate([{ path: 'predio', select: 'PREDIO ICA GGN SISPAP' }, { path: 'tipoFruta' }]);
                 }
 
             }
-
-            documento = await db.Lotes.findById(documento._id)
-                .populate({ path: 'predio', select: 'PREDIO ICA GGN SISPAP' })
-                .lean()
-                .exec();
-
-            documento.tipoFruta = tipoFrutaCache.getTipoFruta(documento.tipoFruta);
 
             return documento;
 

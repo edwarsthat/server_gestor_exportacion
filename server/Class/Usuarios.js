@@ -64,7 +64,7 @@ export class UsuariosRepository {
             return usuarios
 
         } catch (err) {
-            console.log(err)
+            console.error(err)
             throw new ConnectionDBError(522, `Error get user ${err.message}`);
         }
     }
@@ -388,7 +388,7 @@ export class UsuariosRepository {
             return higienePersonal
 
         } catch (err) {
-            console.log(err)
+            console.error(err)
             throw new ConnectionDBError(522, `Error obteniendo formularios higiene personal ${err.message}`);
         }
     }

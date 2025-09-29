@@ -16,6 +16,10 @@ import config from "../../src/config/index.js";
 import { ComercialService } from "../services/comercial.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
+import { db } from "../../DB/mongoDB/config/init.js";
+import { Seriales } from "../Class/Seriales.js";
+import { dataRepository } from "./data.js";
+import { ErrorComercialLogicHandlers } from "./utils/errorsHandlers.js";
 const { EMAIL, PASSWORD_EMAIL } = config;
 
 
@@ -433,31 +437,49 @@ export class ComercialRepository {
         }
     }
     static async post_comercial_clienteNacional(req) {
+        const { user } = req
+        const { data, action } = req.data
+
+        let log;
+
+        const session = await db.Lotes.db.startSession();
+
+        if (!session) {
+            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
+        }
+
+        log = await LogsRepository.create({
+            user: user,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
         try {
-            const { user } = req
-            const { data, action } = req.data
 
             const parsedData = ComercialValidationsRepository.val_post_comercial_clienteNacional().parse(data);
-            const cliente = await ClientesRepository.post_cliente_nacional(parsedData);
 
-            const documento = {
-                modelo: "Cliente nacional",
-                _id: cliente._id,
-            }
+            await session.withTransaction(async () => {
 
-            await RecordCreacionesRepository.post_record_creaciones(
-                action,
-                user,
-                documento,
-                cliente,
-                `Creación de cliente nacional: ${cliente.cliente || cliente._id}`
-            )
+                const serial = await Seriales.get_seriales("CN");
+                await registrarPasoLog(log._id, "Seriales.get_seriales", "Completado");
+                const newCodigo = serial[0].name + String(serial[0].serial)
+                const newData = {
+                    ...parsedData,
+                    user: user._id,
+                    codigo: newCodigo
+                }
+                await ClientesRepository.post_cliente_nacional(newData, session);
+                await registrarPasoLog(log._id, "ClientesRepository.post_cliente_nacional", "Completado");
+                await dataRepository.incrementar_cn_serial(session);
+                await registrarPasoLog(log._id, "dataRepository.incrementar_cn_serial", "Completado");
+
+            })
 
         } catch (err) {
-            if (err.status === 521) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            await ErrorComercialLogicHandlers(err, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     //#endregion

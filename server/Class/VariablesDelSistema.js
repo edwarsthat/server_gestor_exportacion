@@ -772,7 +772,6 @@ export class VariablesDelSistema {
         "kilosProcesadosHoy",
         "kilosVaciadosHoy"
       ];
-      console.log(keysToDelete)
       // Borra todas de una
       if (keysToDelete.length > 0) {
         await cliente.del(keysToDelete);
@@ -808,7 +807,6 @@ export class VariablesDelSistema {
 
     try {
       cliente = await getRedisClient();
-      console.log("casdadsa", cliente)
       const status = await cliente.get("statusProceso");
 
       // Cambiamos la validación a null
@@ -820,7 +818,7 @@ export class VariablesDelSistema {
       // Redis almacena los valores como strings, por lo que puede ser necesario hacer una conversión
       return status;
     } catch (err) {
-      console.log(err)
+      console.error(err)
       throw new ConnectRedisError(531, `Error redis status proceso: ${err.name}`);
     }
   }
@@ -1165,7 +1163,7 @@ export class VariablesDelSistema {
         if (err) {
           console.error('Error al guardar el código en Redis:', err);
         } else {
-          console.log('Código de verificación almacenado en Redis:', reply);
+          console.error('Código de verificación almacenado en Redis:', reply);
           // Aquí puedes enviar el código al correo del usuario
         }
       });

@@ -8,7 +8,7 @@ import { InventariosRepository } from '../../server/api/inventarios.js';
 
 export function initCronJobs() {
 
-    cron.schedule('10 5 * * *', async () => {
+    cron.schedule('47 10 * * *', async () => {
         await IndicadoresAPIRepository.post_indicadores_eficiencia_operativa_registro();
 
     });

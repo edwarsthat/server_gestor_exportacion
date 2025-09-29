@@ -170,7 +170,10 @@ export class ComercialValidationsRepository {
             cliente: z.string().min(1, "El nombre del cliente es obligatorio.")
                 .regex(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s]+$/, "Solo se permiten letras y números."),
             ubicacion: z.string().min(1, "La ubicación es obligatoria.")
-                .regex(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s]+$/, "Solo se permiten letras y números.")
+                .regex(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s]+$/, "Solo se permiten letras y números."),
+            canastillas: z.union([z.string(), z.number()])
+                .transform(val => parseInt(val, 10))
+                .refine(val => !isNaN(val) && val >= 0, "La cantidad de canastillas debe ser un número entero mayor o igual a 0.")
         })
     }
     static put_comercial_clientes_clienteNacional() {

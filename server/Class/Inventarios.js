@@ -102,6 +102,16 @@ export class InventariosHistorialRepository {
     }
 
     //#region Inventarios Simples
+    static async get_inventario_simple(id){
+        try {
+            const documento = await db.InventariosSimples.findOne({ _id: id })
+                .lean()
+                .exec();
+            return documento;
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo el inventario simple ${err.message}`);
+        }
+    }
     static async getInventarioFrutaSinProcesar(options = {}) {
         const {
             ids = [],
@@ -233,10 +243,10 @@ export class InventariosHistorialRepository {
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
-    static async get_ordenVcaeo() {
+    static async get_ordenVaceo() {
         try {
             const data = await db.InventariosSimples.find({ _id: "68d1c0410f282bcb84388dd3" })
-                .select({ ordenVaceo: 1, _id: 0, __v:1 })
+                .select({ ordenVaceo: 1, _id: 0, __v: 1 })
                 .lean()
                 .exec();
             return { data: data?.[0]?.ordenVaceo || [], __v: data?.[0]?.__v || 0 };
@@ -244,11 +254,14 @@ export class InventariosHistorialRepository {
             throw new ConnectionDBError(522, `Error obteniendo la cantidad de registros de cuartos fríos ${err.message}`);
         }
     }
-    static async put_borrar_item_ordenVaceo(id, session = null) {
+    static async put_borrar_item_ordenVaceo(session = null) {
         try {
             const res = await db.InventariosSimples.updateOne(
                 { _id: "68d1c0410f282bcb84388dd3" },
-                { $pull: { ordenVaceo: { _id: id } }, $inc: { __v: 1 } },
+                {
+                    $pop: { ordenVaceo: -1 },
+                    $inc: { __v: 1 }      
+                },
                 { session }
             );
             return res;
