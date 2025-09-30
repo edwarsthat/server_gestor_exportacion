@@ -52,7 +52,8 @@ export class ContabilidadRepository {
                 limit: resultsPerPage,
                 populate: [
                     { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' },
-                    { path: 'precio', select: 'exportacion frutaNacional descarte' }
+                    { path: 'precio', select: 'exportacion frutaNacional descarte' },
+                    { path: 'tipoFruta' },
 
                 ]
             })
