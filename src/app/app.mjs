@@ -13,7 +13,7 @@ import { routerIndicadores } from "../../server/routes/https/indicadores.js";
 import { routerComercial } from "../../server/routes/comercial.js";
 import { routerSistema } from "../../server/mobile/sistema.js";
 import { routerAppTv } from "../../server/routes/appTv.js";
-import { sp32 } from "../../server/mobile/sp32.js";
+
 import { routerAPI } from "../../server/routes/api.js";
 import { SistemaRepository } from "../../server/api/Sistema.js";
 import { UserRepository } from "../../server/auth/users.js";
@@ -25,6 +25,7 @@ import { routerInventarios } from "../../server/routes/https/inventarios.js";
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { routerTransporte } from '../../server/routes/https/transporte.js';
+import { sp32 } from '../../server/routes/https/sp32.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
