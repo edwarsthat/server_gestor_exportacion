@@ -13,24 +13,27 @@ export class TransporteRepository {
     static async get_transporte_programaciones_mulaContenedores() {
         try {
             const haceUnMes = new Date();
-            haceUnMes.setMonth(haceUnMes.getMonth() - 1);
+            haceUnMes.setMonth(haceUnMes.getMonth() - 2);
 
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: {
                     $and: [
                         { 'infoContenedor.fechaCreacion': { $gte: haceUnMes } },
                         { infoExportacion: { $exists: true } },
-                        { infoTractoMula: { $exists: false } },
                     ],
                 },
                 select: {
                     numeroContenedor: 1,
+                    totalKilos: 1,
+                    totalCajas: 1,
                     infoContenedor: 1,
+                    registrosSalidas: 1,
                     __v: 1,
                 },
                 sort: { 'infoExportacion.fechaCreacion': -1 },
             });
-            return response
+            const data = await TransporteService.filtrarContenedoresParaTransporte(response);
+            return data;
 
         } catch (err) {
             if (err.status === 522) {

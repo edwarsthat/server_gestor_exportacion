@@ -3,7 +3,7 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs/promises';
-import { fileTypeFromBuffer } from 'file-type'; 
+import { fileTypeFromBuffer } from 'file-type';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -92,5 +92,21 @@ export class TransporteService {
         } catch (error) {
             throw new Error('Error al leer las fotos: ' + error.message);
         }
+    }
+    static async filtrarContenedoresParaTransporte(contenedores) {
+        const data = contenedores.filter(contenedor => {
+            if (contenedor.registrosSalidas.length === 0) return true;
+            else {
+                let sum = 0;
+                for (const registro of contenedor.registrosSalidas) {
+                    if (registro.codigo.startsWith("ST")) return false;
+                    else {
+                        sum += registro.pesoEstimado || 0;
+                        if (sum >= contenedor.totalKilos) return false;
+                    }
+                }
+            }
+        })
+        return data;
     }
 }

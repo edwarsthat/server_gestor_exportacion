@@ -10,7 +10,7 @@ sp32.get("/", (req, res) => {
 
 sp32.post("/", async (req, res) => {
     try {
-        console.log("desde el sp32",req.body)
+        console.log("desde el sp32", req.body)
         await ProcesoRepository.sp32_funcionamiento_maquina(req.body)
         res.json({ status: 200, message: 'Ok' })
 

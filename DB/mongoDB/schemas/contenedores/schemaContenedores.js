@@ -197,15 +197,22 @@ export const defineContenedores = async (conn) => {
     entrega: String,
     recibe: String,
     createdAt: { type: Date, default: () => new Date() },
-    fechaEntrega:  Date,
+    fechaEntrega: Date,
     fotos: [String],
     user: String,
     observaciones: String
   }, { _id: false });
-  
+
+  const registrosSalidasSchema = new Schema({
+    salidaId: { type: Schema.Types.ObjectId, required: true },
+    salidaModel: { type: String, required: true, enum: ["Camion", "tractomulasSalida"] }
+  });
+
 
   const listaEmpaqueSchema = new Schema({
     numeroContenedor: Number,
+    totalKilos: Number,
+    totalCajas: Number,
     pallets: [subSchema],
     infoContenedor: infoContenedorSchema,
     infoTractoMula: schemaInfoMula,
@@ -213,10 +220,11 @@ export const defineContenedores = async (conn) => {
     insumosData: insumosSchema,
     inspeccion_mula: inspeccionMulasSchema,
     reclamacionCalidad: reclamacionSchema,
+    registrosSalidas: [registrosSalidasSchema],
     entregaPrecinto: entregaPrecintoSchema,
   });
 
-  listaEmpaqueSchema.index({ reclamacionCalidad: 1, entregaPrecinto:1 });
+  listaEmpaqueSchema.index({ reclamacionCalidad: 1, entregaPrecinto: 1 });
 
   // Middleware to update `ultimaModificacion` field
   // listaEmpaqueSchema.post('save', async function (doc) {
