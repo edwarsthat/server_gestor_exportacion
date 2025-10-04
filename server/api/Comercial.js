@@ -187,6 +187,7 @@ export class ComercialRepository {
             const { data: datos, user } = req
             const { data } = datos
 
+            console.log(data)
             const predio = await ProveedoresRepository.get_proveedores({
                 query: { "CODIGO INTERNO": 0 }
             })
@@ -469,7 +470,7 @@ export class ComercialRepository {
                 }
                 await ClientesRepository.post_cliente_nacional(newData, session);
                 await registrarPasoLog(log._id, "ClientesRepository.post_cliente_nacional", "Completado");
-                await dataRepository.incrementar_cn_serial(session);
+                await dataRepository.incrementar_cn_serial("CN", session);
                 await registrarPasoLog(log._id, "dataRepository.incrementar_cn_serial", "Completado");
 
             })

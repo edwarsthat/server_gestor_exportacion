@@ -5,6 +5,13 @@ import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { transporteValidations } from "../validations/transporte.js";
 import { TransporteService } from "../services/transporte.js";
 import { addHours } from "./utils/fechas.js";
+import { db } from "../../DB/mongoDB/config/init.js";
+import { LogsRepository } from "../Class/LogsSistema.js";
+import { registrarPasoLog } from "./helper/logs.js";
+import { ErrorTransporteLogicHandlers } from "./utils/errorsHandlers.js";
+import { VehiculoRegistro } from "../Class/VehiculosRegistros.js";
+import { Seriales } from "../Class/Seriales.js";
+import { dataRepository } from "./data.js";
 const PAGE_ITEMS = 50;
 
 export class TransporteRepository {
@@ -28,9 +35,13 @@ export class TransporteRepository {
                     totalCajas: 1,
                     infoContenedor: 1,
                     registrosSalidas: 1,
-                    __v: 1,
                 },
                 sort: { 'infoExportacion.fechaCreacion': -1 },
+                populate: {
+                    path: "registrosSalidas",
+                    select: "codigo tipoVehiculo placa trailer pesoEstimado fecha transportadora",
+                    options: { sort: { fecha: -1 } }
+                }
             });
             const data = await TransporteService.filtrarContenedoresParaTransporte(response);
             return data;
@@ -44,52 +55,82 @@ export class TransporteRepository {
         }
     }
     static async put_transporte_programaciones_mulaContenedor(req) {
+
+        const { user } = req;
+        const { data, action } = req.data;
+
+        let log
+        const session = await db.Contenedores.db.startSession();
+
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
         try {
-            const { user } = req
-
-            const { action, _id, data } = req.data
-
-            //se obtienen los datos
-            const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                ids: [_id],
-                select: { numeroContenedor: 1 },
-            })
-
-            const query = {
-                infoTractoMula: {
-                    ...data
+            await session.withTransaction(async () => {
+                const update = {};
+                const serial = await Seriales.get_seriales("RVS-");
+                const newCodigo = serial[0].name + String(serial[0].serial)
+                const newData = {
+                    ...data,
+                    user: user._id,
+                    codigo: newCodigo
                 }
-            }
 
-            const newContenedor = await ContenedoresRepository.actualizar_contenedor(
-                { _id },
-                query
-            );
+                if (!newData.tipoSalida) {
+                    throw new TransporteError(440, `El tipo de salida es obligatorio`)
+                }
+                if (newData.tipoSalida === "Nacional") {
+                    delete newData.contenedor
+                }
 
-            // Registrar modificación Contenedores
-            await RecordModificacionesRepository.post_record_contenedor_modification(
-                action,
-                user,
-                {
-                    modelo: "Contenedor",
-                    documentoId: _id,
-                    descripcion: `Se agregó la programación tractomula`,
-                },
-                contenedor,
-                newContenedor,
-                { action, _id, data }
-            );
+                const registro = await VehiculoRegistro.addTractomula(newData, { session });
+                await registrarPasoLog(log._id, "VehiculoRegistro.addTractomula", "Completado", `Se agregó el registro de tractomula con ID: ${registro._id}`);
+
+                if (data.contenedor) {
+
+                    update.$push = { registrosSalidas: registro._id.toString() };
+
+                    const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                        ids: [data.contenedor],
+                        select: { numeroContenedor: 1 },
+                    })
+
+                    const idsCont = contenedor._id;
+
+                    const newContenedor = await ContenedoresRepository.actualizar_contenedor(
+                        { _id: data.contenedor },
+                        update,
+                        { session, new: true },
+                        log._id
+                    );
+
+                    await RecordModificacionesRepository.post_record_contenedor_modification(
+                        action,
+                        user,
+                        {
+                            modelo: "Contenedor",
+                            documentoId: idsCont,
+                            descripcion: `Se agregó la programación tractomula`,
+                        },
+                        contenedor,
+                        newContenedor,
+                        { idsCont, action },
+                        { session }
+                    );
+                }
+
+                await dataRepository.incrementar_cn_serial("RVS-", session);
+
+            });
 
         } catch (err) {
-            if (err.status === 523) {
-                throw err
-            } else {
-                throw new TransporteError(440,
-                    `Error ingresanddo dato post_transporte_programacion_mula a contenedor  --- 
-                    ${err.message}`
-                )
-
-            }
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            await ErrorTransporteLogicHandlers(err, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     static async get_transporte_programaciones_exportacion_contenedores() {
@@ -183,17 +224,6 @@ export class TransporteRepository {
             throw new TransporteError(470, `Error ${err.type || "interno"}: ${message}`);
         }
     }
-    /**
-     * Registra la entrega de precinto para un contenedor, incluyendo fotos y datos de entrega.
-     * @param {Object} req - Objeto de solicitud que contiene el usuario, datos de entrega, fotos y acción.
-     * @param {Object} req.user - Usuario que realiza la acción.
-     * @param {Object} req.data - Datos de la entrega.
-     * @param {Object} req.data.data - Información de la entrega (id, entrega, recibe, fechaEntrega, observaciones).
-     * @param {Array} req.data.fotos - Fotos asociadas a la entrega del precinto.
-     * @param {string} req.data.action - Acción realizada.
-     * @returns {Promise<void>} No retorna nada si la operación es exitosa.
-     * @throws {TransporteError|ZodError} Si ocurre un error de validación o de proceso, lanza un error personalizado.
-     */
     static async post_transporte_conenedor_entregaPrecinto(req) {
         try {
             transporteValidations.post_transporte_conenedor_entregaPrecinto().parse(req.data.data);
@@ -323,19 +353,13 @@ export class TransporteRepository {
             }
         }
     }
-    static async get_transporte_registros_programacionMula(req) {
+    static async get_transporte_registros_salida_vehiculo_exportacion(req) {
         try {
             const { page } = req.data
             const resultsPerPage = 50;
-            const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            const response = await VehiculoRegistro.getRegistrosVehiculo({
                 query: {
-                    infoTractoMula: { $exists: true },
-                },
-                select: {
-                    numeroContenedor: 1,
-                    infoContenedor: 1,
-                    __v: 1,
-                    infoTractoMula: 1,
+                    tipoSalida: "Exportacion"
                 },
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
@@ -348,17 +372,16 @@ export class TransporteRepository {
             if (err.status === 522) {
                 throw err
             } else {
-                throw new TransporteError(440, `Error obteniendo contenedores --- ${err.message}`)
+                throw new TransporteError(440, `Error obteniendo registro salida vehiculos exportacion --- ${err.message}`)
             }
         }
     }
-    static async get_transporte_registros_programacion_mula_numeroElementos() {
+    static async get_transporte_registros_salida_vehiculo_exportacion_numeroElementos() {
         try {
             const filtro = {
-                infoTractoMula: { $exists: true }
+                tipoSalida: "Exportacion"
             }
-            const numeroContenedores = await ContenedoresRepository.obtener_cantidad_contenedores(filtro)
-
+            const numeroContenedores = await VehiculoRegistro.obtener_cantidad_registros_vehiculos(filtro)
             return numeroContenedores
 
         } catch (err) {
@@ -370,48 +393,40 @@ export class TransporteRepository {
         }
     }
     static async put_transporte_registros_programacionMula(req) {
+        const { user } = req;
+        const { action, _id, data } = req.data
+
+        let log
+        const session = await db.Contenedores.db.startSession();
+
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
         try {
-            const { user } = req
-            const { action, _id, data } = req.data
-            //se obtienen los datos
-            const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                ids: [_id],
-                select: { numeroContenedor: 1, infoTractoMula: 1 },
-            })
 
-            const query = {
-                $set: {
-                    ...data
+            await session.withTransaction(async () => {
+                const oldregistro = await VehiculoRegistro.getRegistrosVehiculo({
+                    ids: [_id],
+                }, { session });
+                if (oldregistro.length === 0) {
+                    throw new TransporteError(404, `Registro no encontrado`);
                 }
-            }
-            const newContenedor = await ContenedoresRepository.actualizar_contenedor(
-                { _id },
-                query
-            );
+                if (oldregistro[0].contenedor.numeroContenedor !== data.contenedor) {
+                    await TransporteService.modificarRegistroontenedorSalidaVehiculoExportacion(oldregistro, data, { session });
+                }
 
-            // Registrar modificación Contenedores
-            await RecordModificacionesRepository.post_record_contenedor_modification(
-                action,
-                user,
-                {
-                    modelo: "Contenedor",
-                    documentoId: _id,
-                    descripcion: `Se modifico transporte programacion mula `,
-                },
-                contenedor[0].infoTractoMula,
-                newContenedor.infoTractoMula,
-                { action, _id, data }
-            );
+            });
+
+
 
         } catch (err) {
-            if (err.status === 523) {
-                throw err
-            } else {
-                throw new TransporteError(440,
-                    `Error ingresanddo dato post_transporte_programacion_mula_modificar a contenedor  --- 
-                    ${err.message}`
-                )
-            }
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            await ErrorTransporteLogicHandlers(err, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     static async get_transporte_registros_inspeccionMula_numeroElementos() {

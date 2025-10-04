@@ -8,7 +8,7 @@ import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
 import { getColombiaDate } from "../api/utils/fechas.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
-import { normalizeEF1Item } from "./helpers/contenedores.js";
+import { normalizeEF1Item, parseMultTipoCaja } from "./helpers/contenedores.js";
 import { IndicadoresAPIRepository } from "../api/IndicadoresAPI.js";
 
 
@@ -74,8 +74,13 @@ class ProcesoService {
 
         //se eliminan los items del contenedor
         const len = seleccion.length;
+        let cajas = 0;
+        let kilos = 0;
 
         for (let i = 0; i < len; i++) {
+            const item = palletsModificados[pallet].EF1[seleccion[i]];
+            cajas += item.cajas;
+            kilos += parseMultTipoCaja(item.tipoCaja) * item.cajas;
             palletsModificados[pallet]["EF1"].splice(seleccion[i], 1)[0];
         }
 
@@ -83,7 +88,8 @@ class ProcesoService {
         await ContenedoresRepository.actualizar_contenedor(
             { _id: contenedor._id },
             {
-                $set: { [`pallets.${pallet}`]: palletsModificados[pallet] }
+                $set: { [`pallets.${pallet}`]: palletsModificados[pallet] },
+                $inc: { totalCajas: -cajas, totalKilos: -kilos }
             },
             { session: session }
         );
@@ -168,13 +174,16 @@ class ProcesoService {
 
         const { _id: id1, pallet: pallet1 } = contenedor1
         const { _id: id2, pallet: pallet2 } = contenedor2
-
+        let cajas = 0;
+        let kilosTotal = 0;
         for (let i = 0; i < seleccionOrdenado.length; i++) {
 
             // se mira si el item pasa a un contenedor GGN y se agrega o se quita
             const itemSplice = palletsModificados1[pallet1].EF1.splice(seleccionOrdenado[i], 1)[0]
             const lote = lotes.find(l => l._id.toString() === itemSplice.lote)
 
+            cajas += itemSplice.cajas;
+            kilosTotal += itemSplice.cajas * parseMultTipoCaja(itemSplice.tipoCaja);
 
             const oldGGN = have_lote_GGN_export(lote, contenedores[index1], palletsModificados1)
             const GGN = have_lote_GGN_export(lote, contenedores[index2], palletsModificados2)
@@ -217,12 +226,15 @@ class ProcesoService {
             }
         }
 
+        return { cajas, kilosTotal };
+
     }
     static async restarItem_contenedor(contenedor, palletsModificados, copiaPallet, pallet, seleccion, cajas, logContext, session) {
 
         const itemSeleccionado = palletsModificados[pallet].EF1[seleccion];
 
         itemSeleccionado.cajas -= cajas
+        const kilos = cajas * Number(itemSeleccionado.tipoCaja.split("-")[1].replace(",", "."));
 
         if (itemSeleccionado.cajas === 0) {
             palletsModificados[pallet].EF1.splice(seleccion, 1);
@@ -232,7 +244,8 @@ class ProcesoService {
         await ContenedoresRepository.actualizar_contenedor(
             { _id: contenedor._id },
             {
-                $set: { [`pallets.${pallet}`]: palletsModificados[pallet] }
+                $set: { [`pallets.${pallet}`]: palletsModificados[pallet] },
+                $inc: { totalCajas: -cajas, totalKilos: -kilos }
             },
             { session: session }
         );
@@ -332,6 +345,8 @@ class ProcesoService {
             data.calidad === calidad &&
             data.calibre === calibre
         )
+        const kilos = cajas * Number(item.tipoCaja.split('-')[1].replace(",", "."))
+
 
         if (index === -1) {
             const itemnuevo = normalizeEF1Item({
@@ -348,7 +363,8 @@ class ProcesoService {
         await ContenedoresRepository.actualizar_contenedor(
             { _id },
             {
-                $set: { [`pallets.${pallet}.EF1`]: palletSeleccionado }
+                $set: { [`pallets.${pallet}.EF1`]: palletSeleccionado },
+                $inc: { totalCajas: cajas, totalKilos: kilos }
             },
             { session }
         );
@@ -371,10 +387,14 @@ class ProcesoService {
         await registrarPasoLog(logData.logId, "ProcesoService.modifiarContenedorPalletsListaEmpaque", "Completado");
         return { GGN, }
     }
-    static async modificarContenedorModificarItemListaEmpaque(palletsModificados, palletSeleccionado, newKilos, copiaPallet, item, logData = null, session = null) {
+    static async modificarContenedorModificarItemListaEmpaque(palletsModificados, palletSeleccionado, itemSeleccionadoOld, copiaPallet, item, logData = null, session = null) {
 
         const { _id, pallet, seleccion, data, action } = item
         const { calidad, calibre, cajas, tipoCaja } = data
+        const oldKilos = itemSeleccionadoOld.cajas * Number(itemSeleccionadoOld.tipoCaja.split("-")[1].replace(",", "."));
+        const newKilos = cajas * Number(tipoCaja.split("-")[1].replace(",", "."));
+        const inc = newKilos - oldKilos
+        const cajasInc = cajas - itemSeleccionadoOld.cajas
 
         if (newKilos === 0) {
             //se elimina el elemento si es 0
@@ -384,10 +404,15 @@ class ProcesoService {
             Object.assign(palletSeleccionado, { calidad, calibre, cajas, tipoCaja });
         }
 
+        const update = {
+            $inc: { totalCajas: cajasInc, totalKilos: inc },
+            pallets: palletsModificados
+        }
+
         // Actualizar contenedor con pallets modificados
         await ContenedoresRepository.actualizar_contenedor(
             { _id },
-            { pallets: palletsModificados },
+            update,
             { session }
         );
 
@@ -745,9 +770,11 @@ class ProcesoService {
         // Construye dinámicamente el objeto $set
         const update1 = { $set: {} };
         update1.$set[`pallets.${pallet2}`] = palletsModificados2[pallet2];
+        update1.$inc = { totalCajas: cajas, totalKilos: (cajas * itemSeleccionado.tipoCaja.split("-")[1].replace(",", ".")) };
 
         const update2 = { $set: {} };
         update2.$set[`pallets.${pallet1}`] = palletsModificados1[pallet1];
+        update2.$inc = { totalCajas: -cajas, totalKilos: -(cajas * itemSeleccionado.tipoCaja.split("-")[1].replace(",", ".")) };
 
         // BulkWrite sólo toca ese índice en cada documento
         const operations = [

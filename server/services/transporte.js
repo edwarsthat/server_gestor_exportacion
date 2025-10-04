@@ -5,6 +5,9 @@ import path from 'path';
 import fs from 'fs/promises';
 import { fileTypeFromBuffer } from 'file-type';
 import { v4 as uuidv4 } from 'uuid';
+import { ContenedoresRepository } from '../Class/Contenedores';
+import { TransporteError } from '../../Error/TransporteErrors';
+import { RecordModificacionesRepository } from '../archive/ArchivoModificaciones';
 
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -99,14 +102,79 @@ export class TransporteService {
             else {
                 let sum = 0;
                 for (const registro of contenedor.registrosSalidas) {
-                    if (registro.codigo.startsWith("ST")) return false;
+                    if (registro.tipoVehiculo === 'Tractomula') return false;
                     else {
                         sum += registro.pesoEstimado || 0;
                         if (sum >= contenedor.totalKilos) return false;
                     }
                 }
             }
+            return true;
         })
         return data;
+    }
+    static async modificarRegistroontenedorSalidaVehiculoExportacion(action, user, oldregistro, data, { session = null } = {}) {
+        //se elimina el registro del contenedor viejo
+        const oldContenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            query: { numeroContenedor: oldregistro[0].contenedor.numeroContenedor },
+        })
+        if (oldContenedor.length === 0) {
+            throw new TransporteError(404, `Contenedor no encontrado`);
+        }
+        await ContenedoresRepository.actualizar_contenedor(
+            { _id: oldContenedor[0]._id },
+            { $pull: { registrosSalidas: oldregistro[0]._id } },
+            { session }
+        );
+        //se agrega el registro en el nuevo contenedor
+        const newContenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            query: { numeroContenedor: data.contenedor },
+        })
+        if (newContenedor.length === 0) {
+            throw new TransporteError(404, `Contenedor nuevo no encontrado`);
+        }
+        await ContenedoresRepository.actualizar_contenedor(
+            { _id: data.contenedor },
+            { $push: { registrosSalidas: oldregistro[0]._id } },
+            { session }
+        );
+
+        // Registrar la modificación en el historial
+        await RecordModificacionesRepository.post_record_contenedor_modification(
+            action,
+            user,
+            [
+                {
+                    modelo: "Contenedor",
+                    documentoId: oldContenedor[0]._id,
+                    descripcion: `Contenedor origen: ${oldContenedor[0].numeroContenedor}`,
+                },
+                {
+                    modelo: "Contenedor",
+                    documentoId: newContenedor[0]._id,
+                    descripcion: `Contenedor destino: ${newContenedor[0].numeroContenedor}`,
+                },
+                {
+                    modelo: "RegistroSalida",
+                    documentoId: oldregistro[0]._id,
+                    descripcion: `Registro de salida modificado`,
+                }
+            ],
+            {
+                registroSalida: oldregistro[0],
+                contenedorOrigen: oldContenedor[0].numeroContenedor,
+            },
+            {
+                registroSalida: data,
+                contenedorDestino: newContenedor[0].numeroContenedor,
+            },
+            { 
+                accion: action, 
+                registroId: oldregistro[0]._id,
+                cambiosRealizados: data,
+                contenedorAnterior: oldContenedor[0].numeroContenedor,
+                contenedorNuevo: newContenedor[0].numeroContenedor
+            }
+        );
     }
 }

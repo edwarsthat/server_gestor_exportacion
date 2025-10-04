@@ -24,7 +24,7 @@ const permisos_generales = new Set([
     "get_calidad_formulario_limpiezaDiaria_numeroElementos",
     "get_calidad_formulario_limpiezaMensual_numeroElementos",
     "get_calidad_formulario_controlPlagas_numeroElementos",
-    "get_transporte_registros_programacion_mula_numeroElementos",
+    "get_transporte_registros_salida_vehiculo_exportacion_numeroElementos",
     "get_transporte_registros_exportacion_numeroElementos",
     "get_transporte_registros_inspeccionMula_numeroElementos",
     "get_transporte_documentos_programacionMulas_numeroElementos",

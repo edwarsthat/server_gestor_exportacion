@@ -73,7 +73,7 @@ import { defineCuartosFrios } from '../schemas/catalogs/schemaCuartosFrios.js';
 import { defineAuditCuartosFrios } from '../schemas/audit/AuditCuartosFrios.js';
 import { defineAuditInventariosSimples } from '../schemas/audit/AuditInventariosSimples.js';
 import { defineInventarioSimple } from '../schemas/inventarios/SchemaInventariosSimples.js';
-import { defineTractomulasSalida } from '../schemas/transporte/schemaTractomulas.js';
+import { defineVehiculoSalida } from '../schemas/transporte/schemaVehiculoSalida.js';
 
 export const db = {};
 export const connections = {};
@@ -292,9 +292,9 @@ const defineSchemasProceso = async (sysConn) => {
         db.Precios = await definePrecios(sysConn);
         console.log("✅ Precios definido");
 
-        console.log("⚡ Definiendo TractomulasSalida...");
-        db.TractomulasSalida = await defineTractomulasSalida(sysConn);
-        console.log("✅ TractomulasSalida definido");
+        console.log("⚡ Definiendo VehiculoSalida...");
+        db.VehiculoSalida = await defineVehiculoSalida(sysConn);
+        console.log("✅ VehiculoSalida definido");
 
         console.log("⚡ Definiendo Insumos...");
         db.Insumos = await defineInsumos(sysConn);

@@ -262,7 +262,6 @@ export class CalidadRepository {
             const { _id, contenedores } = req.data
 
 
-            console.log(contenedores)
             let query = {
                 aprobacionProduccion: true,
                 fecha_finalizado_proceso: new Date()

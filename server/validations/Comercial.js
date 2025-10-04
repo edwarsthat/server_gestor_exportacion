@@ -79,6 +79,8 @@ export class ComercialValidationsRepository {
             "correo_informes",
             "contacto_finca",
             "telefono_predio",
+            "tipo_fruta",
+
         ];
 
         requiredFields.forEach((field) => {
@@ -99,6 +101,15 @@ export class ComercialValidationsRepository {
                 throw new Error(`El campo ${key} no es permitido.`);
             }
         });
+
+        if(typeof data.tipo_fruta !== 'object'){
+            throw new Error(`El campo tipoFruta debe ser un arreglo.`);
+        }
+
+        if (Object.keys(data.tipo_fruta) <= 0) {
+            throw new Error(`El campo tipoFruta debe tener al menos un valor.`);
+        }
+
     }
     static val_get_sys_proveedores(data) {
         const valoresValidos = ['activos', 'all'];

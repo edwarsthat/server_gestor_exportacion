@@ -62,7 +62,10 @@ async function obtener_lotes_precios_json() {
             for (const key of exportacionExportacionCont) {
                 const exportacionCalidadKeys = Object.keys(lote.exportacion[key] || {});
                 for (const subKey of exportacionCalidadKeys) {
-                    lotObj[`exportacion.${subKey}`] = lote.exportacion[key][subKey];
+                        if (!lotObj[`exportacion.${subKey}`]) {
+                        lotObj[`exportacion.${subKey}`] = 0;
+                    }
+                    lotObj[`exportacion.${subKey}`] += lote.exportacion[key][subKey];
                 }
             }
             

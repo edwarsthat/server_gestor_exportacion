@@ -71,7 +71,7 @@ export class CalidadService {
 
             // return
             for (let nPallets = 0; nPallets < numeroPallets; nPallets++) {
-                const palletActual = contActual.pallets[nPallets].get('EF1')
+                const palletActual = contActual.pallets[nPallets].EF1
                 const numeroItems = palletActual.length
                 if (numeroItems <= 0) continue
 

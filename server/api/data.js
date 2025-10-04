@@ -242,10 +242,10 @@ export class dataRepository {
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async incrementar_cn_serial(session) {
+    static async incrementar_cn_serial(codigo, session) {
         try {
             await Seriales.modificar_seriales(
-                { name: "CN" },
+                { name: codigo },
                 { $inc: { serial: 1 } },
                 {},
                 session

@@ -530,7 +530,7 @@ export class ProcesoRepository {
                 const palletSeleccionado = palletsModificados[pallet].EF1[seleccion];
                 const newKilos = Number(tipoCaja.split('-')[1].replace(",", ".")) * cajas
 
-                await ProcesoService.modificarContenedorModificarItemListaEmpaque(palletsModificados, palletSeleccionado, newKilos, copiaPallet, req.data, logData, session)
+                await ProcesoService.modificarContenedorModificarItemListaEmpaque(palletsModificados, palletSeleccionado, itemSeleccionadoOld, copiaPallet, req.data, logData, session)
                 await ProcesoService.modificarLoteModificarItemListaEmpaque(_id, oldKilos, newKilos, oldData.calidad, calidad, lote[0], GGN, logData, session)
 
                 //se mira si es fruta de hoy para restar de las variables del proceso
@@ -597,8 +597,15 @@ export class ProcesoRepository {
                 const copiaPalletSeleccionado = copiaPallet[pallet].EF1[seleccion];
                 const kilos = Number(palletSeleccionado.tipoCaja.split('-')[1].replace(",", ".")) * palletSeleccionado.cajas
                 palletsModificados[pallet].EF1.splice(seleccion, 1);
+                const update = {
+                    pallets: palletsModificados,
+                    $inc: {
+                        totalKilos: -kilos,
+                        totalCajas: -palletSeleccionado.cajas,
+                    }
+                }
 
-                await ContenedoresRepository.actualizar_contenedor({ _id }, { pallets: palletsModificados }, { session }, log._id)
+                await ContenedoresRepository.actualizar_contenedor({ _id }, update, { session }, log._id)
                 await RecordModificacionesRepository.post_record_contenedor_modification(
                     action,
                     user,
@@ -784,16 +791,44 @@ export class ProcesoRepository {
                 const { palletsModificados: palletsModificados2, copiaPallet: copiaPallets2 } = await ProcesoService.crearCopiaProfundaPallets(contenedores[index2]);
                 await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
 
+                let kilosTotal = 0;
+                let cajas = 0;
+
                 if (lotes.length > 0) {
-                    await ProcesoService.mover_kilos_lotes_entrcontenedores(
+                    const resultado = await ProcesoService.mover_kilos_lotes_entrcontenedores(
                         contenedores, index1, index2, contenedor1, contenedor2, seleccionOrdenado, palletsModificados1, palletsModificados2, lotes, logContext
                     );
+                    ({ cajas, kilosTotal } = resultado);
                 }
 
                 // Actualizar los contenedores en la base de datos
                 const operationsContenedores = [
-                    { updateOne: { filter: { _id: contenedores[index2]._id }, update: { $set: { [`pallets.${pallet2}`]: palletsModificados2[pallet2] } } } },
-                    { updateOne: { filter: { _id: contenedores[index1]._id }, update: { $set: { [`pallets.${pallet1}`]: palletsModificados1[pallet1] } } } }
+                    {
+                        updateOne: {
+                            filter: { _id: contenedores[index2]._id },
+                            update: {
+                                $set: { [`pallets.${pallet2}`]: palletsModificados2[pallet2] },
+                                $inc: {
+                                    totalKilos: kilosTotal,
+                                    totalCajas: cajas,
+                                }
+                            }
+                        }
+                    },
+                    {
+                        updateOne: {
+                            filter: {
+                                _id: contenedores[index1]._id
+                            },
+                            update: {
+                                $set: { [`pallets.${pallet1}`]: palletsModificados1[pallet1] },
+                                $inc: {
+                                    totalKilos: -kilosTotal,
+                                    totalCajas: -cajas,
+                                }
+                            }
+                        }
+                    }
                 ];
 
                 await ContenedoresRepository.bulkWrite(operationsContenedores, { session });

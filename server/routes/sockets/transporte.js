@@ -41,12 +41,12 @@ export const apiSocketTransporte = {
         await TransporteRepository.put_transporte_registros_exportacion(data)
         return successResponseRoutes()
     },
-    get_transporte_registros_programacionMula: async (data) => {
-        const response = await TransporteRepository.get_transporte_registros_programacionMula(data)
+    get_transporte_registros_salida_vehiculo_exportacion: async (data) => {
+        const response = await TransporteRepository.get_transporte_registros_salida_vehiculo_exportacion(data)
         return successResponseRoutes(response)
     },
-    get_transporte_registros_programacion_mula_numeroElementos: async () => {
-        const response = await TransporteRepository.get_transporte_registros_programacion_mula_numeroElementos()
+    get_transporte_registros_salida_vehiculo_exportacion_numeroElementos: async () => {
+        const response = await TransporteRepository.get_transporte_registros_salida_vehiculo_exportacion_numeroElementos()
         return successResponseRoutes(response)
     },
     put_transporte_registros_programacionMula: async (data) => {

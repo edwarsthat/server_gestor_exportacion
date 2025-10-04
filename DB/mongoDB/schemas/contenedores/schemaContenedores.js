@@ -203,11 +203,6 @@ export const defineContenedores = async (conn) => {
     observaciones: String
   }, { _id: false });
 
-  const registrosSalidasSchema = new Schema({
-    salidaId: { type: Schema.Types.ObjectId, required: true },
-    salidaModel: { type: String, required: true, enum: ["Camion", "tractomulasSalida"] }
-  });
-
 
   const listaEmpaqueSchema = new Schema({
     numeroContenedor: Number,
@@ -220,7 +215,7 @@ export const defineContenedores = async (conn) => {
     insumosData: insumosSchema,
     inspeccion_mula: inspeccionMulasSchema,
     reclamacionCalidad: reclamacionSchema,
-    registrosSalidas: [registrosSalidasSchema],
+    registrosSalidas: [{ type: Schema.Types.ObjectId, ref: "salidaVehiculo" }],
     entregaPrecinto: entregaPrecintoSchema,
   });
 
@@ -259,7 +254,6 @@ export const defineContenedores = async (conn) => {
   //     // res es el nuevo documento, this._oldValue es el viejo
   //     if (this._oldValue && res) {
   //       const cambios = diffObjects(this._oldValue, res.toObject());
-  //       console.log('Cambios detectados:', cambios);
   //       // Si hay cambios, guarda el log
   //       if (cambios.length > 0) {
   //         await AuditLog.create({
