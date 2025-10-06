@@ -13,6 +13,14 @@ export class UnionsRepository {
                 }
             },
             {
+                $lookup: {
+                    from: "tipofrutas",          
+                    localField: "tipoFruta",     
+                    foreignField: "_id",
+                    as: "tipoFrutaInfo",
+                },
+            },
+            {
                 $unionWith: {
                     coll: "loteef8",
                     pipeline: [

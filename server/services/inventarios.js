@@ -966,18 +966,13 @@ export class InventariosService {
             ids: usersIdArr,
             getAll: true
         })
-        const tipoFruta = await dataRepository.get_data_tipoFruta2()
 
         const result = [];
         for (const lote of lotes) {
 
             const usuario = user.find(u => u._id.toString() === lote?.user?.toString());
-            const tipoFrutaFound = tipoFruta.find(u => u._id.toString() === lote.tipoFruta.toString());
             if (usuario) {
                 lote.user = usuario.nombre + " " + usuario.apellido;
-            }
-            if (tipoFrutaFound) {
-                lote.tipoFruta = tipoFrutaFound.tipoFruta;
             }
             result.push(lote);
         }
@@ -1064,22 +1059,14 @@ export class InventariosService {
             if (lote?.user) {
                 usersId.push(lote.user.toString());
             }
-            if (lote?.tipoFruta) {
-                tipoFrutaId.push(lote.tipoFruta);
-            }
         }
 
         const usersIdSet = new Set(usersId)
         const usersIdArr = [...usersIdSet]
-        const tipoFrutaIdSet = new Set(tipoFrutaId)
-        const tipoFrutaIdArr = [...tipoFrutaIdSet]
 
         const user = await UsuariosRepository.get_users({
             ids: usersIdArr,
             getAll: true
-        })
-        const tipoFrutas = await dataRepository.get_data_tipoFruta2({
-            ids: tipoFrutaIdArr
         })
 
         const result = [];
@@ -1090,11 +1077,11 @@ export class InventariosService {
             if (usuario) {
                 lote.user = usuario.nombre + " " + usuario.apellido;
             }
-            const tipoFruta = tipoFrutas.find(u => u._id.toString() === lote.tipoFruta);
-            if (tipoFruta) {
-                lote.tipoFruta = tipoFruta;
-            }
+
             lote.predio = lote.predioInfo[0] || {};
+            lote.tipoFruta = lote.tipoFrutaInfo[0] || {};
+            delete lote.predioInfo;
+            delete lote.tipoFrutaInfo;
             result.push(lote);
         }
 

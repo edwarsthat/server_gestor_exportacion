@@ -94,6 +94,10 @@ export const apiSocketTransporte = {
         const response = await TransporteRepository.get_transporte_documentos_programacionMula_contenedores(data)
         return successResponseRoutes(response)
     },
+    get_transporte_documentos_generarDocumentos: async (data) => {
+        const response = await TransporteRepository.get_transporte_documentos_generarDocumentos(data)
+        return successResponseRoutes(response)
+    },
     get_transporte_documentos_programacionMulas_numeroElementos: async () => {
         const response = await TransporteRepository.get_transporte_documentos_programacionMulas_numeroElementos()
         return successResponseRoutes(response)

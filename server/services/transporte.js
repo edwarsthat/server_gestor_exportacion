@@ -5,9 +5,9 @@ import path from 'path';
 import fs from 'fs/promises';
 import { fileTypeFromBuffer } from 'file-type';
 import { v4 as uuidv4 } from 'uuid';
-import { ContenedoresRepository } from '../Class/Contenedores';
-import { TransporteError } from '../../Error/TransporteErrors';
-import { RecordModificacionesRepository } from '../archive/ArchivoModificaciones';
+import { ContenedoresRepository } from '../Class/Contenedores.js';
+import { TransporteError } from '../../Error/TransporteErrors.js';
+import { RecordModificacionesRepository } from '../archive/ArchivoModificaciones.js';
 
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -116,7 +116,7 @@ export class TransporteService {
     static async modificarRegistroontenedorSalidaVehiculoExportacion(action, user, oldregistro, data, { session = null } = {}) {
         //se elimina el registro del contenedor viejo
         const oldContenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
-            query: { numeroContenedor: oldregistro[0].contenedor.numeroContenedor },
+            ids: [oldregistro[0].contenedor._id],
         })
         if (oldContenedor.length === 0) {
             throw new TransporteError(404, `Contenedor no encontrado`);
@@ -126,15 +126,17 @@ export class TransporteService {
             { $pull: { registrosSalidas: oldregistro[0]._id } },
             { session }
         );
+
         //se agrega el registro en el nuevo contenedor
         const newContenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
-            query: { numeroContenedor: data.contenedor },
-        })
+            query: { numeroContenedor: parseInt(data.contenedor) },
+        }, { session })
+
         if (newContenedor.length === 0) {
             throw new TransporteError(404, `Contenedor nuevo no encontrado`);
         }
         await ContenedoresRepository.actualizar_contenedor(
-            { _id: data.contenedor },
+            { numeroContenedor: data.contenedor },
             { $push: { registrosSalidas: oldregistro[0]._id } },
             { session }
         );
@@ -176,5 +178,6 @@ export class TransporteService {
                 contenedorNuevo: newContenedor[0].numeroContenedor
             }
         );
+        return newContenedor;
     }
 }

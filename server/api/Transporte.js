@@ -212,12 +212,12 @@ export class TransporteRepository {
     }
     static async get_transporte_contenedores_entregaPrescinto() {
         try {
-            const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            const response = await VehiculoRegistro.getRegistrosVehiculo({
                 query: {
-                    infoExportacion: { $exists: true },
                     entregaPrecinto: { $exists: false },
+                    tipoSalida: "Exportacion",
                 }
-            })
+            });
             return response;
         } catch (err) {
             const message = typeof err.message === "string" ? err.message : "Error inesperado";
@@ -225,41 +225,50 @@ export class TransporteRepository {
         }
     }
     static async post_transporte_conenedor_entregaPrecinto(req) {
+        const { user } = req
+        const { data, fotos, action } = req.data;
+
+        let log
+        const session = await db.Contenedores.db.startSession();
+
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
         try {
             transporteValidations.post_transporte_conenedor_entregaPrecinto().parse(req.data.data);
-            const { user } = req
-            const { data, fotos, action } = req.data;
+
             const { _id, entrega, recibe, fechaEntrega, observaciones } = data;
 
-            const fotosUrls = await TransporteService.guardarFotosEntregaPrecintoContenedor(fotos)
+            await session.withTransaction(async () => {
+                const fotosUrls = await TransporteService.guardarFotosEntregaPrecintoContenedor(fotos)
+                registrarPasoLog(log._id, "TransporteService.guardarFotosEntregaPrecintoContenedor", "Completado", `Se guardaron las fotos del precinto para el contenedor con ID: ${_id}`);
 
-            const update = {
-                entregaPrecinto: {
-                    fotos: fotosUrls,
-                    entrega,
-                    recibe,
-                    fechaEntrega: addHours(fechaEntrega, 5),
-                    observaciones,
+                const update = {
+                    entregaPrecinto: {
+                        fotos: fotosUrls,
+                        entrega,
+                        recibe,
+                        fechaEntrega: addHours(fechaEntrega, 5),
+                        observaciones,
+                    }
                 }
-            }
 
-            await ContenedoresRepository.actualizar_contenedor(
-                { _id },
-                update,
-                { user: user._id, action: action }
-            )
-
+                await VehiculoRegistro.actualizar_registro(
+                    { _id },
+                    update,
+                    { user: user._id, action: action, session },
+                )
+                registrarPasoLog(log._id, "VehiculoRegistro.actualizar_registro", "Completado", `Se actualizó el registro de tractomula con ID: ${_id}`);
+            });
 
         } catch (err) {
-            if (err.status === 518 || err.status === 413) {
-                throw err
-            }
-            if (err instanceof ZodError) {
-                const mensajeLindo = err.errors[0]?.message || "Error desconocido en los datos del lote";
-                throw new TransporteError(470, mensajeLindo);
-            }
-            const message = typeof err.message === "string" ? err.message : "Error inesperado";
-            throw new TransporteError(470, `Error ${err.type || "interno"}: ${message}`);
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            await ErrorTransporteLogicHandlers(err, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     //#endregion
@@ -414,12 +423,12 @@ export class TransporteRepository {
                     throw new TransporteError(404, `Registro no encontrado`);
                 }
                 if (oldregistro[0].contenedor.numeroContenedor !== data.contenedor) {
-                    await TransporteService.modificarRegistroontenedorSalidaVehiculoExportacion(oldregistro, data, { session });
+                    const newCont = await TransporteService.modificarRegistroontenedorSalidaVehiculoExportacion(action, user, oldregistro, data, { session });
+                    data.contenedor = newCont[0]._id;
                 }
+                await VehiculoRegistro.actualizar_registro({ _id }, { $set: data }, { session });
 
             });
-
-
 
         } catch (err) {
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
@@ -525,16 +534,9 @@ export class TransporteRepository {
             const { data } = req;
             const { page } = data
 
-            const registros = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            const registros = await VehiculoRegistro.getRegistrosVehiculo({
                 query: {
                     entregaPrecinto: { $exists: true },
-                    infoTractoMula: { $exists: true },
-                },
-                select: {
-                    numeroContenedor: 1,
-                    infoContenedor: 1,
-                    infoTractoMula: 1,
-                    entregaPrecinto: 1,
                 },
                 skip: (page - 1) * PAGE_ITEMS,
                 limit: PAGE_ITEMS,
@@ -558,7 +560,7 @@ export class TransporteRepository {
             const filtro = {
                 entregaPrecinto: { $exists: true }
             }
-            const numeroContenedores = await ContenedoresRepository.obtener_cantidad_contenedores(filtro)
+            const numeroContenedores = await VehiculoRegistro.obtener_cantidad_registros_vehiculos(filtro)
             return numeroContenedores
 
         } catch (err) {
@@ -668,27 +670,13 @@ export class TransporteRepository {
         try {
             const { page } = req.data
             const resultsPerPage = 50;
-            const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
+            const response = await VehiculoRegistro.getRegistrosVehiculo({
                 query: {
-                    infoTractoMula: { $exists: true },
-                    infoExportacion: { $exists: true },
-                    "infoContenedor.cerrado": true
-                },
-                select: {
-                    numeroContenedor: 1,
-                    infoContenedor: 1,
-                    __v: 1,
-                    infoTractoMula: 1,
-                    infoExportacion: 1,
-                    pallets: 1
+                    entregaPrecinto: { $exists: true },
                 },
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
-                populate: {
-                    path: 'infoContenedor.clienteInfo',
-                    select: 'CLIENTE DIRECCIÓN',
-                },
-                sort: { 'infoContenedor.fechaCreacion': -1 },
+                sort: { 'entregaPrecinto.createdAt': -1 },
             });
 
             return response;
@@ -713,6 +701,20 @@ export class TransporteRepository {
 
         } catch (err) {
             if (err.status === 508) {
+                throw err
+            } else {
+                throw new TransporteError(440, `Error obteniendo contenedores --- ${err.message}`)
+            }
+        }
+    }
+    static async get_transporte_documentos_generarDocumentos(req) {
+        try {
+            console.log(req.data)
+            console.log(req.data.contenedor)
+            console.log(req.data.tiposFrutas)
+            
+        } catch (err) {
+            if (err.status === 522) {
                 throw err
             } else {
                 throw new TransporteError(440, `Error obteniendo contenedores --- ${err.message}`)

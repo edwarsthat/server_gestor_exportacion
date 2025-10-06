@@ -10,6 +10,10 @@ const oobtener_datos_lotes_to_listaEmpaque = async (contenedores) => {
                 for (let n = 0; n < contenedores[i].pallets[j]["EF1"].length; n++) {
 
                     const lote = lotes.find(item => item._id.toString() === contenedores[i].pallets[j]["EF1"][n].lote.toString());
+                    // console.log(lote)
+                    if(!lote){
+                        console.log(contenedores[i].pallets[j]["EF1"][n].lote.toString())
+                    }
                     contenedores[i].pallets[j]["EF1"][n].lote = 
                         {
                             enf: lote.enf,

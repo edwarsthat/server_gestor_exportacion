@@ -205,7 +205,7 @@ export const defineContenedores = async (conn) => {
 
 
   const listaEmpaqueSchema = new Schema({
-    numeroContenedor: Number,
+    numeroContenedor: { type: Number, required: true, unique: true, index: true },
     totalKilos: Number,
     totalCajas: Number,
     pallets: [subSchema],

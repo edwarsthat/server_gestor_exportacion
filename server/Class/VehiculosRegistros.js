@@ -63,5 +63,26 @@ export class VehiculoRegistro {
             throw new ConnectionDBError(524, `Error obteniendo cantidad registros vehiculos ${filtro} --- ${err.message}`);
         }
     }
+    static async actualizar_registro(filter, update, options = {}) {
+        const {
+            session,
+            ...restOptions
+        } = options;
+
+        const finalOptions = {
+            new: true,
+            ...restOptions,
+            ...(session && { session })
+        };
+
+        try {
+            let documento = await db.VehiculoSalida.findOneAndUpdate(filter, update, finalOptions)
+            if (!documento) throw new Error('Registro no encontrado');
+            return documento;
+
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+        }
+    }
 
 }
