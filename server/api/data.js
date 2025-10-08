@@ -68,7 +68,8 @@ export class dataRepository {
     static async get_data_tipoFruta2() {
         try {
             const tipoFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2()
-            return tipoFrutas
+            const calidadesExport = await ConstantesDelSistema.get_constantes_sistema_calidades()
+            return { tipoFrutas, calidadesExport }
         } catch (err) {
             if (
                 err.status === 522

@@ -8,7 +8,7 @@ import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
 import { getColombiaDate } from "../api/utils/fechas.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
-import { normalizeEF1Item, parseMultTipoCaja } from "./helpers/contenedores.js";
+import { parseMultTipoCaja } from "./helpers/contenedores.js";
 import { IndicadoresAPIRepository } from "../api/IndicadoresAPI.js";
 
 
@@ -70,56 +70,23 @@ class ProcesoService {
         await registrarPasoLog(logData.logId, "ProcesoService.modificarLoteListaEmpaqueAddItem", "Completado");
         return true
     }
-    static async eliminar_items_contenedor(contenedor, palletsModificados, copiaPallet, seleccion, pallet, logContext, session) {
+    static async eliminar_items_contenedor(seleccion, logContext, session) {
 
-        //se eliminan los items del contenedor
-        const len = seleccion.length;
-        let cajas = 0;
-        let kilos = 0;
+        const items = await ContenedoresRepository.getItemsPallets({ ids: seleccion }, session);
 
-        for (let i = 0; i < len; i++) {
-            const item = palletsModificados[pallet].EF1[seleccion[i]];
-            cajas += item.cajas;
-            kilos += parseMultTipoCaja(item.tipoCaja) * item.cajas;
-            palletsModificados[pallet]["EF1"].splice(seleccion[i], 1)[0];
-        }
+        await ContenedoresRepository.deleteItemPallet({ _id: { $in: seleccion } }, { session });
 
-        // Actualizar contenedor con pallets modificados
-        await ContenedoresRepository.actualizar_contenedor(
-            { _id: contenedor._id },
-            {
-                $set: { [`pallets.${pallet}`]: palletsModificados[pallet] },
-                $inc: { totalCajas: -cajas, totalKilos: -kilos }
-            },
-            { session: session }
-        );
-
-        // Registrar modificación Contenedores
-        await RecordModificacionesRepository.post_record_contenedor_modification(
-            logContext.action,
-            logContext.user,
-            {
-                modelo: "Contenedor",
-                documentoId: contenedor._id,
-                descripcion: `Se eliminaron los items ${seleccion} en el pallet ${pallet}`,
-            },
-            copiaPallet[pallet],
-            palletsModificados[pallet],
-            { _id: contenedor._id, pallet, seleccion, action: logContext.action },
-            { session: session }
-        );
         await registrarPasoLog(logContext.logId, "ProcesoService.eliminar_items_contenedor", "Completado");
 
+        return items;
     }
     static async restar_kilos_lote_indicadores(itemsDelete, logContext, session = null) {
 
         //se recorren para restar los kilos en los lotes
         const hoy = getColombiaDate();
         for (let i = 0; i < itemsDelete.length; i++) {
-            const { tipoCaja, cajas, fecha } = itemsDelete[i]
+            const { fecha, kilos } = itemsDelete[i]
 
-            const mult = Number(tipoCaja.split("-")[1].replace(",", "."))
-            const kilos = cajas * mult;
             //se mira si es fruta de hoy para restar de las variables del proceso
             const fechaSeleccionada = getColombiaDate(new Date(fecha));
 
@@ -135,27 +102,34 @@ class ProcesoService {
         await registrarPasoLog(logContext.logId, "restar_kilos_lote_indicadores", "Completado");
 
     }
-    static async restar_kilos_lote(lotes, itemsDelete, contenedor, logContext, session) {
+    static async restar_kilos_lote(items, logContext, session) {
 
-        for (let i = 0; i < itemsDelete.length; i++) {
-            const { lote, calidad, tipoCaja, cajas } = itemsDelete[i]
+        const lotesIds = [...new Set(items.map(item => item.lote._id.toString()))];
+        const lotes = await LotesRepository.getLotes2({ ids: lotesIds }, { session });
+        const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({ ids: [items[0].contenedor] }, { session });
 
-            const mult = Number(tipoCaja.split("-")[1].replace(",", "."))
-            const kilos = cajas * mult;
+        for (let i = 0; i < items.length; i++) {
+
+            const loteDocument = lotes.find(l => l._id.toString() === items[i].lote._id.toString())
+
+            if (checkFinalizadoLote(loteDocument)) {
+                throw new ProcessError(400, `El lote ${items[i].lote.enf} ya se encuentra finalizado, no se puede modificar`);
+            }
+
+            const { calidad, kilos } = items[i]
             const query = { $inc: {} }
 
             //se le restan los kilos a el lote correspondiente
-            const loteIndex = lotes.findIndex(item => item._id.toString() === lote.toString())
-            const path = `exportacion.${contenedor[0]._id}.${calidad}`;
+            const path = `exportacion.${contenedor[0]._id}.${calidad._id}`;
             query.$inc[path] = - kilos
 
             // si se restan los kilos ggn
-            if (have_lote_GGN_export(lotes[loteIndex], contenedor[0], itemsDelete)) {
+            if (have_lote_GGN_export(loteDocument, contenedor[0],)) {
                 query.$inc.kilosGGN = - kilos
             }
 
             await LotesRepository.actualizar_lote(
-                { _id: lotes[loteIndex]._id },
+                { _id: loteDocument._id },
                 query,
                 {
                     new: true,
@@ -334,53 +308,28 @@ class ProcesoService {
         }
         return true;
     }
-    static async modifiarContenedorPalletsListaEmpaque(lotes, palletsModificados, copiaPallets, pallet, item, _id, GGN, logData, session) {
-        const { user, action } = logData
-
-        const palletSeleccionado = palletsModificados[pallet].EF1;
+    static async modifiarContenedorPalletsListaEmpaque(lotes, pallet, item, kilos, _id, GGN, logData, session) {
+        const { user } = logData
         // Actualizar contenedor con pallets modificados
-        const { lote, calibre, calidad, cajas } = item
-        const index = palletSeleccionado.findIndex(data =>
-            data.lote === lote &&
-            data.calidad === calidad &&
-            data.calibre === calibre
-        )
-        const kilos = cajas * Number(item.tipoCaja.split('-')[1].replace(",", "."))
+        const { cajas } = item
 
-
-        if (index === -1) {
-            const itemnuevo = normalizeEF1Item({
-                ...item,
-                SISPAP: lotes?.[0]?.predio?.SISPAP ?? false,
-                GGN
-            })
-            palletSeleccionado.push(itemnuevo)
-
-        } else {
-            palletSeleccionado[index].cajas += cajas
+        const itemnuevo = {
+            ...item,
+            user: user._id,
+            pallet: pallet,
+            kilos: kilos,
+            contenedor: _id,
+            SISPAP: lotes?.[0]?.predio?.SISPAP ?? false,
+            GGN
         }
+
+        await ContenedoresRepository.addItemPallet(itemnuevo, session);
 
         await ContenedoresRepository.actualizar_contenedor(
             { _id },
             {
-                $set: { [`pallets.${pallet}.EF1`]: palletSeleccionado },
                 $inc: { totalCajas: cajas, totalKilos: kilos }
             },
-            { session }
-        );
-
-        // Registrar modificación Contenedores
-        await RecordModificacionesRepository.post_record_contenedor_modification(
-            action,
-            user,
-            {
-                modelo: "Contenedor",
-                documentoId: _id,
-                descripcion: `Se sumaron ${cajas} en el pallet ${pallet}`,
-            },
-            copiaPallets[pallet],
-            palletsModificados[pallet],
-            { _id, pallet, item, action },
             { session }
         );
 
@@ -982,15 +931,13 @@ class ProcesoService {
             fechaSeleccionada.getMonth() === hoy.getMonth() &&
             fechaSeleccionada.getDate() === hoy.getDate()
         ) {
-            const tipoFruta = copiaPalletSeleccionado.tipoFruta;
-            const calidad = copiaPalletSeleccionado.calidad;
-            const calibre = copiaPalletSeleccionado.calibre;
+            const { tipoFruta, calidad, calibre} = copiaPalletSeleccionado;
 
             await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
                 {
                     $inc: {
-                        [`kilos_procesados.${tipoFruta}`]: Number(kilos),
-                        [`kilos_exportacion.${tipoFruta}.${calidad}.${calibre}`]: Number(kilos),
+                        [`kilos_procesados.${tipoFruta._id}`]: Number(kilos),
+                        [`kilos_exportacion.${tipoFruta._id}.${calidad._id}.${calibre}`]: Number(kilos),
                     }
                 }, session
             );

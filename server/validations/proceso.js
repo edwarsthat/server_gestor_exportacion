@@ -18,7 +18,7 @@ export class ProcesoValidations {
         // Schema principal para validar req.data
         const schema = z.object({
             _id: z.string().regex(/^[0-9a-fA-F]{24}$/), // Validar ObjectId de MongoDB
-            pallet: z.number().int().nonnegative(), // Número entero positivo o cero
+            pallet: z.string().regex(/^[0-9a-fA-F]{24}$/), // Validar ObjectId de MongoDB
             action: z.literal('put_proceso_aplicaciones_listaEmpaque_agregarItem'), // Valor exacto
             item: itemSchema // Schema anidado para el item
         });
@@ -57,7 +57,7 @@ export class ProcesoValidations {
         return z.object({
             _id: z.string().regex(/^[0-9a-fA-F]{24}$/),
             pallet: z.number().int().nonnegative(),
-            seleccion: z.array(z.number().int().nonnegative()),
+            seleccion: z.array(z.string().min(1)),
         })
     }
     static async put_proceso_aplicaciones_listaEmpaque_restarItem() {

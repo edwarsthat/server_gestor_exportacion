@@ -42,8 +42,6 @@ const { Schema } = mongoose;
 //   return changes;
 // }
 
-
-
 export const defineContenedores = async (conn) => {
 
   const insumosSchema = new Schema({
@@ -53,46 +51,6 @@ export const defineContenedores = async (conn) => {
     },
     flagInsumos: { type: Boolean, default: false }
   }, { _id: false, strict: false })
-
-  const listaLiberarPalletSchema = new Schema(
-    {
-      rotulado: Boolean,
-      paletizado: Boolean,
-      enzunchado: Boolean,
-      estadoCajas: Boolean,
-      estiba: Boolean,
-    },
-    { _id: false },
-  );
-
-  const settingsSchema = new Schema(
-    {
-      tipoCaja: String,
-      calidad: String,
-      calibre: String,
-    },
-    { _id: false },
-  );
-
-  const EF1Schema = new Schema({
-    // _id: { type: Schema.Types.ObjectId, auto: true },
-    lote: { type: Schema.Types.ObjectId, ref: "Lote" },
-    cajas: Number,
-    tipoCaja: String,
-    calibre: String,
-    calidad: String,
-    fecha: Date,
-    tipoFruta: String,
-    SISPAP: Boolean,
-    GGN: Boolean,
-  });
-
-  const subSchema = new Schema(
-    {
-      settings: settingsSchema,
-      EF1: [EF1Schema],
-      listaLiberarPallet: listaLiberarPalletSchema,
-    });
 
   const infoContenedorSchema = new Schema({
     clienteInfo: { type: Schema.Types.ObjectId, ref: "Cliente" },
@@ -104,9 +62,9 @@ export const defineContenedores = async (conn) => {
     fechaEstimadaCargue: Date,
     fechaSalida: Date,
     ultimaModificacion: Date,
-    tipoFruta: [String],
+    tipoFruta: [{ type: Schema.Types.ObjectId, ref: 'tipoFrutas' }],
     tipoCaja: [String],
-    calidad: [String],
+    calidad: [{ type: Schema.Types.ObjectId, ref: 'calidades' }],
     sombra: String,
     defecto: String,
     mancha: String,
@@ -193,50 +151,24 @@ export const defineContenedores = async (conn) => {
 
   }, { _id: false })
 
-  const entregaPrecintoSchema = new Schema({
-    entrega: String,
-    recibe: String,
-    createdAt: { type: Date, default: () => new Date() },
-    fechaEntrega: Date,
-    fotos: [String],
-    user: String,
-    observaciones: String
-  }, { _id: false });
 
 
   const listaEmpaqueSchema = new Schema({
     numeroContenedor: { type: Number, required: true, unique: true, index: true },
     totalKilos: Number,
     totalCajas: Number,
-    pallets: [subSchema],
+    pallets: Number,
     infoContenedor: infoContenedorSchema,
     infoTractoMula: schemaInfoMula,
     infoExportacion: schemaInfoExportacion,
     insumosData: insumosSchema,
     inspeccion_mula: inspeccionMulasSchema,
     reclamacionCalidad: reclamacionSchema,
-    registrosSalidas: [{ type: Schema.Types.ObjectId, ref: "salidaVehiculo" }],
-    entregaPrecinto: entregaPrecintoSchema,
   });
 
   listaEmpaqueSchema.index({ reclamacionCalidad: 1, entregaPrecinto: 1 });
 
-  // Middleware to update `ultimaModificacion` field
-  // listaEmpaqueSchema.post('save', async function (doc) {
-  //   try {
-  //     await AuditLog.create({
-  //       collection: 'Lote',
-  //       documentId: doc._id,
-  //       operation: 'create',
-  //       user: doc._user,
-  //       action: "crearo contenedor",
-  //       newValue: doc,
-  //       description: 'Creación de contenedor'
-  //     });
-  //   } catch (err) {
-  //     console.error('Error guardando auditoría:', err);
-  //   }
-  // });
+
   listaEmpaqueSchema.pre('findOneAndUpdate', async function (next) {
     try {
       const docToUpdate = await this.model.findOne(this.getQuery());
@@ -248,30 +180,6 @@ export const defineContenedores = async (conn) => {
       next(err);
     }
   });
-
-  // listaEmpaqueSchema.post('findOneAndUpdate', async function (res) {
-  //   try {
-  //     // res es el nuevo documento, this._oldValue es el viejo
-  //     if (this._oldValue && res) {
-  //       const cambios = diffObjects(this._oldValue, res.toObject());
-  //       // Si hay cambios, guarda el log
-  //       if (cambios.length > 0) {
-  //         await AuditLog.create({
-  //           collection: 'Contenedor',
-  //           documentId: res._id,
-  //           operation: 'update',
-  //           user: this.options?.user,
-  //           action: this.options?.action,
-  //           date: new Date(),
-  //           changes: cambios,
-  //           description: 'Actualización parcial del contenedor'
-  //         });
-  //       }
-  //     }
-  //   } catch (err) {
-  //     console.error('Error guardando auditoría:', err);
-  //   }
-  // });
 
   const Contenedores = conn.model("Contenedor", listaEmpaqueSchema);
   return Contenedores;

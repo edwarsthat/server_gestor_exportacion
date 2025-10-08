@@ -62,13 +62,26 @@ export class ConstantesDelSistema {
             throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`)
         }
     }
-    static async get_constantes_sistema_tipo_frutas2(_id, logId = null) {
+    static async get_constantes_sistema_tipo_frutas2(_id, logId = null, session = null) {
         try {
-            const filter = _id ? { _id } : {}; // Si hay _id, filtra; si no, tráeme todo.
-            const registros = await db.TipoFrutas.find(filter).exec();
-  
+            const filter = _id ? { _id } : {};
+            const registros = await db.TipoFrutas.find(filter).session(session).exec();
             if (logId) {
                 await registrarPasoLog(logId, "ConstantesDelSistema.get_constantes_sistema_tipo_frutas2", "Completado");
+            }
+            return registros;
+        } catch (err) {
+            throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`);
+        }
+    }
+    static async get_constantes_sistema_calidades(_id, logId = null, session = null) {
+        try {
+            const filter = _id ? { _id } : {};
+            const registros = await db.CalidadesExpFruta.find(filter)
+                .populate({ path: 'tipoFruta', select: 'tipoFruta' })
+                .session(session).exec();
+            if (logId) {
+                await registrarPasoLog(logId, "ConstantesDelSistema.get_constantes_sistema_calidades", "Completado");
             }
             return registros;
         } catch (err) {

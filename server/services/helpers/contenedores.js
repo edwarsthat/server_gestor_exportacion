@@ -10,6 +10,8 @@ export function parseMultTipoCaja(tipoCaja) {
 
 export const normalizeEF1Item = (it) => ({
     ...it,
+    pallet: toObjId(it.pallet, 'pallet'),
+    contenedor: toObjId(it.contenedor, 'contenedor'),
     lote: toObjId(it.lote, 'lote'),
     calidad: it.calidad ? toObjId(it.calidad, 'calidad') : undefined,
     tipoFruta: it.tipoFruta ? toObjId(it.tipoFruta, 'tipoFruta') : undefined,
@@ -17,4 +19,6 @@ export const normalizeEF1Item = (it) => ({
     fecha: it.fecha ? new Date(it.fecha) : new Date(),
     SISPAP: !!it.SISPAP,
     GGN: !!it.GGN,
+    user: it.user || 'system',
+    kilo: it.kilos ? Number(it.kilos) : 0,
 });

@@ -240,8 +240,6 @@ export class ComercialValidationsRepository {
             defecto: z.string().optional(),
             mancha: z.string().optional(),
             verdeManzana: z.string().optional(),
-            numeroPallets: z.string().min(1, "El número de pallets es obligatorio")
-                .refine(val => !isNaN(Number(val)) && Number(val) > 0, "El número de pallets debe ser un número válido mayor a cero"),
             cajasTotal: z.string().min(1, "El total de cajas es obligatorio")
                 .refine(val => !isNaN(Number(val)) && Number(val) > 0, "El total de cajas debe ser un número válido mayor a cero"),
             RTO: z.string().optional(),

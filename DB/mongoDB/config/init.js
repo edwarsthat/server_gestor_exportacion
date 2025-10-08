@@ -75,6 +75,9 @@ import { defineAuditInventariosSimples } from '../schemas/audit/AuditInventarios
 import { defineInventarioSimple } from '../schemas/inventarios/SchemaInventariosSimples.js';
 import { defineVehiculoSalida } from '../schemas/transporte/schemaVehiculoSalida.js';
 import { defineAuditRegistroExportacionVehiculo } from '../schemas/audit/AuditReistroSalidaVehiculosExportacion.js';
+import { definePallet } from '../schemas/contenedores/schemaPallet.js';
+import { defineCalidades } from '../schemas/catalogs/schemaCalidades.js';
+import { defineItemPallet } from '../schemas/contenedores/schemaItemsPallet.js';
 
 export const db = {};
 export const connections = {};
@@ -255,6 +258,9 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Tipo frutas...");
         db.TipoFrutas = await defineTipoFrutas(sysConn);
         console.log("✅ Tipo frutas definidos");
+        console.log("⚡ Definiendo Calidades...");
+        db.CalidadesExpFruta = await defineCalidades(sysConn);
+        console.log("✅ Calidades definidos");
 
         console.log("⚡ Definiendo Clientes...");
         db.Clientes = await defineClientes(sysConn);
@@ -319,6 +325,12 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Contenedores...");
         db.Contenedores = await defineContenedores(sysConn);
         console.log("✅ Contenedores definido");
+        console.log("⚡ Definiendo Pallets...");
+        db.Pallet = await definePallet(sysConn);
+        console.log("✅ Pallets definido");
+        console.log("⚡ Definiendo itemPallet...");
+        db.itemPallet = await defineItemPallet(sysConn);
+        console.log("✅ itemPallet definido");
 
         console.log("⚡ Definiendo recordContenedores...");
         db.recordContenedores = await defineRecordContenedores(sysConn);

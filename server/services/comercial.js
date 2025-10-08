@@ -3,26 +3,6 @@ import { LotesRepository } from "../Class/Lotes.js";
 
 export class ComercialService {
     static async crear_contenedor(data) {
-        const subDocumentos = []
-        for (let i = 1; i <= Number(data.numeroPallets); i++) {
-            const subDocumento = {
-                EF1: [],
-                listaLiberarPallet: {
-                    rotulado: false,
-                    paletizado: false,
-                    enzunchado: false,
-                    estadoCajas: false,
-                    estiba: false,
-                },
-                settings: {
-                    tipoCaja: "",
-                    calidad: "",
-                    calibre: "",
-                },
-            };
-
-            subDocumentos.push(subDocumento);
-        }
         return {
             numeroContenedor: Number(data.numeroContenedor),
             infoContenedor: {
@@ -46,7 +26,7 @@ export class ComercialService {
                 rtoEstimado: data.rtoEstimado,
                 ultimaModificacion: new Date(),
             },
-            pallets: subDocumentos,
+            pallets: 0,
         }
     }
     static async get_lotes_de_contenedores(contenedores) {

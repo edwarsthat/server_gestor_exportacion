@@ -33,6 +33,14 @@ export const apiSocketProceso = {
         const response = await ProcesoRepository.get_proceso_aplicaciones_listaEmpaque_lotes();
         return successResponseRoutes(response)
     },
+    get_proceso_aplicaciones_listaEmpaque_pallets: async (data) => {
+        const response = await ProcesoRepository.get_proceso_aplicaciones_listaEmpaque_pallets(data);
+        return successResponseRoutes(response)
+    },
+    get_proceso_aplicaciones_listaEmpaque_itemsPallet: async (data) => {
+        const response = await ProcesoRepository.get_proceso_aplicaciones_listaEmpaque_itemsPallet(data);
+        return successResponseRoutes(response)
+    },
     put_proceso_aplicaciones_listaEmpaque_agregarItem: async (data) => {
         const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_agregarItem(data);
         return successResponseRoutes(response)
