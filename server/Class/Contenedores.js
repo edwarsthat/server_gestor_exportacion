@@ -1,28 +1,14 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PutError } from "../../Error/ConnectionErrors.js";
-import { ProcessError, ItemBussyError } from "../../Error/ProcessError.js";
+import { ProcessError } from "../../Error/ProcessError.js";
 import { oobtener_datos_lotes_to_listaEmpaque } from "../mobile/utils/contenedoresLotes.js";
 import fs from 'fs';
 import path from 'path';
 import { registrarPasoLog } from "../api/helper/logs.js";
 
-let bussyIds = new Set();
-let lockedItems = new Map();
+
 
 export class ContenedoresRepository {
-
-    static lockItem(_id, elemento, pallet = -1) {
-        const key = `${_id}:${elemento}:${pallet}`
-        if (lockedItems.has(key)) {
-            throw new ItemBussyError(413, 'El elemento ya está bloqueado');
-        }
-        lockedItems.set(key, Date.now());
-    }
-    static unlockItem(_id, elemento, pallet = 0) {
-        const key = `${_id}:${elemento}:${pallet}`
-        lockedItems.delete(key);
-    }
-
 
     static async crearContenedor(data, user) {
         try {
@@ -39,27 +25,37 @@ export class ContenedoresRepository {
 
         }
     }
-    static async addPallet(data) {
+    static async addPallet(data, { session, user }) {
         try {
             const pallet = new db.Pallet(data);
-            const palletGuardado = await pallet.save();
+            pallet.$locals = pallet.$locals || {};
+            pallet.$locals.$audit = {
+                user: user?._id?.toString?.() || String(user),
+                action: "crear pallet",
+                description: `Creación de pallet para contenedor ${data?.contenedor}`
+            };
+            const palletGuardado = await pallet.save({ session });
             return palletGuardado
         } catch (err) {
             throw new ProcessError(421, `Error creando pallet: ${err.name}`);
 
         }
     }
-    static async addItemPallet(data) {
+    static async addItemPallet(data, { session, user }) {
         try {
-            const itemPallet = new db.itemPallet(data);
-            const itemPalletGuardado = await itemPallet.save();
-            return itemPalletGuardado
+            const item = new db.itemPallet(data);
+            item.$locals = item.$locals || {};
+            item.$locals.$audit = {
+                user: user?._id?.toString?.() || String(user),
+                action: "crear itemPallet",
+                description: `Creación de item para contenedor ${data?.contenedor}`
+            };
+            const saved = await item.save({ session });
+            return saved;
         } catch (err) {
             throw new ProcessError(421, `Error creando itemPallet: ${err.name}`);
-
         }
     }
-
     static async get_Contenedores_sin_lotes(options = {}, { session } = {}) {
         const {
             ids = [],
@@ -133,7 +129,6 @@ export class ContenedoresRepository {
             throw new ConnectionDBError(522, `Error obteniendo contenedores ${options} --- ${err.message}`);
         }
     }
-
     static async deleteItemPallet(filter, options = {}) {
         try {
             const result = await db.itemPallet.deleteMany(filter, options);
@@ -142,7 +137,6 @@ export class ContenedoresRepository {
             throw new ProcessError(421, `Error eliminando itemPallet: ${err.name}`);
         }
     }
-
     static async getContenedores(options = {}, session = null) {
         const {
             ids = [],
@@ -236,10 +230,10 @@ export class ContenedoresRepository {
                 { path: 'tipoFruta', select: 'tipoFruta' },
                 {
                     path: 'lote',
-                    select: 'enf predio',  
+                    select: 'enf predio',
                     populate: {
-                        path: 'predio',                
-                        select: 'PREDIO',              
+                        path: 'predio',
+                        select: 'PREDIO',
                     }
                 }
             ],
@@ -270,19 +264,7 @@ export class ContenedoresRepository {
             throw new ConnectionDBError(522, `Error contenedores ${err.message}`);
         }
     }
-
-
     static async modificar_contenedor(id, query, user, action, __v) {
-        /**
-         * Modifica un contenedor en la base de datos de MongoDB.
-         *
-         * @param {string} id - ID del contenedor a modificar.
-         * @param {Object} query - Objeto con los cambios a aplicar al contendor.
-         * @param {string} action - Descripción de la acción realizada.
-         * @param {string} user - Usuario que realiza la acción.
-         * @returns {Promise<Object>} - Promesa que resuelve al objeto del lote modificado.
-         * @throws {PutError} - Lanza un error si ocurre un problema al modificar el contenedor.
-         */
         try {
             this.lockItem(id, "Contenedor", "general")
 
@@ -333,17 +315,6 @@ export class ContenedoresRepository {
             throw new ConnectionDBError(524, `Error obteniendo cantidad contenedores ${filtro} --- ${err.message}`);
         }
     }
-    static validateBussyIds(id) {
-        /**
-         * Funcion que añade el id del elemento que se este m0odificando para que no se creen errores de doble escritura
-         * 
-         * @param {string} id - El id del elemento que se esta modificando
-         */
-        if (bussyIds.has(id)) throw new ItemBussyError(413, "Elemento no disponible por el momento");
-        bussyIds.add(id)
-    }
-
-
     static async actualizar_pallet(filter, update, options = {}, logId = null) {
 
         const finalOptions = {
@@ -385,6 +356,27 @@ export class ContenedoresRepository {
             return documentoActualizado;
         } catch (err) {
             if (logId) await registrarPasoLog(logId, "actualizar_contenedor", "Error", `filter: ${JSON.stringify(filter)}, update: ${JSON.stringify(update)}, error: ${err.message}`);
+            throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
+        }
+    }
+    static async actualizar_palletItem(filter, update, options = {}, logId = null) {
+        const finalOptions = {
+            returnDocument: "after",
+            runValidators: true,
+            ...options
+        };
+
+        try {
+            const documentoActualizado = await db.itemPallet.findOneAndUpdate(
+                filter,
+                update,
+                finalOptions
+            );
+
+            if (logId) await registrarPasoLog(logId, "actualizar_palletItem", "Completado", `filter: ${JSON.stringify(filter)}, update: ${JSON.stringify(update)}`);
+            return documentoActualizado;
+        } catch (err) {
+            if (logId) await registrarPasoLog(logId, "actualizar_palletItem", "Error", `filter: ${JSON.stringify(filter)}, update: ${JSON.stringify(update)}, error: ${err.message}`);
             throw new ConnectionDBError(523, `Error modificando los datos${err.message}`);
         }
     }

@@ -1,7 +1,12 @@
 import mongoose from "mongoose";
+import { makeAuditPlugin } from "../utils/auditPLug.js";
 const { Schema } = mongoose;
 
-export const defineItemPallet = async (conn) => {
+export const defineItemPallet = async (conn, AuditLog) => {
+
+
+    const auditPlugin = makeAuditPlugin({ collectionName: 'ItemPallet', AuditLogs: AuditLog });
+
 
     const itemPalletSchema = new Schema({
         pallet: { type: Schema.Types.ObjectId, ref: 'Pallet', required: true, index: true },
@@ -21,6 +26,9 @@ export const defineItemPallet = async (conn) => {
 
     itemPalletSchema.index({ contenedor: 1, pallet: 1 });
     itemPalletSchema.index({ pallet: 1, lote: 1 });
+
+    itemPalletSchema.plugin(auditPlugin);
+
 
     const ItemPallet = conn.model('ItemPallet', itemPalletSchema);
     return ItemPallet;

@@ -398,6 +398,7 @@ export class ProcesoRepository {
 
         try {
             const { tipoCaja, calidad, calibre } = settings;
+
             await session.withTransaction(async () => {
 
                 // Predicado de concurrencia (si tienes versionKey o updatedAt)
@@ -411,7 +412,12 @@ export class ProcesoRepository {
                             tipoCaja: tipoCaja,
                         }
                     },
-                    { session }
+                    {
+                        user: user._id,
+                        action: action,
+                        session,
+
+                    }
                 );
             })
             procesoEventEmitter.emit("listaempaque_update");
@@ -457,7 +463,7 @@ export class ProcesoRepository {
                 const kilos = Number(tipoCaja.split('-')[1].replace(",", ".")) * cajas
                 await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
 
-                await ProcesoService.modificarLoteListaEmpaqueAddItem(calidad, kilos, lotes[0], _id, GGN, logData, session)
+                await ProcesoService.modificarLoteListaEmpaqueAddItem(item, kilos, _id, GGN, logData, session)
                 await ProcesoService.modifiarContenedorPalletsListaEmpaque(lotes, pallet, item, kilos, _id, GGN, logData, session)
                 await ProcesoService.ingresarDataExportacionDiaria(tipoFruta, calidad, calibre, kilos, logData)
             });
@@ -671,7 +677,7 @@ export class ProcesoRepository {
     }
     static async put_proceso_aplicaciones_listaEmpaque_restarItem(req) {
         const { user } = req;
-        const { action, _id, pallet, seleccion, cajas } = req.data;
+        const { action, _id, cajas } = req.data;
 
         let log
 
@@ -689,34 +695,17 @@ export class ProcesoRepository {
 
             const logContext = { logId: log._id, user, action };
             await session.withTransaction(async () => {
-                //se obtienen los datos
-                const { contenedor, lote } = await ProcesoService.obtenerContenedorLote(_id, pallet, seleccion, session);
-                await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLote", "Completado", `Contenedor: ${_id}, Pallet: ${pallet}, Selección: ${seleccion} - Lote: ${lote[0]._id}`);
 
-                if (checkFinalizadoLote(lote[0])) {
-                    throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
-                }
+                const { itemPallet, contenedor, kilos } = await ProcesoService.restarItem_contenedor(_id, cajas, logContext, session);
 
-                //se copian
-                const { palletsModificados, copiaPallet } = await ProcesoService.crearCopiaProfundaPallets(contenedor[0]);
-                await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
-
-                //se preparan los datos
-                const copiaPalletSeleccionado = copiaPallet[pallet].EF1[seleccion];
-                const copiaItemSeleccionado = palletsModificados[pallet].EF1[seleccion]
-                const kilos = Number(copiaItemSeleccionado.tipoCaja.split("-")[1].replace(",", ".")) * cajas;
-                if (!copiaItemSeleccionado.tipoCaja.includes('-')) {
-                    throw new ProcessError(400, `El tipoCaja '${copiaItemSeleccionado.tipoCaja}' es inválido`);
-                }
-                await ProcesoService.restarItem_contenedor(contenedor[0], palletsModificados, copiaPallet, pallet, seleccion, cajas, logContext, session);
-                await ProcesoService.restarItem_lote(lote[0], copiaItemSeleccionado, kilos, contenedor, logContext, session);
-                await ProcesoService.modificarIndicadoresFecha(copiaPalletSeleccionado, -kilos, logContext.logId);
+                await ProcesoService.restarItem_lote(itemPallet, kilos, cajas, contenedor, logContext, session);
+                await ProcesoService.modificarIndicadoresFecha(itemPallet, -kilos, logContext.logId);
             })
 
             procesoEventEmitter.emit("proceso_event", {});
             procesoEventEmitter.emit("listaempaque_update");
 
-            await registrarPasoLog(log._id, "Resumen", "Completado", `Restados ${cajas} cajas del item ${seleccion} del pallet ${pallet} del contenedor ${_id}`);
+            await registrarPasoLog(log._id, "Resumen", "Completado", `Restados ${cajas} cajas del item ${_id}`);
 
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
@@ -728,22 +717,22 @@ export class ProcesoRepository {
     }
     static async put_proceso_aplicaciones_listaEmpaque_moverItems(req) {
         const { user } = req
-        const { contenedor1, contenedor2, cajas, action } = req.data;
+        const { seleccionado, contenedor2, cajas, action } = req.data;
 
-        if (contenedor1.pallet !== "" && contenedor2.pallet !== "" && cajas === 0) {
-            await this.mover_item_entre_contenedores(contenedor1, contenedor2, action, user);
+        if (seleccionado.length !== 0 && contenedor2.pallet !== "" && cajas === 0) {
+            await this.mover_item_entre_contenedores(seleccionado, contenedor2, action, user);
         }
 
-        else if (contenedor1.pallet !== "" && contenedor2.pallet !== "" && cajas !== 0) {
-            await this.restar_mover_contenedor_contenedor(contenedor1, contenedor2, cajas, action, user)
+        else if (seleccionado.length !== 0 && contenedor2.pallet !== "" && cajas !== 0) {
+            await this.restar_mover_contenedor_contenedor(seleccionado, contenedor2, cajas, action, user)
         }
 
         procesoEventEmitter.emit("listaempaque_update");
 
     }
-    static async mover_item_entre_contenedores(contenedor1, contenedor2, action, user) {
+    static async mover_item_entre_contenedores(seleccionado, contenedor2, action, user) {
         let log
-        const { _id: id1, pallet: pallet1 } = contenedor1
+
         const { _id: id2, pallet: pallet2 } = contenedor2
 
         const session = await db.Contenedores.db.startSession();
@@ -754,76 +743,29 @@ export class ProcesoRepository {
             acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
         })
         try {
-            const logContext = { logId: log._id, user, action }
-
-            if (id1 === id2 && pallet1 === pallet2) {
-                throw new ProcessError(400, "No se puede mover ítems entre el mismo pallet")
-            }
 
             await session.withTransaction(async () => {
-                const { lotes, contenedores, index1, index2 } = await ProcesoService.obtenerContenedorLotesModificar(contenedor1, contenedor2)
+                const contenedores = await ProcesoService.obtenerContenedorLotesModificar(contenedor2, session)
                 await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLotesModificar", "Completado");
 
-                const seleccionOrdenado = contenedor1.seleccionado.sort((a, b) => b - a);
-
-                const { palletsModificados: palletsModificados1, copiaPallet: copiaPallets1 } = await ProcesoService.crearCopiaProfundaPallets(contenedores[index1]);
-                const { palletsModificados: palletsModificados2, copiaPallet: copiaPallets2 } = await ProcesoService.crearCopiaProfundaPallets(contenedores[index2]);
-                await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
-
-                let kilosTotal = 0;
-                let cajas = 0;
-
-                if (lotes.length > 0) {
-                    const resultado = await ProcesoService.mover_kilos_lotes_entrcontenedores(
-                        contenedores, index1, index2, contenedor1, contenedor2, seleccionOrdenado, palletsModificados1, palletsModificados2, lotes, logContext
-                    );
-                    ({ cajas, kilosTotal } = resultado);
+                if (contenedores.pallets < pallet2) {
+                    throw new ProcessError(400, `El pallet ${pallet2} no existe en el contenedor ${id2}`);
                 }
 
-                // Actualizar los contenedores en la base de datos
-                const operationsContenedores = [
-                    {
-                        updateOne: {
-                            filter: { _id: contenedores[index2]._id },
-                            update: {
-                                $set: { [`pallets.${pallet2}`]: palletsModificados2[pallet2] },
-                                $inc: {
-                                    totalKilos: kilosTotal,
-                                    totalCajas: cajas,
-                                }
-                            }
-                        }
-                    },
-                    {
-                        updateOne: {
-                            filter: {
-                                _id: contenedores[index1]._id
-                            },
-                            update: {
-                                $set: { [`pallets.${pallet1}`]: palletsModificados1[pallet1] },
-                                $inc: {
-                                    totalKilos: -kilosTotal,
-                                    totalCajas: -cajas,
-                                }
-                            }
-                        }
-                    }
-                ];
-
-                await ContenedoresRepository.bulkWrite(operationsContenedores, { session });
-
-                await RecordModificacionesRepository.post_record_contenedor_modification(
-                    action,
-                    user,
-                    [
-                        { modelo: "Contenedor", documentoId: id1, descripcion: `Se movieron los ítems ${seleccionOrdenado} del pallet ${pallet1}` },
-                        { modelo: "Contenedor", documentoId: id2, descripcion: `Se agregaron ítems al pallet ${pallet2}` },
-                    ],
-                    [copiaPallets1[pallet1], copiaPallets2[pallet2]],
-                    [palletsModificados1[pallet1], palletsModificados2[pallet2]],
-                    { contenedor1, contenedor2, action, user },
-                    { session }
+                const itemsPallet = await ContenedoresRepository.actualizar_palletItem(
+                    { _ids: { $in: seleccionado } },
+                    { contenedor: id2, pallet: pallet2 },
+                    { session, user: user._id, action: action }
                 );
+                await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_palletItem", "Completado");
+
+                const lotesIds = [...new Set(itemsPallet.map(item => item.lote.toString()))];
+                await LotesRepository.actualizar_lote(
+                    { _id: { $in: lotesIds } },
+                    { $addToSet: { "salidaExportacion.contenedores": id2 } },
+                    { session, user: user._id, action: action }
+                );
+                await registrarPasoLog(log._id, "LotesRepository.actualizar_lote_items", "Completado");
             })
 
             procesoEventEmitter.emit("server_event", {
@@ -1109,6 +1051,11 @@ export class ProcesoRepository {
         const { user } = req;
         const { _id, action } = req.data;
         let log
+        const auditBase = {
+            user: user?._id?.toString() || String(user),
+            action,
+            description: `Alta de pallet y actualización de contador en contenedor ${_id}`
+        };
         const session = await db.Contenedores.db.startSession();
         log = await LogsRepository.create({
             user: user._id,
@@ -1130,14 +1077,23 @@ export class ProcesoRepository {
                     estado: 'abierto',
                     user: user._id,
                 }
-                await ContenedoresRepository.addPallet(newItem);
+                await ContenedoresRepository.addPallet(newItem, {
+                    session,
+                    $audit: {
+                        ...auditBase,
+                        description: `Creación de Pallet #${newItem.numeroPallet} en contenedor ${_id}`
+                    }
+                });
                 await ContenedoresRepository.actualizar_contenedor(
                     { _id },
                     { $inc: { pallets: 1 } },
-                    { user: user._id, action: action, session: session }
+                    {
+                        session,
+                        skipAudit: true
+                    }
                 );
-
             });
+
 
             procesoEventEmitter.emit("listaempaque_update");
 

@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
+import { makeAuditPlugin } from "../utils/auditPLug.js";
 const { Schema } = mongoose;
 
-export const definePallet = async (conn) => {
+export const definePallet = async (conn, AuditLog) => {
+
+    const auditPlugin = makeAuditPlugin({ collectionName: 'Pallet', AuditLogs: AuditLog });
 
     const palletSchema = new Schema({
         numeroPallet: { type: Number, required: true },
@@ -18,10 +21,12 @@ export const definePallet = async (conn) => {
         fechaFinalizado: Date,
         estado: { type: String, enum: ['abierto', 'cerrado', 'embarcado'], default: 'abierto', index: true },
         user: String,
-        createdAt: { type: Date, default: Date.now }, 
+        createdAt: { type: Date, default: Date.now },
     });
 
     palletSchema.index({ contenedor: 1, numeroPallet: 1 }, { unique: true });
+
+    palletSchema.plugin(auditPlugin);
 
     const Pallet = conn.model('Pallet', palletSchema);
     return Pallet;

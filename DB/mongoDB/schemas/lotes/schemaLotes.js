@@ -130,40 +130,13 @@ export const defineLotes = async (conn, AuditLog) => {
     fechaProcesado: Date,
   }, { _id: false });
 
-  const contenedorDetalleSchema = new Schema({
-    "1": Number,
-    "15": Number,
-    "2": Number
-  })
-
-  const exportacionDetalladaSchema = new Schema({
-    any: {
-      type: Map,
-      of: contenedorDetalleSchema
-    },
-  }, { _id: false })
-
-  const exportacionSchema = new Schema(
-    {},
-    {
-      _id: false,
-      strict: false
-    }
-  )
-
-  exportacionSchema.add(
-    new Map([
-      [
-        String, // Nivel 1: contenedor
-        new Map([
-          [
-            String, // Nivel 2: calidad
-            new Map([[String, Number]])
-          ]
-        ])
-      ]
-    ])
-  );
+  const salidaExportacionSchema = new Schema({
+    totalKilos: { type: Number, default: 0 },
+    totalCajas: { type: Number, default: 0 },
+    porCalidad: [{ calidadId: mongoose.Types.ObjectId, kilos: Number, cajas: Number }],
+    porCalibre: [{ calibre: String, kilos: Number, cajas: Number }],
+    contenedores: [{ type: Schema.Types.ObjectId, ref: 'Contenedor' }]
+  }, { _id: false, strict: false });
 
   const dataSchema = new Schema({
 
@@ -179,8 +152,6 @@ export const defineLotes = async (conn, AuditLog) => {
     desverdizado: desverdizadoSchema,
     directoNacional: { type: Number, default: 0 },
     enf: { type: String },
-    exportacionDetallada: exportacionDetalladaSchema,
-    exportacion: exportacionSchema,
     fecha_creacion: { type: Date, default: () => new Date() },
     fecha_estimada_llegada: { type: Date },
     fechaIngreso: { type: Date },
@@ -204,6 +175,7 @@ export const defineLotes = async (conn, AuditLog) => {
     kilosReprocesados: { type: Number, default: 0 },
     kilosVaciados: { type: Number, default: 0 },
     kilosGGN: { type: Number, default: 0 },
+    kilosProcesados: { type: Number, default: 0 },
     numeroPrecintos: Number,
     numeroRemision: String,
     not_pass: Boolean,
@@ -212,6 +184,7 @@ export const defineLotes = async (conn, AuditLog) => {
     precio: { type: Schema.Types.ObjectId, ref: 'precio' },
     predio: { type: Schema.Types.ObjectId, ref: 'Proveedor' },
     promedio: Number,
+    salidaExportacion: salidaExportacionSchema,
     rendimiento: { type: Number, default: 0 },
     tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas' },
     user: String,

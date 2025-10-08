@@ -50,22 +50,31 @@ class ProcesoService {
 
         return { contenedor, lotes };
     }
-    static async modificarLoteListaEmpaqueAddItem(calidad, kilos, lote, _id, GGN, logData, session) {
-        const path = `exportacion.${_id}.${calidad}`;
+    static async modificarLoteListaEmpaqueAddItem(item, kilos, _id, GGN, logData, session) {
+
+        const { lote, calidad, calibre, cajas } = item
+
         const query = {
             $inc: {
-                [path]: kilos,
+                kilosProcesados: kilos,
+                "salidaExportacion.totalKilos": kilos,
+                "salidaExportacion.totalCajas": cajas,
+                [`salidaExportacion.porCalidad.${calidad}.kilos`]: Number(kilos),
+                [`salidaExportacion.porCalidad.${calidad}.cajas`]: Number(cajas),
+                [`salidaExportacion.porCalibre.${calibre}.kilos`]: Number(kilos),
+                [`salidaExportacion.porCalibre.${calibre}.cajas`]: Number(cajas)
             },
-            $addToSet: { contenedores: _id },
+            $addToSet: { "salidaExportacion.contenedores": _id }
+
         }
         if (GGN) {
             query.$inc.kilosGGN = kilos
         }
 
         await LotesRepository.actualizar_lote(
-            { _id: lote._id },
+            { _id: lote },
             query,
-            { user: logData.user, action: logData.action, session }
+            { user: logData.user._id, action: logData.action, session }
         );
         await registrarPasoLog(logData.logId, "ProcesoService.modificarLoteListaEmpaqueAddItem", "Completado");
         return true
@@ -74,7 +83,7 @@ class ProcesoService {
 
         const items = await ContenedoresRepository.getItemsPallets({ ids: seleccion }, session);
 
-        await ContenedoresRepository.deleteItemPallet({ _id: { $in: seleccion } }, { session });
+        await ContenedoresRepository.deleteItemPallet({ _id: { $in: seleccion } }, { session, action: logContext.action, user: logContext.user });
 
         await registrarPasoLog(logContext.logId, "ProcesoService.eliminar_items_contenedor", "Completado");
 
@@ -116,18 +125,22 @@ class ProcesoService {
                 throw new ProcessError(400, `El lote ${items[i].lote.enf} ya se encuentra finalizado, no se puede modificar`);
             }
 
-            const { calidad, kilos } = items[i]
-            const query = { $inc: {} }
+            const { calidad, kilos, calibre, cajas } = items[i]
 
-            //se le restan los kilos a el lote correspondiente
-            const path = `exportacion.${contenedor[0]._id}.${calidad._id}`;
-            query.$inc[path] = - kilos
-
-            // si se restan los kilos ggn
+            const query = {
+                $inc: {
+                    kilosProcesados: -kilos,
+                    "salidaExportacion.totalKilos": -kilos,
+                    "salidaExportacion.totalCajas": -cajas,
+                    [`salidaExportacion.porCalidad.${calidad._id}.kilos`]: Number(-kilos),
+                    [`salidaExportacion.porCalidad.${calidad._id}.cajas`]: Number(-cajas),
+                    [`salidaExportacion.porCalibre.${calibre}.kilos`]: Number(-kilos),
+                    [`salidaExportacion.porCalibre.${calibre}.cajas`]: Number(-cajas)
+                },
+            }
             if (have_lote_GGN_export(loteDocument, contenedor[0],)) {
                 query.$inc.kilosGGN = - kilos
             }
-
             await LotesRepository.actualizar_lote(
                 { _id: loteDocument._id },
                 query,
@@ -203,64 +216,60 @@ class ProcesoService {
         return { cajas, kilosTotal };
 
     }
-    static async restarItem_contenedor(contenedor, palletsModificados, copiaPallet, pallet, seleccion, cajas, logContext, session) {
+    static async restarItem_contenedor(_id, cajas, logContext, session) {
+        const itemPallet = await ContenedoresRepository.actualizar_palletItem(
+            { _id: _id },
+            { $inc: { cajas: -cajas } },
+            { session, new: true, action: logContext.action, user: logContext.user });
 
-        const itemSeleccionado = palletsModificados[pallet].EF1[seleccion];
+        const kilos = cajas * Number(itemPallet.tipoCaja.split("-")[1].replace(",", "."));
 
-        itemSeleccionado.cajas -= cajas
-        const kilos = cajas * Number(itemSeleccionado.tipoCaja.split("-")[1].replace(",", "."));
-
-        if (itemSeleccionado.cajas === 0) {
-            palletsModificados[pallet].EF1.splice(seleccion, 1);
+        if (itemPallet.cajas === 0) {
+            await ContenedoresRepository.deleteItemPallet({ _id: itemPallet._id }, { session, skipAudit: true });
         }
 
         // Actualizar contenedor con pallets modificados
-        await ContenedoresRepository.actualizar_contenedor(
-            { _id: contenedor._id },
+        const contenedor = await ContenedoresRepository.actualizar_contenedor(
+            { _id: itemPallet.contenedor },
             {
-                $set: { [`pallets.${pallet}`]: palletsModificados[pallet] },
+                // $set: { [`pallets.${pallet}`]: palletsModificados[pallet] },
                 $inc: { totalCajas: -cajas, totalKilos: -kilos }
             },
-            { session: session }
-        );
-
-        // Registrar modificación Contenedores
-        await RecordModificacionesRepository.post_record_contenedor_modification(
-            logContext.action,
-            logContext.user,
-            {
-                modelo: "Contenedor",
-                documentoId: contenedor._id,
-                descripcion: `Se resto ${cajas} de ${seleccion} en el pallet ${pallet}`,
-            },
-            copiaPallet[pallet],
-            palletsModificados[pallet],
-            { action: logContext.action, _id: contenedor._id, pallet, seleccion, cajas },
-            { session: session }
+            { session: session, skipAudit: true }
         );
 
         await registrarPasoLog(logContext.logId, "ProcesoService.restarItem_contenedor", "Completado");
 
+        return { itemPallet, contenedor, kilos };
     }
-    static async restarItem_lote(lote, copiaItemSeleccionado, kilos, contenedor, logContext, session) {
+    static async restarItem_lote(itemPallet, kilos, cajas, contenedor, logContext, session) {
 
-        const path = `exportacion.${contenedor[0]._id}.${copiaItemSeleccionado.calidad}`;
-        lote[path] -= kilos
+        const lote = await LotesRepository.getLotes2({ ids: [itemPallet.lote] }, { session });
+        if (checkFinalizadoLote(lote[0])) {
+            throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
+        }
+
+        const { calidad, calibre } = itemPallet
 
         const query = {
             $inc: {
-                [path]: - kilos
+                kilosProcesados: -kilos,
+                "salidaExportacion.totalKilos": -kilos,
+                "salidaExportacion.totalCajas": -cajas,
+                [`salidaExportacion.porCalidad.${calidad._id}.kilos`]: Number(-kilos),
+                [`salidaExportacion.porCalidad.${calidad._id}.cajas`]: Number(-cajas),
+                [`salidaExportacion.porCalibre.${calibre}.kilos`]: Number(-kilos),
+                [`salidaExportacion.porCalibre.${calibre}.cajas`]: Number(-cajas)
             },
         }
-
         // si se restan los kilos ggn
-        const GGN = have_lote_GGN_export(lote, contenedor[0])
+        const GGN = have_lote_GGN_export(lote, contenedor)
         if (GGN) {
             query.$inc.kilosGGN = - kilos
         }
 
         await LotesRepository.actualizar_lote(
-            { _id: lote._id },
+            { _id: lote[0]._id },
             query,
             {
                 new: true,
@@ -330,7 +339,7 @@ class ProcesoService {
             {
                 $inc: { totalCajas: cajas, totalKilos: kilos }
             },
-            { session }
+            { session, skipAudit: true }
         );
 
         await registrarPasoLog(logData.logId, "ProcesoService.modifiarContenedorPalletsListaEmpaque", "Completado");
@@ -865,38 +874,19 @@ class ProcesoService {
             contenedor, lotes, itemsDelete
         }
     }
-    static async obtenerContenedorLotesModificar(contenedor1, contenedor2, session) {
+    static async obtenerContenedorLotesModificar(contenedor2, session) {
 
-        const { _id: id1, pallet: pallet1 } = contenedor1
         const { _id: id2 } = contenedor2
-        // se obtienen los contenedores a modificar
         const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
-            ids: [id1, id2],
-            select: { infoContenedor: 1, pallets: 1, numeroContenedor: 1 },
+            ids: [id2],
+            select: { infoContenedor: 1, numeroContenedor: 1, pallets: 1 },
             populate: {
                 path: 'infoContenedor.clienteInfo',
                 select: 'CLIENTE PAIS_DESTINO',
             },
         }, { session })
 
-        const [index1, index2] = id1 === id2 ? [0, 0] : [
-            contenedores.findIndex(c => c._id.toString() === id1),
-            contenedores.findIndex(c => c._id.toString() === id2)
-        ];
-
-        const seleccionOrdenado = contenedor1.seleccionado.sort((a, b) => b - a);
-        let lotesIds = []
-
-        const palletsModificados1 = contenedores[index1].pallets;
-
-        for (let i = 0; i < seleccionOrdenado.length; i++) {
-            lotesIds.push(palletsModificados1[pallet1].get('EF1')[seleccionOrdenado[i]].lote)
-        }
-        const lotesIdsArr = [...new Set(lotesIds)];
-
-        const lotes = await LotesRepository.getLotes({ ids: lotesIdsArr, limit: 'all' });
-
-        return { lotes, contenedores, index1, index2 }
+        return contenedores
     }
     static async crearCopiaProfundaPallets(contenedor) {
         // Convertimos a objeto plano si es un documento Mongoose
@@ -931,7 +921,7 @@ class ProcesoService {
             fechaSeleccionada.getMonth() === hoy.getMonth() &&
             fechaSeleccionada.getDate() === hoy.getDate()
         ) {
-            const { tipoFruta, calidad, calibre} = copiaPalletSeleccionado;
+            const { tipoFruta, calidad, calibre } = copiaPalletSeleccionado;
 
             await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
                 {
