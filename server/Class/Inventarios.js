@@ -224,11 +224,9 @@ export class InventariosHistorialRepository {
         }
     }
     static async put_inventarioSimple_updateOne(filter, update, options = {}) {
-        // Opciones sensatas para updateOne
         const finalOptions = {
-            // Nota: updateOne NO soporta returnDocument/new
-            runValidators: false,     // 🔑 evita el "required" en arrays embebidos
-            ...options,               // session, arrayFilters, writeConcern, etc.
+            runValidators: false,    
+            ...options,             
         };
 
         try {

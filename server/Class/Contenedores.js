@@ -227,13 +227,15 @@ export class ContenedoresRepository {
             sort = { numeroPallet: 1 },
             populate = [
                 { path: 'calidad', select: 'nombre descripcion' },
+                { path: 'pallet', select: 'numeroPallet' },
                 { path: 'tipoFruta', select: 'tipoFruta' },
                 {
                     path: 'lote',
-                    select: 'enf predio',
+                    select: 'enf predio finalizado GGN',
                     populate: {
                         path: 'predio',
-                        select: 'PREDIO',
+                        select: 'PREDIO GGN',
+                        
                     }
                 }
             ],

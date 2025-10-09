@@ -143,11 +143,14 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteLavado", "Completado");
 
             const keys = Object.keys(data);
-            const query = { $inc: {} };
+            const query = { $inc: {
+                kilosProcesados: 0,
+            } };
             let kilos = 0;
             for (let i = 0; i < keys.length; i++) {
                 query.$inc[`descarteLavado.${keys[i]}`] = Math.round(data[keys[i]]);
                 kilos += Math.round(data[keys[i]]);
+                query.$inc.kilosProcesados += Math.round(data[keys[i]]);
             }
 
             await session.withTransaction(async () => {
@@ -226,16 +229,20 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteEncerado", "Completado");
 
             const keys = Object.keys(data);
-            const query = { $inc: {} };
+            const query = { $inc: {
+                kilosProcesados: 0,
+            } };
             let kilos = 0;
 
             for (let i = 0; i < keys.length; i++) {
                 if (keys[i] === 'frutaNacional') {
                     query.$inc[keys[i]] = data[keys[i]];
                     kilos += data[keys[i]];
+                    query.$inc.kilosProcesados += data[keys[i]];
                 } else {
                     query.$inc[`descarteEncerado.${keys[i]}`] = Math.round(data[keys[i]]);
                     kilos += Math.round(data[keys[i]]);
+                    query.$inc.kilosProcesados += Math.round(data[keys[i]]);
                 }
             }
 
@@ -463,7 +470,7 @@ export class ProcesoRepository {
                 const kilos = Number(tipoCaja.split('-')[1].replace(",", ".")) * cajas
                 await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
 
-                await ProcesoService.modificarLoteListaEmpaqueAddItem(item, kilos, _id, GGN, logData, session)
+                await ProcesoService.modificarLoteListaEmpaqueAddItem(item, kilos, _id, logData, session)
                 await ProcesoService.modifiarContenedorPalletsListaEmpaque(lotes, pallet, item, kilos, _id, GGN, logData, session)
                 await ProcesoService.ingresarDataExportacionDiaria(tipoFruta, calidad, calibre, kilos, logData)
             });
@@ -696,9 +703,9 @@ export class ProcesoRepository {
             const logContext = { logId: log._id, user, action };
             await session.withTransaction(async () => {
 
-                const { itemPallet, contenedor, kilos } = await ProcesoService.restarItem_contenedor(_id, cajas, logContext, session);
+                const { itemPallet, kilos } = await ProcesoService.restarItem_contenedor(_id, cajas, logContext, session);
 
-                await ProcesoService.restarItem_lote(itemPallet, kilos, cajas, contenedor, logContext, session);
+                await ProcesoService.restarItem_lote(itemPallet, kilos, cajas, logContext, session);
                 await ProcesoService.modificarIndicadoresFecha(itemPallet, -kilos, logContext.logId);
             })
 
@@ -743,29 +750,46 @@ export class ProcesoRepository {
             acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
         })
         try {
-
             await session.withTransaction(async () => {
                 const contenedores = await ProcesoService.obtenerContenedorLotesModificar(contenedor2, session)
                 await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLotesModificar", "Completado");
 
-                if (contenedores.pallets < pallet2) {
-                    throw new ProcessError(400, `El pallet ${pallet2} no existe en el contenedor ${id2}`);
+                const newPallet = await ContenedoresRepository.getPallets({ query: { contenedor: id2, numeroPallet: pallet2 } }, session);
+
+                if (newPallet.length === 0) {
+                    throw new ProcessError(400, `El pallet ${pallet2} no existe en el contenedor ${contenedores[0].numeroContenedor}`);
+                }
+                const itemsPallet = await ContenedoresRepository.getItemsPallets({ ids: seleccionado }, session);
+                if (itemsPallet.length !== seleccionado.length) {
+                    throw new ProcessError(400, `Alguno de los items seleccionados no existe`);
+                }
+                const cont = await ContenedoresRepository.getContenedores({ ids: [id2] }, session);
+                if (cont.length === 0) {
+                    throw new ProcessError(400, `El contenedor del item seleccionado no existe`);
                 }
 
-                const itemsPallet = await ContenedoresRepository.actualizar_palletItem(
-                    { _ids: { $in: seleccionado } },
-                    { contenedor: id2, pallet: pallet2 },
-                    { session, user: user._id, action: action }
-                );
-                await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_palletItem", "Completado");
+                for (const idItem of itemsPallet) {
 
-                const lotesIds = [...new Set(itemsPallet.map(item => item.lote.toString()))];
-                await LotesRepository.actualizar_lote(
-                    { _id: { $in: lotesIds } },
-                    { $addToSet: { "salidaExportacion.contenedores": id2 } },
-                    { session, user: user._id, action: action }
-                );
-                await registrarPasoLog(log._id, "LotesRepository.actualizar_lote_items", "Completado");
+                    if (checkFinalizadoLote(idItem.lote)) {
+                        throw new ProcessError(400, `El lote ${idItem.lote.enf} ya se encuentra finalizado, no se puede modificar`);
+                    }
+                    const GGN = have_lote_GGN_export(idItem.lote, cont[0])
+
+                    const itemPallet = await ContenedoresRepository.actualizar_palletItem(
+                        { _id: idItem },
+                        { contenedor: id2, pallet: newPallet[0]._id, GGN: GGN },
+                        { session, user: user._id, action: action }
+                    )
+
+                    await LotesRepository.actualizar_lote(
+                        { _id: itemPallet.lote },
+                        { $addToSet: { "salidaExportacion.contenedores": id2 } },
+                        { session, user: user._id, action: action }
+                    );
+
+                }
+
+                await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_palletItem", "Completado");
             })
 
             procesoEventEmitter.emit("server_event", {
@@ -781,9 +805,9 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
-    static async restar_mover_contenedor_contenedor(contenedor1, contenedor2, cajas, action, user) {
+    static async restar_mover_contenedor_contenedor(seleccionado, contenedor2, cajas, action, user) {
         let log
-        const { _id: id1, pallet: pallet1 } = contenedor1
+
         const { _id: id2, pallet: pallet2 } = contenedor2
 
         const session = await db.Contenedores.db.startSession();
@@ -796,45 +820,65 @@ export class ProcesoRepository {
 
         try {
 
-            const logContext = { logId: log._id, user, action }
-            if (id1 === id2 && pallet1 === pallet2) {
-                throw new ProcessError(400, "No se puede mover ítems entre el mismo pallet")
-            }
-
             await session.withTransaction(async () => {
 
-                const { lotes, contenedores, index1, index2 } = await ProcesoService.obtenerContenedorLotesModificar(contenedor1, contenedor2, session)
+                const contenedores = await ProcesoService.obtenerContenedorLotesModificar(contenedor2, session)
                 await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLotesModificar", "Completado");
 
-                const seleccionOrdenado = contenedor1.seleccionado.sort((a, b) => b - a);
+                const newPallet = await ContenedoresRepository.getPallets({ query: { contenedor: id2, numeroPallet: pallet2 } }, session);
 
-                //se crea una copa del pallet a modificar
-                const [{ palletsModificados: palletsModificados1, copiaPallet: copiaPallets1 }, { palletsModificados: palletsModificados2, copiaPallet: copiaPallets2 }] = await Promise.all([
-                    ProcesoService.crearCopiaProfundaPallets(contenedores[index1]),
-                    ProcesoService.crearCopiaProfundaPallets(contenedores[index2])
-                ]);
-                await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
-
-
-                const itemSeleccionado = palletsModificados1[pallet1].EF1[seleccionOrdenado[0]];
-                const newCajas = itemSeleccionado.cajas - cajas
-
-                const oldGGN = have_lote_GGN_export(lotes[0], contenedores[index1], palletsModificados1)
-                const GGN = have_lote_GGN_export(lotes[0], contenedores[index2], palletsModificados2)
-
-                if (((oldGGN !== GGN) || !lotes[0].contenedores.includes(id2)) && lotes[0].finalizado) {
-                    throw new ProcessError(400, `El lote ${lotes[0].enf} ya se encuentra finalizado, no se puede modificar`);
+                if (newPallet.length === 0) {
+                    throw new ProcessError(400, `El pallet ${pallet2} no existe en el contenedor ${contenedores[0].numeroContenedor}`);
+                }
+                const oldItemPallet = await ContenedoresRepository.getItemsPallets({ query: { _id: seleccionado[0] } }, session);
+                if (oldItemPallet.length === 0) {
+                    throw new ProcessError(400, `El item seleccionado no existe`);
+                }
+                if (cajas > oldItemPallet[0].cajas) {
+                    throw new ProcessError(400, `No se pueden mover ${cajas} cajas, el item solo tiene ${oldItemPallet[0].cajas} cajas`);
                 }
 
-                const kilos = cajas * Number(itemSeleccionado.tipoCaja.split('-')[1].replace(",", "."))
+                const kilos = cajas * Number(oldItemPallet[0].tipoCaja.split("-")[1].replace(",", "."));
 
-                await ProcesoService.restar_mover_modificar_contenedor(
-                    contenedores, index1, index2, contenedor1, contenedor2,
-                    seleccionOrdenado, palletsModificados1, palletsModificados2, copiaPallets1, copiaPallets2, newCajas, cajas, GGN, logContext, session
-                )
-                await ProcesoService.restar_mover_modificar_lote(
-                    contenedores, index1, index2, itemSeleccionado, kilos, GGN, oldGGN, logContext, session
-                )
+                if (checkFinalizadoLote(oldItemPallet[0].lote)) {
+                    throw new ProcessError(400, `El lote ${oldItemPallet[0].lote.enf} ya se encuentra finalizado, no se puede modificar`);
+                }
+                const GGN = have_lote_GGN_export(oldItemPallet[0].lote, contenedores[0])
+
+                if (cajas === oldItemPallet[0].cajas) {
+                    await ContenedoresRepository.deleteItemPallet({ _id: oldItemPallet[0]._id }, { session, action: action, user: user._id });
+                } else {
+                    await ContenedoresRepository.actualizar_palletItem(
+                        { _id: oldItemPallet[0]._id },
+                        { $inc: { cajas: -cajas, kilos: -kilos } },
+                        { session, user: user._id, action: action }
+                    )
+                }
+                await registrarPasoLog(log._id, "PalletItem actualizado", "Completado", `Item ID: ${oldItemPallet[0]._id}, Cajas restadas: ${cajas}, Kilos restados: ${kilos}`);
+
+                const newItem = {
+                    pallet: newPallet[0]._id,
+                    contenedor: id2,
+                    lote: oldItemPallet[0].lote._id,
+                    tipoCaja: oldItemPallet[0].tipoCaja,
+                    calidad: oldItemPallet[0].calidad._id,
+                    calibre: oldItemPallet[0].calibre,
+                    tipoFruta: oldItemPallet[0].tipoFruta,
+                    cajas: cajas,
+                    kilos: kilos,
+                    fecha: oldItemPallet[0].fecha,
+                    usuario: user._id,
+                    GGN: GGN,
+                    SISPAP: oldItemPallet[0].SISPAP,
+                }
+                await ContenedoresRepository.addItemPallet(newItem, session);
+
+                await LotesRepository.actualizar_lote(
+                    { _id: oldItemPallet[0].lote._id },
+                    { $addToSet: { "salidaExportacion.contenedores": id2 } },
+                    { session, user: user._id, action: action }
+                );
+                await registrarPasoLog(log._id, "Lote actualizado", "Completado", `Lote ID: ${oldItemPallet[0].lote.enf}, Se agregó el contenedor: ${contenedores[0].numeroContenedor}`);
             });
 
             procesoEventEmitter.emit("server_event", {
@@ -842,77 +886,6 @@ export class ProcesoRepository {
             });
             procesoEventEmitter.emit("listaempaque_update");
 
-        } catch (err) {
-            console.error(err)
-            if (
-                err.status === 610 ||
-                err.status === 523
-            ) {
-                throw err
-            }
-            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async put_proceso_aplicaciones_listaEmpaque_liberarPallet(req) {
-        const { user } = req;
-        const { _id, pallet, item, action } = req.data;
-        let log
-
-        const session = await db.Contenedores.db.startSession();
-
-        log = await LogsRepository.create({
-            user: user._id,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-        })
-        try {
-
-            const { rotulado, paletizado, enzunchado, estadoCajas, estiba } = item
-            const query = {};
-
-            await session.withTransaction(async () => {
-                //se obtiene  el contenedor a modifiar
-                const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                    ids: [_id],
-                    select: { infoContenedor: 1, pallets: 1 },
-                    populate: {
-                        path: 'infoContenedor.clienteInfo',
-                        select: 'CLIENTE PAIS_DESTINO',
-                    }
-                }, { session });
-
-                // Crear copia profunda de los pallets
-                const palletsModificados = JSON.parse(JSON.stringify(contenedor[0].pallets));
-                const palletSeleccionado = palletsModificados[pallet].listaLiberarPallet;
-
-                Object.assign(palletSeleccionado, { rotulado, paletizado, enzunchado, estadoCajas, estiba });
-
-                query.pallets = palletsModificados
-
-                // Actualizar contenedor con pallets modificados
-                await ContenedoresRepository.actualizar_contenedor(
-                    { _id },
-                    query,
-                    { user: user._id, action: action, session: session }
-                );
-
-                // Registrar modificación
-                await RecordModificacionesRepository.post_record_contenedor_modification(
-                    action,
-                    user,
-                    {
-                        modelo: "Contenedor",
-                        documentoId: _id,
-                        descripcion: `Se libero el pallet ${pallet}`,
-                    },
-                    contenedor[0].pallets[pallet],
-                    palletSeleccionado,
-                    { _id, pallet, item, action },
-                    { session }
-                );
-            });
-
-            procesoEventEmitter.emit("listaempaque_update");
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
             await ErrorProcesoLogicHandlers(error, log)
@@ -923,7 +896,7 @@ export class ProcesoRepository {
     }
     static async put_proceso_aplicaciones_listaEmpaque_modificarItems(req) {
         const { user } = req;
-        const { _id, pallet, seleccion, data, action } = req.data;
+        const { seleccion, data, action } = req.data;
 
         let log
 
@@ -937,34 +910,21 @@ export class ProcesoRepository {
 
         try {
 
-            const logData = { logId: log._id, user: user, action: "put_proceso_aplicaciones_listaEmpaque_modificarItems" }
-
             await session.withTransaction(async () => {
                 ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_modificarItems(req.data)
                 await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_modificarItems", "Completado");
 
-                const { calidad, tipoCaja, calibre } = data
-                //se obtiene  el contenedor a modifiar
-                const { contenedor, lotes } = await ProcesoService.obtenerContenedorLotes(_id, pallet, seleccion, session);
-                await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLotes", "Completado");
-
-                const { palletsModificados, copiaPallet } = await ProcesoService.crearCopiaProfundaPallets(contenedor[0]);
-                await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
-
-                lotes.forEach(lote => {
-                    if (checkFinalizadoLote(lote)) {
-                        throw new ProcessError(400, `El lote ${lote.enf} ya se encuentra finalizado, no se puede modificar`);
-                    }
-                })
-
-                await ProcesoService.modificarPalletModificarItemsListaEmpaque(
-                    palletsModificados, copiaPallet, pallet, seleccion, calidad, calibre, tipoCaja, _id, action, user, log._id, session
+                const itemsPallet = await ContenedoresRepository.getItemsPallets({ ids: seleccion }, session);
+                if (itemsPallet.length !== seleccion.length) {
+                    throw new ProcessError(400, `Alguno de los items seleccionados no existe`);
+                }
+                const newItemsPallet = await ProcesoService.modificarPalletModificarItemsListaEmpaque(
+                    itemsPallet, data, action, user, log._id, session
                 )
-                await ProcesoService.modificarLotesModificarItemsListaEmpaque(
-                    lotes, copiaPallet, palletsModificados, seleccion, pallet, contenedor, logData, session
-                )
-                await ProcesoService.modificarIndicadorExportacion(palletsModificados, copiaPallet, seleccion, pallet)
+                await registrarPasoLog(log._id, "ProcesoService.modificarPalletModificarItemsListaEmpaque", "Completado");
 
+                await ProcesoService.modificarIndicadorExportacion(newItemsPallet, itemsPallet, log._id, session)
+                await registrarPasoLog(log._id, "ProcesoService.modificarIndicadorExportacion", "Completado");
             });
 
             procesoEventEmitter.emit("server_event", {

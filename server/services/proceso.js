@@ -50,7 +50,7 @@ class ProcesoService {
 
         return { contenedor, lotes };
     }
-    static async modificarLoteListaEmpaqueAddItem(item, kilos, _id, GGN, logData, session) {
+    static async modificarLoteListaEmpaqueAddItem(item, kilos, _id, logData, session) {
 
         const { lote, calidad, calibre, cajas } = item
 
@@ -65,10 +65,6 @@ class ProcesoService {
                 [`salidaExportacion.porCalibre.${calibre}.cajas`]: Number(cajas)
             },
             $addToSet: { "salidaExportacion.contenedores": _id }
-
-        }
-        if (GGN) {
-            query.$inc.kilosGGN = kilos
         }
 
         await LotesRepository.actualizar_lote(
@@ -115,7 +111,6 @@ class ProcesoService {
 
         const lotesIds = [...new Set(items.map(item => item.lote._id.toString()))];
         const lotes = await LotesRepository.getLotes2({ ids: lotesIds }, { session });
-        const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({ ids: [items[0].contenedor] }, { session });
 
         for (let i = 0; i < items.length; i++) {
 
@@ -138,9 +133,7 @@ class ProcesoService {
                     [`salidaExportacion.porCalibre.${calibre}.cajas`]: Number(-cajas)
                 },
             }
-            if (have_lote_GGN_export(loteDocument, contenedor[0],)) {
-                query.$inc.kilosGGN = - kilos
-            }
+
             await LotesRepository.actualizar_lote(
                 { _id: loteDocument._id },
                 query,
@@ -229,7 +222,7 @@ class ProcesoService {
         }
 
         // Actualizar contenedor con pallets modificados
-        const contenedor = await ContenedoresRepository.actualizar_contenedor(
+        await ContenedoresRepository.actualizar_contenedor(
             { _id: itemPallet.contenedor },
             {
                 // $set: { [`pallets.${pallet}`]: palletsModificados[pallet] },
@@ -240,9 +233,9 @@ class ProcesoService {
 
         await registrarPasoLog(logContext.logId, "ProcesoService.restarItem_contenedor", "Completado");
 
-        return { itemPallet, contenedor, kilos };
+        return { itemPallet, kilos };
     }
-    static async restarItem_lote(itemPallet, kilos, cajas, contenedor, logContext, session) {
+    static async restarItem_lote(itemPallet, kilos, cajas, logContext, session) {
 
         const lote = await LotesRepository.getLotes2({ ids: [itemPallet.lote] }, { session });
         if (checkFinalizadoLote(lote[0])) {
@@ -262,12 +255,6 @@ class ProcesoService {
                 [`salidaExportacion.porCalibre.${calibre}.cajas`]: Number(-cajas)
             },
         }
-        // si se restan los kilos ggn
-        const GGN = have_lote_GGN_export(lote, contenedor)
-        if (GGN) {
-            query.$inc.kilosGGN = - kilos
-        }
-
         await LotesRepository.actualizar_lote(
             { _id: lote[0]._id },
             query,
@@ -486,134 +473,143 @@ class ProcesoService {
                 logId, "modificarLoteEliminarItemdesktopListaEmpaque", "Completado", `cajas eliminadas: ${palletSeleccionado.cajas}, kilos: ${kilos}, lote: ${palletSeleccionado.lote}`);
 
     }
-    static async modificarPalletModificarItemsListaEmpaque(palletsModificados, copiaPallet, pallet, seleccion, calidad, calibre, tipoCaja, _id, action, user, logID = null, session) {
+    static async modificarPalletModificarItemsListaEmpaque(itemsPallet, data, action, user, logID = null, session) {
 
-        for (let i = 0; i < seleccion.length; i++) {
-            const palletSeleccionado = palletsModificados[pallet].EF1[seleccion[i]];
-            Object.assign(palletSeleccionado, { calidad, calibre, tipoCaja });
-        }
+        const { calidad, tipoCaja, calibre } = data
+        const newItemsPallet = []
 
-        // Actualizar contenedor con pallets modificados
-        await ContenedoresRepository.actualizar_contenedor(
-            { _id },
-            { pallets: palletsModificados },
-            { session }
-        );
+        for (let i = 0; i < itemsPallet.length; i++) {
 
-        // Registrar modificación
-        await RecordModificacionesRepository.post_record_contenedor_modification(
-            action,
-            user,
-            {
-                modelo: "Contenedor",
-                documentoId: _id,
-                descripcion: `Actualización pallet ${pallet}, posición ${seleccion}`,
-            },
-            copiaPallet[pallet].EF1,
-            palletsModificados[pallet].EF1,
-            { pallet, seleccion },
-            { session }
-        );
-
-        if (logID) {
-            await registrarPasoLog(logID, "modificarPalletModificarItemsListaEmpaque", "Completado", `se modificaron los items seleccionados en el pallet ${pallet}`);
-        }
-
-
-    }
-    static async modificarLotesModificarItemsListaEmpaque(
-        lotes, copiaPallet, palletsModificados, seleccion, pallet, contenedor, logID = null, session
-    ) {
-        // Helper: saca el multiplicador de "12x-4,5" -> 4.5
-        const parseMult = (tipoCaja) => {
-            if (!tipoCaja || typeof tipoCaja !== "string") return 0;
-            const parts = tipoCaja.split("-");
-            if (parts.length < 2) return 0;
-            const n = parseFloat(parts[1].replace(",", "."));
-            return Number.isFinite(n) ? n : 0;
-        };
-
-        const contId = contenedor && contenedor[0] && contenedor[0]._id;
-        if (!contId) throw new Error("contenedor inválido");
-
-        // Mapa para evitar findIndex por iteración
-        const lotesById = new Map(lotes.map(l => [String(l._id), l]));
-
-        const updates = [];
-
-        for (const sel of seleccion) {
-            const oldItem = copiaPallet?.[pallet]?.EF1?.[sel];
-            const newItem = palletsModificados?.[pallet]?.EF1?.[sel];
-            if (!oldItem || !newItem) continue;
-
-            if (oldItem.tipoCaja === newItem.tipoCaja && oldItem.calidad === newItem.calidad) {
-                continue;
+            if (checkFinalizadoLote(itemsPallet[i].lote)) {
+                throw new ProcessError(400, `El lote ${itemsPallet[i].lote.enf} ya se encuentra finalizado, no se puede modificar`);
             }
+            const newKg = (itemsPallet[i].cajas || 0) * parseMultTipoCaja(tipoCaja);
+            const delta = newKg - itemsPallet[i].kilos;
 
-            const oldKg = (oldItem.cajas || 0) * parseMult(oldItem.tipoCaja);
-            const newKg = (newItem.cajas || 0) * parseMult(newItem.tipoCaja);
-            const delta = newKg - oldKg;
-            if (!delta) continue;
+            let updateLote = {
+                $inc: {
+                    kilosProcesados: delta,
+                    "salidaExportacion.totalKilos": delta,
+                }
+            };
 
-            const query = { $inc: {} };
 
-            if (oldItem.calidad !== newItem.calidad) {
-                query.$inc[`exportacion.${contId}.${oldItem.calidad}`] = -oldKg;
-                query.$inc[`exportacion.${contId}.${newItem.calidad}`] = newKg;
+            if (itemsPallet[i].calidad !== calidad) {
+                updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.kilos`] = -itemsPallet[i].kilos;
+                updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.cajas`] = -itemsPallet[i].cajas;
+                updateLote.$inc[`salidaExportacion.porCalidad.${calidad}.kilos`] = newKg;
+                updateLote.$inc[`salidaExportacion.porCalidad.${calidad}.cajas`] = itemsPallet[i].cajas;;
             } else {
-                query.$inc[`exportacion.${contId}.${oldItem.calidad}`] = delta;
+                updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.kilos`] = delta;
             }
 
-            const loteDoc = lotesById.get(String(oldItem.lote));
-            if (loteDoc && have_lote_GGN_export(loteDoc, contenedor[0], oldItem)) {
-                query.$inc.kilosGGN = (query.$inc.kilosGGN || 0) + delta;
+            if (itemsPallet[i].calibre !== calibre) {
+                updateLote.$inc[`salidaExportacion.porCalibre.${itemsPallet[i].calibre}.kilos`] = -itemsPallet[i].kilos;
+                updateLote.$inc[`salidaExportacion.porCalibre.${itemsPallet[i].calibre}.cajas`] = -itemsPallet[i].cajas;
+                updateLote.$inc[`salidaExportacion.porCalibre.${calibre}.kilos`] = newKg;
+                updateLote.$inc[`salidaExportacion.porCalibre.${calibre}.cajas`] = itemsPallet[i].cajas;
+            } else {
+                updateLote.$inc[`salidaExportacion.porCalibre.${itemsPallet[i].calibre}.kilos`] = delta;
             }
 
-            updates.push(
-                LotesRepository.actualizar_lote(
-                    { _id: oldItem.lote },
-                    query,
-                    { user: logID && logID.user, action: logID && logID.action },
-                    { session }
-                )
+            const newItem = await ContenedoresRepository.actualizar_palletItem(
+                { _id: itemsPallet[i]._id },
+                { $set: { ...data, kilos: newKg } },
+                { user: user._id, action: action, session },
+
             );
-        }
 
-        if (updates.length === 0) {
-            if (logID) {
-                await registrarPasoLog(
-                    logID.logId,
-                    "modificarLotesModificarItemsListaEmpaque",
-                    "Sin cambios",
-                    `No hubo deltas en el pallet ${pallet}`
-                );
-            }
-            return;
-        }
+            LotesRepository.actualizar_lote(
+                { _id: itemsPallet[i].lote },
+                updateLote,
+                { user: user._id, action: action, session },
+            )
 
-        // Corre todos los updates en paralelo; para ≤10 está perfecto
-        await Promise.all(updates);
+            newItemsPallet.push(newItem)
+
+        }
 
         if (logID) {
-            await registrarPasoLog(
-                logID.logId,
-                "modificarLotesModificarItemsListaEmpaque",
-                "Completado",
-                `Se modificaron ${updates.length} item(s) del pallet ${pallet}`
-            );
+            await registrarPasoLog(logID, "modificarPalletModificarItemsListaEmpaque", "Completado", `se modificaron los items seleccionados`);
         }
+        return newItemsPallet
+
     }
+    // static async modificarLotesModificarItemsListaEmpaque(
+    //     itemPallet, data, logID = null, session
+    // ) {
 
-    static async modificarIndicadorExportacion(palletsModificados, copiaPallet, seleccion, pallet, logID = null, session) {
+
+    //     const updates = [];
+
+    //     for (const sel of seleccion) {
+    //         const oldItem = copiaPallet?.[pallet]?.EF1?.[sel];
+    //         const newItem = palletsModificados?.[pallet]?.EF1?.[sel];
+    //         if (!oldItem || !newItem) continue;
 
 
 
-        for (let i = 0; i < seleccion.length; i++) {
-            const itemSeleccionadoOld = copiaPallet[pallet].EF1[seleccion[i]];
-            const itemSeleccionadoNew = palletsModificados[pallet].EF1[seleccion[i]];
+    //         const oldKg = (oldItem.cajas || 0) * parseMult(oldItem.tipoCaja);
+    //         const newKg = (newItem.cajas || 0) * parseMult(newItem.tipoCaja);
+    //         const delta = newKg - oldKg;
+    //         if (!delta) continue;
+
+    //         const query = { $inc: {} };
+
+    //         if (oldItem.calidad !== newItem.calidad) {
+    //             query.$inc[`exportacion.${contId}.${oldItem.calidad}`] = -oldKg;
+    //             query.$inc[`exportacion.${contId}.${newItem.calidad}`] = newKg;
+    //         } else {
+    //             query.$inc[`exportacion.${contId}.${oldItem.calidad}`] = delta;
+    //         }
+
+    //         const loteDoc = lotesById.get(String(oldItem.lote));
+    //         if (loteDoc && have_lote_GGN_export(loteDoc, contenedor[0], oldItem)) {
+    //             query.$inc.kilosGGN = (query.$inc.kilosGGN || 0) + delta;
+    //         }
+
+    //         updates.push(
+    //             LotesRepository.actualizar_lote(
+    //                 { _id: oldItem.lote },
+    //                 query,
+    //                 { user: logID && logID.user, action: logID && logID.action },
+    //                 { session }
+    //             )
+    //         );
+    //     }
+
+    //     if (updates.length === 0) {
+    //         if (logID) {
+    //             await registrarPasoLog(
+    //                 logID.logId,
+    //                 "modificarLotesModificarItemsListaEmpaque",
+    //                 "Sin cambios",
+    //                 `No hubo deltas en el pallet ${pallet}`
+    //             );
+    //         }
+    //         return;
+    //     }
+
+    //     // Corre todos los updates en paralelo; para ≤10 está perfecto
+    //     await Promise.all(updates);
+
+    //     if (logID) {
+    //         await registrarPasoLog(
+    //             logID.logId,
+    //             "modificarLotesModificarItemsListaEmpaque",
+    //             "Completado",
+    //             `Se modificaron ${updates.length} item(s) del pallet ${pallet}`
+    //         );
+    //     }
+    // }
+
+    static async modificarIndicadorExportacion(newItemsPallet, oldItemsPallet, logID = null, session) {
+
+
+        for (let i = 0; i < newItemsPallet.length; i++) {
 
             //se mira si es fruta de hoy para restar de las variables del proceso
-            const fechaSeleccionada = getColombiaDate(itemSeleccionadoOld.fecha)
+            const fechaSeleccionada = getColombiaDate(newItemsPallet[i].fecha)
             const hoy = getColombiaDate()
 
             if (
@@ -621,46 +617,33 @@ class ProcesoService {
                 fechaSeleccionada.getMonth() === hoy.getMonth() &&
                 fechaSeleccionada.getDate() === hoy.getDate()
             ) {
-                if (itemSeleccionadoOld.tipoCaja !== itemSeleccionadoNew.tipoCaja ||
-                    itemSeleccionadoOld.calidad !== itemSeleccionadoNew.calidad ||
-                    itemSeleccionadoOld.calibre !== itemSeleccionadoNew.calibre
+                if (oldItemsPallet[i].tipoCaja !== newItemsPallet[i].tipoCaja ||
+                    oldItemsPallet[i].calidad !== newItemsPallet[i].calidad ||
+                    oldItemsPallet[i].calibre !== newItemsPallet[i].calibre
                 ) {
-                    const kilosOld = itemSeleccionadoOld.cajas * Number(itemSeleccionadoOld.tipoCaja.split("-")[1].replace(",", "."));
-                    const kilosNew = itemSeleccionadoNew.cajas * Number(itemSeleccionadoNew.tipoCaja.split("-")[1].replace(",", "."));
+                    const kilosOld = oldItemsPallet[i].kilos;
+                    const kilosNew = newItemsPallet[i].kilos;
 
                     await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
                         {
                             $inc: {
-                                [`kilos_exportacion.${itemSeleccionadoOld.tipoFruta}.${itemSeleccionadoOld.calidad}.${itemSeleccionadoOld.calibre}`]: Number(-kilosOld),
+                                [`kilos_exportacion.${oldItemsPallet[i].tipoFruta}.${oldItemsPallet[i].calidad._id}.${oldItemsPallet[i].calibre}`]: Number(-kilosOld),
                             }
                         }, session
                     );
                     await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
                         {
                             $inc: {
-                                [`kilos_exportacion.${itemSeleccionadoNew.tipoFruta}.${itemSeleccionadoNew.calidad}.${itemSeleccionadoNew.calibre}`]: Number(kilosNew),
+                                [`kilos_exportacion.${newItemsPallet[i].tipoFruta}.${newItemsPallet[i].calidad._id}.${newItemsPallet[i].calibre}`]: Number(kilosNew),
                             }
                         }, session
                     );
-                    // VariablesDelSistema.sumarMetricaSimpleDirect(
-                    //     `exportacion:${itemSeleccionadoOld.tipoFruta}:${itemSeleccionadoOld.calidad}`,
-                    //     itemSeleccionadoOld.calibre,
-                    //     -kilosOld,
-                    //     multi
-                    // );
-                    // VariablesDelSistema.sumarMetricaSimpleDirect(
-                    //     `exportacion:${itemSeleccionadoNew.tipoFruta}:${itemSeleccionadoNew.calidad}`,
-                    //     itemSeleccionadoNew.calibre,
-                    //     kilosNew,
-                    //     multi
-                    // );
-                    // comandosEnviados += 2
                 }
             }
         }
 
         if (logID) {
-            await registrarPasoLog(logID, "modificarIndicadorExportacion", "Completado", `se modificaron los lotes de los items seleccionados en el pallet ${pallet}`);
+            await registrarPasoLog(logID, "modificarIndicadorExportacion", "Completado", `se modificaron los lotes de los items seleccionados`);
         }
 
     }

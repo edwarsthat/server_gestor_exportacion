@@ -131,6 +131,7 @@ export const defineLotes = async (conn, AuditLog) => {
   }, { _id: false });
 
   const salidaExportacionSchema = new Schema({
+    kilosGGN: { type: Number, default: 0 },
     totalKilos: { type: Number, default: 0 },
     totalCajas: { type: Number, default: 0 },
     porCalidad: [{ calidadId: mongoose.Types.ObjectId, kilos: Number, cajas: Number }],
@@ -174,7 +175,6 @@ export const defineLotes = async (conn, AuditLog) => {
     kilos: Number,
     kilosReprocesados: { type: Number, default: 0 },
     kilosVaciados: { type: Number, default: 0 },
-    kilosGGN: { type: Number, default: 0 },
     kilosProcesados: { type: Number, default: 0 },
     numeroPrecintos: Number,
     numeroRemision: String,

@@ -22,10 +22,9 @@ import { registrarPasoLog } from "./helper/logs.js";
 import { dataRepository } from "./data.js";
 import { TiposFruta } from "../store/TipoFruta.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
-import mongoose, { Types } from "mongoose";
+import mongoose from "mongoose";
 import { ContenedoresService } from "../services/contenedores.js";
 import { CuartosFrios } from "../store/CuartosFrios.js";
-import { parseMultTipoCaja } from "../services/helpers/contenedores.js";
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ErrorInventarioLogicHandlers } from "./utils/errorsHandlers.js";
 import config from "../../src/config/index.js";
@@ -745,29 +744,24 @@ export class InventariosRepository {
 
             await session.withTransaction(async () => {
                 InventariosValidations.put_inventarios_pallet_eviarCuartoFrio().parse(req.data.data);
-                const { seleccion, cuartoFrio, items } = req.data.data;
+                const { seleccion, cuartoFrio } = req.data.data;
                 let tipoFrutaObj = {}
                 let operation = "";
+                const idsLimpios = []
+
+                const items = await ContenedoresRepository.getItemsPallets({ ids: seleccion });
 
                 for (const item of items) {
-                    const { cajas, tipoCaja, tipoFruta } = item;
-                    const mult = parseMultTipoCaja(tipoCaja);
+                    idsLimpios.push(item._id);
+                    const { cajas, tipoCaja, tipoFruta, kilos } = item;
                     if (!tipoFrutaObj[`totalFruta.${tipoFruta}.cajas`]) tipoFrutaObj[`totalFruta.${tipoFruta}.cajas`] = 0;
                     if (!tipoFrutaObj[`totalFruta.${tipoFruta}.kilos`]) tipoFrutaObj[`totalFruta.${tipoFruta}.kilos`] = 0;
 
                     tipoFrutaObj[`totalFruta.${tipoFruta}.cajas`] += Number.isFinite(cajas) && cajas > 0 ? cajas : 0;
-                    tipoFrutaObj[`totalFruta.${tipoFruta}.kilos`] += (Number.isFinite(cajas) && cajas > 0 ? cajas : 0) * mult;
+                    tipoFrutaObj[`totalFruta.${tipoFruta}.kilos`] += (Number.isFinite(kilos) && kilos > 0 ? kilos : 0);
                     operation += `${cajas} cajas de ${tipoCaja}, `
                 }
 
-                const idsLimpios = Array.isArray(seleccion)
-                    ? [...new Set(
-                        seleccion
-                            .filter(Boolean)
-                            .map(x => Types.ObjectId.isValid(x) ? new Types.ObjectId(x) : null)
-                            .filter(Boolean)
-                    )]
-                    : [];
 
                 await CuartosFrios.actualizar_cuartoFrio(
                     { _id: cuartoFrio },

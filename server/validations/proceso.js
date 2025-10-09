@@ -70,9 +70,7 @@ export class ProcesoValidations {
     }
     static async put_proceso_aplicaciones_listaEmpaque_modificarItems() {
         return z.object({
-            _id: z.string().regex(/^[0-9a-fA-F]{24}$/),
-            pallet: z.number().int().nonnegative(),
-            seleccion: z.array(z.number().int().nonnegative()),
+            seleccion: z.array(z.string().min(1)),
             data: z.object({
                 calibre: safeString(),
                 calidad: safeString(),
