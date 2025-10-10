@@ -29,6 +29,7 @@ import { db } from "../../DB/mongoDB/config/init.js";
 import { ErrorInventarioLogicHandlers } from "./utils/errorsHandlers.js";
 import config from "../../src/config/index.js";
 import { IndicadoresAPIRepository } from "./IndicadoresAPI.js";
+import { CrearDocumentosRepository } from "../services/crearDocumentos.js";
 
 
 export class InventariosRepository {
@@ -1230,13 +1231,12 @@ export class InventariosRepository {
             const { data } = req;
             const { page } = data
             const resultsPerPage = 25;
-            const contenedores = await ContenedoresRepository.getContenedores({
+            const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
                 select: {
                     infoContenedor: 1,
                     __v: 1,
-                    pallets: 1,
                     numeroContenedor: 1
                 },
                 query: {
@@ -1244,6 +1244,78 @@ export class InventariosRepository {
                 }
             })
             return contenedores
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_inventarios_historiales_listasDeEmpaque_itemPallets(req) {
+        try {
+            const { contenedor } = req.data
+            const pallets = await ContenedoresRepository.getItemsPallets({
+                query: { contenedor: contenedor },
+                populate:
+                    [
+                        { path: 'calidad', select: 'nombre descripcion' },
+                        { path: 'pallet', select: 'numeroPallet' },
+                        { path: 'contenedor', select: 'numeroContenedor infoContenedor' },
+                        { path: 'tipoFruta', select: 'tipoFruta' },
+                        {
+                            path: 'lote',
+                            select: 'enf predio finalizado GGN',
+                            populate: {
+                                path: 'predio',
+                                select: 'PREDIO GGN ICA',
+
+                            }
+                        }
+                    ]
+
+            });
+            return pallets
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_inventarios_historiales_listaDeEmpaque_crearDocumento(req) {
+        try {
+            const { contenedor } = req.data
+            const contenedorData = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                query: { _id: contenedor },
+                select: { infoContenedor: 1, __v: 1, numeroContenedor: 1 }
+            });
+            const itemsCont = await ContenedoresRepository.getItemsPallets({
+                query: { contenedor: contenedor },
+                populate:
+                    [
+                        { path: 'calidad', select: 'nombre descripcion' },
+                        { path: 'pallet', select: 'numeroPallet' },
+                        { path: 'contenedor', select: 'numeroContenedor infoContenedor' },
+                        { path: 'tipoFruta', select: 'tipoFruta' },
+                        {
+                            path: 'lote',
+                            select: 'enf predio finalizado GGN',
+                            populate: {
+                                path: 'predio',
+                                select: 'PREDIO GGN ICA',
+                            }
+                        }
+                    ]
+            })
+
+            const buffer = await CrearDocumentosRepository.crear_listas_de_empaque(contenedorData, itemsCont)
+            const base64 = buffer.toString('base64');
+
+            return {
+                file: base64,
+                filename: `lista_empaque_${req.data.cont.numeroContenedor}_${Date.now()}.xlsx`,
+                mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            }
         } catch (err) {
             if (err.status === 523) {
                 throw err

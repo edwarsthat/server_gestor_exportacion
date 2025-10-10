@@ -64,6 +64,7 @@ const permisos_generales = new Set([
 
     "get_proceso_aplicaciones_listaEmpaque_pallets",
     "get_proceso_aplicaciones_listaEmpaque_itemsPallet",
+    "get_inventarios_historiales_listasDeEmpaque_itemPallets",
     //seriales
     "get_data_EF8",
     "get_data_EF1",

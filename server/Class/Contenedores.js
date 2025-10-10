@@ -228,6 +228,7 @@ export class ContenedoresRepository {
             populate = [
                 { path: 'calidad', select: 'nombre descripcion' },
                 { path: 'pallet', select: 'numeroPallet' },
+                { path: 'contenedor', select: 'numeroContenedor' },
                 { path: 'tipoFruta', select: 'tipoFruta' },
                 {
                     path: 'lote',
@@ -239,7 +240,7 @@ export class ContenedoresRepository {
                     }
                 }
             ],
-            limit = 50,
+            limit = "all",
             skip = 0,
         } = options;
         try {

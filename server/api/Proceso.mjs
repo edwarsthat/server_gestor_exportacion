@@ -17,8 +17,6 @@ import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones
 import { ProcesoValidations } from "../validations/proceso.js";
 import { ProcesoService } from "../services/proceso.js";
 import { RedisRepository } from "../Class/RedisData.js";
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { checkFinalizadoLote } from "./utils/lotesFunctions.js";
@@ -26,6 +24,8 @@ import { getColombiaDate } from "./utils/fechas.js";
 import { db } from "../../DB/mongoDB/config/init.js";
 import { IndicadoresAPIRepository } from "./IndicadoresAPI.js";
 import { ErrorProcesoLogicHandlers } from "./utils/errorsHandlers.js";
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

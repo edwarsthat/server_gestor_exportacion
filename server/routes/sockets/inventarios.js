@@ -221,6 +221,14 @@ export const apiSocketInventarios = {
         const response = await InventariosRepository.get_inventarios_historiales_numeroRegistros_cuartosFrios(data)
         return successResponseRoutes(response)
     },
+    get_inventarios_historiales_listasDeEmpaque_itemPallets: async (data) => {
+        const response = await InventariosRepository.get_inventarios_historiales_listasDeEmpaque_itemPallets(data)
+        return successResponseRoutes(response)
+    },
+    get_inventarios_historiales_listaDeEmpaque_crearDocumento: async (data) => {
+        const response = await InventariosRepository.get_inventarios_historiales_listaDeEmpaque_crearDocumento(data)
+        return successResponseRoutes(response)
+    },
     //#endregion
     //#region ingresoInventario
     get_inventarios_ingresos_ef: async () => {

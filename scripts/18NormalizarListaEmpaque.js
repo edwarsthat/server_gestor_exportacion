@@ -3,7 +3,7 @@
  * @description Conexión directa a la base de datos 'proceso' sin Mongoose
  */
 
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import config from '../src/config/index.js';
 
 const { MONGODB_PROCESO } = config;
@@ -67,10 +67,27 @@ async function closeConnection() {
 async function crearPallet(palletsCollection, dataPallet) {
     try {
         const resultado = await palletsCollection.insertOne(dataPallet);
-        console.log(`✅ Pallet creado con ID: ${resultado.insertedId}`);
+        console.log(`   ✅ Pallet creado con ID: ${resultado.insertedId}`);
         return resultado;
     } catch (error) {
-        console.error(`❌ Error creando pallet:`, error.message);
+        console.error(`   ❌ Error creando pallet:`, error.message);
+        throw error;
+    }
+}
+
+/**
+ * Crea un nuevo item de pallet en la colección itempallets
+ * @async
+ * @param {import('mongodb').Collection} itemPalletsCollection - Colección de itempallets
+ * @param {Object} dataItem - Datos del item a crear
+ * @returns {Promise<import('mongodb').InsertOneResult>} Resultado de la inserción
+ */
+async function crearItemPallet(itemPalletsCollection, dataItem) {
+    try {
+        const resultado = await itemPalletsCollection.insertOne(dataItem);
+        return resultado;
+    } catch (error) {
+        console.error(`      ❌ Error creando item pallet:`, error.message);
         throw error;
     }
 }
@@ -85,14 +102,14 @@ async function main() {
         // Ejemplo: obtener una colección
         const collection = database.collection('contenedors');
         const pallets = database.collection('pallets');
-        const itemPallets = database.collection('itemPallets');
+        const itemPallets = database.collection('itempallets');
 
         // Ejemplo: hacer una consulta
         const documentos = await collection.find({}).toArray();
         console.log('📄 Documentos encontrados:', documentos.length);
 
-        let palletsCreados = 0;
         let palletsOmitidos = 0;
+        let itemsCreados = 0;
 
         for (const doc of documentos) {
             console.log(`\n🔍 Procesando contenedor: ${doc._id}`);
@@ -122,7 +139,7 @@ async function main() {
                 }
 
                 const nuevoPallet = {
-                    numeroPallet: i,
+                    numeroPallet: i + 1,
                     contenedor: doc._id,
                     tipoCaja: pallet.settings?.tipoCaja || null,
                     calidad: pallet.settings?.calidad || null,
@@ -137,18 +154,44 @@ async function main() {
                     createdAt: new Date(),
                 };
 
-                for (let j = 0; j < (pallet.EF1.length || 0); j++) {
-                    const item = pallet.EF1[j];
-                }
-
                 // Crear el pallet en la colección
-                await crearPallet(pallets, nuevoPallet);
-                palletsCreados++;
+                const resultadoPallet = await crearPallet(pallets, nuevoPallet);
+                const palletId = resultadoPallet.insertedId;
+
+                // Procesar todos los items del pallet (EF1, EF2, EF3, etc.)
+                for (const key in pallet) {
+                    // Solo procesar las propiedades que sean arrays de items (EF1, EF2, etc.)
+                    if (key.startsWith('EF') && Array.isArray(pallet[key])) {
+                        for (const item of pallet[key]) {
+                            if (!item || !item.lote) continue;
+
+                            const nuevoItem = {
+                                pallet: palletId,
+                                contenedor: new ObjectId(doc._id),
+                                lote: new ObjectId(item.lote),
+                                tipoCaja: item.tipoCaja || null,
+                                calibre: item.calibre || null,
+                                calidad: item.calidad ? new ObjectId(item.calidad) : null,
+                                fecha: item.fecha ? new Date(item.fecha) : new Date(),
+                                tipoFruta: item.tipoFruta ? new ObjectId(item.tipoFruta) : null,
+                                SISPAP: item.SISPAP || false,
+                                GGN: item.GGN || false,
+                                user: "66c4ca415aa7698f46d4aa12",
+                                cajas: item.cajas || 0,
+                                kilos: item.tipoCaja.split('-')[1] ? parseFloat(item.tipoCaja.split('-')[1]) * (item.cajas || 0) : 0,
+                            };
+
+                            await crearItemPallet(itemPallets, nuevoItem);
+                            itemsCreados++;
+                        }
+                    }
+                }
+                
             }
         }
-
+        
         console.log('\n📊 Resumen del proceso:');
-        console.log(`   ✅ Pallets creados: ${palletsCreados}`);
+        console.log(`   📦 Items de pallet creados: ${itemsCreados}`);
         console.log(`   ⚠️  Pallets omitidos: ${palletsOmitidos}`);
         console.log('✅ Proceso completado exitosamente');
 
