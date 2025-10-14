@@ -20,6 +20,7 @@ import { db } from "../../DB/mongoDB/config/init.js";
 import { Seriales } from "../Class/Seriales.js";
 import { dataRepository } from "./data.js";
 import { ErrorComercialLogicHandlers } from "./utils/errorsHandlers.js";
+import mongoose from "mongoose";
 const { EMAIL, PASSWORD_EMAIL } = config;
 
 
@@ -931,8 +932,8 @@ export class ComercialRepository {
                 filter = filtroPorSemana(filtro.fechaInicio, filtro.fechaFin, filter);
 
                 // Asigna tipoFruta si existe
-                if (filtro.tipoFruta2 && Object.keys(filtro.tipoFruta2).length > 0) {
-                    filter.tipoFruta = filtro.tipoFruta2;
+                if (filtro.tipoFruta) {
+                    filter.tipoFruta = filtro.tipoFruta;
                 }
                 // Asigna proveedor en filter.predios si existe
                 if (filtro.proveedor) {
@@ -969,29 +970,72 @@ export class ComercialRepository {
             }
             //por tipo de fruta
             if (tipoFruta !== '') {
-                query["infoContenedor.tipoFruta"] = tipoFruta
+                query["infoContenedor.tipoFruta"] = {  $in: [new mongoose.Types.ObjectId('686e6b450c34dee069775d4e')]}
             }
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'infoContenedor.fechaCreacion')
 
-            const cont = await ContenedoresRepository.getContenedores({
+            console.log(query)
+            const cont = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: query,
                 select: {
                     numeroContenedor: 1,
                     infoContenedor: 1,
-                    pallets: 1
                 },
-                limit: 'all'
+                limit: 0
             });
-            const { dataPallets, lotes } = await ComercialService.get_lotes_de_contenedores(cont);
-            const dataPalletsLength = Object.keys(dataPallets).length
-            if (dataPalletsLength === 1) {
-                return await ComercialService.poner_precio_lotes(lotes, dataPallets);
-            } else if (dataPalletsLength > 1) {
-                return await ComercialService.poner_precio_contenedores(lotes, dataPallets);
+            console.log(cont.length)
+            const calidades = new Set()
+            const contenedoresIds = []
+            for (const n of cont) {
+                n.infoContenedor.calidad.filter(c => c).forEach(c => calidades.add(c.toString()))
+                contenedoresIds.push(n._id)
+            }
+            const calidadesArray = Array.from(calidades);
+            const palletItems = await ContenedoresRepository.getItemsPallets(
+                {
+                    query: {
+                        contenedor: contenedoresIds, calidad: {
+                            '$exists': true,
+                            '$ne': null
+                        }
+                    },
+                    populate: [
+                        { path: 'calidad', select: 'nombre descripcion' },
+                        {
+                            path: 'lote',
+                            select: 'enf predio finalizado GGN',
+                            populate: [
+                                {
+                                    path: 'predio',
+                                    select: 'PREDIO GGN'
+                                },
+                                {
+                                    path: "precio"
+                                }
+
+                            ]
+                        },
+                        {
+                            path: 'contenedor',
+                            select: 'numeroContenedor infoContenedor',
+                            populate: [
+                                {
+                                    path: 'infoContenedor.clienteInfo',
+                                    select: 'CLIENTE'
+                                },
+
+                            ]
+                        },
+                    ]
+                });
+
+            if (cont.length === 1) {
+                return await ComercialService.poner_precio_lotes(palletItems, calidadesArray);
+            } else {
+                return await ComercialService.poner_precio_contenedores(palletItems, calidadesArray);
             }
 
-            return false
         } catch (error) {
             if (error.status === 522) {
                 throw error

@@ -1,5 +1,5 @@
 import { registrarPasoLog } from "../api/helper/logs.js";
-import { ContenedoresRepository } from "../Class/Contenedores.js";
+import { calcularTotalDescarte } from "./helpers/lotes.js";
 
 export class IndicadoresService {
     static async procesar_metrica_hash(metrica, log) {
@@ -33,73 +33,35 @@ export class IndicadoresService {
         });
         return result;
     }
-    static async obtener_calibres_lotes_contenedores(lotes) {
-        const contenedoresSet = new Set();
+    static async obtener_totales_lotes(lotes){
+            let totalKilosIngreso = 0;
+            let totalKilosProcesados = 0;
+            let totalKilosExportacion = 0;
+            let totalKilosDescarte = 0;
+
+            for (const lote of lotes) {
+                totalKilosIngreso += lote?.kilos || 0;
+                totalKilosProcesados += lote?.kilosVaciados || 0;
+                totalKilosExportacion += lote?.salidaExportacion?.totalKilos || 0;
+                totalKilosDescarte += (lote?.descarteLavado ? calcularTotalDescarte(lote.descarteLavado) : 0);
+                totalKilosDescarte += (lote?.descarteEncerado ? calcularTotalDescarte(lote.descarteEncerado) : 0);
+                totalKilosDescarte += lote?.frutaNacioinal || 0;
+            }
+            return { totalKilosIngreso, totalKilosProcesados, totalKilosExportacion, totalKilosDescarte };
+    }
+    static async obtener_calibres_calidades(itemPallets){
         const calibres = new Set();
-        const lotesDict = {};
-        const calibresTotal = {};
-
-        for (const lote of lotes) {
-            if (Array.isArray(lote.contenedores) && lote.contenedores.length) {
-                lote.contenedores.forEach(c => contenedoresSet.add(c));
-                if (!lotesDict[lote._id]) lotesDict[lote._id] = {};
-            }
-        }
-        const contenedoresIds = Array.from(contenedoresSet);
-
-        const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes_strict({ ids: contenedoresIds, select: { pallets: 1 }, limit: 'all' });
-
-        for (const contenedor of contenedores) {
-            if (!Array.isArray(contenedor.pallets)) continue;
-            for (const pallet of contenedor.pallets) {
-                if (!pallet?.EF1) continue;
-                for (const item of pallet.EF1) {
-                    const { lote, calibre, tipoCaja, cajas } = item;
-                    const calibreLimpio = String(calibre).trim();
-
-                    if (!lotesDict[lote]) continue;
-                    if (!lotesDict[lote][calibreLimpio]) {
-                        lotesDict[lote][calibreLimpio] = { kilos: 0, cajas: 0 };
-                    }
-                    if(!calibresTotal[calibreLimpio]) {
-                        calibresTotal[calibreLimpio] = { kilos: 0};
-                    }
-
-                    // Calcular kilos (split seguro)
-                    let kilos = 0;
-                    if (typeof tipoCaja === "string" && tipoCaja.includes("-")) {
-                        const [, pesoCaja] = tipoCaja.split("-");
-                        kilos = Number(pesoCaja) * Number(cajas);
-                    }
-                    
-                    lotesDict[lote][calibreLimpio].kilos += kilos;
-                    lotesDict[lote][calibreLimpio].cajas += Number(cajas);
-                    calibresTotal[calibreLimpio].kilos += kilos;
-                    calibres.add(String(calibre).trim());
-                }
-            }
-
-        }
-        console.log("Calibres totales:", calibresTotal);
-        return { lotesDict, calibres: Array.from(calibres), calibresTotal }
-    }
-    static async obtenerExportacionLotes(lotes){
-        let totalKilosExportacion = 0;
-        const calidades = {}
         const calidadesIds = new Set();
-        for (const lote of lotes){
-            if(!lote.exportacion || Object.keys(lote.exportacion).length === 0) continue;
-            for(const cont of Object.values(lote.exportacion)){
-                if(Object.keys(cont).length === 0) continue;
-                for(const [calidad, kilos] of Object.entries(cont)){
-                    if(!calidades[calidad]) calidades[calidad] = 0;
-                    calidades[calidad] += kilos;
-                    totalKilosExportacion += kilos;
-                    calidadesIds.add(calidad);
+        for(const item of itemPallets){
+            if(item._id){
+                calibres.add(item._id);
+                if(item.kilosPorCalidad){
+                    const keys = Object.keys(item.kilosPorCalidad);
+                    console.log(keys);
+                    keys.forEach(k => calidadesIds.add(k));
                 }
             }
         }
-        return { totalKilosExportacion, calidades, calidadesIds: Array.from(calidadesIds) };
+        return { calibres: Array.from(calibres), calidadesIds: Array.from(calidadesIds) };
     }
-
 }

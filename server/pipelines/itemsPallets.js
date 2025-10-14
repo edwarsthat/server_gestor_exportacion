@@ -1,13 +1,13 @@
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 
 export class ItemsPalletsPipeline {
-    static async getPipelineItemsContenedorsCalibres(contIds) {
+    static getPipelineItemsCalibres(elemento, ids) {
         try {
             return [
                 {
                     '$match':
                     {
-                        'contenedor': { '$in': contIds }
+                        [elemento]: { '$in': ids }
                     }
                 },
                 {
@@ -17,12 +17,10 @@ export class ItemsPalletsPipeline {
                             '$ne': null
                         }
                     }
-                }, {
+                },
+                {
                     '$group': {
-                        '_id': {
-                            'calibre': '$calibre',
-                            'calidad': '$calidad'
-                        },
+                        '_id': '$calibre',
                         'totalKilos': {
                             '$sum': '$kilos'
                         },
@@ -31,97 +29,45 @@ export class ItemsPalletsPipeline {
                         },
                         'cantidadItems': {
                             '$sum': 1
-                        },
-                        'contenedor': {
-                            '$addToSet': '$contenedor'
                         }
                     }
-                }, {
+                },
+            ]
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error pipline itemsPallets ${err.message}`);
+        }
+    }
+    static getPipelineItemsCalidad(elemento, ids) {
+        try {
+            return [
+                {
+                    '$match':
+                    {
+                        [elemento]: { '$in': ids }
+                    }
+                },
+                {
+                    '$match': {
+                        'calidad': {
+                            '$exists': true,
+                            '$ne': null
+                        }
+                    }
+                },
+                {
                     '$group': {
-                        '_id': '$_id.calibre',
+                        '_id': '$calidad',
                         'totalKilos': {
-                            '$sum': '$totalKilos'
+                            '$sum': '$kilos'
                         },
                         'totalCajas': {
-                            '$sum': '$totalCajas'
+                            '$sum': '$cajas'
                         },
                         'cantidadItems': {
-                            '$sum': '$cantidadItems'
-                        },
-                        'contenedores': {
-                            '$push': '$contenedor'
-                        },
-                        'kilosPorCalidad': {
-                            '$push': {
-                                'k': {
-                                    '$toString': '$_id.calidad'
-                                },
-                                'v': '$totalKilos'
-                            }
-                        },
-                        'cajasPorCalidad': {
-                            '$push': {
-                                'k': {
-                                    '$toString': '$_id.calidad'
-                                },
-                                'v': '$totalCajas'
-                            }
-                        }
-                    }
-                }, {
-                    '$project': {
-                        '_id': 1,
-                        'totalKilos': 1,
-                        'totalCajas': 1,
-                        'cantidadItems': 1,
-                        'kilosPorCalidad': {
-                            '$arrayToObject': '$kilosPorCalidad'
-                        },
-                        'cajasPorCalidad': {
-                            '$arrayToObject': '$cajasPorCalidad'
-                        },
-                        'contenedores': {
-                            '$reduce': {
-                                'input': '$contenedores',
-                                'initialValue': [],
-                                'in': {
-                                    '$setUnion': [
-                                        '$$value', '$$this'
-                                    ]
-                                }
-                            }
+                            '$sum': 1
                         }
                     }
                 },
-                {
-                    $lookup: {
-                        from: "contenedors", // Nombre de tu colección de contenedores
-                        localField: "contenedores",
-                        foreignField: "_id",
-                        // Pipeline interno para proyectar solo campos específicos
-                        pipeline: [
-                            {
-                                $project: {
-                                    _id: 1,
-                                    numeroContenedor: 1,
-                                }
-                            }
-                        ],
-                        as: "contenedoresData"
-                    }
-                },
-                {
-                    $project: {
-                        _id: 1,
-                        totalKilos: 1,
-                        totalCajas: 1,
-                        cantidadItems: 1,
-                        kilosPorCalidad: 1,
-                        cajasPorCalidad: 1,
-                        contenedoresIds: "$contenedores", // IDs originales
-                        contenedores: "$contenedoresData" // Datos completos
-                    }
-                }
             ]
         } catch (err) {
             throw new ConnectionDBError(522, `Error pipline itemsPallets ${err.message}`);

@@ -2,7 +2,6 @@ import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PutError } from "../../Error/ConnectionErrors.js";
 import { ProcessError } from "../../Error/ProcessError.js";
 import { oobtener_datos_lotes_to_listaEmpaque } from "../mobile/utils/contenedoresLotes.js";
-import { ItemsPalletsPipeline } from "../pipelines/itemsPallets.js";
 import fs from 'fs';
 import path from 'path';
 import { registrarPasoLog } from "../api/helper/logs.js";
@@ -237,7 +236,7 @@ export class ContenedoresRepository {
                     populate: {
                         path: 'predio',
                         select: 'PREDIO GGN',
-                        
+
                     }
                 }
             ],
@@ -425,9 +424,8 @@ export class ContenedoresRepository {
             throw new ProcessError(525, `Error obteniendo la imagen ${err.message}`);
         }
     }
-    static async getPipelineItemsContenedorsCalibres(contIds) {
+    static async getPipelineItemsContenedorsCalibres(pipeline) {
         try {
-            const pipeline = await ItemsPalletsPipeline.getPipelineItemsContenedorsCalibres(contIds);
             const result = await db.itemPallet.aggregate(pipeline).exec();
             return result;
         } catch (err) {

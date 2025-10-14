@@ -67,7 +67,7 @@ async function deshidratacionLote(data) {
         throw new ProcessError(602, `${err.type} ${err.message}`);
     }
 }
-function descarteTotal(descarte) {
+export function descarteTotal(descarte) {
     /**
      * Funcion que suma los descartes 
      * 

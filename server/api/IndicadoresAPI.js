@@ -11,7 +11,8 @@ import { IndicadoresService } from "../services/indicadores.js";
 import { IndicadoresValidations } from "../validations/indicadores.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { filtroFechaInicioFin } from "./utils/filtros.js";
-import { TiposFruta } from '../store/TipoFruta.js';
+import { ContenedoresRepository } from '../Class/Contenedores.js';
+import { ItemsPalletsPipeline } from '../pipelines/itemsPallets.js';
 
 export class IndicadoresAPIRepository {
     //#region operaciones
@@ -127,7 +128,7 @@ export class IndicadoresAPIRepository {
     static async put_indicadores_actualizar_indicador(update, session = null) {
         try {
             const indicador = await IndicadoresRepository.actualizar_indicador(
-                {},                       
+                {},
                 update,
                 {
                     sort: { fecha_creacion: -1, _id: -1 },
@@ -238,7 +239,7 @@ export class IndicadoresAPIRepository {
 
         try {
             const { filtro } = req.data
-            const { fechaInicio, fechaFin, proveedor, tipoFruta2 } = filtro || {};
+            const { fechaInicio, fechaFin, proveedor, tipoFruta } = filtro || {};
 
             // Validar que la fechaInicio no sea anterior al 2025
             if (fechaInicio) {
@@ -250,41 +251,39 @@ export class IndicadoresAPIRepository {
 
             let query = { predio: new Mongoose.Types.ObjectId(proveedor) }
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_creacion')
-
-            if (tipoFruta2?._id) {
-                const arrTipoFruta = await TiposFruta.get_tiposFruta({ ids: [tipoFruta2._id] });
-                query.tipoFruta = arrTipoFruta[0].tipoFruta;
+            if (tipoFruta !== '') {
+                query.tipoFruta = tipoFruta;
             }
-            const [
-                lotes,
-                {
-                    totalKilosIngreso = 0,
-                    totalKilosProcesados = 0,
 
-                    totalKilosDescarte = 0,
-                } = {}
-            ] = await Promise.all([
-                LotesRepository.get_Lotes_strict({ query: query, limit: 'all' }),
-                LotesRepository.eficiencia_lote_calidad(query),
-            ])
+            const lotes = await LotesRepository.getLotes2({
+                query: query,
+                limit: 'all',
+                select: { 
+                    _id: 1,
+                    enf: 1,
+                    kilos: 1, 
+                    kilosVaciados: 1,
+                    descarteLavado: 1, 
+                    descarteEncerado: 1, 
+                    frutaNacional: 1, 
+                    directoNacional: 1,
+                    salidaExportacion: 1, 
+                }
+            });
 
+            const lotesIds = lotes.map(l => l._id)
+            const queryCalibre = ItemsPalletsPipeline.getPipelineItemsCalibres("lote", lotesIds)
+            const queryCalidad = ItemsPalletsPipeline.getPipelineItemsCalidad("lote", lotesIds)
+            const dataLotesCalibres = await ContenedoresRepository.getPipelineItemsContenedorsCalibres(queryCalibre)
+            const dataLotesCalidades = await ContenedoresRepository.getPipelineItemsContenedorsCalibres(queryCalidad)
 
-
-            const [{ calibres, calibresTotal }, { totalKilosExportacion, calidades, calidadesIds }] = await Promise.all([
-                IndicadoresService.obtener_calibres_lotes_contenedores(lotes),
-                IndicadoresService.obtenerExportacionLotes(lotes)
-            ])
-
+            const totales = await IndicadoresService.obtener_totales_lotes(lotes)
+            // const calibresYCalidades = await IndicadoresService.obtener_calibres_calidades(dataLotes)
             return {
-                lotes,
-                totalKilosIngreso,
-                totalKilosProcesados,
-                totalKilosExportacion,
-                totalKilosDescarte,
-                calibres,
-                calibresTotal,
-                calidades,
-                calidadesIds
+                ...totales,
+                dataLotesCalibres,
+                dataLotesCalidades,
+                lotes: lotes
             };
 
         } catch (err) {
