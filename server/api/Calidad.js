@@ -9,7 +9,6 @@ import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import fs from 'fs';
 import path from 'path';
 import { filtroFechaInicioFin } from "./utils/filtros.js";
-import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
 import { CalidadValidationsRepository } from "../validations/calidad.js";
 import { z } from "zod";
 
@@ -166,20 +165,20 @@ export class CalidadRepository {
                     precio: 1,
                     aprobacionComercial: 1,
                     aprobacionProduccion: 1,
-                    exportacionDetallada: 1,
-                    exportacion: 1,
                     numeroRemision: 1,
                     observaciones: 1,
                     flag_is_favorita: 1,
                     flag_balin_free: 1,
                     fecha_finalizado_proceso: 1,
-                    fecha_aprobacion_comercial: 1
+                    fecha_aprobacion_comercial: 1,
+                    salidaExportacion: 1,
 
                 },
                 limit: resultsPerPage,
                 populate: [
                     { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' },
                     { path: 'precio', select: 'exportacion frutaNacional descarte' },
+                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
                     { path: 'tipoFruta' },
                 ]
 
@@ -221,9 +220,8 @@ export class CalidadRepository {
         try {
             const { data: datos } = req
             const { data } = datos
-            const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                ids: data,
-                select: { infoContenedor: 1, numeroContenedor: 1 }
+            const response = await ContenedoresRepository.getItemsPallets({
+                query: { lote: { $in: data } },
             });
             return response
         } catch (err) {
@@ -259,34 +257,31 @@ export class CalidadRepository {
             })
             const logData = { logId: log._id, user: user, action: "put_calidad_informes_loteFinalizarInforme" }
 
-            const { _id, contenedores } = req.data
-
+            const { _id } = req.data
 
             let query = {
                 aprobacionProduccion: true,
                 fecha_finalizado_proceso: new Date()
             }
-            if (contenedores && contenedores.length > 0) {
+            const lote = await LotesRepository.getLotes2({ ids: [_id] })
+            if (lote[0].salidaExportacion && lote[0].salidaExportacion.totalKilos > 0) {
 
-                const [lote, contenedoresData] = await Promise.all([
-                    LotesRepository.getLotes2({ ids: [_id] }),
-                    ContenedoresRepository.get_Contenedores_sin_lotes({
-                        ids: contenedores,
-                        select: { infoContenedor: 1, numeroContenedor: 1, pallets: 1 }
-                    })
-                ])
+                const itemPallets = await ContenedoresRepository.getItemsPallets({
+                    query: { contenedor: { $in: lote[0].salidaExportacion.contenedores } }
+                })
+
                 await registrarPasoLog(logData.logId, "getLotes2 AND get_Contenedores_sin_lotes", "Completado");
-
-
-                const [exportacion] = await Promise.all([
-                    CalidadService.obtenerExportacionContenedores(contenedoresData, _id, logData),
-                    CalidadService.borrarContenedoresCalidadesCero(lote[0], logData)
-                ]);
-
-                await CalidadService.compararExportacionLoteVsListaEmpaque(exportacion, lote[0], query, logData)
+                const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id, logData);
+                console.log({ exportacion, kilosGGN })
+                if (lote[0].salidaExportacion.totalKilos !== exportacion) {
+                    throw new CalidadLogicError(400, `La suma de kilos en los contenedores (${exportacion} kg) no coincide con los kilos del lote (${lote[0].salidaExportacion.totalKilos} kg). Verifique por favor.`);
+                }
+                if (kilosGGN > 0) {
+                    query['salidaExportacion.kilosGGN'] = kilosGGN;
+                }
 
             }
-
+            console.log(query)
             await LotesRepository.actualizar_lote(
                 { _id },
                 query,
@@ -329,20 +324,6 @@ export class CalidadRepository {
                     }
                 },
                 { new: true, user: user, action: action }
-            );
-
-            // Registrar modificación Contenedores
-            await RecordModificacionesRepository.post_record_contenedor_modification(
-                action,
-                user,
-                {
-                    modelo: "Lotes",
-                    documentoId: _id,
-                    descripcion: `Se dio aprobacion comercial`,
-                },
-                lote[0],
-                newLote,
-                { _id, action }
             );
 
             return true

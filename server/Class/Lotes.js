@@ -4,22 +4,6 @@ import { ProcessError } from "../../Error/ProcessError.js";
 import fs from 'fs';
 import { registrarPasoLog } from "../api/helper/logs.js";
 
-const camposDescartes = [
-    "descarteLavado.balin",
-    "descarteLavado.descarteGeneral",
-    "descarteLavado.descompuesta",
-    "descarteLavado.hojas",
-    "descarteLavado.pareja",
-    "descarteLavado.piel",
-    "descarteEncerado.balin",
-    "descarteEncerado.descarteGeneral",
-    "descarteEncerado.descompuesta",
-    "descarteEncerado.extra",
-    "descarteEncerado.pareja",
-    "descarteEncerado.suelo",
-    "frutaNacional"
-];
-
 export class LotesRepository {
     static async addLote(data, user, opts = {}) {
         const { session } = opts;
@@ -339,28 +323,15 @@ export class LotesRepository {
                 // 2. Calcula los campos mágicos
                 const get = (campo) => documento[campo] ?? 0;
 
-                const frutaNacional = get('frutaNacional');
-                const directoNacional = get('directoNacional');
+                const kilosProcesados = get('kilosProcesados');
                 const kilos = get('kilos');
                 const kilosVaciados = get('kilosVaciados');
-
-                const exportacionPlano = documento.exportacion?.toObject?.() || null;
-
-                const sumarDescartes = (desc) =>
-                    desc ? Object.values(desc._doc ? desc._doc : desc).reduce((acu, item) => acu + (item ?? 0), 0) : 0;
-
-                const totalDescarteLavado = sumarDescartes(documento.descarteLavado);
-                const totalDescarteEncerado = sumarDescartes(documento.descarteEncerado);
+                const exportacionTotal = get("salidaExportacion.totalKilos") || 0;
 
                 let deshidratacion = 100;
                 let rendimiento = 0;
                 if (kilos > 0) {
-
-                    const exportacionTotal = exportacionPlano ? Object.values(exportacionPlano).reduce((acu1, contenedor) =>
-                        acu1 += Object.values(contenedor).reduce((acu2, item) => acu2 += (item ?? 0), 0), 0) : 0;
-
-                    const total = exportacionTotal + totalDescarteLavado + totalDescarteEncerado + frutaNacional + directoNacional;
-                    deshidratacion = 100 - (total * 100) / kilos;
+                    deshidratacion = 100 - (kilosProcesados * 100) / kilos;
                     rendimiento = kilosVaciados === 0 ? 0 : ((exportacionTotal * 100) / kilosVaciados);
                 }
 
@@ -403,61 +374,7 @@ export class LotesRepository {
             throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
         }
     }
-    static async eficiencia_lote(query) {
-        try {
-            const result = await db.Lotes.aggregate([
-                { $match: query },
-                {
-                    $group: {
-                        _id: null,
-                        totalKilosIngreso: { $sum: { $ifNull: ["$kilos", 0] } },
-                        totalKilosProcesados: { $sum: { $ifNull: ["$kilosVaciados", 0] } },
-                        totalKilosExportacion: {
-                            $sum: {
-                                $add: [
-                                    { $ifNull: ["$calidad1", 0] },
-                                    { $ifNull: ["$calidad15", 0] },
-                                    { $ifNull: ["$calidad2", 0] }
-                                ]
-                            }
-                        },
-                        totalKilosDescarte: {
-                            $sum: {
-                                $add: camposDescartes.map(campo => ({ $ifNull: [`$${campo}`, 0] }))
-                            }
-                        }
-                    }
-                }
-            ]);
-            return result[0]
 
-        } catch (err) {
-            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
-        }
-    }
-    static async eficiencia_lote_calidad(query) {
-        try {
-            const result = await db.Lotes.aggregate([
-                { $match: query },
-                {
-                    $group: {
-                        _id: null,
-                        totalKilosIngreso: { $sum: { $ifNull: ["$kilos", 0] } },
-                        totalKilosProcesados: { $sum: { $ifNull: ["$kilosVaciados", 0] } },
-                        totalKilosDescarte: {
-                            $sum: {
-                                $add: camposDescartes.map(campo => ({ $ifNull: [`$${campo}`, 0] }))
-                            }
-                        }
-                    }
-                }
-            ]);
-            return result[0]
-
-        } catch (err) {
-            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
-        }
-    }
 
     //#region EF8
     static async crear_lote_EF8(data, user, logId = null) {
@@ -486,7 +403,7 @@ export class LotesRepository {
             sort = { fecha_creacion: -1 },
             limit = 50,
             skip = 0,
-            populate = [{ path: 'predio', select: 'PREDIO' }]
+            populate = [{ path: 'predio', select: 'PREDIO' }, { path: 'tipoFruta', select: 'tipoFruta' }]
         } = options;
         try {
             let lotesQuery = { ...query };

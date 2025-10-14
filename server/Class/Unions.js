@@ -14,11 +14,17 @@ export class UnionsRepository {
             },
             {
                 $lookup: {
-                    from: "tipofrutas",          
-                    localField: "tipoFruta",     
+                    from: "tipofrutas",
+                    localField: "tipoFruta",
                     foreignField: "_id",
-                    as: "tipoFrutaInfo",
+                    as: "tipoFruta",
                 },
+            },
+            {
+                $unwind: {
+                    path: "$tipoFruta",
+                    preserveNullAndEmptyArrays: true
+                }
             },
             {
                 $unionWith: {
@@ -32,11 +38,25 @@ export class UnionsRepository {
                                 foreignField: "_id",
                                 as: "predioInfo"
                             }
-                        }
+                        },
+                        {
+                            $lookup: {
+                                from: "tipofrutas",
+                                localField: "tipoFruta",
+                                foreignField: "_id",
+                                as: "tipoFruta",
+                            },
+                        },
+                        {
+                            $unwind: {
+                                path: "$tipoFruta",
+                                preserveNullAndEmptyArrays: true
+                            }
+                        },
                     ]
                 }
             },
-            { $sort: { createdAt: -1 } },
+            { $sort: { createdAt: -1, fecha_creacion: -1 } },
         ]).exec();
 
     }

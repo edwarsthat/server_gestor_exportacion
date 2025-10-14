@@ -8,7 +8,6 @@ export function parseMultTipoCaja(tipoCaja) {
     const n = Number(tipoCaja.slice(i + 1).replace(',', '.'));
     return Number.isFinite(n) && n > 0 ? n : 0;
 }
-
 export const normalizeEF1Item = (it) => ({
     ...it,
     pallet: toObjId(it.pallet, 'pallet'),
@@ -23,9 +22,8 @@ export const normalizeEF1Item = (it) => ({
     user: it.user || 'system',
     kilo: it.kilos ? Number(it.kilos) : 0,
 });
-
 export function isPaisesCaribe(contenedor) {
-    if (contenedor.infoContenedor && contenedor.infoContenedor.clienteInfo) {
+    if (contenedor.infoContenedor && contenedor.infoContenedor.clienteInfo && contenedor.infoContenedor.clienteInfo.PAIS_DESTINO) {
         for (const pais of contenedor.infoContenedor.clienteInfo.PAIS_DESTINO) {
             if (PAISES_DEL_CARIBE.includes(pais)) {
                 return false;
@@ -34,7 +32,6 @@ export function isPaisesCaribe(contenedor) {
     }
     return true;
 }
-
 export function resumenCalidad(itemsPallet, calidad = "") {
     const out = {}
     let total = 0;
@@ -45,7 +42,7 @@ export function resumenCalidad(itemsPallet, calidad = "") {
 
         if (item.pallet.numeroPallet > totalPallets) totalPallets = item.pallet.numeroPallet
         total += item.cajas
-        if (item.calidad._id === calidad || calidad === "") {
+        if (item.calidad._id.toString() === calidad._id.toString() || calidad === "") {
             if (!out[item.calibre]) {
                 out[item.calibre] = {
                     cantidad: 0,
@@ -61,4 +58,34 @@ export function resumenCalidad(itemsPallet, calidad = "") {
         out[item].porcentage = (out[item].cantidad * 100) / total
     })
     return out
+}
+export function resumenPredios(itemsPallet) {
+    const out = {};
+    let totalCajas = 0;
+    let pesoTotal = 0;
+    for (const item of itemsPallet) {
+        const id = item.lote?.predio._id || "SIN PREDIO";
+        const predio = item.lote?.predio.PREDIO || "SIN PREDIO";
+        const ICA = item.lote?.predio.ICA.code || "SIN SIPAP";
+        if (predio && ICA && id) {
+            if (!out[id]) {
+                out[id] = {
+                    predio: predio,
+                    cajas: 0,
+                    peso: 0,
+                    pesoBruto: 0,
+                    ICA: ICA,
+                    SISPAP: false
+                };
+            }
+            out[id].cajas += item.cajas
+            out[id].peso += item.kilos
+            out[id].SISPAP = item.SISPAP || false
+
+        }
+        totalCajas += item.cajas
+        pesoTotal += item.kilos
+    };
+
+    return [out, totalCajas, pesoTotal];
 }

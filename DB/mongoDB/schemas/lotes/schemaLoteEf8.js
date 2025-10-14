@@ -21,7 +21,7 @@ export const defineLoteEf8 = async (conn, AuditLog) => {
         predio: { type: Schema.Types.ObjectId, ref: 'Proveedor' },
         precio: { type: Schema.Types.ObjectId, ref: 'precio' },
         promedio: Number,
-        tipoFruta: { type: String, required: true },
+        tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas' },
         user: { type: String, required: true },
         registroCanastillas: { type: Schema.Types.ObjectId, ref: 'canastilla' },
         createdAt: { type: Date, default: () => new Date() },

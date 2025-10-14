@@ -1,4 +1,4 @@
-import { isPaisesCaribe, resumenCalidad } from "./helpers/contenedores.js";
+import { isPaisesCaribe, resumenCalidad, resumenPredios } from "./helpers/contenedores.js";
 import ExcelJS from "exceljs";
 import path from "path";
 import { dirname } from 'path';
@@ -12,6 +12,11 @@ const __dirname = dirname(__filename);
 
 export class CrearDocumentosRepository {
     static async crear_listas_de_empaque(cont, itemsPallet) {
+        if (!Array.isArray(itemsPallet)) {
+            console.error('itemsPallet no es un array:', itemsPallet);
+            throw new Error('itemsPallet debe ser un array');
+        }
+
         const isNotCaribe = isPaisesCaribe(cont);
         // const proveedores = data.proveedores
         const fuente = 16
@@ -21,6 +26,7 @@ export class CrearDocumentosRepository {
         let row1Cells;
         let row2cells;
         let row3Cells;
+
 
         if (cont.infoContenedor.clienteInfo._id === "659dbd9a347a42d89929340e") {
             row1Cells = [
@@ -212,14 +218,14 @@ export class CrearDocumentosRepository {
             if (cont.infoContenedor.clienteInfo._id === "659dbd9a347a42d89929340e") {
                 const newRow = worksheet.insertRow(row, [
                     String(item.pallet.numeroPallet) + String(cont.numeroContenedor),
-                    formatearFecha(item.fecha, true),
+                    formatearFecha(item.fecha instanceof Date ? item.fecha.toISOString() : item.fecha, true),
                     labelListaEmpaque[item.tipoFruta.tipoFruta],
                     "COL-" + mostrarKilose(item) + (item.tipoFruta === 'Limon' ? 'Limes' : 'Oranges') + item.calibre + "ct",
                     mostrarKilose(item),
-                    isNotCaribe ? item.calidad.descripcion : "Caribe",
+                    isNotCaribe ? (item?.calidad?.descripcion || "N/A") : "Caribe",
                     item.calibre,
                     item.cajas,
-                    item.lote.SISPAP ? item.lote.ICA.code : 'Sin SISPAP',
+                    item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
                     item.GGN ? item.lote.predio.GGN.code : "N/A",
                     item.GGN ? item.lote.predio.GGN.fecha : "N/A",
                 ])
@@ -230,13 +236,13 @@ export class CrearDocumentosRepository {
             } else {
                 const newRow = worksheet.insertRow(row, [
                     String(item.pallet.numeroPallet) + String(cont.numeroContenedor),
-                    formatearFecha(item.fecha, true),
+                    formatearFecha(item.fecha instanceof Date ? item.fecha.toISOString() : item.fecha, true),
                     labelListaEmpaque[item.tipoFruta.tipoFruta],
                     mostrarKilose(item),
-                    isNotCaribe ? item.calidad.descripcion : "Caribe",
+                    isNotCaribe ? (item?.calidad?.descripcion || "N/A") : "Caribe",
                     item.calibre,
                     item.cajas,
-                    item.lote.SISPAP ? item.lote.ICA.code : 'Sin SISPAP',
+                    item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
                     item.GGN ? item.lote.predio.GGN.code : "N/A",
                     item.GGN ? item.lote.predio.GGN.fecha : "N/A",
                 ])
@@ -300,30 +306,8 @@ export class CrearDocumentosRepository {
             //head
             worksheet.insertRow(row, [
                 "SUMMARY CATEGORY",
-                isNotCaribe ? calidad.calidad.descripccion : "Caribe",
+                isNotCaribe ? (calidad?.descripcion || "N/A") : "Caribe",
 
-            ])
-            for (let i = 1; i <= 4; i++) {
-                const cell = worksheet.getCell(row, i);
-                cell.font = { bold: true, size: fuente };
-                cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FF5FD991' }
-                }
-                cell.border = styleNormalCell
-            }
-
-            row++;
-            worksheet.getRow(row).height = alto_celda
-
-            //columnas
-            worksheet.insertRow(row, [
-                "SIZE",
-                "QTY",
-                "N.PALLETS",
-                "% PERCENTAGE",
             ])
             for (let i = 1; i <= 4; i++) {
                 const cell = worksheet.getCell(row, i);
@@ -339,8 +323,29 @@ export class CrearDocumentosRepository {
             row++;
             worksheet.getRow(row).height = alto_celda
 
-            const resumen = isNotCaribe ? resumenCalidad(cont, calidad) : resumenCalidad(cont)
+            //columnas
+            worksheet.insertRow(row, [
+                "SIZE",
+                "QTY",
+                "N.PALLETS",
+                "% PERCENTAGE",
+            ])
 
+            for (let i = 1; i <= 4; i++) {
+                const cell = worksheet.getCell(row, i);
+                cell.font = { bold: true, size: fuente };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF5FD991' }
+                }
+                cell.border = styleNormalCell
+            }
+            row++;
+            worksheet.getRow(row).height = alto_celda
+
+            const resumen = isNotCaribe ? resumenCalidad(itemsPallet, calidad) : resumenCalidad(itemsPallet)
             //datos
             Object.entries(resumen).forEach(([key, value]) => {
                 worksheet.insertRow(row, [
@@ -404,8 +409,190 @@ export class CrearDocumentosRepository {
 
         }
 
-        const buffer = await workbook.xlsx.writeFile();
+        const buffer = await workbook.xlsx.writeBuffer();
         return buffer
 
+    }
+    static async crear_reporte_predios_contenedor(cont, itemsPallet) {
+        const tabla = resumenPredios(itemsPallet)
+        const predios = tabla[0]
+        const totalCajas = tabla[1]
+        const totalKilos = tabla[2]
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Reporte Predios")
+
+        const styleNormalCell = {
+            top: { style: 'medium' },
+            left: { style: 'medium' },
+            bottom: { style: 'medium' },
+            right: { style: 'medium' }
+        };
+
+        //? logo
+        const logo = worksheet.getCell('A1')
+        logo.border = styleNormalCell
+        logo.alignment = { horizontal: 'center', vertical: 'middle' }
+
+        worksheet.getColumn(1).width = 20
+        worksheet.getRow(1).height = 80
+
+        const imagePath = path.resolve(
+            __dirname,
+            '..',
+            '..',
+            'public',
+            'assets',
+            'logoCelifrut.webp'
+        )
+        const imageId = workbook.addImage({
+            filename: imagePath,
+            extension: 'png'
+        })
+
+        worksheet.addImage(imageId, {
+            tl: { col: 0, row: 0 },
+            ext: { width: 100, height: 100 }
+        })
+
+        //? titulo
+        worksheet.getColumn(2).width = 20
+        worksheet.getColumn(4).width = 20
+        worksheet.getColumn(5).width = 30
+
+        const titulo = worksheet.getCell('B1')
+        titulo.value = "Reporte Predio ICA"
+        worksheet.mergeCells('B1:D1');
+        titulo.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+        titulo.font = { size: 24, bold: true }
+        titulo.border = styleNormalCell
+
+        //?codigo version
+        const version = worksheet.getCell('E1')
+        version.value = `Codigo: PC-CAL-FOR-04
+Versión: 03 
+Fecha: 17 Oct 2020`
+        version.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+        version.font = { size: 12 }
+        version.border = styleNormalCell
+
+        //?cliente info
+        const clienteLabel = worksheet.getCell('A2');
+        clienteLabel.value = "CLIENTE:"
+        clienteLabel.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+        clienteLabel.font = { size: 18, bold: true }
+        clienteLabel.border = styleNormalCell
+
+        const nombrCliente = worksheet.getCell('B2')
+        worksheet.mergeCells('B2:E2');
+        nombrCliente.value = cont.infoContenedor.clienteInfo.CLIENTE
+        nombrCliente.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+        nombrCliente.font = { size: 18, bold: true }
+        nombrCliente.border = styleNormalCell
+
+        const fechaLabel = worksheet.getCell('A3')
+        fechaLabel.value = "FECHA:"
+        fechaLabel.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+        fechaLabel.font = { size: 18, bold: true }
+        fechaLabel.border = styleNormalCell
+
+        const fechaCont = worksheet.getCell('B3')
+        worksheet.mergeCells('B3:E3');
+        fechaCont.value = new Date(cont.infoContenedor.fechaFinalizado).toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        })
+        fechaCont.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+        fechaCont.font = { size: 18, bold: true }
+        fechaCont.border = styleNormalCell
+
+        //? los headers de la tabla
+        worksheet.insertRow(4, ['Predio', 'Codigo ICA', 'N° Cajas', 'Peso Neto', 'Peso Bruto'])
+        for (let i = 1; i <= 5; i++) {
+            const cell = worksheet.getCell(4, i);
+            cell.font = { bold: true, size: 12 };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF5FD991' }
+            }
+            cell.border = styleNormalCell
+        }
+
+        console.log("entra qui 1")
+        //? los datos de los predios
+        Object.values(predios).forEach((value, index) => {
+            worksheet.insertRow(5 + index, [
+                value.predio,
+                value.SISPAP ? value.ICA : 'Sin SISPAP',
+                value.cajas,
+                value.peso,
+                value.peso + (0.85 * value.cajas)
+            ])
+
+            for (let i = 1; i <= 5; i++) {
+                const cell = worksheet.getCell(5 + index, i);
+                cell.font = { size: 12 };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = styleNormalCell
+            }
+        })
+        console.log("entra qui 2")
+
+        //? total 
+        let ultimaFila = Object.keys(predios).length;
+        const totalLabel = worksheet.getCell(ultimaFila + 5, 1);
+        worksheet.mergeCells(`A${ultimaFila + 5}:B${ultimaFila + 5}`);
+        totalLabel.value = "TOTAL:"
+        totalLabel.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+        totalLabel.font = { size: 14, bold: true }
+        totalLabel.border = styleNormalCell
+        totalLabel.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF5FD991' }
+        }
+
+        const totalCajascell = worksheet.getCell(ultimaFila + 5, 3);
+        totalCajascell.value = totalCajas
+        totalCajascell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+        totalCajascell.font = { size: 14, bold: true }
+        totalCajascell.border = styleNormalCell
+        totalCajascell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF5FD991' }
+        }
+
+        const totalKilosCell = worksheet.getCell(ultimaFila + 5, 4);
+        totalKilosCell.value = totalKilos
+        totalKilosCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+        totalKilosCell.font = { size: 14, bold: true }
+        totalKilosCell.border = styleNormalCell
+        totalKilosCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF5FD991' }
+        }
+
+        const totalKilosNetos = worksheet.getCell(ultimaFila + 5, 5);
+        totalKilosNetos.value = totalKilos + (totalCajas * 0.85)
+        totalKilosNetos.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+        totalKilosNetos.font = { size: 14, bold: true }
+        totalKilosNetos.border = styleNormalCell
+        totalKilosNetos.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF5FD991' }
+        }
+
+
+        console.log("entra qui 3")
+
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        return buffer
     }
 }

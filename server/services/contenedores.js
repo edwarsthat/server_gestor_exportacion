@@ -1,124 +1,110 @@
-import { parseMultTipoCaja } from "./helpers/contenedores.js";
 
 export class ContenedoresService {
-    static obtenerResumen = (cont) => {
-        if (!Array.isArray(cont) || cont.length === 0) return {};
+    static obtenerResumen = (itemPallets) => {
+        if (!Array.isArray(itemPallets) || itemPallets.length === 0) return {};
 
         const resumen = Object.create(null);
         const TotalCalidades = new Set()
         const TotalCalibres = new Set()
 
-        for (const { pallets = [] } of cont) {
-            for (const pallet of pallets) {
+        for (const item of itemPallets) {
+            const calibreSet = new Set()
+            const calidadSet = new Set()
+            const tipoFrutaSet = new Set()
+            const fechaSet = new Set()
 
-                const EF1 = Array.isArray(pallet?.EF1) ? pallet.EF1 : [];
-                const calibreSet = new Set()
-                const calidadSet = new Set()
-                const tipoFrutaSet = new Set()
-                const fechaSet = new Set()
+            const { tipoFruta, calibre, calidad, cajas = 0, fecha: rawFecha, kilos = 0 } = item ?? {};
+            const fecha = rawFecha
+                ? new Date(rawFecha).toISOString().slice(0, 10)
+                : null;
 
-                for (const item of EF1) {
-                    const { tipoFruta, calibre, calidad, tipoCaja, cajas = 0, fecha: rawFecha } = item ?? {};
-
-                    const fecha = rawFecha
-                        ? new Date(rawFecha).toISOString().slice(0, 10)
-                        : null;
-                    const mult = parseMultTipoCaja(tipoCaja);
-                    if (mult <= 0) continue; // sin peso, no aporta
-                    const kilos = cajas * mult;
-
-                    //se crea el elemento en el objeto
-                    if (!resumen[tipoFruta]) {
-                        resumen[tipoFruta] = {
-                            totalCajas: 0,
-                            totalKilos: 0
-                        }
-                    }
-                    if (!resumen[tipoFruta][fecha]) {
-                        resumen[tipoFruta][fecha] = {
-                            calibre: {},
-                            calidad: {},
-                        }
-                    }
-
-
-                    if (!resumen[tipoFruta][fecha].calibre[calibre]) {
-                        resumen[tipoFruta][fecha].calibre[calibre] = {
-                            cajas: 0,
-                            cajasP: 0,
-                            kilos: 0,
-                            kilosP: 0,
-                            pallet: 0,
-                            calidad: {}
-                        }
-                    }
-                    if (!resumen[tipoFruta][fecha].calidad[calidad]) {
-                        resumen[tipoFruta][fecha].calidad[calidad] = {
-                            cajas: 0,
-                            cajasP: 0,
-                            kilos: 0,
-                            kilosP: 0,
-                            pallet: 0
-                        }
-                    }
-                    if (!resumen[tipoFruta][fecha].calibre[calibre].calidad[calidad]) {
-                        resumen[tipoFruta][fecha].calibre[calibre].calidad[calidad] = {
-                            cajas: 0,
-                            kilos: 0,
-                            kilosP: 0,
-                            pallet: 0
-                        }
-                    }
-
-                    //si si hay peso
-                    if (kilos) {
-
-                        //lo kilos total
-                        //if si mira si solo se requieren los datos de hoy
-                        resumen[tipoFruta][fecha].calibre[calibre].kilos += kilos
-                        resumen[tipoFruta][fecha].calibre[calibre].cajas += cajas
-
-                        resumen[tipoFruta][fecha].calibre[calibre].calidad[calidad].kilos += kilos
-                        resumen[tipoFruta][fecha].calibre[calibre].calidad[calidad].cajas += cajas
-
-                        resumen[tipoFruta][fecha].calidad[calidad].kilos += kilos
-                        resumen[tipoFruta][fecha].calidad[calidad].cajas += cajas
-
-                        resumen[tipoFruta].totalCajas += cajas
-                        resumen[tipoFruta].totalKilos += kilos
-
-                    }
-                    calibreSet.add(calibre)
-                    calidadSet.add(calidad)
-                    tipoFrutaSet.add(tipoFruta)
-                    fechaSet.add(fecha)
-
-                    TotalCalidades.add(calidad)
-                    TotalCalibres.add(calibre)
+            //se crea el elemento en el objeto
+            if (!resumen[tipoFruta._id]) {
+                resumen[tipoFruta._id] = {
+                    totalCajas: 0,
+                    totalKilos: 0
                 }
+            }
+            if (!resumen[tipoFruta._id][fecha]) {
+                resumen[tipoFruta._id][fecha] = {
+                    calibre: {},
+                    calidad: {},
+                }
+            }
 
 
-                const arrTipoFruta = [...tipoFrutaSet]
-                const arrFecha = [...fechaSet]
+            if (!resumen[tipoFruta._id][fecha].calibre[calibre]) {
+                resumen[tipoFruta._id][fecha].calibre[calibre] = {
+                    cajas: 0,
+                    cajasP: 0,
+                    kilos: 0,
+                    kilosP: 0,
+                    pallet: 0,
+                    calidad: {}
+                }
+            }
+            if (!resumen[tipoFruta._id][fecha].calidad[calidad._id]) {
+                resumen[tipoFruta._id][fecha].calidad[calidad._id] = {
+                    cajas: 0,
+                    cajasP: 0,
+                    kilos: 0,
+                    kilosP: 0,
+                    pallet: 0
+                }
+            }
+            if (!resumen[tipoFruta._id][fecha].calibre[calibre].calidad[calidad._id]) {
+                resumen[tipoFruta._id][fecha].calibre[calibre].calidad[calidad._id] = {
+                    cajas: 0,
+                    kilos: 0,
+                    kilosP: 0,
+                    pallet: 0
+                }
+            }
 
-                arrTipoFruta.forEach(fruta => {
+            resumen[tipoFruta._id][fecha].calibre[calibre].kilos += kilos
+            resumen[tipoFruta._id][fecha].calibre[calibre].cajas += cajas
 
-                    arrFecha.forEach(fecha => {
-                        const arrCalibre = [...calibreSet]
-                        arrCalibre.forEach(cal => {
-                            if (resumen?.[fruta]?.[fecha]?.calibre?.[cal]) {
-                                resumen[fruta][fecha].calibre[cal].pallet += 1
-                            }
-                        })
-                        const arrCalidad = [...calidadSet]
-                        arrCalidad.forEach(cal => {
-                            if (resumen?.[fruta]?.[fecha]?.calidad?.[cal]) {
-                                resumen[fruta][fecha].calidad[cal].pallet += 1
-                            }
-                        })
+            resumen[tipoFruta._id][fecha].calibre[calibre].calidad[calidad._id].kilos += kilos
+            resumen[tipoFruta._id][fecha].calibre[calibre].calidad[calidad._id].cajas += cajas
+
+            resumen[tipoFruta._id][fecha].calidad[calidad._id].kilos += kilos
+            resumen[tipoFruta._id][fecha].calidad[calidad._id].cajas += cajas
+
+            resumen[tipoFruta._id].totalCajas += cajas
+            resumen[tipoFruta._id].totalKilos += kilos
+
+
+            calibreSet.add(calibre)
+            calidadSet.add(calidad._id)
+            tipoFrutaSet.add(tipoFruta._id)
+            fechaSet.add(fecha)
+
+            TotalCalidades.add(calidad._id)
+            TotalCalibres.add(calibre)
+
+
+
+            const arrTipoFruta = [...tipoFrutaSet]
+            const arrFecha = [...fechaSet]
+
+            arrTipoFruta.forEach(fruta => {
+
+                arrFecha.forEach(fecha => {
+                    const arrCalibre = [...calibreSet]
+                    arrCalibre.forEach(cal => {
+                        if (resumen?.[fruta]?.[fecha]?.calibre?.[cal]) {
+                            resumen[fruta][fecha].calibre[cal].pallet += 1
+                        }
+                    })
+                    const arrCalidad = [...calidadSet]
+                    arrCalidad.forEach(cal => {
+                        if (resumen?.[fruta]?.[fecha]?.calidad?.[cal]) {
+                            resumen[fruta][fecha].calidad[cal].pallet += 1
+                        }
                     })
                 })
-            }
+            })
+
         }
 
         Object.keys(resumen).forEach(tipoFruta => {
@@ -148,49 +134,43 @@ export class ContenedoresService {
         // console.log(resumen)
         return { resumen, totalCalidades: [...TotalCalidades], totalCalibres: [...TotalCalibres] };
     }
-    static obtenerResumenPredios = (cont) => {
+    static obtenerResumenPredios = (itemPallets) => {
         const predios = {}
-        cont.forEach(contenedor => {
-            contenedor.pallets.forEach(pallet => {
-                pallet.EF1.forEach(item => {
-                    if (item.lote?._id) {
+        for (const item of itemPallets) {
 
-                        if (!Object.prototype.hasOwnProperty.call(predios, item.lote._id)) {
-                            predios[item.lote._id] = {
-                                enf: item.lote.enf,
-                                predio: item.lote.predio,
-                                tipoFruta: item.tipoFruta
-                            }
-                            predios[item.lote._id].cont = {}
-                            predios[item.lote._id].calibres = {}
+            if (!predios[item.lote._id]) {
+                predios[item.lote._id] = {
+                    enf: item.lote.enf,
+                    predio: item.lote.predio,
+                    tipoFruta: item.tipoFruta._id
+                }
+                predios[item.lote._id].cont = {}
+                predios[item.lote._id].calibres = {}
 
-                        }
-                        if (!Object.prototype.hasOwnProperty.call(predios[item.lote._id].cont, contenedor._id)) {
-                            predios[item.lote._id].cont[contenedor._id] = {
-                                numero: contenedor.numeroContenedor,
-                                kilos: 0,
-                                cajas: 0
-                            }
-                        }
-                        if (!Object.prototype.hasOwnProperty.call(predios[item.lote._id].calibres, item.calibre)) {
-                            predios[item.lote._id].calibres[item.calibre] = {
-                                kilos: 0,
-                                cajas: 0
-                            }
-                        }
-                        if (item.tipoCaja !== null) {
-                            predios[item.lote._id].cont[contenedor._id].cajas += item.cajas
-                            predios[item.lote._id].calibres[item.calibre].cajas += item.cajas
+            }
+            if (!predios[item.lote._id].cont[item.contenedor._id]) {
+                predios[item.lote._id].cont[item.contenedor._id] = {
+                    numero: item.contenedor.numeroContenedor,
+                    kilos: 0,
+                    cajas: 0
+                }
+            }
+            if (!predios[item.lote._id].calibres[item.calibre]) {
+                predios[item.lote._id].calibres[item.calibre] = {
+                    kilos: 0,
+                    cajas: 0
+                }
+            }
+            if (item.tipoCaja !== null) {
+                predios[item.lote._id].cont[item.contenedor._id].cajas += item.cajas
+                predios[item.lote._id].calibres[item.calibre].cajas += item.cajas
 
-                            const mult = item.tipoCaja.split('-')[1].replace(",", ".")
-                            const kilos = item.cajas * Number(mult)
-                            predios[item.lote._id].cont[contenedor._id].kilos += kilos
-                            predios[item.lote._id].calibres[item.calibre].kilos += kilos
-                        }
-                    }
-                })
-            })
-        })
+                const kilos = item.kilos
+                predios[item.lote._id].cont[item.contenedor._id].kilos += kilos
+                predios[item.lote._id].calibres[item.calibre].kilos += kilos
+            }
+
+        }
         return predios
     }
 }

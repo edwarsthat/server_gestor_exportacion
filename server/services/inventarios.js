@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 import { InventariosLogicError } from "../../Error/logicLayerError.js";
-import { dataRepository } from "../api/data.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
 import { obtenerEstadoDesdeAccionCanastillasInventario } from "../api/utils/diccionarios.js";
 import { colombiaToUTC } from "../api/utils/fechas.js";
@@ -1013,7 +1012,6 @@ export class InventariosService {
             getAll: true
         })
 
-        const tipoFrutas = await dataRepository.get_data_tipoFruta2()
         const result = [];
         for (const lote of lotes) {
             // Haz el objeto plano primero
@@ -1024,10 +1022,7 @@ export class InventariosService {
             if (usuario) {
                 lotePlano.user = usuario.nombre + " " + usuario.apellido;
             }
-            const tipoFrutaFound = tipoFrutas.find(u => u._id.toString() === lotePlano.tipoFruta);
-            if (tipoFrutaFound) {
-                lotePlano.tipoFruta = tipoFrutaFound; // Ahora sí, sin miedo
-            }
+
             result.push(lotePlano);
         }
         return result;
@@ -1052,8 +1047,6 @@ export class InventariosService {
         const data = await UnionsRepository.obtenerUnionRecordLotesIngresoLoteEF8(query1, query2);
 
         const usersId = [];
-        const tipoFrutaId = [];
-
 
         for (const lote of data) {
             if (lote?.user) {
@@ -1079,9 +1072,7 @@ export class InventariosService {
             }
 
             lote.predio = lote.predioInfo[0] || {};
-            lote.tipoFruta = lote.tipoFrutaInfo[0] || {};
             delete lote.predioInfo;
-            delete lote.tipoFrutaInfo;
             result.push(lote);
         }
 

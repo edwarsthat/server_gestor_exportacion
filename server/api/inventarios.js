@@ -1284,12 +1284,26 @@ export class InventariosRepository {
     }
     static async get_inventarios_historiales_listaDeEmpaque_crearDocumento(req) {
         try {
-            const { contenedor } = req.data
+            const { contenedor, tipo } = req.data
             const contenedorData = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: { _id: contenedor },
-                select: { infoContenedor: 1, __v: 1, numeroContenedor: 1 }
+                select: { infoContenedor: 1, __v: 1, numeroContenedor: 1 },
+                populate: [
+                    {
+                        path: 'infoContenedor.clienteInfo',
+                        select: 'CLIENTE PAIS_DESTINO',
+                    },
+                    {
+                        path: 'infoContenedor.tipoFruta',
+                        select: 'tipoFruta',
+                    },
+                    {
+                        path: 'infoContenedor.calidad',
+                        select: 'nombre descripcion',
+                    },
+                ]
             });
-            const itemsCont = await ContenedoresRepository.getItemsPallets({
+            const itemsPallet = await ContenedoresRepository.getItemsPallets({
                 query: { contenedor: contenedor },
                 populate:
                     [
@@ -1307,14 +1321,25 @@ export class InventariosRepository {
                         }
                     ]
             })
+            let buffer
+            if (tipo === "listaEmpaque") {
+                buffer = await CrearDocumentosRepository.crear_listas_de_empaque(contenedorData[0], itemsPallet)
+                const base64 = buffer.toString('base64');
 
-            const buffer = await CrearDocumentosRepository.crear_listas_de_empaque(contenedorData, itemsCont)
-            const base64 = buffer.toString('base64');
+                return {
+                    file: base64,
+                    filename: `lista_empaque_${contenedorData[0].numeroContenedor}_${Date.now()}.xlsx`,
+                    mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            } else if (tipo === "reportePredios") {
+                buffer = await CrearDocumentosRepository.crear_reporte_predios_contenedor(contenedorData[0], itemsPallet)
+                const base64 = buffer.toString('base64');
 
-            return {
-                file: base64,
-                filename: `lista_empaque_${req.data.cont.numeroContenedor}_${Date.now()}.xlsx`,
-                mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                return {
+                    file: base64,
+                    filename: `reporte_predios_${contenedorData[0].numeroContenedor}_${Date.now()}.xlsx`,
+                    mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
             }
         } catch (err) {
             if (err.status === 523) {
@@ -1348,13 +1373,17 @@ export class InventariosRepository {
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'infoContenedor.fechaCreacion')
 
-            const cont = await ContenedoresRepository.getContenedores({
+            const cont = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: query
             });
+            const contIds = cont.map(c => c._id)
+            const itemPallets = await ContenedoresRepository.getItemsPallets({
+                query: { contenedor: { $in: contIds } },
+            })
 
             const [resumenContenedores, resumenPredios, numerosContenedores] = await Promise.all([
-                ContenedoresService.obtenerResumen(cont),
-                ContenedoresService.obtenerResumenPredios(cont),
+                ContenedoresService.obtenerResumen(itemPallets),
+                ContenedoresService.obtenerResumenPredios(itemPallets),
                 cont.map(contenedor => contenedor.numeroContenedor)
             ])
 
@@ -1470,7 +1499,7 @@ export class InventariosRepository {
                 fechaInicio,
                 proveedor,
                 tipoFecha,
-                tipoFruta2 = {}
+                tipoFruta
             } = data;
 
             let query = {}
@@ -1478,7 +1507,7 @@ export class InventariosRepository {
             if (tipoFecha === 'fecha_creacion') {
                 sort = { [`${tipoFecha}`]: -1 };
             }
-            if (tipoFruta2 && Object.keys(tipoFruta2).length > 0) query.tipoFruta = tipoFruta2;
+            if (tipoFruta) query.tipoFruta = tipoFruta;
             if (proveedor) query.predio = proveedor;
             if (GGN) query.GGN = GGN;
             if (EF) query.enf = EF;
@@ -1501,7 +1530,7 @@ export class InventariosRepository {
             const cont = [...contenedoresSet]
             let contenedores
             if (cont.length > 0) {
-                contenedores = await ContenedoresRepository.getContenedores({
+                contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
                     ids: cont,
                     select: { numeroContenedor: 1, pallets: 1 }
                 });
