@@ -34,9 +34,6 @@ class ProcesoService {
             throw new ProcessError(404, `No se encontró el contenedor con ID: ${ContenedorID}`);
         }
 
-        if (!contenedor[0].infoContenedor || !contenedor[0].pallets) {
-            throw new ProcessError(500, `El contenedor ${ContenedorID} no tiene la estructura de datos esperada`);
-        }
 
         //se obtiene el lote
         const lotes = await LotesRepository.getLotes2({

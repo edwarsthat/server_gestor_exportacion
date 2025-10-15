@@ -742,9 +742,9 @@ export class InventariosRepository {
             acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
         });
         try {
+            InventariosValidations.put_inventarios_pallet_eviarCuartoFrio().parse(req.data.data);
 
             await session.withTransaction(async () => {
-                InventariosValidations.put_inventarios_pallet_eviarCuartoFrio().parse(req.data.data);
                 const { seleccion, cuartoFrio } = req.data.data;
                 let tipoFrutaObj = {}
                 let operation = "";
@@ -755,11 +755,11 @@ export class InventariosRepository {
                 for (const item of items) {
                     idsLimpios.push(item._id);
                     const { cajas, tipoCaja, tipoFruta, kilos } = item;
-                    if (!tipoFrutaObj[`totalFruta.${tipoFruta}.cajas`]) tipoFrutaObj[`totalFruta.${tipoFruta}.cajas`] = 0;
-                    if (!tipoFrutaObj[`totalFruta.${tipoFruta}.kilos`]) tipoFrutaObj[`totalFruta.${tipoFruta}.kilos`] = 0;
+                    if (!tipoFrutaObj[`totalFruta.${tipoFruta._id}.cajas`]) tipoFrutaObj[`totalFruta.${tipoFruta._id}.cajas`] = 0;
+                    if (!tipoFrutaObj[`totalFruta.${tipoFruta._id}.kilos`]) tipoFrutaObj[`totalFruta.${tipoFruta._id}.kilos`] = 0;
 
-                    tipoFrutaObj[`totalFruta.${tipoFruta}.cajas`] += Number.isFinite(cajas) && cajas > 0 ? cajas : 0;
-                    tipoFrutaObj[`totalFruta.${tipoFruta}.kilos`] += (Number.isFinite(kilos) && kilos > 0 ? kilos : 0);
+                    tipoFrutaObj[`totalFruta.${tipoFruta._id}.cajas`] += Number.isFinite(cajas) && cajas > 0 ? cajas : 0;
+                    tipoFrutaObj[`totalFruta.${tipoFruta._id}.kilos`] += (Number.isFinite(kilos) && kilos > 0 ? kilos : 0);
                     operation += `${cajas} cajas de ${tipoCaja}, `
                 }
 

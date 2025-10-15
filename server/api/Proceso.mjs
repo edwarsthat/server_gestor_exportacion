@@ -143,9 +143,11 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteLavado", "Completado");
 
             const keys = Object.keys(data);
-            const query = { $inc: {
-                kilosProcesados: 0,
-            } };
+            const query = {
+                $inc: {
+                    kilosProcesados: 0,
+                }
+            };
             let kilos = 0;
             for (let i = 0; i < keys.length; i++) {
                 query.$inc[`descarteLavado.${keys[i]}`] = Math.round(data[keys[i]]);
@@ -229,9 +231,11 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteEncerado", "Completado");
 
             const keys = Object.keys(data);
-            const query = { $inc: {
-                kilosProcesados: 0,
-            } };
+            const query = {
+                $inc: {
+                    kilosProcesados: 0,
+                }
+            };
             let kilos = 0;
 
             for (let i = 0; i < keys.length; i++) {
@@ -298,9 +302,19 @@ export class ProcesoRepository {
     }
     static async get_proceso_aplicaciones_listaEmpaque_contenedores() {
         try {
-            const contenedores = await ContenedoresRepository.getContenedores({
-                select: { numeroContenedor: 1, infoContenedor: 1, pallets: 1 },
-                query: { 'infoContenedor.cerrado': false }
+            const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                select: { numeroContenedor: 1, infoContenedor: 1, },
+                query: { 'infoContenedor.cerrado': false },
+                populate: [
+                    {
+                        path: 'infoContenedor.clienteInfo',
+                        select: 'CLIENTE',
+                    },
+                    {
+                        path: 'infoContenedor.calidad',
+                        select: 'nombre',
+                    },
+                ]
             });
             return contenedores
         } catch (err) {

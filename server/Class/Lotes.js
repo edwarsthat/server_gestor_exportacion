@@ -304,13 +304,16 @@ export class LotesRepository {
     static async actualizar_lote(filter, update, options = {}, calculateFields = true) {
         const {
             session,
+            arrayFilters, 
             ...restOptions
+
         } = options;
 
         const finalOptions = {
             new: true,
             ...restOptions,
-            ...(session && { session })
+            ...(session && { session }),
+            ...(arrayFilters && { arrayFilters })
         };
 
         try {
@@ -337,14 +340,19 @@ export class LotesRepository {
 
                 // 3. Si hay que actualizar la deshidratación, hazlo solo si cambia
                 if (documento.deshidratacion !== deshidratacion || documento.rendimiento !== rendimiento) {
+
+                    const recalcOptions = {
+                        new: true,
+                        ...restOptions, // Solo las opciones básicas
+                        ...(session && { session }),
+                        skipAudit: true,
+                        action: 'system:recalc_desh_rend',
+                    };
+
                     documento = await db.Lotes.findOneAndUpdate(
                         filter,
                         { deshidratacion, rendimiento },
-                        {
-                            ...finalOptions,
-                            skipAudit: true,
-                            action: 'system:recalc_desh_rend',
-                        }
+                        recalcOptions // 👈 Usar opciones sin arrayFilters
                     ).populate([{ path: 'predio', select: 'PREDIO ICA GGN SISPAP' }, { path: 'tipoFruta' }]);
                 }
 
