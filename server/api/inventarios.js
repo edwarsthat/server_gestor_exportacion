@@ -1006,6 +1006,7 @@ export class InventariosRepository {
                 operacionRealizada: 'vaciarLote'
             }
 
+
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha')
 
             const recordLotes = await RecordLotesRepository.getVaciadoRecord({ query: query })
@@ -1070,7 +1071,7 @@ export class InventariosRepository {
         try {
             const { data } = req
             const { filtro } = data;
-
+            console.log(filtro)
             let result = []
 
             if (filtro.EF1 && !filtro.EF8) {
@@ -1234,6 +1235,16 @@ export class InventariosRepository {
             const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
+                populate: [
+                    {
+                        path: 'infoContenedor.clienteInfo',
+                        select: 'CLIENTE',
+                    },
+                    {
+                        path: 'infoContenedor.calidad',
+                        select: 'nombre descripcion',
+                    },
+                ],
                 select: {
                     infoContenedor: 1,
                     __v: 1,
@@ -1519,7 +1530,12 @@ export class InventariosRepository {
             const lotes = await LotesRepository.getLotes2({
                 query: query,
                 limit: all ? 'all' : 50,
-                sort: sort
+                sort: sort,
+                populate: [
+                    { path: 'predio', select: 'PREDIO ICA GGN SISPAP' },
+                    { path: 'tipoFruta' },
+                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' }
+                ]
             });
             const contenedoresArr = []
 
@@ -2147,7 +2163,21 @@ export class InventariosRepository {
 
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 select: { infoContenedor: 1, numeroContenedor: 1, __v: 1 },
-                query: query
+                query: query,
+                populate: [
+                    {
+                        path: "infoContenedor.tipoFruta",
+                        select: "tipoFruta"
+                    },
+                    {
+                        path: "infoContenedor.clienteInfo",
+                        select: "CLIENTE"
+                    },
+                    {
+                        path: "infoContenedor.calidad",
+                        select: "nombre"
+                    }
+                ]
             });
             return response;
         } catch (err) {
@@ -2159,16 +2189,33 @@ export class InventariosRepository {
         }
     }
     static async put_inventarios_programacion_contenedores(req) {
+        const { user } = req;
+        const { action, data, idContenedor } = req.data;
+
+        const log = await LogsRepository.create({
+            user: user,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
         try {
-            const { data, user } = req;
-            const { _id, __v, infoContenedor, action } = data;
-            await ContenedoresRepository.modificar_contenedor(_id, infoContenedor, user.user, action, __v);
+            const query = { $set: {} }
+            Object.keys(data).forEach(key => {
+                query.$set[`infoContenedor.${key}`] = data[key];
+            })
+            await ContenedoresRepository.actualizar_contenedor(
+                { _id: idContenedor },
+                query,
+                { user: user._id, action: "modificar_programacion_contenedor" }
+            );
+            await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_contenedor", "Completado");
         } catch (err) {
+            await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_contenedor", "Fallido", err.message);
             if (err.status === 523) {
                 throw err
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     //#endregion

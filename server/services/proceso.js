@@ -481,7 +481,9 @@ class ProcesoService {
                 throw new ProcessError(400, `El lote ${itemsPallet[i].lote.enf} ya se encuentra finalizado, no se puede modificar`);
             }
             const newKg = (itemsPallet[i].cajas || 0) * parseMultTipoCaja(tipoCaja);
+            const oldKilos = itemsPallet[i].kilos;
             const delta = newKg - itemsPallet[i].kilos;
+
 
             let updateLote = {
                 $inc: {
@@ -490,18 +492,17 @@ class ProcesoService {
                 }
             };
 
-
             if (itemsPallet[i].calidad !== calidad) {
-                updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.kilos`] = -itemsPallet[i].kilos;
+                updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.kilos`] = -oldKilos;
                 updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.cajas`] = -itemsPallet[i].cajas;
                 updateLote.$inc[`salidaExportacion.porCalidad.${calidad}.kilos`] = newKg;
-                updateLote.$inc[`salidaExportacion.porCalidad.${calidad}.cajas`] = itemsPallet[i].cajas;;
+                updateLote.$inc[`salidaExportacion.porCalidad.${calidad}.cajas`] = itemsPallet[i].cajas;
             } else {
                 updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.kilos`] = delta;
             }
 
             if (itemsPallet[i].calibre !== calibre) {
-                updateLote.$inc[`salidaExportacion.porCalibre.${itemsPallet[i].calibre}.kilos`] = -itemsPallet[i].kilos;
+                updateLote.$inc[`salidaExportacion.porCalibre.${itemsPallet[i].calibre}.kilos`] = -oldKilos;
                 updateLote.$inc[`salidaExportacion.porCalibre.${itemsPallet[i].calibre}.cajas`] = -itemsPallet[i].cajas;
                 updateLote.$inc[`salidaExportacion.porCalibre.${calibre}.kilos`] = newKg;
                 updateLote.$inc[`salidaExportacion.porCalibre.${calibre}.cajas`] = itemsPallet[i].cajas;

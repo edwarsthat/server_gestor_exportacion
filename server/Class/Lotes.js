@@ -154,61 +154,8 @@ export class LotesRepository {
             throw new PutError(523, `Error  ${err.name}`);
         }
     }
-    static async rendimiento(data) {
-        /**
-         * Funcion que calcula y guarda el rendimiento del lote sumando la cantidad de kilos que hay 
-         * en exportacion y dividiendola en la cantidad de kilos procesador o vaceados
-         * 
-         * @param {object} data - informacion del lote
-         * @return {number} - retorna el valor del rendimiento
-         */
-        const id = data._id
-        try {
-            const kilosVaciados = Number(data.kilosVaciados);
-            if (kilosVaciados === 0) return 0;
-            const calidad1 = data.calidad1;
-            const calidad15 = data.calidad15;
-            const calidad2 = data.calidad2;
-            const total = calidad1 + calidad15 + calidad2;
-            const rendimiento = (total * 100) / kilosVaciados;
 
-            await db.Lotes.updateOne({ _id: id }, { rendimiento: rendimiento });
 
-            return rendimiento;
-        } catch (e) {
-            throw new ProcessError(415, "Error obteniendo rendimiento del lote" + e.message);
-        }
-    }
-    static async deshidratacion(data) {
-        /**
-         * Funcion que calcula y guarda la deshidratacion del lote, sumando toda la fruta procesada
-         * los descartes totales, la fruta nacional, directo nacional, exportacion y luego lo divide
-         * en los kilos totales ingresados
-         * 
-         * @param {object} data - objeto con los elementos del lote
-         * @return {number} - devuelve la deshidratacion total
-         */
-        const id = data._id
-        try {
-            const kilosTotal = data.kilos;
-            if (kilosTotal === 0) return 0;
-            const descarteLavado = data.descarteLavado ? this.descarteTotal(data.descarteLavado) : 0;
-            const descarteEncerado = data.descarteEncerado ? this.descarteTotal(data.descarteEncerado) : 0;
-            const frutaNacional = data.frutaNacional;
-            const directoNacional = data.directoNacional;
-            const calidad1 = data.calidad1;
-            const calidad15 = data.calidad15;
-            const calidad2 = data.calidad2;
-            const total = calidad1 + calidad15 + calidad2 + descarteLavado + descarteEncerado + frutaNacional + directoNacional;
-            const deshidratacion = 100 - (total * 100) / kilosTotal;
-            await db.Lotes.updateOne({ _id: id }, { deshidratacion: deshidratacion });
-
-            return deshidratacion;
-
-        } catch (err) {
-            throw new ProcessError(515, `Error sumando los descartes ${err.message}`);
-        }
-    }
     static async obtener_imagen_lote_calidad(url) {
         try {
             const data = fs.readFileSync(url)

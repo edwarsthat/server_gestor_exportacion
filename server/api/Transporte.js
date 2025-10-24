@@ -12,6 +12,9 @@ import { ErrorTransporteLogicHandlers } from "./utils/errorsHandlers.js";
 import { VehiculoRegistro } from "../Class/VehiculosRegistros.js";
 import { Seriales } from "../Class/Seriales.js";
 import { dataRepository } from "./data.js";
+import { CrearDocumentosRepository } from "../services/crearDocumentos.js";
+import JSZip from "jszip";
+
 const PAGE_ITEMS = 50;
 
 export class TransporteRepository {
@@ -709,10 +712,60 @@ export class TransporteRepository {
     }
     static async get_transporte_documentos_generarDocumentos(req) {
         try {
-            console.log(req.data)
-            console.log(req.data.contenedor)
-            console.log(req.data.tiposFrutas)
-            
+            const { registro } = req.data;
+
+            const response = await VehiculoRegistro.getRegistrosVehiculo({
+                ids: [registro],
+                populate: {
+                    path: 'contenedor',
+                    select: 'infoExportacion numeroContenedor infoContenedor  totalKilos  totalCajas pallets'
+                }
+            });
+            console.log(response[0])
+
+            if (response.length > 0 && response[0].contenedor) {
+                await response[0].contenedor.populate('infoContenedor.clienteInfo', 'CLIENTE');
+                await response[0].contenedor.populate('infoContenedor.tipoFruta', 'tipoFruta');
+            }
+            if (response.length === 0) {
+                throw new TransporteError(404, `Registro no encontrado`);
+            }
+
+            if (response[0].tipoVehiculo === "Camion") {
+                const buffer = await CrearDocumentosRepository.crear_carta_responsabilidad_camiones(response[0])
+                const base64 = buffer.toString('base64');
+
+                return {
+                    file: base64,
+                    filename: `PLANTILLA CARTA INSTRUCCIONES TRANSPORTE FAVORITA_${response[0].contenedor.numeroContenedor}_${Date.now()}.docx`,
+                    mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                }
+            } else if (response[0].tipoVehiculo === "Tractomula") {
+                const zip = new JSZip();
+
+                const buffer1 = await CrearDocumentosRepository.crear_reporte_vehiculo(response[0])
+                const buffer2 = await CrearDocumentosRepository.crear_reporte_datalogger(response[0])
+                const buffer3 = await CrearDocumentosRepository.crear_carta_instrucciones(response[0])
+                const buffer4 = await CrearDocumentosRepository.crear_carta_responsabilidad(response[0])
+
+                // Agregar documentos al ZIP
+                zip.file(`REPORTE_VEHICULO__${response[0].contenedor.numeroContenedor}_${Date.now()}.xlsx`, buffer1);
+                zip.file(`REPORTE_DATALOGGER__${response[0].contenedor.numeroContenedor}_${Date.now()}.xlsx`, buffer2);
+                zip.file(`CARTA_INSTRUCCIONES__${response[0].contenedor.numeroContenedor}_${Date.now()}.docx`, buffer3);
+                zip.file(`CARTA_RESPONSABILIDAD__${response[0].contenedor.numeroContenedor}_${Date.now()}.docx`, buffer4);
+
+                // Generar ZIP
+                const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+                const base64 = zipBuffer.toString('base64');
+
+                return {
+                    file: base64,
+                    filename: `DOCUMENTOS_TRACTOMULA_${Date.now()}.zip`,
+                    mimetype: 'application/zip'
+                };
+            }
+
+
         } catch (err) {
             if (err.status === 522) {
                 throw err

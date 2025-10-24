@@ -911,7 +911,7 @@ export class ProcesoRepository {
     static async put_proceso_aplicaciones_listaEmpaque_modificarItems(req) {
         const { user } = req;
         const { seleccion, data, action } = req.data;
-
+        console.log(req.data.data)
         let log
 
         const session = await db.Contenedores.db.startSession();

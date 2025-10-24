@@ -45,25 +45,43 @@ export const mostrarKilose = (item) => {
         console.error('tipoCaja no válido:', item.tipoCaja);
         return "N/A"; // O un valor por defecto
     }
-    
+
     const partes = item.tipoCaja.split("-");
     if (partes.length < 2) {
         console.error('Formato de tipoCaja inválido:', item.tipoCaja);
         return "N/A";
     }
-    
+
     const peso = Number(partes[1]);
-    
+
     if (isNaN(peso)) {
         console.error('Peso no es un número válido:', partes[1]);
         return "N/A";
     }
-    
+
     if (peso >= 18) return "40LB";
     if (peso >= 17) return "37LB";
     if (peso >= 15) return "35LB";
     if (peso >= 13) return "30LB";
     if (peso > 4 && peso < 5) return "4,5Kg";
-    
+
     return "N/A"; // Valor por defecto si no coincide ninguna condición
 }
+export function numeroALetras(num) {
+    const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
+    const decenas = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
+    const decenas2 = ['veinte', 'veintiuno', 'veintidós', 'veintitrés', 'veinticuatro', 'veinticinco', 'veintiséis', 'veintisiete', 'veintiocho', 'veintinueve'];
+    const decenas3 = ['treinta', 'treinta y uno'];
+
+    if (num < 10) return unidades[num];
+    if (num < 20) return decenas[num - 10];
+    if (num < 30) return decenas2[num - 20];
+    if (num <= 31) return decenas3[num - 30];
+    return 'Número fuera de rango';
+}
+export const setCellPropertiesDatalogger = (cell, value, font = 14, bold = false) => {
+    cell.value = value
+    cell.alignment = { horizontal: 'start', vertical: 'middle', wrapText: true }
+    cell.font = { size: font, bold: bold }
+    cell.border = styleNormalCell
+};

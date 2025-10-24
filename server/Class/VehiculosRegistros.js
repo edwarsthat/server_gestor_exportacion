@@ -20,6 +20,16 @@ export class VehiculoRegistro {
             sort = { fecha: -1 },
             limit = 50,
             skip = 0,
+            populate = {
+                path: 'contenedor',
+                select: 'numeroContenedor infoContenedor',
+                populate: [
+                    {
+                        path: 'infoContenedor.clienteInfo',
+                        select: 'CLIENTE',
+                    }
+                ]
+            }
         } = options;
         try {
             let newQuery = { ...query };
@@ -36,16 +46,7 @@ export class VehiculoRegistro {
                 .sort(sort)
                 .limit(limitToUse)
                 .skip(skip)
-                .populate({
-                    path: 'contenedor',
-                    select: 'numeroContenedor infoContenedor',
-                    populate: [
-                        {
-                            path: 'infoContenedor.clienteInfo',
-                            select: 'CLIENTE',
-                        }
-                    ]
-                })
+                .populate(populate)
                 .session(session)
                 .exec();
 

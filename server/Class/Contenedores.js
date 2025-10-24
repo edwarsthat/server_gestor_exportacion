@@ -236,11 +236,10 @@ export class ContenedoresRepository {
                     populate: {
                         path: 'predio',
                         select: 'PREDIO GGN',
-
                     }
                 }
             ],
-            limit = "all",
+            limit = 0,
             skip = 0,
         } = options;
         try {
@@ -250,12 +249,11 @@ export class ContenedoresRepository {
                 palletQuery._id = { $in: ids };
             }
 
-            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
 
             const response = await db.itemPallet.find(palletQuery)
                 .select(select)
                 .sort(sort)
-                .limit(limitToUse)
+                .limit(limit)
                 .populate(populate)
                 .skip(skip)
                 .session(session || null)

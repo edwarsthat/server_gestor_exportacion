@@ -3,13 +3,26 @@ import ExcelJS from "exceljs";
 import path from "path";
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { formatearFecha, labelListaEmpaque, mostrarKilose, setCellProperties, styleNormalCell } from "./helpers/crearDocumentos.js";
-
+import { formatearFecha, labelListaEmpaque, mostrarKilose, numeroALetras, setCellProperties, setCellPropertiesDatalogger, styleNormalCell } from "./helpers/crearDocumentos.js";
+import fs from "fs";
+import PizZip from "pizzip";
+import Docxtemplater from "docxtemplater";
+// import Docxtemplater from "docxtemplater";
+// import { numeroALetras } from "../utils/numeroALetras.js";
+// import { nombreTipoFruta2 } from "../utils/nombreTipoFruta.js";
+// import { tipoFrutas } from "../data/tipoFrutas.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 
-
+const imagePath = path.resolve(
+    __dirname,
+    '..',
+    '..',
+    'public',
+    'assets',
+    'logoCelifrut.webp'
+)
 export class CrearDocumentosRepository {
     static async crear_listas_de_empaque(cont, itemsPallet) {
         if (!Array.isArray(itemsPallet)) {
@@ -119,14 +132,7 @@ export class CrearDocumentosRepository {
         logo.border = styleNormalCell
         logo.alignment = { horizontal: 'center', vertical: 'middle' }
 
-        const imagePath = path.resolve(
-            __dirname,
-            '..',
-            '..',
-            'public',
-            'assets',
-            'logoCelifrut.webp'
-        )
+
         const imageId = workbook.addImage({
             filename: imagePath,
             extension: 'png'
@@ -227,7 +233,7 @@ export class CrearDocumentosRepository {
                     item.cajas,
                     item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
                     item.GGN ? item.lote.predio.GGN.code : "N/A",
-                    item.GGN ? item.lote.predio.GGN.fecha : "N/A",
+                    item.GGN ? item.lote.predio.GGN.fechaVencimiento : "N/A",
                 ])
 
                 newRow.height = alto_celda;
@@ -244,7 +250,7 @@ export class CrearDocumentosRepository {
                     item.cajas,
                     item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
                     item.GGN ? item.lote.predio.GGN.code : "N/A",
-                    item.GGN ? item.lote.predio.GGN.fecha : "N/A",
+                    item.GGN ? item.lote.predio.GGN.fechaVencimiento : "N/A",
                 ])
 
                 newRow.height = alto_celda;
@@ -594,5 +600,331 @@ Fecha: 17 Oct 2020`
 
         const buffer = await workbook.xlsx.writeBuffer();
         return buffer
+    }
+    static async crear_carta_responsabilidad_camiones(registro) {
+        const pathRelative = path.resolve(
+            __dirname,
+            '..',
+            'templates',
+            'transporte',
+            'PLANTILLA CARTA INSTRUCCIONES TRANSPORTE FAVORITA.docx'
+        );
+
+        // Leer el contenido del archivo de template
+        const content = fs.readFileSync(pathRelative, 'binary');
+        const zip = new PizZip(content);
+
+        // Crear el documento con docxtemplater
+        const doc = new Docxtemplater(zip, {
+            paragraphLoop: true,
+            linebreaks: true,
+        });
+
+        const date = new Date()
+
+        // console.log(date.getDate())
+        // Renderizar el documento directamente con los datos
+        doc.render({
+            conductor: registro.conductor,
+            tipoFruta: registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", ""),
+            cedula: registro.cedula,
+            destino: "Ipiales - Nariño",
+            precinto: registro.precinto.reduce((acu, item) => acu + item + " - " || "", ""),
+            placa: registro.placa,
+            fecha_dia_escrito: numeroALetras(date.getDate()),
+            fecha_mes: date.toLocaleDateString('es-ES', { month: 'long' }),
+            fecha_anio: "veinticinco"
+        });
+
+        // Obtener el buffer del documento
+        const buffer = doc.getZip().generate({
+            type: 'nodebuffer',
+            compression: 'DEFLATE'
+        });
+
+        return buffer;
+    }
+    static async crear_reporte_vehiculo(registro) {
+        const cont = registro.contenedor
+        const tipoFrutas = registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", "")
+
+        const { infoExportacion } = cont
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Hoja 1")
+
+        worksheet.getColumn(2).width = 40
+        worksheet.getColumn(3).width = 60
+        //Titulo
+        const cell = worksheet.getCell("B2")
+        setCellProperties(
+            cell,
+            "REPORTE DE VEHICULOS",
+            24, true)
+        worksheet.mergeCells(`B2:C2`);
+
+        //cuerpo
+        const body = [
+            { cell: 'B3', value: "Fecha despacho", font: 12, bold: false },
+            { cell: 'C3', value: new Date().toLocaleDateString(), font: 12, bold: false },
+            { cell: 'B4', value: "Transportadora", font: 12, bold: false },
+            { cell: 'C4', value: registro.transportadora, font: 12, bold: false },
+            { cell: 'B5', value: "Placa Vehiculo", font: 12, bold: false },
+            { cell: 'C5', value: registro.placa, font: 12, bold: false },
+            { cell: 'B6', value: "Placa del Trailer", font: 12, bold: false },
+            { cell: 'C6', value: registro.trailer, font: 12, bold: false },
+            { cell: 'B7', value: "Exportador", font: 12, bold: false },
+            { cell: 'C7', value: "CELIFRUT SAS", font: 12, bold: false },
+            { cell: 'B8', value: "Ruta", font: 12, bold: false },
+            { cell: 'C8', value: `ARMENIA-${infoExportacion.puerto}`, font: 12, bold: false },
+            { cell: 'B9', value: "Conductor", font: 12, bold: false },
+            { cell: 'C9', value: registro.conductor, font: 12, bold: false },
+            { cell: 'B10', value: "No. Cédula", font: 12, bold: false },
+            { cell: 'C10', value: registro.cedula, font: 12, bold: false },
+            { cell: 'B11', value: "No. Celular", font: 12, bold: false },
+            { cell: 'C11', value: registro.celular, font: 12, bold: false },
+            { cell: 'B12', value: "Lugar Cargue", font: 12, bold: false },
+            { cell: 'C12', value: "ARMENIA", font: 12, bold: false },
+            { cell: 'B13', value: "Lugar Descargue", font: 12, bold: false },
+            { cell: 'C13', value: infoExportacion.puerto, font: 12, bold: false },
+            { cell: 'B14', value: "Mercancía", font: 12, bold: false },
+            { cell: 'C14', value: tipoFrutas, font: 12, bold: false },
+            { cell: 'B15', value: "Temperatura", font: 12, bold: false },
+            { cell: 'C15', value: registro.temperatura, font: 12, bold: false },
+        ]
+
+        body.forEach(item => {
+            const cell = worksheet.getCell(item.cell)
+            setCellProperties(cell, item.value, item.font, item.bold)
+        })
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        return buffer;
+    }
+    static async crear_reporte_datalogger(registro) {
+
+        const cont = registro.contenedor
+        const tipoFrutas = registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", "")
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Hoja 1")
+        const total_kilos = cont.totalKilos
+        worksheet.getColumn(2).width = 30
+        worksheet.getColumn(3).width = 25
+        worksheet.getColumn(4).width = 25
+        worksheet.getColumn(5).width = 40
+        //Titulo
+
+        const imageId = workbook.addImage({
+            filename: imagePath,
+            extension: 'png'
+        })
+
+        worksheet.addImage(imageId, {
+            tl: { col: 3, row: 1 },
+            ext: { width: 120, height: 120 }
+        })
+
+        const cellLogo = worksheet.getCell("D2")
+        cellLogo.border = styleNormalCell
+
+        const cellVacio = worksheet.getCell("E6")
+        cellVacio.border = styleNormalCell
+
+        const cell = worksheet.getCell("B2")
+        setCellProperties(
+            cell,
+            "DATA LOGGER",
+            24, true)
+        worksheet.mergeCells(`B2:C2`);
+        worksheet.mergeCells(`D2:E5`);
+        worksheet.mergeCells(`B22:D24`);
+
+
+        //cuerpo
+        const body = [
+            { cell: 'B3', value: "MARCA", font: 12, bold: true },
+            { cell: 'C3', value: registro?.marca?.toUpperCase() || "", font: 12, bold: false },
+            { cell: 'B4', value: "CODIGO DE PRODUCTO", font: 12, bold: true },
+            { cell: 'C4', value: "U-2", font: 12, bold: false },
+            { cell: 'B5', value: "DATALOGGER ID", font: 12, bold: true },
+            { cell: 'C5', value: registro.datalogger_id.toUpperCase(), font: 12, bold: false },
+            { cell: 'B6', value: "UBICACIÓN  DATA LOGGER:", font: 12, bold: true },
+            { cell: 'C6', value: "PALLET No 10", font: 12, bold: false },
+            { cell: 'B7', value: "TEMPERATURA:", font: 12, bold: true },
+            { cell: 'C7', value: registro.temperatura, font: 12, bold: false },
+            { cell: 'D7', value: "DESPACHADO POR:", font: 12, bold: true },
+            { cell: 'E7', value: "", font: 12, bold: true },
+            { cell: 'B8', value: "PRODUCTO:", font: 12, bold: true },
+            { cell: 'C8', value: tipoFrutas, font: 12, bold: false },
+            { cell: 'D8', value: "NOMBRE:", font: 12, bold: true },
+            { cell: 'E8', value: "", font: 12, bold: false },
+            { cell: 'B9', value: "CANTIDAD:", font: 12, bold: true },
+            { cell: 'C9', value: `${cont.pallets} PALETS - ${total_kilos}KG APROX`, font: 12, bold: false },
+            { cell: 'D9', value: "FIRMA", font: 12, bold: false },
+            { cell: 'E9', value: "", font: 12, bold: false },
+            { cell: 'B10', value: "EMPAQUE", font: 12, bold: true },
+            { cell: 'C10', value: "CAJAS", font: 12, bold: false },
+            { cell: 'D10', value: "FECHA DE CARGUE:", font: 12, bold: false },
+            { cell: 'E10', value: "", font: 12, bold: false },
+            { cell: 'B11', value: "NÚMERO PRECINTO:", font: 12, bold: true },
+            { cell: 'C11', value: registro.precinto, font: 12, bold: false },
+            { cell: 'D11', value: "HORA INICIO:", font: 12, bold: false },
+            { cell: 'E11', value: "", font: 12, bold: false },
+            { cell: 'B12', value: "FECHA SALIDA:", font: 12, bold: true },
+            { cell: 'C12', value: new Date().toLocaleDateString(), font: 12, bold: false },
+            { cell: 'D12', value: "HORA FINAL:", font: 12, bold: false },
+            { cell: 'E12', value: "", font: 12, bold: false },
+            { cell: 'B13', value: "EMPRESA TRANSPORTADORA: ", font: 12, bold: true },
+            { cell: 'C13', value: registro.transportadora, font: 12, bold: false },
+            { cell: 'D13', value: "HORA DESPACHO:", font: 12, bold: false },
+            { cell: 'E13', value: "", font: 12, bold: false },
+            { cell: 'B14', value: "PLACA:", font: 12, bold: true },
+            { cell: 'C14', value: registro.placa, font: 12, bold: false },
+            { cell: 'D14', value: "REVISADO POR:", font: 12, bold: false },
+            { cell: 'E14', value: "", font: 12, bold: false },
+            { cell: 'B15', value: "PLACA TRAILER", font: 12, bold: true },
+            { cell: 'C15', value: registro.trailer, font: 12, bold: false },
+            { cell: 'D15', value: "NOMBRE:", font: 12, bold: false },
+            { cell: 'E15', value: "", font: 12, bold: false },
+            { cell: 'B16', value: "NOMBRE CONDUCTOR:", font: 12, bold: true },
+            { cell: 'C16', value: registro.conductor, font: 12, bold: false },
+            { cell: 'D16', value: "FIRMA:", font: 12, bold: true },
+            { cell: 'E16', value: "", font: 12, bold: false },
+            { cell: 'B17', value: "CEDULA:", font: 12, bold: true },
+            { cell: 'C17', value: registro.cedula, font: 12, bold: false },
+            { cell: 'D17', value: "", font: 12, bold: true },
+            { cell: 'E17', value: "", font: 12, bold: false },
+            { cell: 'B18', value: "TELEFONO:", font: 12, bold: true },
+            { cell: 'C18', value: registro.celular, font: 12, bold: false },
+            { cell: 'D18', value: "", font: 12, bold: true },
+            { cell: 'E18', value: "", font: 12, bold: false },
+            { cell: 'B21', value: "ENTREGADO A:", font: 12, bold: false },
+            { cell: 'B25', value: registro.conductor, font: 12, bold: false },
+            { cell: 'B26', value: registro.cedula, font: 12, bold: false },
+            { cell: 'B27', value: registro.celular, font: 12, bold: false },
+        ]
+
+        body.forEach(item => {
+            const cell = worksheet.getCell(item.cell)
+            setCellPropertiesDatalogger(cell, item.value, item.font, item.bold)
+        })
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        return buffer;
+    }
+    static async crear_carta_instrucciones(registro) {
+        const cont = registro.contenedor
+        const tipoFrutas = registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", "")
+
+        const pathRelative = path.resolve(
+            __dirname,
+            '..',
+            'templates',
+            'transporte',
+            'Entrega_Instrucciones.docx'
+        );
+
+        const { infoExportacion } = cont;
+        const total_cajas = cont.totalCajas
+        const total_kilos = cont.totalKilos
+        const peso_bruto = (total_cajas * 0.85) + total_kilos;
+
+
+        // Leer el contenido del archivo de template
+        const content = fs.readFileSync(pathRelative, 'binary');
+        const zip = new PizZip(content);
+
+        // Crear el documento con docxtemplater
+        const doc = new Docxtemplater(zip, {
+            paragraphLoop: true,
+            linebreaks: true,
+        });
+
+        const date = new Date()
+
+        // console.log(date.getDate())
+        // Renderizar el documento directamente con los datos
+        doc.render({
+            precinto: registro.precinto.reduce((acu, item) => acu + item + " - " || "", ""),
+            tipo_fruta: tipoFrutas,
+            transportadora: registro.transportadora,
+            placa: registro.placa,
+            trailer: registro.trailer,
+            agencia: infoExportacion.agencia,
+            total_cajas: total_kilos.toFixed(2),
+            total_cajas_net: peso_bruto.toFixed(2),
+            temperatura: registro.temperatura,
+            nit: registro.nit,
+            fecha_dia_escrito: numeroALetras(date.getDate()),
+            fecha_dia: date.getDate(),
+            fecha_mes: date.toLocaleDateString('es-ES', { month: 'long' }),
+        });
+
+        // Obtener el buffer del documento
+        const buffer = doc.getZip().generate({
+            type: 'nodebuffer',
+            compression: 'DEFLATE'
+        });
+
+        return buffer;
+    }
+    static async crear_carta_responsabilidad(registro) {
+        const cont = registro.contenedor
+        const tipoFrutas = registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", "")
+
+        const pathRelative = path.resolve(
+            __dirname,
+            '..',
+            'templates',
+            'transporte',
+            'carta_responsabilidad.docx'
+        );
+
+
+        const { infoContenedor, numeroContenedor, infoExportacion } = cont;
+        const total_kilos = cont.totalKilos;
+
+
+        // Leer el contenido del archivo de template
+        const content = fs.readFileSync(pathRelative, 'binary');
+        const zip = new PizZip(content);
+
+        // Crear el documento con docxtemplater
+        const doc = new Docxtemplater(zip, {
+            paragraphLoop: true,
+            linebreaks: true,
+        });
+
+        let opciones = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        // Renderizar el documento directamente con los datos
+        doc.render({
+            fecha: new Date().toLocaleDateString('es-ES', opciones),
+            numeroContenedor: numeroContenedor,
+            agencia: infoExportacion.agencia,
+            naviera: infoExportacion.naviera,
+            puerto: infoExportacion.puerto.toUpperCase(),
+            expt: infoExportacion.expt.toUpperCase(),
+            cliente: infoContenedor.clienteInfo.CLIENTE,
+            direccion: infoContenedor.clienteInfo["DIRECCIÓN"] ?? 'N/A',
+
+            placa: registro.placa,
+            tipoFruta: tipoFrutas,
+            transportadora: registro.transportadora,
+            precinto: registro.precinto.reduce((acu, item) => acu + item + " - " || "", ""),
+            trailer: registro.trailer,
+            conductor: registro.conductor,
+            cedula: registro.cedula,
+            celular: registro.celular,
+
+            kilos: total_kilos.toFixed(2),
+        });
+
+        // Obtener el buffer del documento
+        const buffer = doc.getZip().generate({
+            type: 'nodebuffer',
+            compression: 'DEFLATE'
+        });
+
+        return buffer;
     }
 }

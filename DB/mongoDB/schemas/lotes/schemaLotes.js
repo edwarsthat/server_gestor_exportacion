@@ -40,7 +40,7 @@ export const defineLotes = async (conn, AuditLog) => {
     zumo: Number,
     user: String,
     semillas: Boolean,
-    calidad: { type: String, default: "N/A" },
+    calidad: { type: Schema.Types.ObjectId, ref: 'calidades' },
     fecha: { type: Date, default: Date.now }
   }, { _id: false });
 
@@ -134,8 +134,22 @@ export const defineLotes = async (conn, AuditLog) => {
     kilosGGN: { type: Number, default: 0 },
     totalKilos: { type: Number, default: 0 },
     totalCajas: { type: Number, default: 0 },
-    porCalidad: [{ calidadId: mongoose.Types.ObjectId, kilos: Number, cajas: Number }],
-    porCalibre: [{ calibre: String, kilos: Number, cajas: Number }],
+    porCalidad: {
+      type: Map,
+      of: new Schema({
+        kilos: { type: Number, default: 0 },
+        cajas: { type: Number, default: 0 }
+      }),
+      default: {}
+    },
+    porCalibre: {
+      type: Map,
+      of: new Schema({
+        kilos: { type: Number, default: 0 },
+        cajas: { type: Number, default: 0 }
+      }),
+      default: {}
+    },
     contenedores: [{ type: Schema.Types.ObjectId, ref: 'Contenedor' }]
   }, { _id: false, strict: false });
 

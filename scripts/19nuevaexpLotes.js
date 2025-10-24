@@ -80,12 +80,12 @@ function calcularSalidaExportacion(itemPallets, loteGGN = false) {
         kilosGGN: 0,
         totalKilos: 0,
         totalCajas: 0,
-        porCalidad: [],
-        porCalibre: [],
+        porCalidad: {},
+        porCalibre: {},
         contenedores: []
     };
 
-    // Maps para acumular datos
+    // Maps para acumular datos temporalmente
     const calidadMap = new Map(); // calidadId -> { kilos, cajas }
     const calibreMap = new Map(); // calibre -> { kilos, cajas }
     const contenedoresSet = new Set(); // Usar string para comparación correcta
@@ -131,18 +131,22 @@ function calcularSalidaExportacion(itemPallets, loteGGN = false) {
         }
     }
 
-    // Convertir maps a arrays
-    salidaExportacion.porCalidad = Array.from(calidadMap.entries()).map(([calidadId, data]) => ({
-        calidadId: new ObjectId(calidadId),
-        kilos: data.kilos,
-        cajas: data.cajas
-    }));
+    // Convertir maps a objetos con claves dinámicas
+    // Para porCalidad, usar el ObjectId como clave
+    for (const [calidadId, data] of calidadMap.entries()) {
+        salidaExportacion.porCalidad[calidadId] = {
+            kilos: data.kilos,
+            cajas: data.cajas
+        };
+    }
 
-    salidaExportacion.porCalibre = Array.from(calibreMap.entries()).map(([calibre, data]) => ({
-        calibre,
-        kilos: data.kilos,
-        cajas: data.cajas
-    }));
+    // Para porCalibre, usar el calibre como clave
+    for (const [calibre, data] of calibreMap.entries()) {
+        salidaExportacion.porCalibre[calibre] = {
+            kilos: data.kilos,
+            cajas: data.cajas
+        };
+    }
 
     // Convertir strings de vuelta a ObjectId para contenedores
     salidaExportacion.contenedores = Array.from(contenedoresSet).map(id => new ObjectId(id));

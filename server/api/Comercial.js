@@ -755,7 +755,7 @@ export class ComercialRepository {
                 }
             }
 
-            const precio = await PreciosRepository.post_precio({ ...data, tipoFruta: lotes[0].tipoFruta, exportacion })
+            const precio = await PreciosRepository.post_precio({ ...data, tipoFruta: lotes[0].tipoFruta._id, exportacion })
 
             for (const lote of lotes) {
 
