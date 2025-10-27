@@ -673,7 +673,9 @@ export class ProcesoRepository {
 
             await session.withTransaction(async () => {
 
-                const items = await ProcesoService.eliminar_items_contenedor(seleccion, logContext, session);
+                const items = await ProcesoService.eliminar_items_contenedor(
+                    seleccion, logContext, session
+                );
 
                 await ProcesoService.restar_kilos_lote(items, logContext, session);
                 await ProcesoService.restar_kilos_lote_indicadores(items, logContext, session);
@@ -717,7 +719,12 @@ export class ProcesoRepository {
             const logContext = { logId: log._id, user, action };
             await session.withTransaction(async () => {
 
-                const { itemPallet, kilos } = await ProcesoService.restarItem_contenedor(_id, cajas, logContext, session);
+                const {
+                    itemPallet,
+                    kilos
+                } = await ProcesoService.restarItem_contenedor(
+                    _id, cajas, logContext, session
+                );
 
                 await ProcesoService.restarItem_lote(itemPallet, kilos, cajas, logContext, session);
                 await ProcesoService.modificarIndicadoresFecha(itemPallet, -kilos, logContext.logId);
@@ -911,7 +918,6 @@ export class ProcesoRepository {
     static async put_proceso_aplicaciones_listaEmpaque_modificarItems(req) {
         const { user } = req;
         const { seleccion, data, action } = req.data;
-        console.log(req.data.data)
         let log
 
         const session = await db.Contenedores.db.startSession();
@@ -928,7 +934,10 @@ export class ProcesoRepository {
                 ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_modificarItems(req.data)
                 await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_modificarItems", "Completado");
 
-                const itemsPallet = await ContenedoresRepository.getItemsPallets({ ids: seleccion }, session);
+                const itemsPallet = await ContenedoresRepository.getItemsPallets(
+                    { ids: seleccion },
+                    session
+                );
                 if (itemsPallet.length !== seleccion.length) {
                     throw new ProcessError(400, `Alguno de los items seleccionados no existe`);
                 }

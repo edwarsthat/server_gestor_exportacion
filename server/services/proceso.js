@@ -74,9 +74,27 @@ class ProcesoService {
     }
     static async eliminar_items_contenedor(seleccion, logContext, session) {
 
-        const items = await ContenedoresRepository.getItemsPallets({ ids: seleccion }, session);
+        const items = await ContenedoresRepository.getItemsPallets(
+            { ids: seleccion }, session);
 
-        await ContenedoresRepository.deleteItemPallet({ _id: { $in: seleccion } }, { session, action: logContext.action, user: logContext.user });
+        let kilosTotales = 0;
+        let cajasTotales = 0;
+        const contId = items[0].contenedor;
+        for (const item of items) {
+            kilosTotales += item.kilos;
+            cajasTotales += item.cajas;
+        }
+
+        await ContenedoresRepository.actualizar_contenedor(
+            { _id: contId },
+            { $inc: { totalKilos: -kilosTotales, totalCajas: -cajasTotales } },
+            { session, action: logContext.action, user: logContext.user }
+        );
+
+        await ContenedoresRepository.deleteItemPallet(
+            { _id: { $in: seleccion } },
+            { session, action: logContext.action, user: logContext.user }
+        );
 
         await registrarPasoLog(logContext.logId, "ProcesoService.eliminar_items_contenedor", "Completado");
 
@@ -222,7 +240,6 @@ class ProcesoService {
         await ContenedoresRepository.actualizar_contenedor(
             { _id: itemPallet.contenedor },
             {
-                // $set: { [`pallets.${pallet}`]: palletsModificados[pallet] },
                 $inc: { totalCajas: -cajas, totalKilos: -kilos }
             },
             { session: session, skipAudit: true }
@@ -491,12 +508,17 @@ class ProcesoService {
                     "salidaExportacion.totalKilos": delta,
                 }
             };
-
-            if (itemsPallet[i].calidad !== calidad) {
-                updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.kilos`] = -oldKilos;
-                updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.cajas`] = -itemsPallet[i].cajas;
-                updateLote.$inc[`salidaExportacion.porCalidad.${calidad}.kilos`] = newKg;
-                updateLote.$inc[`salidaExportacion.porCalidad.${calidad}.cajas`] = itemsPallet[i].cajas;
+            console.log("calidad", calidad);
+            console.log("itemsPallet[i].calidad", itemsPallet[i].calidad._id.toString());
+            if (itemsPallet[i].calidad._id.toString() !== calidad) {
+                updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.kilos`]
+                    = -oldKilos;
+                updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.cajas`]
+                    = -itemsPallet[i].cajas;
+                updateLote.$inc[`salidaExportacion.porCalidad.${calidad}.kilos`]
+                    = newKg;
+                updateLote.$inc[`salidaExportacion.porCalidad.${calidad}.cajas`]
+                    = itemsPallet[i].cajas;
             } else {
                 updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.kilos`] = delta;
             }
@@ -517,7 +539,17 @@ class ProcesoService {
 
             );
 
-            LotesRepository.actualizar_lote(
+            await ContenedoresRepository.actualizar_contenedor(
+                { _id: itemsPallet[i].contenedor },
+                {
+                    $inc: {
+                        totalKilos: delta,
+                    }
+                },
+                { user: user._id, action: action, session }
+            )
+
+            await LotesRepository.actualizar_lote(
                 { _id: itemsPallet[i].lote },
                 updateLote,
                 { user: user._id, action: action, session },
