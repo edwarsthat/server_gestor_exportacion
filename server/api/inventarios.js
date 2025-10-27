@@ -234,7 +234,7 @@ export class InventariosRepository {
             const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(data)
             await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
 
-            const tipoFruta = await TiposFruta.get_tiposFruta({ query: { tipoFruta: data.tipoFruta } });
+            const tipoFruta = await TiposFruta.get_tiposFruta({ query: { _id: data.tipoFruta } });
             await registrarPasoLog(log._id, "TiposFruta.get_tiposFruta", "Completado");
 
             //se modifica el inventario
