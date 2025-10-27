@@ -4,8 +4,8 @@ import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
 import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
-import { insumos_contenedor } from "../functions/insumos.js";
-import { InsumosRepository } from "../Class/Insumos.js";
+// import { insumos_contenedor } from "../functions/insumos.js";
+// import { InsumosRepository } from "../Class/Insumos.js";
 
 import path from 'path';
 import fs from "fs";
@@ -972,23 +972,23 @@ export class ProcesoRepository {
         try {
             await session.withTransaction(async () => {
                 const contenedor = await ContenedoresRepository.getContenedores({ ids: [_id] }, session);
-                const lista = await insumos_contenedor(contenedor[0]);
-                const listasAlias = Object.keys(lista);
-                const idsInsumos = await InsumosRepository.get_insumos({
-                    query: {
-                        codigo: { $in: listasAlias },
-                    }
-                }, { session });
-                const listaInsumos = {};
-                idsInsumos.forEach(item => {
-                    listaInsumos[`insumosData.${item._id.toString()}`] = lista[item.codigo]
-                })
-                await registrarPasoLog(log._id, "insumos_contenedor", "Completado");
+                // const lista = await insumos_contenedor(contenedor[0]);
+                // const listasAlias = Object.keys(lista);
+                // const idsInsumos = await InsumosRepository.get_insumos({
+                //     query: {
+                //         codigo: { $in: listasAlias },
+                //     }
+                // }, { session });
+                // const listaInsumos = {};
+                // idsInsumos.forEach(item => {
+                //     listaInsumos[`insumosData.${item._id.toString()}`] = lista[item.codigo]
+                // })
+                // await registrarPasoLog(log._id, "insumos_contenedor", "Completado");
                 // Actualizar contenedor con pallets modificados
                 const newContenedor = await ContenedoresRepository.actualizar_contenedor(
                     { _id },
                     {
-                        ...listaInsumos,
+                        // ...listaInsumos,
                         'infoContenedor.cerrado': true,
                         'infoContenedor.fechaFinalizado': new Date(),
                     },
