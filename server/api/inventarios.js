@@ -162,17 +162,23 @@ export class InventariosRepository {
         }
     }
     static async put_inventarios_frutaDescarte_despachoDescarte(req) {
+
+        const { user } = req;
+        const { data, inventario } = req.data;
         let descarteLavado, descarteEncerado, tipoFruta
         try {
-
             InventariosValidations.put_inventarios_frutaDescarte_despachoDescarte().parse(req.data)
-            const { user } = req;
-            const { data, inventario } = req.data;
+
 
             //se crea el registro
-            tipoFruta = inventario.tipoFruta;
+            const tiposFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(
+                inventario.tipoFruta
+            )
+
+            tipoFruta = tiposFrutas[0].tipoFruta;
 
             ({ descarteLavado, descarteEncerado } = await InventariosService.procesar_formulario_inventario_descarte(inventario));
+
 
             const newDespacho = {
                 ...data,
@@ -183,7 +189,7 @@ export class InventariosRepository {
             }
             //se modifica el inventario
             const [, registro] = await Promise.all([
-                InventariosService.frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, inventario.tipoFruta),
+                InventariosService.frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, tipoFruta),
                 DespachoDescartesRepository.crear_nuevo_despacho(newDespacho, user._id),
                 RedisRepository.salidas_inventario_descartes(inventario, tipoFruta),
             ])
@@ -210,13 +216,13 @@ export class InventariosRepository {
     static async put_inventarios_frutaDescarte_reprocesarFruta(req) {
         let log
         const { user } = req;
-
         try {
             log = await LogsRepository.create({
                 user: user,
                 action: "put_inventarios_frutaDescarte_reprocesarFruta",
                 acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
             })
+
             const logContext = { logId: log._id, user, action: "put_inventarios_frutaDescarte_reprocesarFruta" };
 
             const { data } = req.data
@@ -336,7 +342,13 @@ export class InventariosRepository {
             const { data, inventario } = req.data;
 
             //se crea el registro
-            tipoFruta = inventario.tipoFruta;
+            //se crea el registro
+            const tiposFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(
+                inventario.tipoFruta
+            )
+
+            tipoFruta = tiposFrutas[0].tipoFruta;
+
 
             ({ descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(inventario));
 
@@ -352,7 +364,7 @@ export class InventariosRepository {
             }
             //se modifica el inventario
             const [, registro] = await Promise.all([
-                InventariosService.frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, inventario.tipoFruta),
+                InventariosService.frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, tipoFruta),
                 FrutaDescompuestaRepository.post_fruta_descompuesta(query, user._id),
                 RedisRepository.salidas_inventario_descartes(inventario, tipoFruta),
             ])

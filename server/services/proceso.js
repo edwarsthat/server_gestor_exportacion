@@ -508,8 +508,6 @@ class ProcesoService {
                     "salidaExportacion.totalKilos": delta,
                 }
             };
-            console.log("calidad", calidad);
-            console.log("itemsPallet[i].calidad", itemsPallet[i].calidad._id.toString());
             if (itemsPallet[i].calidad._id.toString() !== calidad) {
                 updateLote.$inc[`salidaExportacion.porCalidad.${itemsPallet[i].calidad._id}.kilos`]
                     = -oldKilos;

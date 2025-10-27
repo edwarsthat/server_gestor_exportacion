@@ -262,6 +262,7 @@ export class InventariosService {
          * }
          */
     static async procesar_formulario_inventario_descarte(data) {
+
         const descarteLavado = {};
         const descarteEncerado = {};
         let total = 0;
