@@ -224,7 +224,7 @@ export class ContenedoresRepository {
             ids = [],
             query = {},
             select = {},
-            sort = { numeroPallet: 1 },
+            sort = { "pallet.numeroPallet": 1 },
             populate = [
                 { path: 'calidad', select: 'nombre descripcion' },
                 { path: 'pallet', select: 'numeroPallet' },
@@ -249,13 +249,12 @@ export class ContenedoresRepository {
                 palletQuery._id = { $in: ids };
             }
 
-
             const response = await db.itemPallet.find(palletQuery)
-                .select(select)
-                .sort(sort)
-                .limit(limit)
-                .populate(populate)
                 .skip(skip)
+                .limit(limit)
+                .select(select)
+                .populate(populate)
+                .sort(sort)
                 .session(session || null)
                 .exec();
 

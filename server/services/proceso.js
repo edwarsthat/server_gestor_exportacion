@@ -225,9 +225,7 @@ class ProcesoService {
 
     }
     static async restarItem_contenedor(_id, cajas, logContext, session) {
-
         const itemPallet = await ContenedoresRepository.getItemsPallets({ ids: [_id], session });
-
         const kilos = cajas * Number(itemPallet[0].tipoCaja.split("-")[1].replace(",", "."));
 
         await ContenedoresRepository.actualizar_palletItem(
@@ -250,7 +248,7 @@ class ProcesoService {
 
         await registrarPasoLog(logContext.logId, "ProcesoService.restarItem_contenedor", "Completado");
 
-        return { itemPallet, kilos };
+        return { itemPallet: itemPallet[0], kilos };
     }
     static async restarItem_lote(itemPallet, kilos, cajas, logContext, session) {
 
