@@ -225,12 +225,15 @@ class ProcesoService {
 
     }
     static async restarItem_contenedor(_id, cajas, logContext, session) {
-        const itemPallet = await ContenedoresRepository.actualizar_palletItem(
-            { _id: _id },
-            { $inc: { cajas: -cajas } },
-            { session, new: true, action: logContext.action, user: logContext.user });
 
-        const kilos = cajas * Number(itemPallet.tipoCaja.split("-")[1].replace(",", "."));
+        const itemPallet = await ContenedoresRepository.getItemsPallets({ ids: [_id], session });
+
+        const kilos = cajas * Number(itemPallet[0].tipoCaja.split("-")[1].replace(",", "."));
+
+        await ContenedoresRepository.actualizar_palletItem(
+            { _id: _id },
+            { $inc: { cajas: -cajas, kilos: -kilos } },
+            { session, new: true, action: logContext.action, user: logContext.user });
 
         if (itemPallet.cajas === 0) {
             await ContenedoresRepository.deleteItemPallet({ _id: itemPallet._id }, { session, skipAudit: true });
