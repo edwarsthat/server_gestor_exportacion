@@ -83,7 +83,7 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
         schema.pre('deleteMany', async function (next) {
             try {
                 const docsToDelete = await this.model.find(this.getQuery());
-                this._docsToDelete = docsToDelete.map(d => d.toObject());
+                this._docsToDelete = docsToDelete.map(d => d.toObject({ depopulate: true }));
                 next();
             } catch (err) {
                 console.error('Error capturando documentos para eliminar:', err);
@@ -117,7 +117,7 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
 
         schema.pre('findOneAndUpdate', async function (next) {
             const docToUpdate = await this.model.findOne(this.getQuery());
-            this._oldValue = docToUpdate ? docToUpdate.toObject() : null;
+            this._oldValue = docToUpdate ? docToUpdate.toObject({ depopulate: true }) : null;
             next();
         });
 
@@ -127,7 +127,7 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
                 if (this._oldValue && res) {
 
                     // Solo los cambios, no el pergamino completo
-                    const cambios = deepDiff(this._oldValue, res.toObject());
+                    const cambios = deepDiff(this._oldValue, res.toObject({ depopulate: true }));
                     if (cambios.length > 0) {
                         const session = this.options?.session || null;
                         await writeLog({

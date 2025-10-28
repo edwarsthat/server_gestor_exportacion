@@ -13,7 +13,7 @@
  */
 
 import mongoose from "mongoose";
-import { diffObjects } from "../utils/utils.js";
+import { makeAuditPlugin } from "../utils/auditPLug.js";
 const { Schema } = mongoose;
 
 /**
@@ -205,90 +205,36 @@ export const defineLotes = async (conn, AuditLog) => {
 
   }, { versionKey: '__v' });
 
-
-
+  // Hook de lógica de negocio: modificar aprobacionProduccion según la acción
   dataSchema.pre('findOneAndUpdate', async function (next) {
     const update = this.getUpdate();
-    const docToUpdate = await this.model.findOne(this.getQuery());
-    this._oldValue = docToUpdate ? docToUpdate.toObject() : null;
-
-    // let newKilos = 0
-    // const actions = ["put_proceso_aplicaciones_descarteLavado", "put_proceso_aplicaciones_descarteEncerado"]
-    if (
-      this.options.action !== "put_calidad_informes_aprobacionComercial" &&
-      this.options.action !== "put_calidad_informes_loteFinalizarInforme" &&
-      this.options.action !== "put_comercial_precios_precioLotes" &&
-      this.options.action !== "put_comercial_registroPrecios_proveedores_comentario" &&
-      this.options.action !== "post_comercial_precios_add_precio" &&
-      this.options.action !== "put_comercial_precios_proveedores_precioFijo" &&
-      this.options.action !== "put_calidad_informe_noPagarBalinLote"
-    ) {
-
-      update.aprobacionProduccion = false
-
-    }
-    next();
-  });
-
-  dataSchema.post('findOneAndUpdate', async function (res) {
-    try {
-      if (this.options?.skipAudit) return;
-      if (this._oldValue && res) {
-        // Solo los cambios, no el pergamino completo
-        const cambios = diffObjects(this._oldValue, res.toObject());
-        if (cambios.length > 0) {
-          await AuditLog.create({
-            collection: 'Lote',
-            documentId: res._id,
-            operation: 'update',
-            user: this.options.user,
-            action: this.options.action,
-            changes: cambios,
-            description: 'Actualización de lote'
-          });
-        }
+    
+    // Lista de acciones que NO deben resetear aprobacionProduccion
+    const accionesExcluidas = [
+      "put_calidad_informes_aprobacionComercial",
+      "put_calidad_informes_loteFinalizarInforme",
+      "put_comercial_precios_precioLotes",
+      "put_comercial_registroPrecios_proveedores_comentario",
+      "post_comercial_precios_add_precio",
+      "put_comercial_precios_proveedores_precioFijo",
+      "put_calidad_informe_noPagarBalinLote"
+    ];
+    
+    if (!accionesExcluidas.includes(this.options.action)) {
+      if (!update.$set) {
+        update.$set = {};
       }
-    } catch (err) {
-      console.error('Error guardando auditoría:', err);
+      update.$set.aprobacionProduccion = false;
     }
-  });
-
-  dataSchema.post('save', async function (doc) {
-    try {
-      await AuditLog.create({
-        collection: 'Lote',
-        documentId: doc._id,
-        operation: 'create',
-        user: doc._user,
-        action: "crearLote",
-        newValue: doc,
-        description: 'Creación de lote'
-      });
-    } catch (err) {
-      console.error('Error guardando auditoría:', err);
-    }
-  });
-
-  dataSchema.pre('findOneAndDelete', async function (next) {
-    const docToDelete = await this.model.findOne(this.getQuery());
-    this._oldValue = docToDelete ? docToDelete.toObject() : null;
+    
     next();
   });
 
-  dataSchema.post('findOneAndDelete', async function (res) {
-    try {
-      await AuditLog.create({
-        collection: 'Lote',
-        documentId: res._id,
-        operation: 'delete',
-        user: this.options.user,
-        oldValue: this._oldValue,
-        description: 'Eliminación de lote'
-      });
-    } catch (err) {
-      console.error('Error guardando auditoría:', err);
-    }
-  });
+  // Aplicar plugin de auditoría
+  dataSchema.plugin(makeAuditPlugin({ 
+    collectionName: 'Lote', 
+    AuditLogs: AuditLog 
+  }));
 
   const Lotes = conn.model("Lote", dataSchema);
   return Lotes;
