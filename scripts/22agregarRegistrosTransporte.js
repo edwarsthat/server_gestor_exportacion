@@ -3,8 +3,9 @@
  * @description Convierte el array pallets en su longitud (número) y convierte tipoFruta/calidad a ObjectIds
  */
 
-import { MongoClient, ObjectId } from 'mongodb';
+import { MongoClient } from 'mongodb';
 import config from '../src/config/index.js';
+import { parseMultTipoCaja } from '../server/services/helpers/contenedores.js';
 
 const { MONGODB_PROCESO } = config;
 
@@ -57,46 +58,13 @@ async function closeConnection() {
     }
 }
 
-/**
- * Convierte un valor (string o array de strings) a ObjectId
- * @param {*} value - Valor a convertir
- * @returns {ObjectId|ObjectId[]|null} ObjectId o array de ObjectIds
- */
-function convertirAObjectId(value) {
-    if (!value) return null;
-    
-    // Si es un array
-    if (Array.isArray(value)) {
-        return value.map(item => {
-            // Si ya es ObjectId, devolverlo tal cual
-            if (item instanceof ObjectId) return item;
-            // Si es string válido de 24 caracteres hex, convertir
-            if (typeof item === 'string' && /^[0-9a-fA-F]{24}$/.test(item)) {
-                return new ObjectId(item);
-            }
-            // Si ya es un objeto con _bsontype, devolverlo
-            if (item && item._bsontype === 'ObjectID') return item;
-            return item;
-        });
-    }
-    
-    // Si es un solo valor
-    if (value instanceof ObjectId) return value;
-    if (typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value)) {
-        return new ObjectId(value);
-    }
-    if (value && value._bsontype === 'ObjectID') return value;
-    
-    return value;
-}
-
 async function main() {
     try {
         // Conectar a la base de datos
         const database = await connectProcesoDB();
 
-        // Obtener la colección de contenedores
-        const collection = database.collection('contenedors');
+        // Obtener la colección de itempallets
+        const collection = database.collection('itempallets');
 
         console.log('\n📊 Buscando documentos para procesar...\n');
 
@@ -119,81 +87,20 @@ async function main() {
         // Procesar cada documento
         for (const doc of documentos) {
             try {
-                console.log(`📝 Contenedor ID: ${doc._id}`);
+                const { cajas, tipoCaja, kilos } = doc;
+                const mult = parseMultTipoCaja(tipoCaja);
+                const newKilos = cajas * mult;
 
-                // Preparar objeto de actualización
-                const updateObject = {};
-                let hayActualizaciones = false;
-
-                // 1. Convertir pallets de array a número si es necesario
-                if (Array.isArray(doc.pallets)) {
-                    const longitudArray = doc.pallets.length;
-                    updateObject.pallets = longitudArray;
-                    console.log(`   🔄 Convirtiendo pallets array a número: ${longitudArray}`);
-                    modificadosPallets++;
-                    hayActualizaciones = true;
-                }
-
-                // 2. Verificar y convertir tipoFruta en infoContenedor
-                if (doc.infoContenedor?.tipoFruta) {
-                    const tipoFrutaOriginal = doc.infoContenedor.tipoFruta;
+                if (newKilos !== kilos) {
+                    console.log(`📝 Actualizando ${doc._id}: ${kilos} kg → ${newKilos} kg`);
                     
-                    // Verificar si tiene elementos que no son ObjectId
-                    let necesitaConversion = false;
-                    if (Array.isArray(tipoFrutaOriginal)) {
-                        necesitaConversion = tipoFrutaOriginal.some(item => {
-                            return typeof item === 'string' || (item && !item._bsontype && !(item instanceof ObjectId));
-                        });
-                    }
-                    
-                    if (necesitaConversion) {
-                        const tipoFrutaConvertido = convertirAObjectId(tipoFrutaOriginal);
-                        updateObject['infoContenedor.tipoFruta'] = tipoFrutaConvertido;
-                        console.log(`   🔄 Convirtiendo tipoFruta a ObjectIds (${tipoFrutaConvertido.length} elementos)`);
-                        modificadosTipoFruta++;
-                        hayActualizaciones = true;
-                    }
-                }
-
-                // 3. Verificar y convertir calidad en infoContenedor
-                if (doc.infoContenedor?.calidad) {
-                    const calidadOriginal = doc.infoContenedor.calidad;
-                    
-                    // Verificar si tiene elementos que no son ObjectId
-                    let necesitaConversion = false;
-                    if (Array.isArray(calidadOriginal)) {
-                        necesitaConversion = calidadOriginal.some(item => {
-                            return typeof item === 'string' || (item && !item._bsontype && !(item instanceof ObjectId));
-                        });
-                    }
-                    
-                    if (necesitaConversion) {
-                        const calidadConvertida = convertirAObjectId(calidadOriginal);
-                        updateObject['infoContenedor.calidad'] = calidadConvertida;
-                        console.log(`   🔄 Convirtiendo calidad a ObjectIds (${calidadConvertida.length} elementos)`);
-                        modificadosCalidad++;
-                        hayActualizaciones = true;
-                    }
-                }
-
-                // Solo actualizar si hay cambios
-                if (hayActualizaciones) {
-                    console.log(`   ⚙️  Actualizando documento...`);
-
-                    // Actualizar el documento
-                    const resultado = await collection.updateOne(
+                    await collection.updateOne(
                         { _id: doc._id },
-                        { $set: updateObject }
+                        { $set: { kilos: newKilos } }
                     );
-
-                    if (resultado.modifiedCount > 0) {
-                        console.log(`   ✅ Actualizado correctamente\n`);
-                        actualizados++;
-                    } else {
-                        console.log(`   ⚠️  No se modificó\n`);
-                    }
-                } else {
-                    console.log(`   ℹ️  No requiere actualizaciones\n`);
+                    
+                    actualizados++;
+                    modificadosCalidad++;
                 }
 
             } catch (error) {
