@@ -40,9 +40,10 @@ export function resumenCalidad(itemsPallet, calidad = "") {
     for (const item of itemsPallet) {
         const calibre = new Set()
 
+
         if (item.pallet.numeroPallet > totalPallets) totalPallets = item.pallet.numeroPallet
         total += item.cajas
-        if (item.calidad._id.toString() === calidad._id.toString() || calidad === "") {
+        if ( calidad === "" || item.calidad._id.toString() === calidad._id.toString() ) {
             if (!out[item.calibre]) {
                 out[item.calibre] = {
                     cantidad: 0,

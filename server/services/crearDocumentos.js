@@ -25,20 +25,21 @@ const imagePath = path.resolve(
 )
 export class CrearDocumentosRepository {
     static async crear_listas_de_empaque(cont, itemsPallet) {
-        if (!Array.isArray(itemsPallet)) {
-            console.error('itemsPallet no es un array:', itemsPallet);
-            throw new Error('itemsPallet debe ser un array');
-        }
+        try {
+            if (!Array.isArray(itemsPallet)) {
+                console.error('itemsPallet no es un array:', itemsPallet);
+                throw new Error('itemsPallet debe ser un array');
+            }
 
-        const isNotCaribe = isPaisesCaribe(cont);
-        // const proveedores = data.proveedores
-        const fuente = 16
-        const alto_celda = 50
+            const isNotCaribe = isPaisesCaribe(cont);
+            // const proveedores = data.proveedores
+            const fuente = 16
+            const alto_celda = 50
 
-        let coc_flag = false;
-        let row1Cells;
-        let row2cells;
-        let row3Cells;
+            let coc_flag = false;
+            let row1Cells;
+            let row2cells;
+            let row3Cells;
 
 
         if (cont.infoContenedor.clienteInfo._id === "659dbd9a347a42d89929340e") {
@@ -416,14 +417,18 @@ export class CrearDocumentosRepository {
         }
 
         const buffer = await workbook.xlsx.writeBuffer();
-        return buffer
-
+        return buffer;
+        } catch (error) {
+            console.error('Error en crear_listas_de_empaque:', error);
+            throw error;
+        }
     }
     static async crear_reporte_predios_contenedor(cont, itemsPallet) {
-        const tabla = resumenPredios(itemsPallet)
-        const predios = tabla[0]
-        const totalCajas = tabla[1]
-        const totalKilos = tabla[2]
+        try {
+            const tabla = resumenPredios(itemsPallet)
+            const predios = tabla[0]
+            const totalCajas = tabla[1]
+            const totalKilos = tabla[2]
 
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Reporte Predios")
@@ -527,7 +532,6 @@ Fecha: 17 Oct 2020`
             cell.border = styleNormalCell
         }
 
-        console.log("entra qui 1")
         //? los datos de los predios
         Object.values(predios).forEach((value, index) => {
             worksheet.insertRow(5 + index, [
@@ -545,7 +549,6 @@ Fecha: 17 Oct 2020`
                 cell.border = styleNormalCell
             }
         })
-        console.log("entra qui 2")
 
         //? total 
         let ultimaFila = Object.keys(predios).length;
@@ -595,115 +598,128 @@ Fecha: 17 Oct 2020`
         }
 
 
-        console.log("entra qui 3")
 
 
         const buffer = await workbook.xlsx.writeBuffer();
-        return buffer
+        return buffer;
+        } catch (error) {
+            console.error('Error en crear_reporte_predios_contenedor:', error);
+            throw error;
+        }
     }
     static async crear_carta_responsabilidad_camiones(registro) {
-        const pathRelative = path.resolve(
-            __dirname,
-            '..',
-            'templates',
-            'transporte',
-            'PLANTILLA CARTA INSTRUCCIONES TRANSPORTE FAVORITA.docx'
-        );
+        try {
+            const pathRelative = path.resolve(
+                __dirname,
+                '..',
+                'templates',
+                'transporte',
+                'PLANTILLA CARTA INSTRUCCIONES TRANSPORTE FAVORITA.docx'
+            );
 
-        // Leer el contenido del archivo de template
-        const content = fs.readFileSync(pathRelative, 'binary');
-        const zip = new PizZip(content);
+            // Leer el contenido del archivo de template
+            const content = fs.readFileSync(pathRelative, 'binary');
+            const zip = new PizZip(content);
 
-        // Crear el documento con docxtemplater
-        const doc = new Docxtemplater(zip, {
-            paragraphLoop: true,
-            linebreaks: true,
-        });
+            // Crear el documento con docxtemplater
+            const doc = new Docxtemplater(zip, {
+                paragraphLoop: true,
+                linebreaks: true,
+            });
 
-        const date = new Date()
+            const date = new Date()
 
-        // console.log(date.getDate())
-        // Renderizar el documento directamente con los datos
-        doc.render({
-            conductor: registro.conductor,
-            tipoFruta: registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", ""),
-            cedula: registro.cedula,
-            destino: "Ipiales - Nariño",
-            precinto: registro.precinto.reduce((acu, item) => acu + item + " - " || "", ""),
-            placa: registro.placa,
-            fecha_dia_escrito: numeroALetras(date.getDate()),
-            fecha_mes: date.toLocaleDateString('es-ES', { month: 'long' }),
-            fecha_anio: "veinticinco"
-        });
+            // console.log(date.getDate())
+            // Renderizar el documento directamente con los datos
+            doc.render({
+                conductor: registro.conductor,
+                tipoFruta: registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", ""),
+                cedula: registro.cedula,
+                destino: "Ipiales - Nariño",
+                precinto: registro.precinto.reduce((acu, item) => acu + item + " - " || "", ""),
+                placa: registro.placa,
+                fecha_dia_escrito: numeroALetras(date.getDate()),
+                fecha_mes: date.toLocaleDateString('es-ES', { month: 'long' }),
+                fecha_anio: "veinticinco"
+            });
 
-        // Obtener el buffer del documento
-        const buffer = doc.getZip().generate({
-            type: 'nodebuffer',
-            compression: 'DEFLATE'
-        });
+            // Obtener el buffer del documento
+            const buffer = doc.getZip().generate({
+                type: 'nodebuffer',
+                compression: 'DEFLATE'
+            });
 
-        return buffer;
+            return buffer;
+        } catch (error) {
+            console.error('Error en crear_carta_responsabilidad_camiones:', error);
+            throw error;
+        }
     }
     static async crear_reporte_vehiculo(registro) {
-        const cont = registro.contenedor
-        const tipoFrutas = registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", "")
+        try {
+            const cont = registro.contenedor
+            const tipoFrutas = registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", "")
 
-        const { infoExportacion } = cont
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet("Hoja 1")
+            const { infoExportacion } = cont
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet("Hoja 1")
 
-        worksheet.getColumn(2).width = 40
-        worksheet.getColumn(3).width = 60
-        //Titulo
-        const cell = worksheet.getCell("B2")
-        setCellProperties(
-            cell,
-            "REPORTE DE VEHICULOS",
-            24, true)
-        worksheet.mergeCells(`B2:C2`);
+            worksheet.getColumn(2).width = 40
+            worksheet.getColumn(3).width = 60
+            //Titulo
+            const cell = worksheet.getCell("B2")
+            setCellProperties(
+                cell,
+                "REPORTE DE VEHICULOS",
+                24, true)
+            worksheet.mergeCells(`B2:C2`);
 
-        //cuerpo
-        const body = [
-            { cell: 'B3', value: "Fecha despacho", font: 12, bold: false },
-            { cell: 'C3', value: new Date().toLocaleDateString(), font: 12, bold: false },
-            { cell: 'B4', value: "Transportadora", font: 12, bold: false },
-            { cell: 'C4', value: registro.transportadora, font: 12, bold: false },
-            { cell: 'B5', value: "Placa Vehiculo", font: 12, bold: false },
-            { cell: 'C5', value: registro.placa, font: 12, bold: false },
-            { cell: 'B6', value: "Placa del Trailer", font: 12, bold: false },
-            { cell: 'C6', value: registro.trailer, font: 12, bold: false },
-            { cell: 'B7', value: "Exportador", font: 12, bold: false },
-            { cell: 'C7', value: "CELIFRUT SAS", font: 12, bold: false },
-            { cell: 'B8', value: "Ruta", font: 12, bold: false },
-            { cell: 'C8', value: `ARMENIA-${infoExportacion.puerto}`, font: 12, bold: false },
-            { cell: 'B9', value: "Conductor", font: 12, bold: false },
-            { cell: 'C9', value: registro.conductor, font: 12, bold: false },
-            { cell: 'B10', value: "No. Cédula", font: 12, bold: false },
-            { cell: 'C10', value: registro.cedula, font: 12, bold: false },
-            { cell: 'B11', value: "No. Celular", font: 12, bold: false },
-            { cell: 'C11', value: registro.celular, font: 12, bold: false },
-            { cell: 'B12', value: "Lugar Cargue", font: 12, bold: false },
-            { cell: 'C12', value: "ARMENIA", font: 12, bold: false },
-            { cell: 'B13', value: "Lugar Descargue", font: 12, bold: false },
-            { cell: 'C13', value: infoExportacion.puerto, font: 12, bold: false },
-            { cell: 'B14', value: "Mercancía", font: 12, bold: false },
-            { cell: 'C14', value: tipoFrutas, font: 12, bold: false },
-            { cell: 'B15', value: "Temperatura", font: 12, bold: false },
-            { cell: 'C15', value: registro.temperatura, font: 12, bold: false },
-        ]
+            //cuerpo
+            const body = [
+                { cell: 'B3', value: "Fecha despacho", font: 12, bold: false },
+                { cell: 'C3', value: new Date().toLocaleDateString(), font: 12, bold: false },
+                { cell: 'B4', value: "Transportadora", font: 12, bold: false },
+                { cell: 'C4', value: registro.transportadora, font: 12, bold: false },
+                { cell: 'B5', value: "Placa Vehiculo", font: 12, bold: false },
+                { cell: 'C5', value: registro.placa, font: 12, bold: false },
+                { cell: 'B6', value: "Placa del Trailer", font: 12, bold: false },
+                { cell: 'C6', value: registro.trailer, font: 12, bold: false },
+                { cell: 'B7', value: "Exportador", font: 12, bold: false },
+                { cell: 'C7', value: "CELIFRUT SAS", font: 12, bold: false },
+                { cell: 'B8', value: "Ruta", font: 12, bold: false },
+                { cell: 'C8', value: `ARMENIA-${infoExportacion.puerto}`, font: 12, bold: false },
+                { cell: 'B9', value: "Conductor", font: 12, bold: false },
+                { cell: 'C9', value: registro.conductor, font: 12, bold: false },
+                { cell: 'B10', value: "No. Cédula", font: 12, bold: false },
+                { cell: 'C10', value: registro.cedula, font: 12, bold: false },
+                { cell: 'B11', value: "No. Celular", font: 12, bold: false },
+                { cell: 'C11', value: registro.celular, font: 12, bold: false },
+                { cell: 'B12', value: "Lugar Cargue", font: 12, bold: false },
+                { cell: 'C12', value: "ARMENIA", font: 12, bold: false },
+                { cell: 'B13', value: "Lugar Descargue", font: 12, bold: false },
+                { cell: 'C13', value: infoExportacion.puerto, font: 12, bold: false },
+                { cell: 'B14', value: "Mercancía", font: 12, bold: false },
+                { cell: 'C14', value: tipoFrutas, font: 12, bold: false },
+                { cell: 'B15', value: "Temperatura", font: 12, bold: false },
+                { cell: 'C15', value: registro.temperatura, font: 12, bold: false },
+            ]
 
-        body.forEach(item => {
-            const cell = worksheet.getCell(item.cell)
-            setCellProperties(cell, item.value, item.font, item.bold)
-        })
+            body.forEach(item => {
+                const cell = worksheet.getCell(item.cell)
+                setCellProperties(cell, item.value, item.font, item.bold)
+            })
 
-        const buffer = await workbook.xlsx.writeBuffer();
-        return buffer;
+            const buffer = await workbook.xlsx.writeBuffer();
+            return buffer;
+        } catch (error) {
+            console.error('Error en crear_reporte_vehiculo:', error);
+            throw error;
+        }
     }
     static async crear_reporte_datalogger(registro) {
-
-        const cont = registro.contenedor
-        const tipoFrutas = registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", "")
+        try {
+            const cont = registro.contenedor
+            const tipoFrutas = registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", "")
 
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Hoja 1")
@@ -811,120 +827,134 @@ Fecha: 17 Oct 2020`
 
         const buffer = await workbook.xlsx.writeBuffer();
         return buffer;
+        } catch (error) {
+            console.error('Error en crear_reporte_datalogger:', error);
+            throw error;
+        }
     }
     static async crear_carta_instrucciones(registro) {
-        const cont = registro.contenedor
-        const tipoFrutas = registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", "")
+        try {
+            const cont = registro.contenedor
+            const tipoFrutas = registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", "")
 
-        const pathRelative = path.resolve(
-            __dirname,
-            '..',
-            'templates',
-            'transporte',
-            'Entrega_Instrucciones.docx'
-        );
+            const pathRelative = path.resolve(
+                __dirname,
+                '..',
+                'templates',
+                'transporte',
+                'Entrega_Instrucciones.docx'
+            );
 
-        const { infoExportacion } = cont;
-        const total_cajas = cont.totalCajas
-        const total_kilos = cont.totalKilos
-        const peso_bruto = (total_cajas * 0.85) + total_kilos;
+            const { infoExportacion } = cont;
+            const total_cajas = cont.totalCajas
+            const total_kilos = cont.totalKilos
+            const peso_bruto = (total_cajas * 0.85) + total_kilos;
 
 
-        // Leer el contenido del archivo de template
-        const content = fs.readFileSync(pathRelative, 'binary');
-        const zip = new PizZip(content);
+            // Leer el contenido del archivo de template
+            const content = fs.readFileSync(pathRelative, 'binary');
+            const zip = new PizZip(content);
 
-        // Crear el documento con docxtemplater
-        const doc = new Docxtemplater(zip, {
-            paragraphLoop: true,
-            linebreaks: true,
-        });
+            // Crear el documento con docxtemplater
+            const doc = new Docxtemplater(zip, {
+                paragraphLoop: true,
+                linebreaks: true,
+            });
 
-        const date = new Date()
+            const date = new Date()
 
-        // console.log(date.getDate())
-        // Renderizar el documento directamente con los datos
-        doc.render({
-            precinto: registro.precinto.reduce((acu, item) => acu + item + " - " || "", ""),
-            tipo_fruta: tipoFrutas,
-            transportadora: registro.transportadora,
-            placa: registro.placa,
-            trailer: registro.trailer,
-            agencia: infoExportacion.agencia,
-            total_cajas: total_kilos.toFixed(2),
-            total_cajas_net: peso_bruto.toFixed(2),
-            temperatura: registro.temperatura,
-            nit: registro.nit,
-            fecha_dia_escrito: numeroALetras(date.getDate()),
-            fecha_dia: date.getDate(),
-            fecha_mes: date.toLocaleDateString('es-ES', { month: 'long' }),
-        });
+            // console.log(date.getDate())
+            // Renderizar el documento directamente con los datos
+            doc.render({
+                precinto: registro.precinto.reduce((acu, item) => acu + item + " - " || "", ""),
+                tipo_fruta: tipoFrutas,
+                transportadora: registro.transportadora,
+                placa: registro.placa,
+                trailer: registro.trailer,
+                agencia: infoExportacion.agencia,
+                total_cajas: total_kilos.toFixed(2),
+                total_cajas_net: peso_bruto.toFixed(2),
+                temperatura: registro.temperatura,
+                nit: registro.nit,
+                fecha_dia_escrito: numeroALetras(date.getDate()),
+                fecha_dia: date.getDate(),
+                fecha_mes: date.toLocaleDateString('es-ES', { month: 'long' }),
+            });
 
-        // Obtener el buffer del documento
-        const buffer = doc.getZip().generate({
-            type: 'nodebuffer',
-            compression: 'DEFLATE'
-        });
+            // Obtener el buffer del documento
+            const buffer = doc.getZip().generate({
+                type: 'nodebuffer',
+                compression: 'DEFLATE'
+            });
 
-        return buffer;
+            return buffer;
+        } catch (error) {
+            console.error('Error en crear_carta_instrucciones:', error);
+            throw error;
+        }
     }
     static async crear_carta_responsabilidad(registro) {
-        const cont = registro.contenedor
-        const tipoFrutas = registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", "")
+        try {
+            const cont = registro.contenedor
+            const tipoFrutas = registro.contenedor.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - " || "", "")
 
-        const pathRelative = path.resolve(
-            __dirname,
-            '..',
-            'templates',
-            'transporte',
-            'carta_responsabilidad.docx'
-        );
-
-
-        const { infoContenedor, numeroContenedor, infoExportacion } = cont;
-        const total_kilos = cont.totalKilos;
+            const pathRelative = path.resolve(
+                __dirname,
+                '..',
+                'templates',
+                'transporte',
+                'carta_responsabilidad.docx'
+            );
 
 
-        // Leer el contenido del archivo de template
-        const content = fs.readFileSync(pathRelative, 'binary');
-        const zip = new PizZip(content);
+            const { infoContenedor, numeroContenedor, infoExportacion } = cont;
+            const total_kilos = cont.totalKilos;
 
-        // Crear el documento con docxtemplater
-        const doc = new Docxtemplater(zip, {
-            paragraphLoop: true,
-            linebreaks: true,
-        });
 
-        let opciones = { day: '2-digit', month: '2-digit', year: 'numeric' };
-        // Renderizar el documento directamente con los datos
-        doc.render({
-            fecha: new Date().toLocaleDateString('es-ES', opciones),
-            numeroContenedor: numeroContenedor,
-            agencia: infoExportacion.agencia,
-            naviera: infoExportacion.naviera,
-            puerto: infoExportacion.puerto.toUpperCase(),
-            expt: infoExportacion.expt.toUpperCase(),
-            cliente: infoContenedor.clienteInfo.CLIENTE,
-            direccion: infoContenedor.clienteInfo["DIRECCIÓN"] ?? 'N/A',
+            // Leer el contenido del archivo de template
+            const content = fs.readFileSync(pathRelative, 'binary');
+            const zip = new PizZip(content);
 
-            placa: registro.placa,
-            tipoFruta: tipoFrutas,
-            transportadora: registro.transportadora,
-            precinto: registro.precinto.reduce((acu, item) => acu + item + " - " || "", ""),
-            trailer: registro.trailer,
-            conductor: registro.conductor,
-            cedula: registro.cedula,
-            celular: registro.celular,
+            // Crear el documento con docxtemplater
+            const doc = new Docxtemplater(zip, {
+                paragraphLoop: true,
+                linebreaks: true,
+            });
 
-            kilos: total_kilos.toFixed(2),
-        });
+            let opciones = { day: '2-digit', month: '2-digit', year: 'numeric' };
+            // Renderizar el documento directamente con los datos
+            doc.render({
+                fecha: new Date().toLocaleDateString('es-ES', opciones),
+                numeroContenedor: numeroContenedor,
+                agencia: infoExportacion?.agencia || 'N/A',
+                naviera: infoExportacion?.naviera || 'N/A',
+                puerto: infoExportacion?.puerto?.toUpperCase() || 'N/A',
+                expt: infoExportacion?.expt?.toUpperCase() || 'N/A',
+                cliente: infoContenedor?.clienteInfo?.CLIENTE || 'N/A',
+                direccion: infoContenedor?.clienteInfo?.["DIRECCIÓN"] ?? 'N/A',
 
-        // Obtener el buffer del documento
-        const buffer = doc.getZip().generate({
-            type: 'nodebuffer',
-            compression: 'DEFLATE'
-        });
+                placa: registro?.placa || '',
+                tipoFruta: tipoFrutas,
+                transportadora: registro?.transportadora || 'N/A',
+                precinto: registro?.precinto.reduce((acu, item) => acu + item + " - " || "", "") || 'N/A',
+                trailer: registro?.trailer || 'N/A',
+                conductor: registro?.conductor || 'N/A',
+                cedula: registro?.cedulav || 'N/A',
+                celular: registro?.celularv || 'N/A',
 
-        return buffer;
+                kilos: total_kilos.toFixed(2),
+            });
+
+            // Obtener el buffer del documento
+            const buffer = doc.getZip().generate({
+                type: 'nodebuffer',
+                compression: 'DEFLATE'
+            });
+
+            return buffer;
+        } catch (error) {
+            console.error('Error en crear_carta_responsabilidad:', error);
+            throw error;
+        }
     }
 }

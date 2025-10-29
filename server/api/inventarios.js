@@ -1083,7 +1083,7 @@ export class InventariosRepository {
         try {
             const { data } = req
             const { filtro } = data;
-            console.log(filtro)
+
             let result = []
 
             if (filtro.EF1 && !filtro.EF8) {
@@ -1297,7 +1297,12 @@ export class InventariosRepository {
                     ]
 
             });
-            return pallets
+
+            const sortItemsPallet = pallets.sort((a, b) => {
+                return a.pallet.numeroPallet - b.pallet.numeroPallet;
+            });
+
+            return sortItemsPallet
         } catch (err) {
             if (err.status === 523) {
                 throw err
@@ -1342,12 +1347,16 @@ export class InventariosRepository {
                                 select: 'PREDIO GGN ICA',
                             }
                         }
-                    ]
+                    ],
+                sort: { 'pallet.numeroPallet': 1 }
             })
-            console.log(itemsPallet)
+            // console.log(itemsPallet)
+            const sortItemsPallet = itemsPallet.sort((a, b) => {
+                return a.pallet.numeroPallet - b.pallet.numeroPallet;
+            });
             let buffer
             if (tipo === "listaEmpaque") {
-                buffer = await CrearDocumentosRepository.crear_listas_de_empaque(contenedorData[0], itemsPallet)
+                buffer = await CrearDocumentosRepository.crear_listas_de_empaque(contenedorData[0], sortItemsPallet)
                 const base64 = buffer.toString('base64');
 
                 return {
@@ -1356,7 +1365,7 @@ export class InventariosRepository {
                     mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 }
             } else if (tipo === "reportePredios") {
-                buffer = await CrearDocumentosRepository.crear_reporte_predios_contenedor(contenedorData[0], itemsPallet)
+                buffer = await CrearDocumentosRepository.crear_reporte_predios_contenedor(contenedorData[0], sortItemsPallet)
                 const base64 = buffer.toString('base64');
 
                 return {
