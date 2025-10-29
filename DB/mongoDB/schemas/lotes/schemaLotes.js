@@ -217,7 +217,8 @@ export const defineLotes = async (conn, AuditLog) => {
       "put_comercial_registroPrecios_proveedores_comentario",
       "post_comercial_precios_add_precio",
       "put_comercial_precios_proveedores_precioFijo",
-      "put_calidad_informe_noPagarBalinLote"
+      "put_calidad_informe_noPagarBalinLote",
+      "system:recalc_desh_rend"
     ];
     
     if (!accionesExcluidas.includes(this.options.action)) {
