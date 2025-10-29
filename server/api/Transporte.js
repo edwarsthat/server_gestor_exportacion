@@ -674,12 +674,9 @@ export class TransporteRepository {
             const { page } = req.data
             const resultsPerPage = 50;
             const response = await VehiculoRegistro.getRegistrosVehiculo({
-                query: {
-                    infoExportacion: { $exists: true },
-                },
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
-                sort: { numeroContenedor: -1 },
+                sort: { 'fecha': -1 },
             });
 
             return response;
