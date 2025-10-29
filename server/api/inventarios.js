@@ -1344,6 +1344,7 @@ export class InventariosRepository {
                         }
                     ]
             })
+            console.log(itemsPallet)
             let buffer
             if (tipo === "listaEmpaque") {
                 buffer = await CrearDocumentosRepository.crear_listas_de_empaque(contenedorData[0], itemsPallet)

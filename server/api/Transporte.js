@@ -675,11 +675,11 @@ export class TransporteRepository {
             const resultsPerPage = 50;
             const response = await VehiculoRegistro.getRegistrosVehiculo({
                 query: {
-                    entregaPrecinto: { $exists: true },
+                    infoTractoMula: { $exists: true },
                 },
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
-                sort: { 'entregaPrecinto.createdAt': -1 },
+                sort: { numeroContenedor: -1 },
             });
 
             return response;
