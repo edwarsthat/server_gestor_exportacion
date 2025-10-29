@@ -675,7 +675,7 @@ export class TransporteRepository {
             const resultsPerPage = 50;
             const response = await VehiculoRegistro.getRegistrosVehiculo({
                 query: {
-                    infoTractoMula: { $exists: true },
+                    infoExportacion: { $exists: true },
                 },
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
