@@ -221,6 +221,7 @@ export const defineLotes = async (conn, AuditLog) => {
     ];
     
     if (!accionesExcluidas.includes(this.options.action)) {
+      console.log("Resetting aprobacionProduccion due to action:", this.options.action);
       if (!update.$set) {
         update.$set = {};
       }

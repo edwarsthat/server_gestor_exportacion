@@ -153,7 +153,6 @@ export class ComercialRepository {
         try {
             const { data: datos, user } = req
             const { _id, data, action } = datos
-
             ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data)
 
             const proveedorOld = await ProveedoresRepository.get_proveedores({
