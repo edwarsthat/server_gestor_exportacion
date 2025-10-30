@@ -939,8 +939,8 @@ Fecha: 17 Oct 2020`
                 precinto: registro?.precinto.reduce((acu, item) => acu + item + " - " || "", "") || 'N/A',
                 trailer: registro?.trailer || 'N/A',
                 conductor: registro?.conductor || 'N/A',
-                cedula: registro?.cedulav || 'N/A',
-                celular: registro?.celularv || 'N/A',
+                cedula: registro?.cedula || 'N/A',
+                celular: registro?.celular || 'N/A',
 
                 kilos: total_kilos.toFixed(2),
             });
