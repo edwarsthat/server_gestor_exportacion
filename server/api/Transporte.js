@@ -375,7 +375,7 @@ export class TransporteRepository {
                 },
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
-                sort: { 'infoTractoMula.fecha': -1 },
+                sort: { fecha: -1},
             });
 
             return response;
