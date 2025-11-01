@@ -79,6 +79,7 @@ import { definePallet } from '../schemas/contenedores/schemaPallet.js';
 import { defineCalidades } from '../schemas/catalogs/schemaCalidades.js';
 import { defineItemPallet } from '../schemas/contenedores/schemaItemsPallet.js';
 import { defineAuditLogContenedores } from '../schemas/audit/AuditLogsContenedores.js';
+import { defineDescartes } from '../schemas/catalogs/schemaDescartes.js';
 
 export const db = {};
 export const connections = {};
@@ -264,6 +265,9 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Calidades...");
         db.CalidadesExpFruta = await defineCalidades(sysConn);
         console.log("✅ Calidades definidos");
+        console.log("⚡ Definiendo descartes...");
+        db.Descartes = await defineDescartes(sysConn);
+        console.log("✅ Descartes definidos");
 
         console.log("⚡ Definiendo Clientes...");
         db.Clientes = await defineClientes(sysConn);

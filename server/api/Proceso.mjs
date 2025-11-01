@@ -344,7 +344,8 @@ export class ProcesoRepository {
             const pallets = await ContenedoresRepository.getItemsPallets({
                 query: { contenedor: contenedor }
             });
-            return pallets
+            const sortPallets = pallets.sort((a, b) => a.pallet.numeroPallet - b.pallet.numeroPallet);
+            return sortPallets
         } catch (err) {
             if (err.status === 522) {
                 throw err
