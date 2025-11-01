@@ -641,7 +641,8 @@ Fecha: 17 Oct 2020`
                 fecha_dia_escrito: numeroALetras(date.getDate()),
                 fecha_mes: date.toLocaleDateString('es-ES', { month: 'long' }),
                 fecha_anio: "veinticinco",
-                kilos: registro?.pesoEstimado || "N/A"
+                kilos: registro?.pesoEstimado || "N/A",
+                numeroContenedor: registro?.contenedor?.numeroContenedor || "N/A",
             });
 
             // Obtener el buffer del documento
