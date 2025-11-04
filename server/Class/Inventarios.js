@@ -102,7 +102,7 @@ export class InventariosHistorialRepository {
     }
 
     //#region Inventarios Simples
-    static async get_inventario_simple(id){
+    static async get_inventario_simple(id) {
         try {
             const documento = await db.InventariosSimples.findOne({ _id: id })
                 .lean()
@@ -126,7 +126,6 @@ export class InventariosHistorialRepository {
             { $project: { inventario: 1 } },
             // Desarma el array para enriquecer cada ítem con su Lote + Proveedor
             { $unwind: { path: "$inventario" } },
-
             // Lookup Lote del ítem
             {
                 $lookup: {
@@ -160,7 +159,6 @@ export class InventariosHistorialRepository {
                     as: "lote"
                 },
             },
-
             { $unwind: { path: "$lote", preserveNullAndEmptyArrays: true } },
             {
                 $lookup: {
@@ -175,18 +173,30 @@ export class InventariosHistorialRepository {
             },
             { $unwind: { path: "$predio", preserveNullAndEmptyArrays: true } },
             {
+                $lookup: {
+                    from: "tipofrutas",
+                    let: { tipoFrutaId: "$lote.tipoFruta" },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$tipoFrutaId"] } } },
+                        { $project: { _id: 1, tipoFruta: 1 } }
+                    ],
+                    as: "tipoFruta"
+                }
+            },
+            { $unwind: { path: "$tipoFruta", preserveNullAndEmptyArrays: true } },
+            {
                 $set: {
                     lote: {
                         $mergeObjects: [
                             "$lote",
                             { predio: "$predio" },
+                            { tipoFruta: "$tipoFruta" },  // ← Agregado aquí
                             { canastillas: "$inventario.canastillas" }
                         ],
-
                     }
                 }
             },
-            { $unset: ["predio", "inventario"] },
+            { $unset: ["predio", "tipoFruta", "inventario"] },  // ← Agregado tipoFruta al unset
             { $replaceWith: "$lote" }
         ];
 
@@ -225,8 +235,8 @@ export class InventariosHistorialRepository {
     }
     static async put_inventarioSimple_updateOne(filter, update, options = {}) {
         const finalOptions = {
-            runValidators: false,    
-            ...options,             
+            runValidators: false,
+            ...options,
         };
 
         try {
@@ -258,7 +268,7 @@ export class InventariosHistorialRepository {
                 { _id: "68d1c0410f282bcb84388dd3" },
                 {
                     $pop: { ordenVaceo: -1 },
-                    $inc: { __v: 1 }      
+                    $inc: { __v: 1 }
                 },
                 { session }
             );
