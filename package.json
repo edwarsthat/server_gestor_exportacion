@@ -12,7 +12,8 @@
     "lint": "eslint . --fix",
     "iniciar-inventario": "node scripts/InicializarInventario.js",
     "start-db": "powershell -ExecutionPolicy Bypass -File ./config/start-databases.ps1",
-    "stop-db": "powershell -Command \"Stop-Process -Name mongod -Force\""
+    "stop-db": "powershell -Command \"Stop-Process -Name mongod -Force\"",
+    "mongo:start": "sudo bash ./config/start-mongo-rs.sh"
   },
   "type": "module",
   "author": "Edwar Stheven Ariza Torres",
