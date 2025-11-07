@@ -80,6 +80,8 @@ import { defineCalidades } from '../schemas/catalogs/schemaCalidades.js';
 import { defineItemPallet } from '../schemas/contenedores/schemaItemsPallet.js';
 import { defineAuditLogContenedores } from '../schemas/audit/AuditLogsContenedores.js';
 import { defineDescartes } from '../schemas/catalogs/schemaDescartes.js';
+import { defineAuditLoteMaquila } from '../schemas/audit/AuditLogLoteMaquila.js';
+import { defineLoteMaquila } from '../schemas/lotes/schemaLoteMaquila.js';
 
 export const db = {};
 export const connections = {};
@@ -247,6 +249,8 @@ const defineSchemasProceso = async (sysConn) => {
         db.AuditRegistroExportacionVehiculo = AuditRegistroExportacionVehiculo;
         const AuditRegistroExportacionContenedor = await defineAuditLogContenedores(sysConn);
         db.AuditRegistroExportacionContenedor = AuditRegistroExportacionContenedor;
+        const AuditLotesMaquila = await defineAuditLoteMaquila(sysConn);
+        db.AuditLotesMaquila = AuditLotesMaquila;
 
         console.log("✅ AuditLog definido");
         // inventarios
@@ -256,6 +260,7 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Inventarios Simples...");
         db.InventariosSimples = await defineInventarioSimple(sysConn, AuditInventariosSimples);
         console.log("✅ Inventarios Simples definidos");
+
 
 
         // Esquemas relacionados con clientes (base para otras dependencias)
@@ -350,6 +355,10 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Lotes...");
         db.Lotes = await defineLotes(sysConn, AuditLog);
         console.log("✅ Lotes definido");
+
+        console.log("⚡ Definiendo Lotes maquila...");
+        db.LotesMaquila = await defineLoteMaquila(sysConn, AuditLotesMaquila);
+        console.log("✅ Lotes maquila definido");
 
         console.log("⚡ Definiendo recordLotes...");
         db.recordLotes = await defineRecordLotes(sysConn);
