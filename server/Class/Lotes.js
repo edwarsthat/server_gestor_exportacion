@@ -251,7 +251,7 @@ export class LotesRepository {
     static async actualizar_lote(filter, update, options = {}, calculateFields = true) {
         const {
             session,
-            arrayFilters, 
+            arrayFilters,
             ...restOptions
 
         } = options;
@@ -330,7 +330,6 @@ export class LotesRepository {
         }
     }
 
-
     //#region EF8
     static async crear_lote_EF8(data, user, logId = null) {
         try {
@@ -394,6 +393,73 @@ export class LotesRepository {
         try {
             let documento = await db.LotesEF8.findOneAndUpdate(filter, update, { ...finalOptions });
             if (!documento) throw new Error('Lote no encontrado');
+
+            return documento;
+
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+        }
+    }
+    //#endregion
+    //#region Lotes Maquila
+    static async addLoteMaquila(data, user, opts = {}) {
+        const { session } = opts;
+        try {
+            const loteMaquila = new db.LotesMaquila(data);
+            loteMaquila._user = user;
+
+            const saved = await loteMaquila.save({ session });
+            return saved;
+        } catch (err) {
+            throw new PostError(409, `Error agregando lote maquila ${err.message}`);
+        }
+    }
+    static async getLotesMaquila(options = {}) {
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { fecha_creacion: -1 },
+            limit = 0,
+            skip = 0,
+            populate = [
+                { path: 'predio', select: 'PREDIO' }, 
+                { path: 'tipoFruta', select: 'tipoFruta' },
+                { path: 'cliente', select: 'CLIENTE' }
+            ]
+        } = options;
+        try {
+            let lotesQuery = { ...query };
+
+            if (ids.length > 0) {
+                lotesQuery._id = { $in: ids };
+            }
+
+            const lotes = await db.LotesMaquila.find(lotesQuery)
+                .select(select)
+                .sort(sort)
+                .limit(limit)
+                .skip(skip)
+                .populate(populate)
+                .exec();
+
+            return lotes
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo lotes maquila ${err.message}`);
+        }
+    }
+    static async actualizar_lote_Maquila(filter, update, options = {}, session = null) {
+
+        const finalOptions = {
+            new: true,
+            ...options,
+            ...(session && { session })
+        };
+
+        try {
+            let documento = await db.LotesMaquila.findOneAndUpdate(filter, update, { ...finalOptions });
+            if (!documento) throw new Error('Lote maquila no encontrado');
 
             return documento;
 
