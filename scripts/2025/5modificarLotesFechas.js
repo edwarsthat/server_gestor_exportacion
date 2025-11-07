@@ -1,5 +1,5 @@
-const { connectProcesoDB } = require("../DB/mongoDB/config/config");
-const { defineLotes } = require("../DB/mongoDB/schemas/lotes/schemaLotes");
+const { connectProcesoDB } = require("../../DB/mongoDB/config/config");
+const { defineLotes } = require("../../DB/mongoDB/schemas/lotes/schemaLotes");
 
 
 async function modificar_lotes_fecha_fecha_inicio() {

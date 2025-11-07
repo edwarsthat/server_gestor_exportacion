@@ -1,7 +1,7 @@
 // scripts/11ModificarTipoDefFrutaLotes.mjs
 import mongoose from "mongoose";
-import { connectProcesoDB } from "../DB/mongoDB/config/config.js";
-import { defineLotes } from "../DB/mongoDB/schemas/lotes/schemaLotes.js";
+import { connectProcesoDB } from "../../DB/mongoDB/config/config.js";
+import { defineLotes } from "../../DB/mongoDB/schemas/lotes/schemaLotes.js";
 
 async function modificar_tipoFruta() {
     const db = await connectProcesoDB("mongodb://localhost:27017/proceso");

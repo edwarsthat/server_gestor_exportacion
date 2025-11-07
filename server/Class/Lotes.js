@@ -251,7 +251,7 @@ export class LotesRepository {
     static async actualizar_lote(filter, update, options = {}, calculateFields = true) {
         const {
             session,
-            arrayFilters, 
+            arrayFilters,
             ...restOptions
 
         } = options;
@@ -271,18 +271,23 @@ export class LotesRepository {
 
             if (calculateFields) {
                 // 2. Calcula los campos mágicos
+                console.log(documento)
                 const get = (campo) => documento[campo] ?? 0;
 
                 const kilosProcesados = get('kilosProcesados');
                 const kilos = get('kilos');
                 const kilosVaciados = get('kilosVaciados');
-                const exportacionTotal = get("salidaExportacion.totalKilos") || 0;
+                const exportacionTotal = documento?.salidaExportacion?.totalKilos || 0;
+
 
                 let deshidratacion = 100;
                 let rendimiento = 0;
+
                 if (kilos > 0) {
+
                     deshidratacion = 100 - (kilosProcesados * 100) / kilos;
                     rendimiento = kilosVaciados === 0 ? 0 : ((exportacionTotal * 100) / kilosVaciados);
+
                 }
 
                 // 3. Si hay que actualizar la deshidratación, hazlo solo si cambia

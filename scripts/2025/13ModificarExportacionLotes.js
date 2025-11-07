@@ -1,7 +1,7 @@
 
-import { connectProcesoDB, connectCatalogosDB } from "../DB/mongoDB/config/config.js";
-import { defineContenedores } from "../DB/mongoDB/schemas/contenedores/schemaContenedores.js";
-import { defineLotes } from "../DB/mongoDB/schemas/lotes/schemaLotes.js";
+import { connectProcesoDB, connectCatalogosDB } from "../../DB/mongoDB/config/config.js";
+import { defineContenedores } from "../../DB/mongoDB/schemas/contenedores/schemaContenedores.js";
+import { defineLotes } from "../../DB/mongoDB/schemas/lotes/schemaLotes.js";
 
 async function modificar_exportacion() {
     const db = await connectProcesoDB("mongodb://localhost:27017/proceso");

@@ -1,8 +1,8 @@
-const { connectProcesoDB } = require("../DB/mongoDB/config/config");
+const { connectProcesoDB } = require("../../DB/mongoDB/config/config");
 const {
     defineContenedores,
-} = require("../DB/mongoDB/schemas/contenedores/schemaContenedores");
-const { defineLotes } = require("../DB/mongoDB/schemas/lotes/schemaLotes");
+} = require("../../DB/mongoDB/schemas/contenedores/schemaContenedores");
+const { defineLotes } = require("../../DB/mongoDB/schemas/lotes/schemaLotes");
 
 async function modificar_lotes_contenedores() {
     const db = await connectProcesoDB("mongodb://admin:SwR7uJHy1cnDDH3zRVMKZFwLOvn3RQBl@localhost:27017/proceso?authSource=admin")

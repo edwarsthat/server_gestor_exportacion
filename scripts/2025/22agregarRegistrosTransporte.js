@@ -4,8 +4,8 @@
  */
 
 import { MongoClient } from 'mongodb';
-import config from '../src/config/index.js';
-import { parseMultTipoCaja } from '../server/services/helpers/contenedores.js';
+import config from '../../src/config/index.js';
+import { parseMultTipoCaja } from '../../server/services/helpers/contenedores.js';
 
 const { MONGODB_PROCESO } = config;
 
