@@ -111,7 +111,6 @@ async function main() {
                 operacionRealizada: "vaciarLote"
             }).toArray();
 
-            console.log(`   - Indicador ${indicador._id} (${fechaIndicador.toISOString().split('T')[0]}): ${items.length} items encontrados.`);
             const totalexportacion = {}
             const totalProcesado = {}
 
@@ -129,7 +128,7 @@ async function main() {
             }
 
             for (const item of records) {
-                console.log(item.documento._id );
+                console.log(item._id );
 
                 const lote = await lotes.findOne({ _id: new ObjectId(item.documento._id) });
                 if(!totalProcesado[tipoFruta[lote.tipoFruta.toString()]]) {
