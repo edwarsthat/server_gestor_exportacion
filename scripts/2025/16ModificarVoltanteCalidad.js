@@ -1,6 +1,6 @@
-import { connectCatalogosDB, connectSistemaDB } from "../DB/mongoDB/config/config.js";
-import { defineVolanteCalidad } from "../DB/mongoDB/schemas/calidad/schemaVolanteCalidad.js";
-import { defineTipoFrutas } from "../DB/mongoDB/schemas/catalogs/schemaTipoFruta.js";
+import { connectCatalogosDB, connectSistemaDB } from "../../DB/mongoDB/config/config.js";
+import { defineVolanteCalidad } from "../../DB/mongoDB/schemas/calidad/schemaVolanteCalidad.js";
+import { defineTipoFrutas } from "../../DB/mongoDB/schemas/catalogs/schemaTipoFruta.js";
 
 async function modificar_indicadores_tipoFrutaCalidad() {
     const db = await connectSistemaDB("mongodb://localhost:27017/sistema");

@@ -4,7 +4,7 @@
  */
 
 import { MongoClient, ObjectId } from 'mongodb';
-import config from '../src/config/index.js';
+import config from '../../src/config/index.js';
 
 const { MONGODB_PROCESO } = config;
 

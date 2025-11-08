@@ -1,5 +1,5 @@
 
-import { connectProcesoDB } from "../DB/mongoDB/config/config";
+import { connectProcesoDB } from "../../DB/mongoDB/config/config";
 import { db } from "../DB/mongoDB/config/init.mjs";
 
 const updateContenedores = async () => {

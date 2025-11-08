@@ -1,6 +1,6 @@
 
-const { connectProcesoDB } = require("../DB/mongoDB/config/config");
-const { defineCargo } = require("../DB/mongoDB/schemas/usuarios/schemaCargos");
+const { connectProcesoDB } = require("../../DB/mongoDB/config/config");
+const { defineCargo } = require("../../DB/mongoDB/schemas/usuarios/schemaCargos");
 
 
 async function modificar_actualizar_permisoso() {

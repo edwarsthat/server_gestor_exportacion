@@ -755,7 +755,7 @@ export class VariablesDelSistema {
       );
     }
   }
-  static async reiniciarValores_proceso(exportacion_keys) {
+  static async reiniciarValores_proceso() {
     let cliente;
 
     try {
@@ -768,7 +768,6 @@ export class VariablesDelSistema {
 
       // Junta todas las keys en un solo array, para borrarlas en un solo golpe
       const keysToDelete = [
-        ...exportacion_keys,
         "kilosProcesadosHoy",
         "kilosVaciadosHoy"
       ];
@@ -1016,36 +1015,7 @@ export class VariablesDelSistema {
       throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
     }
   }
-  static async get_metricas_exportacion() {
-    let cliente;
-    try {
-      cliente = await getRedisClient();
 
-      let cursor = '0';
-      const keys = [];
-      do {
-        const res = await cliente.scan(
-          cursor,
-          'MATCH',
-          'exportacion:*',
-          'COUNT',
-          '100'
-        );
-        const soloExportacion = res.keys.filter(k => k.startsWith('exportacion:'));
-        keys.push(...soloExportacion);
-        cursor = res.cursor; // <-- este paso es CLAVE
-      } while (cursor !== '0');
-
-      const results = {};
-      for (const key of keys) {
-        results[key] = await cliente.hGetAll(key);
-      }
-
-      return [results, keys];
-    } catch (err) {
-      throw new ConnectRedisError(502, `Error trayendo métricas exportación: ${err}`);
-    }
-  }
   static async get_kilos_exportacion_hoy2() {
     let cliente;
 

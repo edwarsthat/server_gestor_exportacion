@@ -4,7 +4,7 @@
  */
 
 import { MongoClient } from 'mongodb';
-import config from '../src/config/index.js';
+import config from '../../src/config/index.js';
 
 const { MONGODB_PROCESO } = config;
 
@@ -79,56 +79,29 @@ async function main() {
 
         for (const lote of lotesDocs) {
             try {
-                let total = 0;
-                const { descarteLavado, descarteEncerado, salidaExportacion, frutaNacional, directoNacional, kilos } = lote;
 
-                if (!kilos || kilos === 0) {
-                    console.log(`⏭️  Lote ${lote._id} omitido (kilos = ${kilos || 0})`);
+                const { kilosVaciados, salidaExportacion, rendimiento } = lote;
+                const newRendimiento = kilosVaciados === 0 ? 0 : ((salidaExportacion.totalKilos * 100) / kilosVaciados);
+
+                if (rendimiento !== newRendimiento) {
+                    // Actualizar el lote con el nuevo rendimiento
+                    const resultado = await lotes.updateOne(
+                        { _id: lote._id },
+                        { $set: { rendimiento: newRendimiento } }
+                    );
+
+
+                    if (resultado.modifiedCount === 1) {
+                        console.log(`   ✅ Lote ${lote._id} actualizado. Nuevo rendimiento: ${rendimiento.toFixed(2)}%`);
+                        lotesActualizados++;
+                    } else {
+                        console.log(`   ⏭️  Lote ${lote._id} no requiere actualización.`);
+                        lotesOmitidos++;
+                    }
+                } else {
+                    console.log(`   ⏭️  Lote ${lote._id} ya tiene el rendimiento correcto.`);
                     lotesOmitidos++;
-                    continue;
                 }
-
-                console.log(`\n📦 Procesando Lote ${lote._id}:`);
-                console.log(`   Kilos originales: ${kilos} kg`);
-
-                if (descarteLavado && Object.keys(descarteLavado).length > 0) {
-                    const descarteL = Object.values(descarteLavado).reduce((acc, val) => acc + (val || 0), 0);
-                    total += descarteL;
-                    console.log(`   Descarte lavado: ${descarteL.toFixed(2)} kg`);
-                }
-                if (descarteEncerado && Object.keys(descarteEncerado).length > 0) {
-                    const descarteE = Object.values(descarteEncerado).reduce((acc, val) => acc + (val || 0), 0);
-                    total += descarteE;
-                    console.log(`   Descarte encerado: ${descarteE.toFixed(2)} kg`);
-                }
-
-                if (frutaNacional) {
-                    total += frutaNacional || 0;
-                    console.log(`   Fruta nacional: ${frutaNacional.toFixed(2)} kg`);
-                }
-                if (directoNacional) {
-                    total += directoNacional || 0;
-                    console.log(`   Directo nacional: ${directoNacional.toFixed(2)} kg`);
-                }
-
-                if (salidaExportacion && salidaExportacion.totalKilos) {
-                    total += salidaExportacion.totalKilos || 0;
-                    console.log(`   Salida exportación: ${salidaExportacion.totalKilos.toFixed(2)} kg`);
-                }
-
-                const deshidratacion = parseFloat((100 - (total * 100 / kilos)).toFixed(2));
-                const kilosProcesados = parseFloat(total.toFixed(2));
-
-                console.log(`   ➡️  Kilos procesados: ${kilosProcesados} kg`);
-                console.log(`   💧 Deshidratación: ${deshidratacion}%`);
-
-                await lotes.updateOne(
-                    { _id: lote._id },
-                    { $set: { deshidratacion, kilosProcesados } }
-                );
-
-                lotesActualizados++;
-                console.log(`   ✅ Actualizado correctamente`);
 
             } catch (error) {
                 console.error(`   ❌ Error procesando lote ${lote._id}:`, error.message);

@@ -1,6 +1,6 @@
-import { connectProcesoDB, connectCatalogosDB } from "../DB/mongoDB/config/config.js";
-import { defineTipoFrutas } from "../DB/mongoDB/schemas/catalogs/schemaTipoFruta.js";
-import { definePrecios } from "../DB/mongoDB/schemas/precios/schemaPrecios.js";
+import { connectProcesoDB, connectCatalogosDB } from "../../DB/mongoDB/config/config.js";
+import { defineTipoFrutas } from "../../DB/mongoDB/schemas/catalogs/schemaTipoFruta.js";
+import { definePrecios } from "../../DB/mongoDB/schemas/precios/schemaPrecios.js";
 
 async function modificar_tipoFruta() {
     const db = await connectProcesoDB("mongodb://localhost:27017/proceso");

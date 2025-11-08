@@ -1,6 +1,6 @@
 
-const { connectProcesoDB } = require("../DB/mongoDB/config/config");
-const { defineproveedores } = require("../DB/mongoDB/schemas/proveedores/schemaProveedores");
+const { connectProcesoDB } = require("../../DB/mongoDB/config/config");
+const { defineproveedores } = require("../../DB/mongoDB/schemas/proveedores/schemaProveedores");
 
 async function modificar_proveedores_new_ggn_tipoFruta() {
     try {

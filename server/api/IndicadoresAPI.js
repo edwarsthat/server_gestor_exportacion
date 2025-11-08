@@ -147,7 +147,7 @@ export class IndicadoresAPIRepository {
             throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async reiniciarValores_proceso(keysExportacion) {
+    static async reiniciarValores_proceso() {
         let log
         try {
             log = await LogsRepository.create({
@@ -155,54 +155,10 @@ export class IndicadoresAPIRepository {
                 action: "reiniciarValores_proceso",
                 acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
             })
-            await VariablesDelSistema.reiniciarValores_proceso(keysExportacion);
+            await VariablesDelSistema.reiniciarValores_proceso();
             await registrarPasoLog(log._id, "Se obtiene los kilos procesados", "Completado");
 
             procesoEventEmitter.emit("proceso_event", {});
-        } catch (err) {
-            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
-
-            if (err.status === 525) {
-                throw err
-            }
-            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
-        } finally {
-            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-        }
-    }
-    static async sys_indicadores_ingresar_indicador() {
-        let log
-        try {
-            log = await LogsRepository.create({
-                user: "66b62fc3777ac9bdcc5050ed",
-                action: "sys_indicadores_ingresar_indicador",
-                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-            })
-            const indicador = await IndicadoresRepository.get_indicadores({
-                sort: { fecha_creacion: -1 },
-                limit: 1
-            })
-            await registrarPasoLog(log._id, "Se obtiene el ultimo indicador", "Completado", `indicador: ${indicador[0]._id}`);
-
-            if (!indicador.length) {
-                throw new ProcessError(404, "No se encontró ningún indicador creado");
-            }
-
-            const kilos_procesados_raw = await VariablesDelSistema.get_metrica_hash("kilosProcesadosHoy");
-            const kilos_procesados = await IndicadoresService.procesar_metrica_hash(kilos_procesados_raw, log);
-            await registrarPasoLog(log._id, "Se obtiene los kilos procesados", "Completado");
-
-            const [kilos_exportacion_raw, keys] = await VariablesDelSistema.get_metricas_exportacion();
-            const kilos_exportacion = await IndicadoresService.procesar_exportacion_hash(kilos_exportacion_raw, log);
-
-
-            await IndicadoresRepository.put_indicador(indicador[0]._id, {
-                kilos_procesados: kilos_procesados,
-                kilos_exportacion: kilos_exportacion,
-            })
-            await registrarPasoLog(log._id, "Se modifica el indicador diario", "Completado");
-
-            return keys
         } catch (err) {
             await registrarPasoLog(log._id, "Error", "Fallido", err.message);
 

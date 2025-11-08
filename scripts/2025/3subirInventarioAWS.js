@@ -1,4 +1,4 @@
-const { ConnectAWS_Error } = require("../Error/ConnectionErrors");
+const { ConnectAWS_Error } = require("../../Error/ConnectionErrors");
 const { ProcesoRepository } = require("../server/api/Proceso");
 
 //!funcion que agrega todo el inventario a aws

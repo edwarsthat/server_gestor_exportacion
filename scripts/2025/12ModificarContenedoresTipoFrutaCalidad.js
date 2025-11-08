@@ -1,7 +1,7 @@
 // scripts/11ModificarTipoDefFrutaLotes.mjs
-import { connectProcesoDB, connectCatalogosDB } from "../DB/mongoDB/config/config.js";
-import { defineTipoFrutas } from "../DB/mongoDB/schemas/catalogs/schemaTipoFruta.js";
-import { defineContenedores } from "../DB/mongoDB/schemas/contenedores/schemaContenedores.js";
+import { connectProcesoDB, connectCatalogosDB } from "../../DB/mongoDB/config/config.js";
+import { defineTipoFrutas } from "../../DB/mongoDB/schemas/catalogs/schemaTipoFruta.js";
+import { defineContenedores } from "../../DB/mongoDB/schemas/contenedores/schemaContenedores.js";
 
 async function modificar_tipoFruta() {
     const db = await connectProcesoDB("mongodb://localhost:27017/proceso");
