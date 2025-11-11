@@ -170,7 +170,7 @@ export const defineLoteMaquila = async (conn, AuditLog) => {
         salidaExportacion: salidaExportacionSchema,
         rendimiento: { type: Number, default: 0 },
         tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas' },
-        user: String,
+        user: { type: Schema.Types.ObjectId, ref: 'usuario' },
     });
 
     loteMaquilaSchema.plugin(auditPlugin);

@@ -201,7 +201,7 @@ export const defineLotes = async (conn, AuditLog) => {
     salidaExportacion: salidaExportacionSchema,
     rendimiento: { type: Number, default: 0 },
     tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas' },
-    user: String,
+    user: { type: Schema.Types.ObjectId, ref: 'usuario' },
 
   }, { versionKey: '__v' });
 

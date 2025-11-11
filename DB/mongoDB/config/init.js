@@ -252,7 +252,18 @@ const defineSchemasProceso = async (sysConn) => {
         const AuditLotesMaquila = await defineAuditLoteMaquila(sysConn);
         db.AuditLotesMaquila = AuditLotesMaquila;
 
-        
+        console.log("⚡ Definiendo Cargo...");
+        db.Cargo = await defineCargo(sysConn);
+        console.log("✅ Cargo definido");
+
+        console.log("⚡ Definiendo recordCargo...");
+        db.recordCargo = await defineRecordcargo(sysConn);
+        console.log("✅ recordCargo definido");
+
+        console.log("⚡ Definiendo Usuarios...");
+        db.Usuarios = await defineUser(sysConn);
+        console.log("✅ Usuarios definido");
+
 
         console.log("✅ AuditLog definido");
         // inventarios
@@ -413,17 +424,17 @@ const defineSchemasSistema = async (sysConn) => {
     try {
         console.log("🔍 Iniciando definición de schemas sistema...");
 
-        console.log("⚡ Definiendo Cargo...");
-        db.Cargo = await defineCargo(sysConn);
-        console.log("✅ Cargo definido");
+        // console.log("⚡ Definiendo Cargo...");
+        // db.Cargo = await defineCargo(sysConn);
+        // console.log("✅ Cargo definido");
 
-        console.log("⚡ Definiendo recordCargo...");
-        db.recordCargo = await defineRecordcargo(sysConn);
-        console.log("✅ recordCargo definido");
+        // console.log("⚡ Definiendo recordCargo...");
+        // db.recordCargo = await defineRecordcargo(sysConn);
+        // console.log("✅ recordCargo definido");
 
-        console.log("⚡ Definiendo Usuarios...");
-        db.Usuarios = await defineUser(sysConn);
-        console.log("✅ Usuarios definido");
+        // console.log("⚡ Definiendo Usuarios...");
+        // db.Usuarios = await defineUser(sysConn);
+        // console.log("✅ Usuarios definido");
 
 
         console.log("⚡ Definiendo Logs...");

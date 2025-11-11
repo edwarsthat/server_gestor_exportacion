@@ -1114,17 +1114,22 @@ export class InventariosRepository {
             const { data } = req
             const { filtro } = data;
 
-            let result = []
+            let EF1 = []
+            let EF8 = []
+            let EF10 = []
 
-            if (filtro.EF1 && !filtro.EF8) {
-                result = await InventariosService.obtenerRecordLotesIngresoLote(filtro)
+            if (filtro.EF1) {
+                EF1 = await InventariosService.obtenerRecordLotesIngresoLote(filtro)
             }
-            else if (filtro.EF8 && !filtro.EF1) {
-                result = await InventariosService.obtenerRecordLotesIngresoLoteEF8(filtro)
-            } else {
-                result = await InventariosService.obtenerRecordLotesIngresolote_EF1_EF8(filtro)
+            if (filtro.EF8) {
+                EF8 = await InventariosService.obtenerRecordLotesIngresoLoteEF8(filtro)
             }
-            return result;
+            if( filtro.EF10 ){
+                EF10 = await InventariosService.obtenerRecordLotesIngresoLoteMaquila(filtro)
+            }
+            const concatenado = EF1.concat(EF8).concat(EF10)
+            const sortResult = concatenado.sort((a, b) => b.fecha_creacion - a.fecha_creacion);
+            return sortResult;
         } catch (err) {
             console.error("Error en get_inventarios_historiales_ingresoFruta_registros", err);
             if (err.status === 522) {

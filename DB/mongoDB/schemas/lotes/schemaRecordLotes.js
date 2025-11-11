@@ -6,7 +6,7 @@ export const defineRecordLotes = async (conn) => {
 
   const HistorialLotesSchema = new Schema({
     operacionRealizada: String,
-    user: String,
+    user: { type: Schema.Types.ObjectId, ref: 'usuario' },
     documento: Object,
     fecha: { type: Date, default: Date.now },
     createdAt: { type: Date, default: Date.now }

@@ -210,7 +210,8 @@ export class LotesRepository {
             skip = 0,
             populate = [
                 { path: 'predio', select: 'PREDIO ICA GGN SISPAP' },
-                { path: 'tipoFruta' }
+                { path: 'tipoFruta' },
+                { path: "user", select: "usuario nombre apellido" }
             ]
         } = options;
 
@@ -351,7 +352,11 @@ export class LotesRepository {
             sort = { fecha_creacion: -1 },
             limit = 50,
             skip = 0,
-            populate = [{ path: 'predio', select: 'PREDIO' }, { path: 'tipoFruta', select: 'tipoFruta' }]
+            populate = [
+                { path: 'predio', select: 'PREDIO' },
+                { path: 'tipoFruta', select: 'tipoFruta' },
+                { path: "user", select: "usuario nombre apellido" }
+            ]
         } = options;
         try {
             let lotesQuery = { ...query };
@@ -419,7 +424,8 @@ export class LotesRepository {
             populate = [
                 { path: 'predio', select: 'PREDIO' },
                 { path: 'tipoFruta', select: 'tipoFruta' },
-                { path: 'cliente', select: 'CLIENTE' }
+                { path: 'cliente', select: 'CLIENTE' },
+                { path: "user", select: "usuario nombre apellido" }   
             ]
         } = options;
         try {

@@ -962,32 +962,7 @@ export class InventariosService {
             sort: { fecha_estimada_llegada: -1 }
         });
 
-        const usersId = [];
-
-        for (const lote of lotes) {
-            if (lote?.user) {
-                usersId.push(lote.user.toString());
-            }
-        }
-
-        const usersIdSet = new Set(usersId)
-        const usersIdArr = [...usersIdSet]
-
-        const user = await UsuariosRepository.get_users({
-            ids: usersIdArr,
-            getAll: true
-        })
-
-        const result = [];
-        for (const lote of lotes) {
-
-            const usuario = user.find(u => u._id.toString() === lote?.user?.toString());
-            if (usuario) {
-                lote.user = usuario.nombre + " " + usuario.apellido;
-            }
-            result.push(lote);
-        }
-        return result;
+        return lotes;
     }
     static async obtenerRecordLotesIngresoLoteEF8(filtro) {
         const { fechaInicio, fechaFin, tipoFruta = "" } = filtro;
@@ -1004,34 +979,23 @@ export class InventariosService {
             sort: { fecha_ingreso_inventario: -1 }
         });
 
-        const usersId = [];
+        return lotes;
+    }
+    static async obtenerRecordLotesIngresoLoteMaquila(filtro) {
+        const { fechaInicio, fechaFin, tipoFruta = "" } = filtro;
+        let query = {}
+        query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_ingreso_inventario')
 
-        for (const lote of lotes) {
-            usersId.push(lote.user.toString());
+        if (tipoFruta) {
+            query.tipoFruta = tipoFruta;
         }
 
-        const usersIdSet = new Set(usersId)
-        const usersIdArr = [...usersIdSet]
+        const lotes = await LotesRepository.getLotesMaquila({
+            query: query,
+            sort: { fecha_ingreso_inventario: -1 }
+        });
 
-        const user = await UsuariosRepository.get_users({
-            ids: usersIdArr,
-            getAll: true
-        })
-
-        const result = [];
-        for (const lote of lotes) {
-            // Haz el objeto plano primero
-            const lotePlano = typeof lote.toObject === "function" ? lote.toObject() : { ...lote };
-
-            // Luego sí modifica lo que quieras, aquí ya es un objeto JS normal
-            const usuario = user.find(u => u._id.toString() === lotePlano.user);
-            if (usuario) {
-                lotePlano.user = usuario.nombre + " " + usuario.apellido;
-            }
-
-            result.push(lotePlano);
-        }
-        return result;
+        return lotes;
     }
     static async obtenerRecordLotesIngresolote_EF1_EF8(filtro) {
         const { fechaInicio, fechaFin, tipoFruta = "" } = filtro;

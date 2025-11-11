@@ -22,7 +22,7 @@ export const defineLoteEf8 = async (conn, AuditLog) => {
         precio: { type: Schema.Types.ObjectId, ref: 'precio' },
         promedio: Number,
         tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas' },
-        user: { type: String, required: true },
+        user:{ type: Schema.Types.ObjectId, ref: 'usuario' },
         registroCanastillas: { type: Schema.Types.ObjectId, ref: 'canastilla' },
         createdAt: { type: Date, default: () => new Date() },
 
