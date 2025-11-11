@@ -1048,7 +1048,14 @@ export class ProcesoRepository {
         })
         try {
             await session.withTransaction(async () => {
-                const contenedor = await ContenedoresRepository.getContenedores({ ids: [_id], select: { pallets: 1 } }, session);
+                const contenedor = await ContenedoresRepository.getContenedores({ ids: [_id], select: { pallets: 1, infoContenedor: 1 } }, session);
+                const updateContenedor = {};
+                if (!contenedor.pallets === 0) {
+                    updateContenedor["infoContenedor.fechaInicioReal"] = new Date();
+                } else if (!contenedor.infoContenedor.fechaInicioReal) {
+                    updateContenedor["infoContenedor.fechaInicioReal"] = new Date();
+                }
+
                 if (!contenedor || contenedor.length === 0) {
                     throw new ProcessError(404, "Contenedor no encontrado");
                 }
