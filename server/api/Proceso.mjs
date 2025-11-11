@@ -1050,9 +1050,9 @@ export class ProcesoRepository {
             await session.withTransaction(async () => {
                 const contenedor = await ContenedoresRepository.getContenedores({ ids: [_id], select: { pallets: 1, infoContenedor: 1 } }, session);
                 const updateContenedor = {};
-                if (!contenedor.pallets === 0) {
+                if (!contenedor[0].pallets === 0) {
                     updateContenedor["infoContenedor.fechaInicioReal"] = new Date();
-                } else if (!contenedor.infoContenedor.fechaInicioReal) {
+                } else if (!contenedor[0]?.infoContenedor?.fechaInicioReal) {
                     updateContenedor["infoContenedor.fechaInicioReal"] = new Date();
                 }
 
