@@ -1075,9 +1075,10 @@ export class ProcesoRepository {
                         description: `Creación de Pallet #${newItem.numeroPallet} en contenedor ${_id}`
                     }
                 });
+                updateContenedor.$inc = { pallets: 1 };
                 await ContenedoresRepository.actualizar_contenedor(
                     { _id },
-                    { $inc: { pallets: 1 } },
+                    updateContenedor,
                     {
                         session,
                         skipAudit: true
