@@ -7,6 +7,8 @@ import { ConnectRedisError } from '../../Error/ConnectionErrors.js';
 import { TurnoDatarepository } from './TurnoData.js';
 import { RedisRepository } from './RedisData.js';
 import { registrarPasoLog } from '../api/helper/logs.js';
+import { RecordLotesRepository } from '../archive/ArchiveLotes.js';
+import { LotesRepository } from './Lotes.js';
 
 // 🪄 Magia para __dirname y __filename:
 const __filename = fileURLToPath(import.meta.url);
@@ -103,16 +105,16 @@ export class VariablesDelSistema {
     }
   }
   static async obtenerEF1Descartes() {
-    /**
-   * Obtiene los datos de descartes del predio procesando desde Redis.
-   *
-   * @returns {Promise<Object>} - Promesa que resuelve con los datos del predio procesando descartes.
-   * @throws {ConnectRedisError} - Lanza un error si ocurre un problema al conectarse a Redis.
-   */
     try {
-      const cliente = await getRedisClient();
-      const predioData = await cliente.hGetAll("predioProcesandoDescartes");
-      return predioData
+      let query = {
+        operacionRealizada: 'vaciarLote'
+      }
+      const record = await RecordLotesRepository.getVaciadoRecord({ query, limit: 1 });
+      const lote = await LotesRepository.getLotes2({
+        ids: record[0].documento._id,
+        select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1 }
+      });
+      return lote
     } catch (err) {
       throw new ConnectRedisError(531, `Error obtenerEF1 descartes ${err.type}`)
     }

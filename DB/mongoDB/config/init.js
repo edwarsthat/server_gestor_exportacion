@@ -252,6 +252,8 @@ const defineSchemasProceso = async (sysConn) => {
         const AuditLotesMaquila = await defineAuditLoteMaquila(sysConn);
         db.AuditLotesMaquila = AuditLotesMaquila;
 
+        
+
         console.log("✅ AuditLog definido");
         // inventarios
         console.log("⚡ Definiendo Cuartos Frios...");

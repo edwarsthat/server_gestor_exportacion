@@ -61,6 +61,19 @@ export class InventariosService {
             user: user._id
         };
     }
+    static async construirQueryIngresoLoteMaquila(datos, enf, tipoFruta, user) {
+        const fecha = new Date(datos.fecha_estimada_llegada);
+
+        return {
+            ...datos,
+            tipoFruta: tipoFruta._id,
+            enf,
+            fecha_salida_patio: fecha,
+            fecha_ingreso_patio: fecha,
+            fecha_ingreso_inventario: fecha,
+            user: user._id
+        };
+    }
     static async incrementarEF() {
         VariablesDelSistema.incrementarEF1();
     }

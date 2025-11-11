@@ -5,6 +5,7 @@ export const defineInventarioSimple = async (conn, AuditInventariosSimples) => {
     const ItemInventarioSchema = new Schema({
         lote: { type: Schema.Types.ObjectId, ref: "Lote", required: true },
         canastillas: { type: Number, required: true, min: 0, default: 0 },
+        tipo: { type: String, required: true }
     }, { _id: false });
 
     ItemInventarioSchema.index({ lote: 1 }, { unique: true, sparse: true });

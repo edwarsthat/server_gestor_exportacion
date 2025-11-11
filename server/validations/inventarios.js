@@ -116,6 +116,42 @@ export class InventariosValidations {
                 .pipe(safeString("placa")),
         })
     }
+    static post_inventarios_ingreso_maquila() {
+        return z.object({
+            fecha_estimada_llegada: safeString("fecha_estimada_llegada")
+                .refine(val => !isNaN(Date.parse(val)), {
+                    message: "La fecha estimada de llegada no es válida"
+                }),
+            numeroRemision: z.string().min(1, "El número de remisión es obligatorio"),
+            kilos: z.coerce.number()
+                .gt(0, "Los kilos no pueden ser cero")
+                .transform(val => Number(val)),
+
+            canastillas: z.coerce.number()
+                .gt(0, "Las canastillas no pueden ser cero"),
+
+            promedio: z.coerce.number()
+                .min(17, "Los kilos no corersponden a las canastillas")
+                .max(25, "Los kilos no corersponden a las canastillas"),
+
+            tipoFruta: safeString("tipoFruta"),
+
+            GGN: z.boolean("estado GGN faltante"),
+
+            predio: safeString("predio"),
+            cliente: safeString("cliente"),
+            observaciones: optionalSafeString("observaciones"),
+
+            placa: z.string()
+                .length(6, "La placa debe tener exactamente 6 caracteres")
+                .transform(val => val.toUpperCase())
+                .refine(
+                    val => /^[A-Z]{3}[0-9]{3}$/.test(val),
+                    "La placa debe tener 3 letras seguidas de 3 números"
+                )
+                .pipe(safeString("placa")),
+        })
+    }
     static put_inventarios_frutaDescarte_reprocesarFruta() {
         return z.object({
             tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),

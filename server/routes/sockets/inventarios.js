@@ -239,6 +239,10 @@ export const apiSocketInventarios = {
         await InventariosRepository.post_inventarios_ingreso_lote(data);
         return successResponseRoutes()
     },
+    post_inventarios_maquila: async (data) => {
+        await InventariosRepository.post_inventarios_ingreso_maquila(data);
+        return successResponseRoutes()
+    },
     post_inventarios_EF8: async (data) => {
         await InventariosRepository.post_inventarios_EF8(data);
         return successResponseRoutes()

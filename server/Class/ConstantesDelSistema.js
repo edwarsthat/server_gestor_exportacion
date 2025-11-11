@@ -65,7 +65,9 @@ export class ConstantesDelSistema {
     static async get_constantes_sistema_tipo_frutas2(_id, logId = null, session = null) {
         try {
             const filter = _id ? { _id } : {};
-            const registros = await db.TipoFrutas.find(filter).session(session).exec();
+            const registros = await db.TipoFrutas.find(filter)
+                .populate({ path: 'descartes', select: 'nombre descripcion seccion' })
+                .session(session).exec();
             if (logId) {
                 await registrarPasoLog(logId, "ConstantesDelSistema.get_constantes_sistema_tipo_frutas2", "Completado");
             }

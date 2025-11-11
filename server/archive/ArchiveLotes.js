@@ -55,22 +55,11 @@ export class RecordLotesRepository {
         }
     }
     static async getVaciadoRecord(options = {}) {
-        /**
-         * Función que obtiene el historial de lotes procesados de la base de datos de MongoDB.
-         *
-         * @param {Object} options - Objeto de configuración para obtener los lotes procesados.
-         * @param {Array<string>} [options.ids=[]] - Array de IDs de los lotes procesados a obtener.
-         * @param {Object} [options.query={}] - Filtros adicionales para la consulta.
-         * @param {Object} [options.select={}] - Campos a seleccionar en los documentos obtenidos.
-         * @param {Object} [options.sort={ createdAt: -1 }] - Criterios de ordenación para los resultados.
-         * @param {Object} [options.populate={ path: 'documento.predio', select: 'PREDIO ICA' }] - Configuración para la población de referencias.
-         * @returns {Promise<Array>} - Promesa que resuelve a un array de lotes procesados obtenidos.
-         * @throws {ConnectionDBError} - Lanza un error si ocurre un problema al obtener los lotes procesados.
-         */
         const {
             ids = [],
             query = {},
             select = {},
+            limit = 0,
             sort = { createdAt: -1 },
         } = options;
         try {
@@ -83,6 +72,7 @@ export class RecordLotesRepository {
             const lotes = db.recordLotes.find(lotesQuery)
                 .select(select)
                 .sort(sort)
+                .limit(limit)
                 .exec();
 
             return lotes;
@@ -108,11 +98,6 @@ export class RecordLotesRepository {
         }
     }
     static validateBussyIds(id) {
-        /**
-         * Funcion que añade el id del elemento que se este m0odificando para que no se creen errores de doble escritura
-         * 
-         * @param {string} id - El id del elemento que se esta modificando
-         */
         if (bussyIds.has(id)) throw new ItemBussyError(413, "Elemento no disponible por el momento");
         bussyIds.add(id)
     }

@@ -13,7 +13,8 @@ export const defineTipoFrutas = async (conn) => {
         calibres: [String],
         codExportacion: String,
         codNacional: String,
-        createdAt: { type: Date, default: () => new Date() }
+        createdAt: { type: Date, default: () => new Date() },
+        descartes: { type: [ { type: Schema.Types.ObjectId, ref: 'descartes',  required: true } ] }
     });
 
     const tipoFrutas = conn.model("tipoFrutas", TipoFrutaSchema);

@@ -203,6 +203,17 @@ export class dataRepository {
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async get_data_EF10() {
+        try {
+            const EF10 = await dataService.get_ef10_serial();
+            return EF10
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
     static async get_data_cuartosFrios(req) {
         try {
             console.log(req)

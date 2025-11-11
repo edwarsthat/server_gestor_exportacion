@@ -422,7 +422,6 @@ export class ProcesoRepository {
             const { tipoCaja, calidad, calibre } = settings;
 
             await session.withTransaction(async () => {
-
                 // Predicado de concurrencia (si tienes versionKey o updatedAt)
                 await ContenedoresRepository.actualizar_pallet(
                     { _id },
