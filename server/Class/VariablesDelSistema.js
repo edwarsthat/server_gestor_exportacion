@@ -75,33 +75,19 @@ export class VariablesDelSistema {
     }
   }
 
-  static async procesarEF1(lote, logId) {
-    try {
-      const cliente = await getRedisClient();
-
-      await this.modificar_predio_proceso(lote, cliente);
-      await this.modificar_predio_proceso_descartes(lote, cliente);
-      // await this.modificar_predio_proceso_listaEmpaque(lote, cliente);
-
-    } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis ${err.name}`)
-    } finally {
-      await registrarPasoLog(logId, "procesarEF1.procesarEF1", "Completado");
-    }
-  }
   static async obtenerEF1proceso() {
-    /**
-   * Obtiene los datos del predio procesando desde Redis.
-   *
-   * @returns {Promise<Object>} - Promesa que resuelve con los datos del predio procesando descartes.
-   * @throws {ConnectRedisError} - Lanza un error si ocurre un problema al conectarse a Redis.
-   */
     try {
-      const cliente = await getRedisClient();
-      const predioData = await cliente.hGetAll("predioProcesando");
-      return predioData
+      let query = {
+        operacionRealizada: 'vaciarLote'
+      }
+      const record = await RecordLotesRepository.getVaciadoRecord({ query, limit: 1 });
+      const lote = await LotesRepository.getLotes2({
+        ids: record[0].documento._id,
+        select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1 }
+      });
+      return lote
     } catch (err) {
-      throw new ConnectRedisError(531, `Error con la conexion con redis ${err.name}`)
+      throw new ConnectRedisError(531, `Error obtenerEF1 descartes ${err.type}`)
     }
   }
   static async obtenerEF1Descartes() {

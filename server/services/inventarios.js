@@ -876,8 +876,11 @@ export class InventariosService {
             return "No vaceo"
         }
 
-        const loteVaciando = await LotesRepository.getLotes({ ids: [predioVaciando._id] });
-        const lote = loteVaciando?.[0];
+        const [EF1, EF10] = await Promise.all([
+            LotesRepository.getLotes({ ids: [predioVaciando._id] }),
+            LotesRepository.getLotesMaquila({ ids: [predioVaciando._id] })
+        ])
+        const lote = EF1.length > 0 ? EF1[0] : (EF10.length > 0 ? EF10[0] : null);
         if (!lote) {
             return "No vaceo"
         }
@@ -1140,17 +1143,23 @@ export class InventariosService {
         }
         return { operation, out };
     }
-    static async modificarRestarInventarioFrutaSinProocesar(canastillas, user, action, loteId, log, session, descripcion) {
+    static async modificarRestarInventarioFrutaSinProocesar(canastillas, user, action, lote, log, session, descripcion) {
+        let tipoInventario = "";
+        if (lote.enf.startsWith("EF1-")) {
+            tipoInventario = "inventario";
+        } else if (lote.enf.startsWith("EF10-")) {
+            tipoInventario = "inventarioMaquila";
+        }
         // Primero decrementar las canastillas
         const updateResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
             { _id: "68cecc4cff82bb2930e43d05" },
-            { $inc: { 'inventario.$[it].canastillas': -canastillas, __v: 1 } },
+            { $inc: { [tipoInventario + ".$[it].canastillas"]: -canastillas, __v: 1 } },
             {
                 session,
                 action: action,
                 description: descripcion,
                 user: user._id,
-                arrayFilters: [{ 'it.lote': new mongoose.Types.ObjectId(loteId) }],
+                arrayFilters: [{ 'it.lote': new mongoose.Types.ObjectId(lote._id) }],
             }
         );
         await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple_updateOne (decrementar)", "Completado", `Canastillas decrementadas: ${canastillas}, matchedCount: ${updateResult?.matchedCount}, modifiedCount: ${updateResult?.modifiedCount}`);
@@ -1158,7 +1167,7 @@ export class InventariosService {
         // Luego eliminar elementos con canastillas <= 0
         const pullResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
             { _id: "68cecc4cff82bb2930e43d05" },
-            { $pull: { inventario: { lote: new mongoose.Types.ObjectId(loteId), canastillas: { $lte: 0 } } } },
+            { $pull: { [tipoInventario]: { lote: new mongoose.Types.ObjectId(lote._id), canastillas: { $lte: 0 } } } },
             { session, skipAudit: true, runValidators: false }
         );
         await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple_updateOne (pull)", "Completado", `Elementos eliminados con canastillas <= 0, matchedCount: ${pullResult?.matchedCount}, modifiedCount: ${pullResult?.modifiedCount}`);

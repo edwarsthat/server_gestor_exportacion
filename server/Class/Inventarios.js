@@ -204,12 +204,107 @@ export class InventariosHistorialRepository {
         return res || []
 
     }
-    static async get_item_frutaSinProcesar(id) {
+    static async getInventarioFrutaSinProcesarMaquila(options = {}) {
+        const {
+            ids = [],
+            // query = {},
+            // loteFields = ["enf", "fecha_ingreso", "kilos", "predio", "canastillas"],
+            // proveedorFields = ["PREDIO", "ICA", "GGN", "SISPAP"],
+        } = options;
+
+        const _ids = ids.map(id => new mongoose.Types.ObjectId(id));
+        const pipeline = [
+            { $match: { _id: { $in: _ids } } },
+            { $project: { inventarioMaquila: 1 } },
+            { $unwind: { path: "$inventarioMaquila" } },
+            {
+                $lookup: {
+                    from: "lotemaquilas",
+                    let: { loteId: "$inventarioMaquila.lote" },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$loteId"] } } },
+                        {
+                            $project: {
+                                _id: 1,
+                                enf: 1,
+                                predio: 1,
+                                tipoFruta: 1,
+                                proveedor: 1,
+                                canastillas: 1,
+                                promedio: 1,
+                                fecha_ingreso_inventario: 1,
+                                fecha_creacion: 1,
+                                calidad: 1,
+                                observaciones: 1,
+                                clasificacionCalidad: 1,
+                                fecha_ingreso_patio: 1,
+                                fecha_salida_patio: 1,
+                                fecha_estimada_llegada: 1,
+                                kilosVaciados: 1,
+                                not_pass: 1,
+                                GGN: 1,
+                            }
+                        }
+                    ],
+                    as: "lote"
+                },
+            },
+            { $unwind: { path: "$lote", preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: "proveedors",
+                    let: { predioId: "$lote.predio" },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$predioId"] } } },
+                        { $project: { _id: 1, PREDIO: 1, ICA: 1, GGN: 1, SISPAP: 1 } }
+                    ],
+                    as: "predio"
+                }
+            },
+            { $unwind: { path: "$predio", preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: "tipofrutas",
+                    let: { tipoFrutaId: "$lote.tipoFruta" },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$tipoFrutaId"] } } },
+                        { $project: { _id: 1, tipoFruta: 1 } }
+                    ],
+                    as: "tipoFruta"
+                }
+            },
+            { $unwind: { path: "$tipoFruta", preserveNullAndEmptyArrays: true } },
+            {
+                $set: {
+                    lote: {
+                        $mergeObjects: [
+                            "$lote",
+                            { predio: "$predio" },
+                            { tipoFruta: "$tipoFruta" },  // ← Agregado aquí
+                            { canastillas: "$inventario.canastillas" }
+                        ],
+                    }
+                }
+            },
+            { $unset: ["predio", "tipoFruta", "inventario"] },  // ← Agregado tipoFruta al unset
+            { $replaceWith: "$lote" }
+        ];
+
+        const res = await db.InventariosSimples.aggregate(pipeline).exec();
+        return res || []
+
+    }
+    static async get_item_frutaSinProcesar(id, tipo) {
         try {
+            let item
             const documento = await db.InventariosSimples.findOne({ _id: "68cecc4cff82bb2930e43d05" })
                 .lean()
                 .exec();
-            const item = documento.inventario.find(item => item.lote.toString() === id.toString());
+            if (tipo.startsWith("EF1-")) {
+                item = documento.inventario.find(item => item.lote.toString() === id.toString());
+            } else {
+                item = documento.inventarioMaquila.find(item => item.lote.toString() === id.toString());
+            }
             return item;
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo el lote del inventario ${err.message}`);

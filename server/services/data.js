@@ -81,15 +81,15 @@ export class dataService {
         return enf;
     }
     static async get_ef10_serial(fecha = null, logId) {
-        const EF1 = await Seriales.get_seriales("EF1-");
-        if (!EF1 || EF1.length === 0) {
-            throw new Error("No se encontraron registros de EF1");
+        const EF10 = await Seriales.get_seriales("EF10-");
+        if (!EF10 || EF10.length === 0) {
+            throw new Error("No se encontraron registros de EF10");
         }
-        if (EF1.length > 1) {
+        if (EF10.length > 1) {
             throw new Error("Se encontraron múltiples registros de EF1, se esperaba uno solo");
         }
-        if (!EF1[0].serial || typeof EF1[0].serial !== 'number') {
-            throw new Error("El campo 'serial' no es un número o no existe en el registro de EF1");
+        if (!EF10[0].serial || typeof EF10[0].serial !== 'number') {
+            throw new Error("El campo 'serial' no es un número o no existe en el registro de EF10");
         }
         if (fecha) {
             fecha = new Date(fecha);
@@ -102,14 +102,15 @@ export class dataService {
         let year = fecha.getFullYear().toString().slice(-2);
         let month = String(fecha.getMonth() + 1).padStart(2, "0");
         let enf;
-        if (EF1[0].serial < 10) {
-            enf = "EF10-" + year + month + "0" + EF1[0].serial;
+        if (EF10[0].serial < 10) {
+            enf = EF10[0].name + year + month + "0" + EF10[0].serial;
         } else {
-            enf = "EF10-" + year + month + EF1[0].serial;
+            enf = EF10[0].name + year + month + EF10[0].serial;
         }
 
+
         if (logId) {
-            await registrarPasoLog(logId, "dataService.get_ef8_serial", "Completado");
+            await registrarPasoLog(logId, "dataService.get_ef10_serial", "Completado");
         }
 
         return enf;

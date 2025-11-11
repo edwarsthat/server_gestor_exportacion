@@ -136,7 +136,7 @@ export const defineLoteMaquila = async (conn, AuditLog) => {
         calidad: calidadSchema,
         canastillas: { type: Number, default: 0 },
         canastillas_estimadas: Number,
-        cliente:{ type: Schema.Types.ObjectId, ref: 'Cliente' },
+        cliente: { type: Schema.Types.ObjectId, ref: 'Cliente' },
         contenedores: [String],
         descarteEncerado: descarteEnceradoSchema,
         descarteLavado: descarteLavadoSchema,

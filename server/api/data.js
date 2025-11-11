@@ -254,6 +254,21 @@ export class dataRepository {
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async incrementar_ef10_serial(session) {
+        try {
+            await Seriales.modificar_seriales(
+                { name: "EF10-" },
+                { $inc: { serial: 1 } },
+                {},
+                session
+            )
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
     static async incrementar_cn_serial(codigo, session) {
         try {
             await Seriales.modificar_seriales(

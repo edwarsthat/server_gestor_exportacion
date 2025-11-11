@@ -103,23 +103,12 @@ export class LotesRepository {
         }
     }
     static async modificar_lote(id, update, options = {}, session = null) {
-        /**
-         * Modifica un lote en la base de datos de MongoDB.
-         *
-         * @param {string} id - ID del lote a modificar.
-         * @param {Object} update - Objeto con los cambios a aplicar al lote.
-         * @param {string} action - Descripción de la acción realizada.
-         * @param {string} user - Usuario que realiza la acción.
-         * @returns {Promise<Object>} - Promesa que resuelve al objeto del lote modificado.
-         * @throws {PutError} - Lanza un error si ocurre un problema al modificar el lote.
-         */
         try {
             const finalOptions = {
                 new: true,
                 ...options,
                 ...(session && { session })
             };
-
 
             const lote = await db.Lotes.findOneAndUpdate({ _id: id }, update, finalOptions);
             const lote_obj = new Object(lote.toObject());
@@ -428,7 +417,7 @@ export class LotesRepository {
             limit = 0,
             skip = 0,
             populate = [
-                { path: 'predio', select: 'PREDIO' }, 
+                { path: 'predio', select: 'PREDIO' },
                 { path: 'tipoFruta', select: 'tipoFruta' },
                 { path: 'cliente', select: 'CLIENTE' }
             ]
@@ -454,17 +443,27 @@ export class LotesRepository {
             throw new ConnectionDBError(522, `Error obteniendo lotes maquila ${err.message}`);
         }
     }
-    static async actualizar_lote_Maquila(filter, update, options = {}, session = null) {
+    static async actualizar_lote_Maquila(filter, update, options = {}, vaciar = null) {
 
         const finalOptions = {
             new: true,
             ...options,
-            ...(session && { session })
+            ...(options.session && { session: options.session })
         };
 
         try {
             let documento = await db.LotesMaquila.findOneAndUpdate(filter, update, { ...finalOptions });
             if (!documento) throw new Error('Lote maquila no encontrado');
+
+            if (vaciar) {
+                // Si se va a vaciar el lote, registrar el movimiento
+                let record = new db.recordLotes({
+                    operacionRealizada: options.action,
+                    user: options.user,
+                    documento: { ...update, _id: documento._id }
+                });
+                await record.save({ session: options.session });
+            }
 
             return documento;
 
