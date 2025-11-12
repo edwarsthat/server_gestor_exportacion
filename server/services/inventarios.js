@@ -20,7 +20,8 @@ import { UsuariosRepository } from "../Class/Usuarios.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
 import { parseMultTipoCaja } from "./helpers/contenedores.js";
-
+import config from "../../src/config/index.js";
+import { FrutaProcesada } from "../Class/frutaProcesada.js";
 
 export class InventariosService {
 
@@ -219,21 +220,6 @@ export class InventariosService {
         //poner filtro de la fecha
         throw new Error("El proveedor no tiene GGN para ese tipo de fruta")
     }
-
-    static async modificarLote_regresoHistorialFrutaIngreso(_id, queryLote, user, action) {
-
-        const lote = await LotesRepository.actualizar_lote(
-            { _id: _id },
-            queryLote,
-            {
-                new: true,
-                user: user,
-                action: action
-            }
-        )
-
-        return lote
-    }
     static async modificarRecordLote_regresoHistorialFrutaIngreso(_id, __v, data) {
         const query = {}
         Object.keys(data).forEach(item => {
@@ -308,26 +294,6 @@ export class InventariosService {
 
         return { descarteLavado, descarteEncerado, total };
     }
-    /**
-     * Crea un nuevo lote de reproceso para Celifrut con un código autogenerado.
-     * Este método se utiliza para registrar lotes de fruta que serán reprocesados,
-     * generando automáticamente un código ENF y registrando el lote como vaciado.
-     *
-     * @param {string} tipoFruta - Tipo de fruta ('Naranja' o 'Limon')
-     * @param {number} kilos - Cantidad de kilos de fruta del lote
-     * @param {Object} user - Usuario que realiza la operación
-     * @param {string} user._id - ID del usuario
-     * @param {string} user.user - Nombre del usuario
-     *
-     * @returns {Promise<Object>} El lote creado con todos sus datos
-     * @throws {Error} Si hay problemas al generar el código o crear el lote
-     *
-     * @example
-     * const lote = await InventariosService.crear_lote_celifrut('Naranja', 1000, {
-     *   _id: '123',
-     *   user: 'Juan'
-     * });
-     */
     static async crear_lote_celifrut(tipoFruta, kilos, user, logContext = null) {
         try {
             const codigo = await VariablesDelSistema.generar_codigo_celifrut()
@@ -369,29 +335,6 @@ export class InventariosService {
             throw new Error(`Error creando lote Celifrut: ${error.message}`);
         }
     }
-    /**
-     * Revisa y compara los cambios entre un registro existente de despacho de descarte y los nuevos datos.
-     * Esta función determina si hay cambios en el tipo de fruta o en los kilos del registro.
-     *
-     * @param {string} _id - ID del registro de despacho de descarte a revisar
-     * @param {Object} newData - Nuevos datos para comparar con el registro existente
-     * @param {string} newData.tipoFruta - Tipo de fruta del nuevo registro
-     * @param {number} newData.kilos - Cantidad de kilos del nuevo registro
-     *
-     * @returns {Promise<Object>} Objeto con los resultados de la comparación
-     * @returns {boolean} return.cambioFruta - Indica si hubo cambio en el tipo de fruta
-     * @returns {boolean} return.cambioIventario - Indica si hubo cambio en la cantidad de kilos
-     * @returns {Object} return.registro - El registro original encontrado en la base de datos
-     *
-     * @throws {Error} Si el ID del registro no existe en la base de datos
-     *
-     * @example
-     * // Revisar cambios en un registro
-     * const cambios = await InventariosService.revisar_cambio_registro_despachodescarte(
-     *   '507f1f77bcf86cd799439011',
-     *   { tipoFruta: 'Naranja', kilos: 1000 }
-     * );
-     */
     static async revisar_cambio_registro_despachodescarte(_id, newData) {
         let cambioFruta = false
         let cambioIventario = false
@@ -408,29 +351,6 @@ export class InventariosService {
         return { cambioFruta, cambioIventario, registro: registro[0] }
 
     }
-    /**
- * Revisa y compara los cambios entre un registro existente de fruta descompuesta y los nuevos datos.
- * Esta función determina si hay cambios en el tipo de fruta o en los kilos del registro.
- *
- * @param {string} _id - ID del registro de fruta descompuesta a revisar
- * @param {Object} newData - Nuevos datos para comparar con el registro existente
- * @param {string} newData.tipoFruta - Tipo de fruta del nuevo registro
- * @param {number} newData.kilos - Cantidad de kilos del nuevo registro
- *
- * @returns {Promise<Object>} Objeto con los resultados de la comparación
- * @returns {boolean} return.cambioFruta - Indica si hubo cambio en el tipo de fruta
- * @returns {boolean} return.cambioIventario - Indica si hubo cambio en la cantidad de kilos
- * @returns {Object} return.registro - El registro original encontrado en la base de datos
- *
- * @throws {Error} Si el ID del registro no existe en la base de datos
- *
- * @example
- * // Revisar cambios en un registro
- * const cambios = await InventariosService.revisar_cambio_registro_frutaDescompuestae(
- *   '507f1f77bcf86cd799439011',
- *   { tipoFruta: 'Naranja', kilos: 1000 }
- * );
- */
     static async revisar_cambio_registro_frutaDescompuestae(_id, newData) {
         let cambioFruta = false
         let cambioIventario = false
@@ -447,32 +367,6 @@ export class InventariosService {
         return { cambioFruta, cambioIventario, registro: registro[0] }
 
     }
-    /**
-     * Procesa los datos del formulario de registro de descarte, calculando los totales
-     * para descartes de lavado y encerado.
-     *
-     * @param {Object} data - Objeto con los datos del formulario a procesar
-     * @param {Object.<string, string|number>} data - Pares clave-valor donde las claves tienen formato 'tipo.subtipo'
-     *
-     * @returns {Promise<Object>} Objeto con los descartes procesados
-     * @returns {Object.<string, number>} return.descarteLavado - Mapa de tipos de descarte de lavado y sus cantidades
-     * @returns {Object.<string, number>} return.descarteEncerado - Mapa de tipos de descarte de encerado y sus cantidades
-     * @returns {number} return.total - Suma total de todos los valores de descarte
-     *
-     * @example
-     * // Entrada:
-     * {
-     *   'descarteLavado.descarteGeneral': '10',
-     *   'descarteLavado.pareja': '5',
-     *   'descarteEncerado.descarteGeneral': '8'
-     * }
-     * // Salida:
-     * {
-     *   descarteLavado: { descarteGeneral: 10, pareja: 5 },
-     *   descarteEncerado: { descarteGeneral: 8 },
-     *   total: 23
-     * }
-     */
     static async procesar_formulario_inventario_registro_descarte(data) {
         const descarteLavado = {};
         const descarteEncerado = {};
@@ -499,24 +393,6 @@ export class InventariosService {
             total: totalDescarte
         };
     }
-    /**
-     * Modifica el inventario en Redis cuando hay un cambio en el tipo de fruta de un registro de descarte.
-     * Esta función maneja una transacción atómica en Redis para asegurar la consistencia del inventario,
-     * incluyendo un mecanismo de rollback en caso de fallo.
-     *
-     * @param {Object} registro - El registro original de descarte
-     * @param {Object} registro.descarteLavado - Objeto con los valores de descarte de lavado originales
-     * @param {Object} registro.descarteEncerado - Objeto con los valores de descarte de encerado originales
-     * @param {string} registro.tipoFruta - Tipo de fruta original
-     * @param {Object} newRegistro - El nuevo registro con los cambios
-     * @param {string} newRegistro.tipoFruta - Nuevo tipo de fruta
-     * @param {Object} descarteLavado - Objeto con los nuevos valores de descarte de lavado
-     * @param {Object} descarteEncerado - Objeto con los nuevos valores de descarte de encerado
-     *
-     * @throws {Error} Si los kilos a modificar son mayores que el inventario disponible
-     * @throws {Error} Si la transacción falla por concurrencia
-     *
-     */
     static async modificar_inventario_registro_cambioFruta(registro, newRegistro, descarteLavado, descarteEncerado) {
 
         const startTime = Date.now();
@@ -588,25 +464,6 @@ export class InventariosService {
         }
 
     }
-    /**
-     * Almacena en Redis las modificaciones de inventario de descartes de fruta mediante una transacción atómica.
-     * Verifica que haya suficiente inventario disponible antes de realizar las modificaciones y
-     * maneja la concurrencia mediante el sistema de vigilancia (WATCH) de Redis.
-     *
-     * @param {Object.<string, number>} descarteLavado - Mapa de tipos de descarte de lavado y sus cantidades
-     * @param {Object.<string, number>} descarteEncerado - Mapa de tipos de descarte de encerado y sus cantidades
-     * @param {string} tipoFruta - Tipo de fruta ('Naranja' o 'Limon')
-     *
-     * @throws {Error} Si los kilos a modificar son mayores que el inventario disponible
-     * @throws {Error} Si la transacción falla por concurrencia con otros procesos
-     *
-     * @example
-     * await InventariosService.frutaDescarte_despachoDescarte_redis_store(
-     *   { descarteGeneral: 10, pareja: 5 },
-     *   { descarteGeneral: 8 },
-     *   'Naranja'
-     * );
-     */
     static async frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, tipoFruta) {
         const startTime = Date.now();
         console.info(`[INVENTARIO DESCARTES] Inicio modificación - Fruta: ${tipoFruta}, Lavado: ${JSON.stringify(descarteLavado)}, Encerado ${JSON.stringify(descarteEncerado)}`);
@@ -654,25 +511,6 @@ export class InventariosService {
             console.info(`[INVENTARIO DESCARTES] Fin de operación - Tiempo total: ${Date.now() - startTime} ms`);
         }
     }
-    /**
-     * Restaura el inventario en Redis después de un error o cuando se necesita revertir cambios.
-     * A diferencia de la función store, esta función suma las cantidades al inventario existente
-     * usando una transacción atómica para mantener la consistencia de los datos.
-     *
-     * @param {Object.<string, number>} descarteLavado - Mapa de tipos de descarte de lavado y sus cantidades a restaurar
-     * @param {Object.<string, number>} descarteEncerado - Mapa de tipos de descarte de encerado y sus cantidades a restaurar
-     * @param {string} tipoFruta - Tipo de fruta ('Naranja' o 'Limon')
-     *
-     * @throws {Error} Si la transacción falla por concurrencia con otros procesos
-     *
-     * @example
-     * // Restaurar cantidades al inventario
-     * await InventariosService.frutaDescarte_despachoDescarte_redis_restore(
-     *   { descarteGeneral: 10, pareja: 5 },
-     *   { descarteGeneral: 8 },
-     *   'Naranja'
-     * );
-     */
     static async frutaDescarte_despachoDescarte_redis_restore(descarteLavado, descarteEncerado, tipoFruta) {
         const startTime = Date.now();
         console.info(`[INVENTARIO DESCARTES][RESTORE] Inicio restauración - Fruta: ${tipoFruta}, Lavado: ${JSON.stringify(descarteLavado)}, Encerado: ${JSON.stringify(descarteEncerado)}`);
@@ -871,7 +709,8 @@ export class InventariosService {
     static async ingresar_salida_inventario_descartes() {
     }
     static async probar_deshidratacion_loteProcesando(user) {
-        const predioVaciando = await VariablesDelSistema.obtenerEF1proceso();
+        const predioVaciando = await FrutaProcesada.obtener_ultimaEntrada();
+        console.log("Predio vaciando:", predioVaciando);
         if (!predioVaciando) {
             return "No vaceo"
         }
@@ -1108,6 +947,7 @@ export class InventariosService {
         return { operation, out };
     }
     static async modificarRestarInventarioFrutaSinProocesar(canastillas, user, action, lote, log, session, descripcion) {
+        const inventarioFrutaSinProcesar = config.INVENTARIO_FRUTA_SIN_PROCESAR;
         let tipoInventario = "";
         if (lote.enf.startsWith("EF1-")) {
             tipoInventario = "inventario";
@@ -1116,7 +956,7 @@ export class InventariosService {
         }
         // Primero decrementar las canastillas
         const updateResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
-            { _id: "68cecc4cff82bb2930e43d05" },
+            { _id: inventarioFrutaSinProcesar },
             { $inc: { [tipoInventario + ".$[it].canastillas"]: -canastillas, __v: 1 } },
             {
                 session,
@@ -1130,7 +970,7 @@ export class InventariosService {
 
         // Luego eliminar elementos con canastillas <= 0
         const pullResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
-            { _id: "68cecc4cff82bb2930e43d05" },
+            { _id: inventarioFrutaSinProcesar },
             { $pull: { [tipoInventario]: { lote: new mongoose.Types.ObjectId(lote._id), canastillas: { $lte: 0 } } } },
             { session, skipAudit: true, runValidators: false }
         );
@@ -1138,22 +978,23 @@ export class InventariosService {
 
     }
     static async modificarSumarInventarioFrutaSinProocesar(
-        canastillas, user, action, loteId, log, session, descripcion
+        canastillas, user, action, loteId, tipo,  log, session, descripcion
     ) {
         const loteObjectId = new mongoose.Types.ObjectId(loteId);
+        const campoInventario = tipo === 'loteMaquila' ? 'inventarioMaquila' : 'inventario';
 
         const pipelineUpdate = [
             {
                 $set: {
-                    inventario: {
+                    [campoInventario]: {
                         $let: {
-                            vars: { existe: { $in: [loteObjectId, "$inventario.lote"] } },
+                            vars: { existe: { $in: [loteObjectId, `$${campoInventario}.lote`] } },
                             in: {
                                 $cond: [
                                     "$$existe",
                                     {
                                         $map: {
-                                            input: "$inventario",
+                                            input: `$${campoInventario}`,
                                             as: "it",
                                             in: {
                                                 $cond: [
@@ -1175,7 +1016,7 @@ export class InventariosService {
                                     },
                                     {
                                         $concatArrays: [
-                                            "$inventario",
+                                            `$${campoInventario}`,
                                             [
                                                 {
                                                     lote: loteObjectId,
@@ -1199,7 +1040,7 @@ export class InventariosService {
             {
                 session,
                 action,
-                description: descripcion ?? `Sumar ${canastillas} canastillas al lote ${loteId}`,
+                description: descripcion ?? `Sumar ${canastillas} canastillas al lote ${loteId} en ${campoInventario}`,
                 user: user._id,
                 runValidators: true
             }
@@ -1209,7 +1050,7 @@ export class InventariosService {
             log._id,
             "InventariosHistorialRepository.put_inventarioSimple_updateOne (sumar/crear)",
             "Completado",
-            `Suma/Alta de canastillas: ${canastillas}, matchedCount: ${result?.matchedCount}, modifiedCount: ${result?.modifiedCount}, versión incrementada`
+            `Suma/Alta de canastillas: ${canastillas} en ${campoInventario}, matchedCount: ${result?.matchedCount}, modifiedCount: ${result?.modifiedCount}, versión incrementada`
         );
 
         return result;
@@ -1228,6 +1069,9 @@ export class InventariosService {
             throw new Error(`La versión del inventario ha cambiado. Por favor, recargue la página e intente de nuevo.`);
         }
         return true
+    }
+    static async modificar_inventario_ingresoLotes() {
+
     }
     // static async modificarIngresoCanastillas(data) {
     //     const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)

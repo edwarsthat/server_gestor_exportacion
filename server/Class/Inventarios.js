@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
+import config from "../../src/config/index.js";
+const inventarioFrutaSinProcesarId = config.INVENTARIO_FRUTA_SIN_PROCESAR;
 
 export class InventariosHistorialRepository {
     static async crearInventarioDescarte(data) {
@@ -297,7 +299,7 @@ export class InventariosHistorialRepository {
     static async get_item_frutaSinProcesar(id, tipo) {
         try {
             let item
-            const documento = await db.InventariosSimples.findOne({ _id: "68cecc4cff82bb2930e43d05" })
+            const documento = await db.InventariosSimples.findOne({ _id: inventarioFrutaSinProcesarId })
                 .lean()
                 .exec();
             if (tipo.startsWith("EF1-")) {
@@ -312,9 +314,9 @@ export class InventariosHistorialRepository {
     }
     static async put_inventarioSimple(filter, update, options = {}) {
         const finalOptions = {
-            returnDocument: "after",   // equivalente a new:true pero moderno
+            returnDocument: "after",
             runValidators: true,
-            ...options                 // aquí viaja { session, user, action, operation, skipAudit, ... }
+            ...options
         };
 
         try {
@@ -336,10 +338,6 @@ export class InventariosHistorialRepository {
 
         try {
             const res = await db.InventariosSimples.updateOne(filter, update, finalOptions);
-            // Opcional: asegura que sí tocó algo
-            if (res.matchedCount === 0) {
-                throw new ConnectionDBError(404, "Documento no encontrado para el filtro especificado.");
-            }
             // Puedes decidir si exigir también modifiedCount > 0
             return res; // { acknowledged, matchedCount, modifiedCount, upsertedId? }
         } catch (err) {

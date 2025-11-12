@@ -128,17 +128,27 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
 
                     // Solo los cambios, no el pergamino completo
                     const cambios = deepDiff(this._oldValue, res.toObject({ depopulate: true }));
+                    
+                    // Extraer el _id del usuario si es un objeto
+                    const userId = this.options.user?._id || this.options.user;
+                    
+                    // Log para debug
+                    console.log('[AUDIT DEBUG] Cambios detectados:', cambios.length);
+                    console.log('[AUDIT DEBUG] User ID:', userId);
+                    console.log('[AUDIT DEBUG] Action:', this.options.action);
+                    
                     if (cambios.length > 0) {
                         const session = this.options?.session || null;
                         await writeLog({
-                            collection: collectionName,
+                            coleccion: collectionName,
                             documentId: res._id,
                             operation: 'update',
-                            user: this.options.user,
+                            user: userId,
                             action: this.options.action,
                             changes: cambios,
                             description: this.options.description,
                         }, session);
+                        console.log('[AUDIT DEBUG] Log guardado exitosamente');
                     }
                 }
             } catch (err) {

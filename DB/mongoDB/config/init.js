@@ -52,7 +52,6 @@ import { defineHistorialDescarte } from '../schemas/lotes/schemaHistorialDescart
 import { defineHistorialDespachoDescarte } from '../schemas/lotes/schemaHistorialDespachosDescartes.js';
 import { defineTurnoData } from '../schemas/proceso/TurnoData.js';
 import { defineRecordProveedor } from '../schemas/proveedores/schemaRecordProveedores.js';
-import { defineRecordLotes } from '../schemas/lotes/schemaRecordLotes.js';
 import { defineIndicadores } from '../schemas/indicadores/schemaIndicadoresProceso.js';
 import { definePrecios } from '../schemas/precios/schemaPrecios.js';
 import { defineModificarElemento } from '../schemas/transaccionesRecord/ModificacionesRecord.js';
@@ -82,6 +81,7 @@ import { defineAuditLogContenedores } from '../schemas/audit/AuditLogsContenedor
 import { defineDescartes } from '../schemas/catalogs/schemaDescartes.js';
 import { defineAuditLoteMaquila } from '../schemas/audit/AuditLogLoteMaquila.js';
 import { defineLoteMaquila } from '../schemas/lotes/schemaLoteMaquila.js';
+import { defineFrutaProcesada } from '../schemas/lotes/schemaFrutaProcesada.js';
 
 export const db = {};
 export const connections = {};
@@ -373,9 +373,9 @@ const defineSchemasProceso = async (sysConn) => {
         db.LotesMaquila = await defineLoteMaquila(sysConn, AuditLotesMaquila);
         console.log("✅ Lotes maquila definido");
 
-        console.log("⚡ Definiendo recordLotes...");
-        db.recordLotes = await defineRecordLotes(sysConn);
-        console.log("✅ recordLotes definido");
+        console.log("⚡ Definiendo frutaProcesada...");
+        db.frutaProcesada = await defineFrutaProcesada(sysConn);
+        console.log("✅ frutaProcesada definido");
 
         console.log("⚡ Definiendo Lotes EF8...");
         db.LotesEF8 = await defineLoteEf8(sysConn, AuditLoteEF8);

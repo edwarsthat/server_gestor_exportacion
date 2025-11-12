@@ -4,10 +4,14 @@ const { Schema } = mongoose;
 export const defineAuditLoteMaquila = async (conn) => {
 
     const AuditLoteMaquilaSchema = new Schema({
+        coleccion: String,
         documentId: { type: Schema.Types.ObjectId, ref: 'loteMaquila' },
         operation: String,
-        user: String,
+        user: { type: Schema.Types.ObjectId, ref: 'usuario' },
         action: String,
+        oldValue: Schema.Types.Mixed,
+        newValue: Schema.Types.Mixed,
+        changes: [Schema.Types.Mixed],
         timestamp: { type: Date, default: Date.now },
         description: String
     }, { timestamps: true });
