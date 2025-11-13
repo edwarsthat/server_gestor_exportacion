@@ -62,14 +62,15 @@ export class InventariosRepository {
     }
     static async get_inventarios_frutaSinProcesar_frutaEnInventario() {
         try {
+            const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
             const resultado = await InventariosHistorialRepository.getInventarioFrutaSinProcesar({
-                ids: ["68cecc4cff82bb2930e43d05"]
+                ids: [inventarioID]
             });
             const resultadoMaquila = await InventariosHistorialRepository.getInventarioFrutaSinProcesarMaquila({
-                ids: ["68cecc4cff82bb2930e43d05"]
+                ids: [inventarioID]
             });
             const concatResult = resultado.concat(resultadoMaquila);
-            const inventario = await InventariosHistorialRepository.get_inventario_simple("68cecc4cff82bb2930e43d05")
+            const inventario = await InventariosHistorialRepository.get_inventario_simple(inventarioID)
             return { fruta: concatResult, version: inventario.__v }
         } catch (err) {
             console.error("Error en get_inventarios_frutaSinProcesar_frutaEnInventario", err);
@@ -148,7 +149,7 @@ export class InventariosRepository {
                     `Lote ${_id} actualizado con desverdizado.fechaFinalizar: ${new Date().toISOString()}`,);
 
                 const descripcion = `Desverdizado - Canastillas incrementadas: ${newLote.desverdizado.canastillasIngreso}`
-                await InventariosService.modificarSumarInventarioFrutaSinProocesar(Number(newLote.desverdizado.canastillasIngreso), user, action, _id, log, session, descripcion)
+                await InventariosService.modificarSumarInventarioFrutaSinProocesar(Number(newLote.desverdizado.canastillasIngreso), user, action, _id, 'lote', log, session, descripcion)
 
             })
 
@@ -484,12 +485,12 @@ export class InventariosRepository {
         }
     }
     static async get_inventarios_ordenVaceo_inventario() {
-
+        const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
         const resultado = await InventariosHistorialRepository.getInventarioFrutaSinProcesar({
-            ids: ["68cecc4cff82bb2930e43d05"]
+            ids: [inventarioID]
         });
         const resultadoMaquila = await InventariosHistorialRepository.getInventarioFrutaSinProcesarMaquila({
-            ids: ["68cecc4cff82bb2930e43d05"]
+            ids: [inventarioID]
         });
         const concatResult = resultado.concat(resultadoMaquila);
         return concatResult
@@ -529,7 +530,7 @@ export class InventariosRepository {
                 await InventariosService.check_inventarioVersion(config.INVENTARIO_FRUTA_SIN_PROCESAR, __v)
                 await InventariosService.item_in_ordenVaceo(loteId)
 
-                await LotesRepository.actualizar_lote(
+                const loteNew = await LotesRepository.actualizar_lote(
                     { _id: loteId },
                     update,
                     { user: user._id, action: action, session }
@@ -537,7 +538,7 @@ export class InventariosRepository {
                 await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", `Lote ${loteId} actualizado con desverdizado.canastillasIngreso: ${canastillas}`);
 
                 const descripcion = `Desverdizado - Canastillas decrementadas: ${canastillas}`
-                await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(canastillas), user, action, loteId, log, session, descripcion);
+                await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(canastillas), user, action, loteNew, log, session, descripcion);
             })
 
             procesoEventEmitter.emit("server_event", {
@@ -603,7 +604,7 @@ export class InventariosRepository {
                     );
 
                     const descripcion = `Desverdizado - Canastillas incrementadas: ${cantidad}`
-                    await InventariosService.modificarSumarInventarioFrutaSinProocesar(Number(cantidad), user, action, _id, log, session, descripcion)
+                    await InventariosService.modificarSumarInventarioFrutaSinProocesar(Number(cantidad), user, action, _id, 'lote', log, session, descripcion)
 
                     if (newLote.desverdizado.canastillasIngreso <= 0) {
                         const update2 = {
@@ -698,14 +699,18 @@ export class InventariosRepository {
             }
             await session.withTransaction(async () => {
 
+                const item = await InventariosHistorialRepository.get_item_frutaSinProcesar(_id);
+
                 lote = await LotesHelper.actualizar_lotes_helper(
                     { _id: _id },
                     query,
-                    { user: user._id, action: "vaciarLote", softNotFound: true, vaciar: true, calculateFields: false, session }
+                    {
+                        user: user._id, action: "vaciarLote", canastillas: item.canastillas,
+                        vaciar: true,  session
+                    }
                 )
                 await registrarPasoLog(log._id, "LotesRepository.modificar_lote", "Completado", `Se modificó el lote con ID ${_id} para vaciarlo, kilosVaciados: ${kilosVaciados}`);
 
-                const item = await InventariosHistorialRepository.get_item_frutaSinProcesar(_id, lote.enf);
                 const descripcion = `Vaceo - Canastillas decrementadas: ${item.canastillas}`
                 await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(item.canastillas), user, action, lote, log, session, descripcion);
                 await InventariosHistorialRepository.put_borrar_item_ordenVaceo(session);
@@ -714,6 +719,8 @@ export class InventariosRepository {
                     "InventariosHistorialRepository.put_borrar_item_ordenVaceo",
                     "Completado",
                     `Se eliminó el item ${item._id} del inventario de fruta sin procesar`);
+
+
 
                 if (!loteAnterior === "No vaceo") {
                     if (loteAnterior.enf.startsWith("EF1-")) {
@@ -1727,7 +1734,7 @@ export class InventariosRepository {
     static async put_inventarios_historialProcesado_modificarHistorial(req) {
         const { user } = req;
         const { _id, canastillas, action } = req.data;
-
+        console.log("Modificar historial fruta procesada:", req);
         let log
         const session = await db.Lotes.db.startSession();
 
@@ -1758,7 +1765,7 @@ export class InventariosRepository {
                 const lote = await LotesHelper.actualizar_lotes_helper(
                     { _id: frutaProcesada.loteId },
                     { $inc: { kilosVaciados: -newKilos } },
-                    { new: true, user: user, action: action, session: session, softNotFound: true, calculateFields: true },
+                    { new: true, user: user, action: action, session: session },
                 )
 
                 await registrarPasoLog(
@@ -1767,8 +1774,9 @@ export class InventariosRepository {
                     "Completado", `Lote ${_id} modificado con kilosVaciados: ${newKilos}`);
 
                 const descripcion = `Modificación de historial de fruta procesada - Kilos vaciados ajustados en: ${newKilos}`
-                console.log("canastillas", canastillas)
-                await InventariosService.modificarSumarInventarioFrutaSinProocesar(canastillas, user, action, lote._id, frutaProcesada.loteType, log, session, descripcion)
+                await InventariosService.modificarSumarInventarioFrutaSinProocesar(
+                    canastillas, user, action, lote._id, frutaProcesada.loteType, log, session, descripcion
+                )
 
                 await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
                     { $inc: { [`kilos_vaciados.${lote.tipoFruta._id.toString()}`]: -Number(newKilos) } }, session
@@ -1858,7 +1866,7 @@ export class InventariosRepository {
 
             await session.withTransaction(async () => {
                 const descripcion = `Modificación de historial de directo nacional - Canastillas ajustadas en: ${canastillas}, kilos ajustados en: ${directoNacional}`
-                await InventariosService.modificarSumarInventarioFrutaSinProocesar(canastillas, user, action, lote._id, log, session, descripcion)
+                await InventariosService.modificarSumarInventarioFrutaSinProocesar(canastillas, user, action, lote._id, 'lote', log, session, descripcion)
 
                 const loteChanged = await LotesRepository.actualizar_lote(
                     { _id: lote._id, },
@@ -2004,7 +2012,7 @@ export class InventariosRepository {
     static async post_inventarios_ingreso_lote(req) {
         const { user } = req;
         const { data, action } = req;
-
+        const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
         let log
         const session = await db.Lotes.db.startSession();
 
@@ -2054,7 +2062,7 @@ export class InventariosRepository {
 
                 // await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
                 await InventariosHistorialRepository.put_inventarioSimple(
-                    { _id: "68cecc4cff82bb2930e43d05" },
+                    { _id: inventarioID },
                     { $push: { inventario: { lote: lote._id, canastillas: Number(lote.canastillas) } }, $inc: { __v: 1 } },
                     { session, user: user._id, action: "ingreso_lote", operation: "ingreso", skipAudit: false }
                 );
@@ -2099,6 +2107,8 @@ export class InventariosRepository {
     static async post_inventarios_ingreso_maquila(req) {
         const { user } = req;
         const { data, action } = req;
+
+        const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
 
         let log
         const session = await db.Lotes.db.startSession();
@@ -2149,7 +2159,7 @@ export class InventariosRepository {
 
                 // await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
                 await InventariosHistorialRepository.put_inventarioSimple(
-                    { _id: "68cecc4cff82bb2930e43d05" },
+                    { _id: inventarioID },
                     { $push: { inventarioMaquila: { lote: lote._id, canastillas: Number(lote.canastillas) } }, $inc: { __v: 1 } },
                     { session, user: user._id, action: "ingreso_lote", operation: "ingreso", skipAudit: false }
                 );

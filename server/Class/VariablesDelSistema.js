@@ -7,8 +7,6 @@ import { ConnectRedisError } from '../../Error/ConnectionErrors.js';
 import { TurnoDatarepository } from './TurnoData.js';
 import { RedisRepository } from './RedisData.js';
 import { registrarPasoLog } from '../api/helper/logs.js';
-import { RecordLotesRepository } from '../archive/ArchiveLotes.js';
-import { LotesRepository } from './Lotes.js';
 
 // 🪄 Magia para __dirname y __filename:
 const __filename = fileURLToPath(import.meta.url);
@@ -75,36 +73,6 @@ export class VariablesDelSistema {
     }
   }
 
-  static async obtenerEF1proceso() {
-    try {
-      let query = {
-        operacionRealizada: 'vaciarLote'
-      }
-      const record = await RecordLotesRepository.getVaciadoRecord({ query, limit: 1 });
-      const lote = await LotesRepository.getLotes2({
-        ids: record[0].documento._id,
-        select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1 }
-      });
-      return lote
-    } catch (err) {
-      throw new ConnectRedisError(531, `Error obtenerEF1 descartes ${err.type}`)
-    }
-  }
-  static async obtenerEF1Descartes() {
-    try {
-      let query = {
-        operacionRealizada: 'vaciarLote'
-      }
-      const record = await RecordLotesRepository.getVaciadoRecord({ query, limit: 1 });
-      const lote = await LotesRepository.getLotes2({
-        ids: record[0].documento._id,
-        select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1 }
-      });
-      return lote
-    } catch (err) {
-      throw new ConnectRedisError(531, `Error obtenerEF1 descartes ${err.type}`)
-    }
-  }
   static async obtener_EF1_listaDeEmpaque() {
     /**
 * Obtiene los datos de lista de empaque del predio procesando desde Redis.

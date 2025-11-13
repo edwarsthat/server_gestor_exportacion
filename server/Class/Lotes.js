@@ -237,7 +237,8 @@ export class LotesRepository {
         }
     }
     static async actualizar_lote(filter, update, options = {}) {
-        const { session, arrayFilters, softNotFound = false, calculateFields = false, vaciar = false, ...restOptions } = options;
+        const { session, arrayFilters, canastillas = 0,
+            softNotFound = false, calculateFields = false, vaciar = false, ...restOptions } = options;
 
         const finalOptions = {
             new: true,
@@ -255,7 +256,7 @@ export class LotesRepository {
                 throw new Error('Lote no encontrado');
             }
 
-             if (vaciar) {
+            if (vaciar) {
                 const userId = finalOptions.user?._id || finalOptions.user;
                 let record = new db.frutaProcesada({
                     loteId: documento._id,
@@ -263,7 +264,7 @@ export class LotesRepository {
                     loteType: 'Lote',
                     tipoFruta: documento.tipoFruta,
                     promedio: documento.promedio,
-                    canastillas: documento.canastillas,
+                    canastillas: canastillas,
                     user: userId,
 
                 });
@@ -385,7 +386,8 @@ export class LotesRepository {
         }
     }
     static async actualizar_lote_Maquila(filter, update, options = {}) {
-        const { session, arrayFilters, softNotFound = false, calculateFields = false, vaciar = false, ...restOptions } = options;
+        const { session, arrayFilters, canastillas = 0,
+            softNotFound = false, calculateFields = false, vaciar = false, ...restOptions } = options;
 
         const finalOptions = {
             new: true,
@@ -409,7 +411,7 @@ export class LotesRepository {
                     loteType: 'loteMaquila',
                     tipoFruta: documento.tipoFruta,
                     promedio: documento.promedio,
-                    canastillas: documento.canastillas,
+                    canastillas: canastillas,
                     user: userId,
 
                 });

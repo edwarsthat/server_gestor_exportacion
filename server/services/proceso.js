@@ -10,6 +10,7 @@ import { getColombiaDate } from "../api/utils/fechas.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { parseMultTipoCaja } from "./helpers/contenedores.js";
 import { IndicadoresAPIRepository } from "../api/IndicadoresAPI.js";
+import { LotesHelper } from "../helper/lotes.js";
 
 
 class ProcesoService {
@@ -676,20 +677,20 @@ class ProcesoService {
         }
 
     }
-    static async modificarLotedescartes(_id, query, user, action, session) {
-        const lote = await LotesRepository.getLotes2({ ids: [_id] })
-        const result = checkFinalizadoLote(lote)
-        if (result) {
-            throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
-        }
 
-        const loteModificado = await LotesRepository.actualizar_lote(
+    static async modificarLotedescartes(_id, query, user, action, session) {
+
+        const lote = await LotesHelper.actualizar_lotes_helper(
             { _id: _id },
             query,
             { user: user._id, action: action, session: session }
         )
 
-        return loteModificado;
+        const result = checkFinalizadoLote(lote)
+        if (result) {
+            throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
+        }
+        return lote;
     }
     static async restar_mover_modificar_contenedor(
         contenedores, index1, index2, contenedor1, contenedor2,

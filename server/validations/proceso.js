@@ -11,7 +11,7 @@ export class ProcesoValidations {
             calidad: z.string().min(1),
             calibre: z.string(),
             tipoCaja: z.string(),
-            tipoFruta:  z.string().min(1),
+            tipoFruta: z.string().min(1),
             fecha: z.string(),
         });
 
@@ -92,16 +92,17 @@ export class ProcesoValidations {
     }
     static put_proceso_aplicaciones_descarteEncerado() {
         return z.object({
-            _id: z.string().regex(/^[0-9a-fA-F]{24}$/),
-            data: z.object({
-                descarteGeneral: z.number(),
-                pareja: z.number(),
-                balin: z.number(),
-                descompuesta: z.number(),
-                extra: z.number(),
-                suelo: z.number(),
-                frutaNacional: z.number()
-            })
+            descarte: z.string().min(1, "Seleccione un descarte"),
+            canastillas: z.string().refine((val) => {
+                if (val === "") return true;
+                const num = Number(val);
+                return !isNaN(num) && num >= 0;
+            }, "Las canastillas deben ser un número mayor o igual a 0").optional().or(z.literal("")),
+            kilos: z.string().refine((val) => {
+                if (val === "") return true;
+                const num = Number(val);
+                return !isNaN(num) && num >= 0;
+            }, "Los kilos deben ser un número mayor o igual a 0").optional().or(z.literal("")),
         })
     }
 }

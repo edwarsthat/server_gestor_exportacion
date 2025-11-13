@@ -82,6 +82,7 @@ import { defineDescartes } from '../schemas/catalogs/schemaDescartes.js';
 import { defineAuditLoteMaquila } from '../schemas/audit/AuditLogLoteMaquila.js';
 import { defineLoteMaquila } from '../schemas/lotes/schemaLoteMaquila.js';
 import { defineFrutaProcesada } from '../schemas/lotes/schemaFrutaProcesada.js';
+import { defineInventarioDescarte2 } from '../schemas/inventarios/SchemaInventarioDescarte2.js';
 
 export const db = {};
 export const connections = {};
@@ -396,6 +397,10 @@ const defineSchemasProceso = async (sysConn) => {
 
         console.log("⚡ Definiendo Inventario descarte...");
         db.InventarioDescarte = await defineInventarioDescarte(sysConn);
+        console.log("✅ InventarioDescarte definido");
+
+        console.log("⚡ Definiendo Inventario descarte...");
+        db.InventarioDescarte2 = await defineInventarioDescarte2(sysConn);
         console.log("✅ InventarioDescarte definido");
 
         console.log("⚡ Definiendo Seriales...");

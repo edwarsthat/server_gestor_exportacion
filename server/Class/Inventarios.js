@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { db } from "../../DB/mongoDB/config/init.js";
-import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
+import { ConnectionDBError, PostError } from "../../Error/ConnectionErrors.js";
 import config from "../../src/config/index.js";
 const inventarioFrutaSinProcesarId = config.INVENTARIO_FRUTA_SIN_PROCESAR;
 
@@ -283,7 +283,7 @@ export class InventariosHistorialRepository {
                             "$lote",
                             { predio: "$predio" },
                             { tipoFruta: "$tipoFruta" },  // ← Agregado aquí
-                            { canastillas: "$inventario.canastillas" }
+                            { canastillas: "$inventarioMaquila.canastillas" }
                         ],
                     }
                 }
@@ -296,18 +296,19 @@ export class InventariosHistorialRepository {
         return res || []
 
     }
-    static async get_item_frutaSinProcesar(id, tipo) {
+    static async get_item_frutaSinProcesar(id) {
         try {
             let item
             const documento = await db.InventariosSimples.findOne({ _id: inventarioFrutaSinProcesarId })
                 .lean()
                 .exec();
-            if (tipo.startsWith("EF1-")) {
-                item = documento.inventario.find(item => item.lote.toString() === id.toString());
-            } else {
+            item = documento.inventario.find(item => item.lote.toString() === id.toString());
+            if (!item) {
                 item = documento.inventarioMaquila.find(item => item.lote.toString() === id.toString());
             }
+            if (!item) throw new Error('No se encontró el ítem en ninguna colección');
             return item;
+
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo el lote del inventario ${err.message}`);
         }
@@ -371,5 +372,18 @@ export class InventariosHistorialRepository {
         }
     }
     // #endregion
+    // #region Inventario descartes
+    static async add_elemento_inventarioDescartes(data, user, opts = {}) {
+        const { session } = opts;
+        try {
+            const itemDescarte = new db.InventarioDescarte2(data);
+            itemDescarte._user = user;
 
+            const saved = await itemDescarte.save({ session });
+            return saved;
+        } catch (err) {
+            throw new PostError(409, `Error agregando lote maquila ${err.message}`);
+        }
+    }
+    // #endregion
 }

@@ -79,26 +79,6 @@ export const defineLotes = async (conn, AuditLog) => {
 
   }, { _id: false });
 
-  const descarteLavadoSchema = new Schema({
-    descarteGeneral: { type: Number, default: 0 },
-    pareja: { type: Number, default: 0 },
-    balin: { type: Number, default: 0 },
-    descompuesta: { type: Number, default: 0 },
-    piel: { type: Number, default: 0 },
-    hojas: { type: Number, default: 0 },
-  }, { _id: false });
-
-
-  const descarteEnceradoSchema = new Schema({
-    descarteGeneral: { type: Number, default: 0 },
-    pareja: { type: Number, default: 0 },
-    balin: { type: Number, default: 0 },
-    extra: { type: Number, default: 0 },
-    descompuesta: { type: Number, default: 0 },
-    suelo: { type: Number, default: 0 },
-  }, { _id: false });
-
-
   const salidaDirectoNacionalSchema = new Schema({
     placa: String,
     nombreConductor: String,
@@ -161,8 +141,7 @@ export const defineLotes = async (conn, AuditLog) => {
     canastillas: { type: Number, default: 0 },
     canastillas_estimadas: Number,
     contenedores: [String],
-    descarteEncerado: descarteEnceradoSchema,
-    descarteLavado: descarteLavadoSchema,
+    descartes: { type: Map, of: Number, default: {} },
     deshidratacion: { type: Number, default: 100 },
     desverdizado: desverdizadoSchema,
     directoNacional: { type: Number, default: 0 },

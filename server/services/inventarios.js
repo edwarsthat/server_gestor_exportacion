@@ -710,7 +710,6 @@ export class InventariosService {
     }
     static async probar_deshidratacion_loteProcesando(user) {
         const predioVaciando = await FrutaProcesada.obtener_ultimaEntrada();
-        console.log("Predio vaciando:", predioVaciando);
         if (!predioVaciando) {
             return "No vaceo"
         }
@@ -982,7 +981,7 @@ export class InventariosService {
     ) {
         const loteObjectId = new mongoose.Types.ObjectId(loteId);
         const campoInventario = tipo === 'loteMaquila' ? 'inventarioMaquila' : 'inventario';
-
+        const inventarioId = config.INVENTARIO_FRUTA_SIN_PROCESAR;
         const pipelineUpdate = [
             {
                 $set: {
@@ -1035,7 +1034,7 @@ export class InventariosService {
         ];
 
         const result = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
-            { _id: "68cecc4cff82bb2930e43d05" },
+            { _id: inventarioId },
             pipelineUpdate,
             {
                 session,

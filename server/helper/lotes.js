@@ -2,12 +2,10 @@ import { LotesRepository } from "../Class/Lotes.js";
 
 export class LotesHelper {
     static async actualizar_lotes_helper(_id, update, options = {}) {
-        console.log(_id)
         const [r1, r2] = await Promise.allSettled([
-            LotesRepository.actualizar_lote({ _id }, update, options),
-            LotesRepository.actualizar_lote_Maquila({ _id }, update, options)
+            LotesRepository.actualizar_lote({ _id }, update, {...options, softNotFound: true, calculateFields: true}),
+            LotesRepository.actualizar_lote_Maquila({ _id }, update, {...options, softNotFound: true, calculateFields: true})
         ]);
-        console.log(r1, r2)
         const ef1 = r1.status === 'fulfilled' ? r1.value : null;
         const ef10 = r2.status === 'fulfilled' ? r2.value : null;
 
