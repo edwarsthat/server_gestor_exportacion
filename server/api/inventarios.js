@@ -80,7 +80,6 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-
     static async put_inventarios_frutaDesverdizando_parametros(req) {
         try {
             InventariosValidations.put_inventarios_frutaDesverdizando_parametros().parse(req.data)
@@ -706,7 +705,7 @@ export class InventariosRepository {
                     query,
                     {
                         user: user._id, action: "vaciarLote", canastillas: item.canastillas,
-                        vaciar: true,  session
+                        vaciar: true, session
                     }
                 )
                 await registrarPasoLog(log._id, "LotesRepository.modificar_lote", "Completado", `Se modificó el lote con ID ${_id} para vaciarlo, kilosVaciados: ${kilosVaciados}`);
@@ -1033,7 +1032,28 @@ export class InventariosRepository {
             throw error;
         }
     }
-
+    static async get_inventarios_descarteMaquila() {
+        try {
+            const inventario = await InventariosHistorialRepository.get_inventario_descarte_maquila({
+                query:{
+                    estado: 'ACTIVO',
+                    loteType: "loteMaquila"
+                },
+                populate: [
+                    { path: 'tipoFruta', select: "tipoFruta" },
+                    { path: 'lote', select: "enf" },
+                    { path: 'tipoDescarte', select: "nombre" },
+                ]
+            })
+            return inventario
+        } catch (err) {
+            console.error(err)
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
     //#endregion
     //#region Historiales
     static async get_inventarios_historialProcesado_frutaProcesada(req) {

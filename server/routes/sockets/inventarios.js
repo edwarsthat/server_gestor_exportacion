@@ -123,6 +123,10 @@ export const apiSocketInventarios = {
         await InventariosRepository.put_inventarios_cuartosFrios_salida_item(data)
         return successResponseRoutes()
     },
+    get_inventarios_descarteMaquila: async (data) => {
+        const response = await InventariosRepository.get_inventarios_descarteMaquila(data)
+        return successResponseRoutes(response)
+    },
     //#endregion
     //#region historiales
     get_inventarios_historialProcesado_frutaProcesada: async (data) => {

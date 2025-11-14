@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PostError } from "../../Error/ConnectionErrors.js";
 import config from "../../src/config/index.js";
+import { InventariosService } from "../services/inventarios.js";
 const inventarioFrutaSinProcesarId = config.INVENTARIO_FRUTA_SIN_PROCESAR;
 
 export class InventariosHistorialRepository {
@@ -375,14 +376,103 @@ export class InventariosHistorialRepository {
     // #region Inventario descartes
     static async add_elemento_inventarioDescartes(data, user, opts = {}) {
         const { session } = opts;
+        const { lote, tipoFruta, area, tipoDescarte, kilos, loteType } = data;
         try {
-            const itemDescarte = new db.InventarioDescarte2(data);
-            itemDescarte._user = user;
 
-            const saved = await itemDescarte.save({ session });
-            return saved;
+            const existeRegistro = await db.InventarioActualDescarte.findOne({
+                lote: lote,
+                tipoFruta: tipoFruta,
+                area: area,
+                tipoDescarte: tipoDescarte,
+                loteType: loteType,
+                estado: 'ACTIVO'
+            }).session(session);
+
+            if (existeRegistro) {
+
+                // Actualizar el inventario existente
+                await db.InventarioActualDescarte.updateOne(
+                    { _id: existeRegistro._id },
+                    {
+                        $inc: { kilosActuales: kilos, kilosIniciales: kilos },
+                        $set: { fechaActualizacion: new Date() }
+                    },
+                    { session }
+                );
+
+                // Crear movimiento de INGRESO adicional
+                await db.InventarioMovimientoDescarte.create([{
+                    registroDescarte: existeRegistro._id,
+                    tipoMovimiento: 'INGRESO',
+                    tipoRegistro: loteType,
+                    kilos: kilos,
+                    kilosRestantes: kilos,
+                    fechaMovimiento: new Date(),
+                    user: user,
+                    destino: `INVENTARIO_${area}`
+                }], { session });
+
+                return existeRegistro;
+            } else {
+                // Crear nuevo registro de inventario
+                const itemDescarte = new db.InventarioActualDescarte({
+                    ...data,
+                    user: user,
+                    kilosIniciales: kilos,
+                    kilosActuales: kilos,
+                    tipoRegistro: area,
+                });
+
+                const saved = await itemDescarte.save({ session });
+
+                // Crear movimiento de INGRESO inicial
+                await db.InventarioMovimientoDescarte.create([{
+                    registroDescarte: saved._id,
+                    tipoMovimiento: 'INGRESO',
+                    tipoRegistro: loteType, 
+                    kilos: kilos,
+                    kilosRestantes: kilos, 
+                    fechaMovimiento: saved.fechaIngreso,
+                    user: user,
+                    destino: `INVENTARIO_${area}`
+                }], { session });
+                
+                return saved;
+            }
         } catch (err) {
-            throw new PostError(409, `Error agregando lote maquila ${err.message}`);
+            throw new PostError(409, `Error agregando inventario descarte: ${err.message}`);
+        }
+    }
+    static async get_inventario_descarte_maquila(options = {}) {
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { createdAt: 1 },
+            populate = [],
+            limit = 0,
+            skip = 0,
+        } = options;
+        try {
+            let registroQuery = { ...query };
+
+            if (ids.length > 0) {
+                registroQuery._id = { $in: ids };
+            }
+
+            const registros = await db.InventarioActualDescarte.find(registroQuery)
+                .select(select)
+                .sort(sort)
+                .limit(limit)
+                .skip(skip)
+                .populate(populate)
+                .exec();
+
+            const result = await InventariosService.respuesta_invetario_descartes(registros);
+            return result;
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo registros ${err.message}`);
         }
     }
     // #endregion

@@ -62,7 +62,6 @@ import { defineClientesNacionales } from '../schemas/clientes/schemaClientesNaci
 import { defineAuditLogs } from '../schemas/audit/AuditLogSchema.js';
 import { defineCuartosdesverdizado } from '../schemas/catalogs/schemaCuartosDesverdizado.js';
 import { defineAuditSistemaLogs } from '../schemas/audit/AuditLosSistemaSchema.js';
-import { defineAuditDescartes } from '../schemas/audit/ReporteIngresoDescartesSchema.js';
 import { defineInventarioDescarte } from '../schemas/inventarios/SchemaInventarioDescartes.js';
 import { defineTipoFrutas } from '../schemas/catalogs/schemaTipoFruta.js';
 import { defineLoteEf8 } from '../schemas/lotes/schemaLoteEf8.js';
@@ -82,7 +81,8 @@ import { defineDescartes } from '../schemas/catalogs/schemaDescartes.js';
 import { defineAuditLoteMaquila } from '../schemas/audit/AuditLogLoteMaquila.js';
 import { defineLoteMaquila } from '../schemas/lotes/schemaLoteMaquila.js';
 import { defineFrutaProcesada } from '../schemas/lotes/schemaFrutaProcesada.js';
-import { defineInventarioDescarte2 } from '../schemas/inventarios/SchemaInventarioDescarte2.js';
+import { defineInventarioActualDescarte } from '../schemas/inventarios/SchemaInventarioActualDescarte.js';
+import { defineInventarioMovimientosDescarte } from '../schemas/inventarios/SchemaMovimientoInventarioDescartes.js';
 
 export const db = {};
 export const connections = {};
@@ -400,7 +400,11 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("✅ InventarioDescarte definido");
 
         console.log("⚡ Definiendo Inventario descarte...");
-        db.InventarioDescarte2 = await defineInventarioDescarte2(sysConn);
+        db.InventarioActualDescarte = await defineInventarioActualDescarte(sysConn);
+        console.log("✅ InventarioDescarte definido");
+
+        console.log("⚡ Definiendo Inventario descarte...");
+        db.InventarioMovimientoDescarte = await defineInventarioMovimientosDescarte(sysConn);
         console.log("✅ InventarioDescarte definido");
 
         console.log("⚡ Definiendo Seriales...");
@@ -474,11 +478,6 @@ const defineSchemasSistema = async (sysConn) => {
         console.log("⚡ Definiendo Errores...");
         db.Errores = await defineErrores(sysConn);
         console.log("✅ Errores definido");
-
-        console.log("⚡ Definiendo Record ingreso descartes...");
-        db.IngresoDescartes = await defineAuditDescartes(sysConn);
-        console.log("✅ Record ingreso descartes definido");
-
 
         console.log("🎉 Todos los schemas de sistema han sido definidos correctamente.");
 

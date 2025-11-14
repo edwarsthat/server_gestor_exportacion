@@ -16,7 +16,6 @@ import { InventariosLogicError } from "../../Error/logicLayerError.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
 import { ProcesoValidations } from "../validations/proceso.js";
 import { ProcesoService } from "../services/proceso.js";
-import { RedisRepository } from "../Class/RedisData.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { checkFinalizadoLote } from "./utils/lotesFunctions.js";
@@ -124,97 +123,11 @@ export class ProcesoRepository {
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async put_proceso_aplicaciones_descarteLavado(req) {
-        const { user } = req;
-        const { _id, data, action } = req.data;
-
-        let log
-
-        const session = await db.Lotes.db.startSession();
-
-        log = await LogsRepository.create({
-            user: user._id,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-        })
-
-        try {
-            const logData = { logId: log._id, user: user, action: "put_proceso_aplicaciones_descarteLavado" }
-
-            ProcesoValidations.put_proceso_aplicaciones_descarteLavado().parse(req.data)
-            await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteLavado", "Completado");
-
-            const keys = Object.keys(data);
-            const query = {
-                $inc: {
-                    kilosProcesados: 0,
-                }
-            };
-            let kilos = 0;
-            for (let i = 0; i < keys.length; i++) {
-                query.$inc[`descarteLavado.${keys[i]}`] = Math.round(data[keys[i]]);
-                kilos += Math.round(data[keys[i]]);
-                query.$inc.kilosProcesados += Math.round(data[keys[i]]);
-            }
-
-            await session.withTransaction(async () => {
-                const lote = await ProcesoService.modificarLotedescartes(_id, query, user, action, session)
-                await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${_id}, Kilos: ${kilos}`);
-
-                await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
-                    { $inc: { [`kilos_procesados.${lote.tipoFruta._id.toString()}`]: Number(kilos) } }, session
-                );
-                await registrarPasoLog(
-                    log._id,
-                    "IndicadoresAPIRepository.put_indicadores_actualizar_indicador",
-                    "Completado",
-                    `Se actualizó el indicador kilosProcesadosHoy con ${kilos} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
-
-                await LogsRepository.createReporteIngresoDescarte({
-                    user: user.user,
-                    userID: user._id,
-                    loteID: lote._id,
-                    enf: lote.enf,
-                    tipoFruta: lote.tipoFruta.tipoFruta,
-                    descarteEncerado: {},
-                    descarteLavado: data
-                }, log._id);
-
-                await registrarPasoLog(
-                    log._id,
-                    "LogsRepository.createReporteIngresoDescarte",
-                    "Completado",
-                    `Se creó el reporte de ingreso de descarte del lote ${lote._id}`);
-
-                await RedisRepository.put_inventarioDescarte(data, 'descarteLavado:', lote.tipoFruta.tipoFruta, logData);
-                await VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta.tipoFruta, kilos, logData.logId);
-
-                await registrarPasoLog(
-                    log._id,
-                    "Modificacion de Redis e Indicadores",
-                    "Completado",
-                    `Se modificó el inventario de descarte y la métrica kilosProcesadosHoy con ${kilos} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
-
-            });
-
-            procesoEventEmitter.emit("server_event", {
-                action: "descarte_change",
-                data: {}
-            });
-        } catch (error) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, error);
-            await ErrorProcesoLogicHandlers(error, log)
-        } finally {
-            await session.endSession();
-            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-        }
-
-    }
-    static async put_proceso_aplicaciones_descarteEncerado(req) {
+    static async put_proceso_aplicaciones_descarte(req) {
 
         const { user } = req;
-        console.log(req.data);
-        const { action, data, registroFrutaProcesada } = req.data;
+        console.log(req.data)
+        const { action, data, registroFrutaProcesada, tipo } = req.data;
         const { descarte, canastillas, kilos } = data;
 
         let log
@@ -245,6 +158,7 @@ export class ProcesoRepository {
                 const query = {
                     $inc: {
                         kilosProcesados: kilosTotales,
+                        [`descartes.${descarte}`]: kilosTotales
                     }
                 };
 
@@ -259,31 +173,17 @@ export class ProcesoRepository {
                     "IndicadoresAPIRepository.put_indicadores_actualizar_indicador",
                     "Completado",
                     `Se actualizó el indicador kilosProcesadosHoy con ${kilos} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
-
-                // await LogsRepository.createReporteIngresoDescarte({
-                //     user: user.user,
-                //     userID: user._id,
-                //     loteID: lote._id,
-                //     enf: lote.enf,
-                //     tipoFruta: lote.tipoFruta.tipoFruta,
-                //     descarteEncerado: data,
-                //     descarteLavado: {}
-                // }, log._id, session);
-
-                // await registrarPasoLog(
-                //     log._id,
-                //     "LogsRepository.createReporteIngresoDescarte",
-                //     "Completado",
-                //     `Se creó el reporte de ingreso de descarte del lote ${lote._id}`);
+   
 
                 const data = {
                     lote: lote._id,
                     tipoFruta: lote.tipoFruta._id,
-                    area: "encerado",
+                    area: tipo,
                     tipoDescarte: descarte,
                     kilos: kilosTotales,
-                    tipo: registroProceso[0].loteType
+                    loteType: registroProceso[0].loteType
                 }
+                console.log(data)
                 await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, log._id, session);
                 await VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta.tipoFruta, kilosTotales, logData.logId);
                 await registrarPasoLog(

@@ -977,7 +977,7 @@ export class InventariosService {
 
     }
     static async modificarSumarInventarioFrutaSinProocesar(
-        canastillas, user, action, loteId, tipo,  log, session, descripcion
+        canastillas, user, action, loteId, tipo, log, session, descripcion
     ) {
         const loteObjectId = new mongoose.Types.ObjectId(loteId);
         const campoInventario = tipo === 'loteMaquila' ? 'inventarioMaquila' : 'inventario';
@@ -1069,8 +1069,25 @@ export class InventariosService {
         }
         return true
     }
-    static async modificar_inventario_ingresoLotes() {
-
+    static async respuesta_invetario_descartes(registros) {
+        const out = []
+        for (const registro of registros){
+            console.log(out)
+            const index = out.findIndex(item => item.lote._id.toString() === registro.lote._id.toString());
+            if(index === -1){
+                out.push({
+                    lote: registro.lote,
+                    tipoFruta: registro.tipoFruta,
+                    [`${registro.area}//${registro.tipoDescarte._id}`]: registro.kilosActuales,
+                });
+            } else {
+                if(!out[index][`${registro.area}//${registro.tipoDescarte._id}`]){
+                    out[index][`${registro.area}//${registro.tipoDescarte._id}`] = 0;
+                }
+                out[index][`${registro.area}//${registro.tipoDescarte._id}`] += registro.kilosActuales;
+            }
+        }
+        return out;
     }
     // static async modificarIngresoCanastillas(data) {
     //     const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)
