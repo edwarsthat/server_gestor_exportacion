@@ -90,6 +90,19 @@ export class ConstantesDelSistema {
             throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`);
         }
     }
+        static async get_constantes_sistema_descartes(_id, logId = null, session = null) {
+        try {
+            const filter = _id ? { _id } : {};
+            const registros = await db.Descartes.find(filter)
+                .session(session).exec();
+            if (logId) {
+                await registrarPasoLog(logId, "ConstantesDelSistema.get_constantes_sistema_descartes", "Completado");
+            }
+            return registros;
+        } catch (err) {
+            throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`);
+        }
+    }
     static async get_constantes_sistema_paises_GGN() {
         try {
             const dataJSON = fs.readFileSync(paises_GGN_path);

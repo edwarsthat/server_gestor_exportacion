@@ -429,14 +429,14 @@ export class InventariosHistorialRepository {
                 await db.InventarioMovimientoDescarte.create([{
                     registroDescarte: saved._id,
                     tipoMovimiento: 'INGRESO',
-                    tipoRegistro: loteType, 
+                    tipoRegistro: loteType,
                     kilos: kilos,
-                    kilosRestantes: kilos, 
+                    kilosRestantes: kilos,
                     fechaMovimiento: saved.fechaIngreso,
                     user: user,
                     destino: `INVENTARIO_${area}`
                 }], { session });
-                
+
                 return saved;
             }
         } catch (err) {
@@ -468,11 +468,73 @@ export class InventariosHistorialRepository {
                 .populate(populate)
                 .exec();
 
+            const result = await InventariosService.respuesta_invetario_descartes_maquila(registros);
+            return result;
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo registros ${err.message}`);
+        }
+    }
+    static async get_inventario_descarte(options = {}) {
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { createdAt: 1 },
+            populate = [],
+            limit = 0,
+            skip = 0,
+        } = options;
+        try {
+            let registroQuery = { ...query };
+
+            if (ids.length > 0) {
+                registroQuery._id = { $in: ids };
+            }
+
+            const registros = await db.InventarioActualDescarte.find(registroQuery)
+                .select(select)
+                .sort(sort)
+                .limit(limit)
+                .skip(skip)
+                .populate(populate)
+                .exec();
+
             const result = await InventariosService.respuesta_invetario_descartes(registros);
             return result;
 
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo registros ${err.message}`);
+        }
+    }
+    static async get_inventario_descarteMaquila_generico(options = {}) {
+        const {
+            ids = [],
+            query = {},
+            select = {},
+            sort = { createdAt: 1 },
+            populate = [],
+            limit = 0,
+            skip = 0,
+        } = options;
+        try {
+            let registroQuery = { ...query };
+
+            if (ids.length > 0) {
+                registroQuery._id = { $in: ids };
+            }
+
+            const registros = await db.InventarioActualDescarte.find(registroQuery)
+                .select(select)
+                .sort(sort)
+                .limit(limit)
+                .skip(skip)
+                .populate(populate)
+                .exec();
+            return registros;
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo registros ${err.message}`);
+
         }
     }
     // #endregion

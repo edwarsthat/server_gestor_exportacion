@@ -39,11 +39,22 @@ export class InventariosRepository {
     //#region inventarios
     static async get_inventarios_frutaDescarte_fruta() {
         try {
+            const inventario = await InventariosHistorialRepository.get_inventario_descarte({
+                query: {
+                    estado: 'ACTIVO',
+                    loteType: "Lote",
+                },
+                populate: [
+                    { path: 'tipoFruta', select: "tipoFruta" },
+                    { path: 'lote', select: "enf" },
+                    { path: 'tipoDescarte', select: "nombre inventario" },
+                ]
+            })
 
-            const inventario = await RedisRepository.get_inventarioDescarte();
-            return inventario;
+            return inventario
         } catch (err) {
-            if (err.status === 518 || err.status === 413) {
+            console.error(err)
+            if (err.status === 522) {
                 throw err
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
@@ -1035,16 +1046,17 @@ export class InventariosRepository {
     static async get_inventarios_descarteMaquila() {
         try {
             const inventario = await InventariosHistorialRepository.get_inventario_descarte_maquila({
-                query:{
+                query: {
                     estado: 'ACTIVO',
-                    loteType: "loteMaquila"
+                    loteType: "loteMaquila",
                 },
                 populate: [
                     { path: 'tipoFruta', select: "tipoFruta" },
                     { path: 'lote', select: "enf" },
-                    { path: 'tipoDescarte', select: "nombre" },
+                    { path: 'tipoDescarte', select: "nombre inventario" },
                 ]
             })
+
             return inventario
         } catch (err) {
             console.error(err)
@@ -1052,6 +1064,39 @@ export class InventariosRepository {
                 throw err
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_inventarios_salida_descarteMaquila(req) {
+        const { user } = req;
+        const { data, _id, tipoSalidaSeleccionado } = req.data
+        let log;
+
+        log = await LogsRepository.create({
+            user: user,
+            action: "put_inventarios_salida_descarteMaquila",
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
+
+        const session = await db.InventarioActualDescarte?.db.startSession();
+
+        if (!session) {
+            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
+        }
+        try {
+            await session.withTransaction(async () => {
+                const registros = await InventariosService.obtener_registros_inventario_descarteMaquila(_id, data)
+                console.log("Registros a procesar:", registros);
+            })
+
+        } catch (err) {
+            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await session.endSession();
+            if (log) {
+                await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
+            }
         }
     }
     //#endregion

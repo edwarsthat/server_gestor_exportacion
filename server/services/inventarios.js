@@ -1069,25 +1069,58 @@ export class InventariosService {
         }
         return true
     }
-    static async respuesta_invetario_descartes(registros) {
+    static async respuesta_invetario_descartes_maquila(registros) {
         const out = []
-        for (const registro of registros){
-            console.log(out)
+        for (const registro of registros) {
+            if (!registro.tipoDescarte.inventario) continue;
             const index = out.findIndex(item => item.lote._id.toString() === registro.lote._id.toString());
-            if(index === -1){
+            if (index === -1) {
                 out.push({
                     lote: registro.lote,
                     tipoFruta: registro.tipoFruta,
                     [`${registro.area}//${registro.tipoDescarte._id}`]: registro.kilosActuales,
                 });
             } else {
-                if(!out[index][`${registro.area}//${registro.tipoDescarte._id}`]){
+                if (!out[index][`${registro.area}//${registro.tipoDescarte._id}`]) {
                     out[index][`${registro.area}//${registro.tipoDescarte._id}`] = 0;
                 }
                 out[index][`${registro.area}//${registro.tipoDescarte._id}`] += registro.kilosActuales;
             }
         }
         return out;
+    }
+
+    static async respuesta_invetario_descartes(registros) {
+        const out = {}
+        for (const registro of registros) {
+            if (!registro.tipoDescarte.inventario) continue;
+
+            if (registro.tipoDescarte._id.toString() === "69120e3ca1cf6dcb986f5893") {
+                if (!out[`${registro.tipoFruta._id}//${registro.area}//690f643bbe7e33ae39bda1c6`]) {
+                    out[`${registro.tipoFruta._id}//${registro.area}//690f643bbe7e33ae39bda1c6`] = 0;
+                }
+                out[`${registro.tipoFruta._id}//${registro.area}//690f643bbe7e33ae39bda1c6`] += registro.kilosActuales;
+
+            } else {
+                if (!out[`${registro.tipoFruta._id}//${registro.area}//${registro.tipoDescarte._id}`]) {
+                    out[`${registro.tipoFruta._id}//${registro.area}//${registro.tipoDescarte._id}`] = 0;
+                }
+                out[`${registro.tipoFruta._id}//${registro.area}//${registro.tipoDescarte._id}`] += registro.kilosActuales;
+            }
+        }
+        return out;
+    }
+    static async obtener_registros_inventario_descarteMaquila(_id, data) {
+        const out = [];
+        for (const itemKey of Object.keys(data)) {
+            const [area, tipoDescarteId] = itemKey.split("//");
+            const registro = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
+                query: { lote: _id, area: area, tipoDescarte: tipoDescarteId },
+            })
+
+            out.concat(registro);
+        }
+        console.log(out)
     }
     // static async modificarIngresoCanastillas(data) {
     //     const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)

@@ -184,61 +184,8 @@ export class RedisRepository {
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
     }
-    /**
-     * Obtiene el inventario completo de descartes para todos los tipos de fruta.
-     * Recupera tanto los descartes de lavado como los de encerado para cada tipo de fruta
-     * definido en el sistema, consolidando toda la información en un único objeto.
-     * 
-     * @static
-     * @async
-     * @returns {Promise<Object>} Un objeto donde cada clave es un tipo de fruta y su valor contiene los descartes
-     * @returns {Object.<string, {descarteLavado: Object, descarteEncerado: Object}>} 
-     * @throws {ConnectRedisError} Si hay un error en la comunicación con Redis
-     * 
-     * @example
-     * // Retorna un objeto con esta estructura:
-     * {
-     *   "Naranja": {
-     *     descarteLavado: { balin: "10", descarteGeneral: "20", pareja: "5" },
-     *     descarteEncerado: { balin: "8", descarteGeneral: "15", extra: "3" }
-     *   },
-     *   "Limon": {
-     *     descarteLavado: { ... },
-     *     descarteEncerado: { ... }
-     *   }
-     * }
-     */
-    static async get_inventarioDescarte() {
-        let cliente
-        try {
-            cliente = await getRedisClient();
-            // Prepara todas las promesas para ejecutarlas en paralelo
-            const tipoFrutas = await cargarTipoFrutas();
-            const promesas = tipoFrutas.map(fruta => (
-                Promise.all([
-                    cliente.hGetAll(`inventarioDescarte:${fruta}:descarteLavado:`),
-                    cliente.hGetAll(`inventarioDescarte:${fruta}:descarteEncerado:`)
-                ]).then(([descarteLavado, descarteEncerado]) => ({
-                    fruta,
-                    descarteLavado,
-                    descarteEncerado
-                }))
-            ));
 
-            const resultados = await Promise.all(promesas);
 
-            // Transforma el array de resultados en un objeto con cada fruta como key
-            const inventario = {};
-            resultados.forEach(({ fruta, descarteLavado, descarteEncerado }) => {
-                inventario[fruta] = { descarteLavado, descarteEncerado };
-            });
-
-            return inventario
-
-        } catch (err) {
-            throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
-        }
-    }
     static async get_inventarioDescarte_dia_ingreso() {
         let cliente
         try {
