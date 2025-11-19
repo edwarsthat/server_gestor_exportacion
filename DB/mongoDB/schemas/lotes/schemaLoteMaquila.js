@@ -118,6 +118,7 @@ export const defineLoteMaquila = async (conn, AuditLog) => {
         cliente: { type: Schema.Types.ObjectId, ref: 'Cliente' },
         contenedores: [String],
         descartes: { type: Map, of: Number, default: {} },
+        descartesDevueltos: { type: Map, of: Number, default: {} },
         deshidratacion: { type: Number, default: 100 },
         desverdizado: desverdizadoSchema,
         enf: { type: String },
@@ -147,6 +148,7 @@ export const defineLoteMaquila = async (conn, AuditLog) => {
         promedio: Number,
         salidaExportacion: salidaExportacionSchema,
         rendimiento: { type: Number, default: 0 },
+        remisionSalida: String,
         tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas' },
         user: { type: Schema.Types.ObjectId, ref: 'usuario' },
     });

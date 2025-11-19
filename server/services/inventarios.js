@@ -1110,17 +1110,112 @@ export class InventariosService {
         }
         return out;
     }
-    static async obtener_registros_inventario_descarteMaquila(_id, data) {
-        const out = [];
-        for (const itemKey of Object.keys(data)) {
+    static async obtener_registros_inventario_descarteMaquila(_id, data, session) {
+        // Extraer todas las combinaciones de área y tipoDescarte
+        const condiciones = Object.keys(data).map(itemKey => {
             const [area, tipoDescarteId] = itemKey.split("//");
-            const registro = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
-                query: { lote: _id, area: area, tipoDescarte: tipoDescarteId },
-            })
+            return { area, tipoDescarte: tipoDescarteId };
+        });
 
-            out.concat(registro);
+        // Si no hay condiciones, retornar array vacío
+        if (condiciones.length === 0) return [];
+
+        // Una sola consulta con $or para traer todos los registros
+        const registros = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
+            query: {
+                lote: _id,
+                $or: condiciones
+            }
+        }, { session });
+
+        // Ordenar por fecha de creación
+        return registros.sort((a, b) => a.createdAt - b.createdAt);
+    }
+    static async eliminarKilos_inventario_descarte(registros, data, log, user, session) {
+        // Crear un Map para búsqueda O(1) en lugar de find O(n)
+        const registrosMap = new Map(
+            registros.map(r => [`${r.area}//${r.tipoDescarte._id.toString()}`, r])
+        );
+
+        // Procesar todo en un solo loop secuencial
+        for (const [key, kilos] of Object.entries(data)) {
+            // Saltar si no hay kilos a eliminar
+            if (kilos <= 0) continue;
+
+            // Buscar registro en O(1)
+            const registro = registrosMap.get(key);
+            if (!registro) continue;
+
+            // Validación de kilos suficientes
+            if (registro.kilosActuales < kilos) {
+                throw new Error(
+                    `No hay suficientes kilos en el inventario para eliminar. ` +
+                    `Registro ID: ${registro._id}, Kilos actuales: ${registro.kilosActuales}, ` +
+                    `Kilos a eliminar: ${kilos}`
+                );
+            }
+
+            // Calcular nuevo valor y preparar update
+            const nuevoKilosActuales = registro.kilosActuales - Number(kilos);
+            const update = {
+                kilosActuales: nuevoKilosActuales,
+                ...(nuevoKilosActuales === 0 && { estado: 'AGOTADO' })
+            };
+
+            console.log(update)
+            // Actualizar inventario
+            const response =  await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
+                { _id: registro._id },
+                update,
+                {
+                    session,
+                    action: 'Modificar inventario descarte maquila',
+                    description: `Se eliminaron ${kilos} kilos del inventario de descarte maquila para el lote ${registro.lote}`,
+                    user: user._id,
+                }
+            );
+            console.log("Respuesta de actualización de inventario:", response);
+            // Registrar log
+            await registrarPasoLog(
+                log._id,
+                "InventariosHistorialRepository.put_inventario_descarteMaquila_updateOne",
+                "Completado",
+                `Kilos eliminados: ${kilos} del registro ID: ${registro._id}, nuevos kilosActuales: ${nuevoKilosActuales}`
+            );
         }
-        console.log(out)
+    }
+    static async modificar_lotes_inventario_descarteMaquila(data, _id, remision, log, user, session) {
+
+        // Procesar todo en un solo loop secuencial
+        for (const [key, kilos] of Object.entries(data)) {
+            const [, tipoDescarteId] = key.split("//");
+
+            const update = {
+                $set: {remisionSalida: remision},
+                $inc: {
+                    [`descartesDevueltos.${tipoDescarteId}`]: kilos
+                }
+            }
+
+            await LotesRepository.actualizar_lote_Maquila(
+                { _id: _id },
+                update,
+                {
+                    session, action: 'Modificar lote maquila inventario descarte',
+                    description: `Se agregaron ${kilos} kilos a descartesDevueltos para el tipoDescarteId: ${tipoDescarteId} en el lote ${_id}`,
+                    user: user._id
+                }
+            );
+
+            // Registrar log
+            await registrarPasoLog(
+                log._id,
+                "LotesRepository.actualizar_lote_Maquila",
+                "Completado",
+                `Kilos modificados: ${kilos} para el tipoDescarteId: ${tipoDescarteId} en el lote ID: ${_id}`
+            );
+
+        }
     }
     // static async modificarIngresoCanastillas(data) {
     //     const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)

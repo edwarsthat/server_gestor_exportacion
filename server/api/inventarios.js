@@ -1068,12 +1068,12 @@ export class InventariosRepository {
     }
     static async put_inventarios_salida_descarteMaquila(req) {
         const { user } = req;
-        const { data, _id, tipoSalidaSeleccionado } = req.data
+        const { data, _id, tipoSalidaSeleccionado, remision, action } = req.data
         let log;
 
         log = await LogsRepository.create({
             user: user,
-            action: "put_inventarios_salida_descarteMaquila",
+            action: action,
             acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
         });
 
@@ -1084,8 +1084,9 @@ export class InventariosRepository {
         }
         try {
             await session.withTransaction(async () => {
-                const registros = await InventariosService.obtener_registros_inventario_descarteMaquila(_id, data)
-                console.log("Registros a procesar:", registros);
+                const registros = await InventariosService.obtener_registros_inventario_descarteMaquila(_id, data, session);
+                await InventariosService.eliminarKilos_inventario_descarte(registros, data, log, user, session);
+                await InventariosService.modificar_lotes_inventario_descarteMaquila(data, _id, remision, log,  user, session);
             })
 
         } catch (err) {

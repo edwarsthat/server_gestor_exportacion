@@ -507,7 +507,7 @@ export class InventariosHistorialRepository {
             throw new ConnectionDBError(522, `Error obteniendo registros ${err.message}`);
         }
     }
-    static async get_inventario_descarteMaquila_generico(options = {}) {
+    static async get_inventario_descarteMaquila_generico(options = {}, { session = null } = {}) {
         const {
             ids = [],
             query = {},
@@ -530,11 +530,24 @@ export class InventariosHistorialRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
+                .session(session)
                 .exec();
             return registros;
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo registros ${err.message}`);
 
+        }
+    }
+    static async actualizar_registro_inventario_descarte(filter, update, options = {}) {
+        const finalOptions = {
+            runValidators: false,
+            ...options,
+        };
+        try {
+            const res = await db.InventarioActualDescarte.updateOne(filter, update, finalOptions);
+            return res; 
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
     // #endregion
