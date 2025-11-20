@@ -126,7 +126,6 @@ export class ProcesoRepository {
     static async put_proceso_aplicaciones_descarte(req) {
 
         const { user } = req;
-        console.log(req.data)
         const { action, data, registroFrutaProcesada, tipo } = req.data;
         const { descarte, canastillas, kilos } = data;
 
@@ -183,7 +182,6 @@ export class ProcesoRepository {
                     kilos: kilosTotales,
                     loteType: registroProceso[0].loteType
                 }
-                console.log(data)
                 await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, log._id, session);
                 await VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta.tipoFruta, kilosTotales, logData.logId);
                 await registrarPasoLog(

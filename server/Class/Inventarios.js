@@ -31,7 +31,7 @@ export class InventariosHistorialRepository {
             query = {},
             select = {},
             sort = { fecha: -1 },
-            limit = 50,
+            limit = 0,
             skip = 0,
         } = options;
         try {
@@ -41,12 +41,11 @@ export class InventariosHistorialRepository {
                 registroQuery._id = { $in: ids };
             }
 
-            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
 
             const registro = await db.InventarioDescarte.find(registroQuery)
                 .select(select)
                 .sort(sort)
-                .limit(limitToUse)
+                .limit(limit)
                 .skip(skip)
                 .exec();
 
@@ -62,6 +61,18 @@ export class InventariosHistorialRepository {
             return count;
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo la cantidad de registros de inventario de descartes ${err.message}`);
+        }
+    }
+    static async actualizar_registro_inventario_descarte_historico(filter, update, options = {}) {
+        const finalOptions = {
+            runValidators: false,
+            ...options,
+        };
+        try {
+            const res = await db.InventarioDescarte.updateOne(filter, update, finalOptions);
+            return res;
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
     static async get_registrosCuartosFrios(options = {}) {
@@ -468,6 +479,7 @@ export class InventariosHistorialRepository {
                 .populate(populate)
                 .exec();
 
+            console.log('Registros encontrados:', registros.length);
             const result = await InventariosService.respuesta_invetario_descartes_maquila(registros);
             return result;
 
@@ -545,7 +557,7 @@ export class InventariosHistorialRepository {
         };
         try {
             const res = await db.InventarioActualDescarte.updateOne(filter, update, finalOptions);
-            return res; 
+            return res;
         } catch (err) {
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }

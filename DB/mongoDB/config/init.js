@@ -401,11 +401,11 @@ const defineSchemasProceso = async (sysConn) => {
 
         console.log("⚡ Definiendo Inventario descarte...");
         db.InventarioActualDescarte = await defineInventarioActualDescarte(sysConn);
-        console.log("✅ InventarioDescarte definido");
+        console.log("✅ InventarioActualDescarte definido");
 
         console.log("⚡ Definiendo Inventario descarte...");
         db.InventarioMovimientoDescarte = await defineInventarioMovimientosDescarte(sysConn);
-        console.log("✅ InventarioDescarte definido");
+        console.log("✅ InventarioMovimientoDescarte definido");
 
         console.log("⚡ Definiendo Seriales...");
         db.Seriales = await defineSeriales(sysConn);

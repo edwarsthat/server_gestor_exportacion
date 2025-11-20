@@ -235,64 +235,46 @@ export class InventariosService {
             __v
         )
     }
-    /**
-         * Procesa los datos del formulario de inventario de descarte, separando y transformando
-         * los campos en objetos estructurados para descarte de lavado y encerado.
-         * @param {Object} data - Datos del formulario
-         * @param {string} data.tipoFruta - Tipo de fruta (ignorado en el procesamiento)
-         * @param {Object.<string, string>} data - Pares clave-valor donde las claves tienen formato 'tipo:subtipo'
-         * @returns {Object} Objeto con los descartes procesados
-         * @returns {Object.<string, number>} return.descarteLavado - Objeto con los valores de descarte de lavado
-         * @returns {Object.<string, number>} return.descarteEncerado - Objeto con los valores de descarte de encerado
-         * @returns {number} return.total - Suma total de todos los valores de descarte
-         * @example
-         * // Entrada
-         * {
-         *   tipoFruta: 'Naranja',
-         *   'descarteLavado:descarteGeneral': '10',
-         *   'descarteLavado:pareja': '5',
-         *   'descarteEncerado:descarteGeneral': '8'
-         * }
-         * // Salida
-         * {
-         *   descarteLavado: { descarteGeneral: 10, pareja: 5 },
-         *   descarteEncerado: { descarteGeneral: 8 },
-         *   total: 23
-         * }
-         */
-    static async procesar_formulario_inventario_descarte(data) {
+    static async procesar_formulario_inventario_descarte(data, session) {
+        console.log("data", data)
+        let totalKilos = 0;
 
-        const descarteLavado = {};
-        const descarteEncerado = {};
-        let total = 0;
+        for (const [key, value] of Object.entries(data)) {
+            totalKilos += value === '' ? 0 : parseInt(value);
+            const [area, descarteId] = key.split(':');
+            let kilos = value === '' ? 0 : parseInt(value);
 
-        Object.keys(data).forEach(key => {
-            if (key.startsWith('descarteLavado:')) {
-                const campo = key.replace('descarteLavado:', '');
-                // Asegurar que sea un entero válido
-                const valor = parseInt(data[key], 10);
-                if (!isNaN(valor) && Number.isInteger(valor) && valor >= 0) {
-                    descarteLavado[campo] = valor;
-                    total += valor;
+            const registros = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
+                query: {
+                    tipoFruta: data.tipoFruta,
+                    area: area,
+                    tipoDescarte: descarteId
+                },
+                sort: { fecha: -1 },
+            })
+            for (const registro of registros) {
+                const nuevosKilos = kilos - registro.kilos;
+                console.log(nuevosKilos)
+                if (nuevosKilos <= 0) {
+                    await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
+                        { _id: registro._id },
+                        { $set: { kilosActuales: - nuevosKilos } },
+                        { user: null, action: 'Actualizar inventario descarte reproceso predio', session }
+                    )
+                    console.log("modifico item y sale")
                 } else {
-                    console.warn(`Valor inválido para ${key}: ${data[key]}`);
-                    descarteLavado[campo] = 0;
+                    await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
+                        { _id: registro._id },
+                        { $set: { kilosActuales: 0, estado:"AGOTADO" } },
+                        { user: null, action: 'Actualizar inventario descarte reproceso predio', session }
+                    )
+                    console.log("modifico item y sigue agotado")
                 }
-            } else if (key.startsWith('descarteEncerado:')) {
-                const campo = key.replace('descarteEncerado:', '');
-                // Asegurar que sea un entero válido
-                const valor = parseInt(data[key], 10);
-                if (!isNaN(valor) && Number.isInteger(valor) && valor >= 0) {
-                    descarteEncerado[campo] = valor;
-                    total += valor;
-                } else {
-                    console.warn(`Valor inválido para ${key}: ${data[key]}`);
-                    descarteEncerado[campo] = 0;
-                }
+                kilos = nuevosKilos;
             }
-        });
+        }
+        return totalKilos;
 
-        return { descarteLavado, descarteEncerado, total };
     }
     static async crear_lote_celifrut(tipoFruta, kilos, user, logContext = null) {
         try {
@@ -464,6 +446,7 @@ export class InventariosService {
         }
 
     }
+    //! borrar dado el caso
     static async frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, tipoFruta) {
         const startTime = Date.now();
         console.info(`[INVENTARIO DESCARTES] Inicio modificación - Fruta: ${tipoFruta}, Lavado: ${JSON.stringify(descarteLavado)}, Encerado ${JSON.stringify(descarteEncerado)}`);
@@ -544,65 +527,6 @@ export class InventariosService {
             console.info(`[INVENTARIO DESCARTES][RESTORE] Fin de restauración - Tiempo total: ${Date.now() - startTime} ms`);
         }
     }
-    static async set_inventario_descarte(inventario, tipoFruta) {
-        const startTime = Date.now();
-        console.info(`[INVENTARIO DESCARTES][SET] Inicio restauración - Fruta: ${tipoFruta}, Inventario: ${JSON.stringify(inventario)}`);
-
-        const keyLavado = `inventarioDescarte:${tipoFruta}:descarteLavado:`;
-        const keyEncerado = `inventarioDescarte:${tipoFruta}:descarteEncerado:`;
-
-        const clientRedis = await RedisRepository.getClient();
-
-        const { descarteLavado, descarteEncerado } = await InventariosService.procesar_formulario_inventario_descarte(inventario)
-
-        try {
-            await clientRedis.watch(keyLavado, keyEncerado);
-
-            const multi = clientRedis.multi();
-            // Aquí sumas, no restas:
-            await RedisRepository.put_reprocesoDescarte_set(descarteLavado, 'descarteLavado:', tipoFruta, multi);
-            await RedisRepository.put_reprocesoDescarte_set(descarteEncerado, 'descarteEncerado:', tipoFruta, multi);
-
-            const resultado = await multi.exec();
-
-            if (resultado === null) {
-                console.warn(`[INVENTARIO DESCARTES][RESTORE] Transacción fallida por concurrencia. Reintente si es necesario.`);
-                throw new Error('Transacción fallida: otro proceso modificó el inventario, reintente.');
-            }
-        } catch (err) {
-            console.error(err.message)
-        } finally {
-            await clientRedis.unwatch();
-            console.info(`[INVENTARIO DESCARTES][RESTORE] Fin de restauración - Tiempo total: ${Date.now() - startTime} ms`);
-        }
-    }
-    /**
-     * Modifica el inventario cuando se ingresa fruta sin procesar al proceso de desverdizado.
-     * Esta función actualiza tanto el inventario general como el inventario específico de desverdizado
-     * de forma concurrente para optimizar el rendimiento.
-     *
-     * @async
-     * @static
-     * @method modificarInventarioIngresoDesverdizado
-     *
-     * @param {number|string} canastillas - Cantidad de canastillas que se ingresan al desverdizado
-     * @param {string} cuartoId - ID del cuarto de desverdizado donde se almacena la fruta
-     * @param {string} loteId - ID del lote que se está procesando
-     *
-     * @description
-     * Este método realiza dos operaciones principales de forma paralela:
-     * 1. **Actualización del inventario general**: Resta las canastillas del inventario principal
-     *    usando VariablesDelSistema.modificarInventario()
-     * 2. **Actualización del inventario de desverdizado**: Agrega las canastillas al inventario
-     *    específico del cuarto de desverdizado usando RedisRepository.update_inventarioDesverdizado()
-     *
-     * La operación se ejecuta de forma atómica usando Promise.all() para garantizar que ambas
-     * modificaciones se completen exitosamente o fallen juntas.
-     *
-     * @throws {Error} Si falla alguna de las operaciones de actualización del inventario
-     * @throws {Error} Si los parámetros proporcionados son inválidos
-     *
-     */
     static async modificarInventarioIngresoDesverdizado(canastillas, cuartoId, loteId) {
 
         console.info(`[INVENTARIO DESCARTES] Inicio modificación ingreso desverdizado ${canastillas}, en el cuarto ${cuartoId}, lote: ${loteId}`);
@@ -1054,7 +978,6 @@ export class InventariosService {
 
         return result;
     }
-
     static async item_in_ordenVaceo(itemId) {
         const ordenVaceo = await InventariosHistorialRepository.get_ordenVaceo();
         const ids = ordenVaceo.data.map(id => id.toString());
@@ -1089,7 +1012,6 @@ export class InventariosService {
         }
         return out;
     }
-
     static async respuesta_invetario_descartes(registros) {
         const out = {}
         for (const registro of registros) {
@@ -1162,9 +1084,8 @@ export class InventariosService {
                 ...(nuevoKilosActuales === 0 && { estado: 'AGOTADO' })
             };
 
-            console.log(update)
             // Actualizar inventario
-            const response =  await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
+            const response = await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
                 { _id: registro._id },
                 update,
                 {
@@ -1184,25 +1105,35 @@ export class InventariosService {
             );
         }
     }
-    static async modificar_lotes_inventario_descarteMaquila(data, _id, remision, log, user, session) {
+    static async modificar_lotes_inventario_descarteMaquila(data, _id, remision, tipoAccion, log, user, session) {
 
         // Procesar todo en un solo loop secuencial
         for (const [key, kilos] of Object.entries(data)) {
             const [, tipoDescarteId] = key.split("//");
 
-            const update = {
-                $set: {remisionSalida: remision},
-                $inc: {
-                    [`descartesDevueltos.${tipoDescarteId}`]: kilos
+            let update;
+            if (tipoAccion === 'Devolver') {
+                update = {
+                    $set: { remisionSalida: remision },
+                    $inc: {
+                        [`descartesDevueltos.${tipoDescarteId}`]: kilos
+                    }
+                }
+            } else if (tipoAccion === 'Comprar') {
+                update = {
+                    $inc: {
+                        [`descartesComprados.${tipoDescarteId}`]: kilos
+                    }
                 }
             }
+
 
             await LotesRepository.actualizar_lote_Maquila(
                 { _id: _id },
                 update,
                 {
                     session, action: 'Modificar lote maquila inventario descarte',
-                    description: `Se agregaron ${kilos} kilos a descartesDevueltos para el tipoDescarteId: ${tipoDescarteId} en el lote ${_id}`,
+                    description: `Se agregaron ${kilos} kilos a descartes${tipoAccion} para el tipoDescarteId: ${tipoDescarteId} en el lote ${_id}`,
                     user: user._id
                 }
             );
@@ -1215,6 +1146,22 @@ export class InventariosService {
                 `Kilos modificados: ${kilos} para el tipoDescarteId: ${tipoDescarteId} en el lote ID: ${_id}`
             );
 
+        }
+    }
+    static async ingresarFrutaDescarteMaquilaDescarteProceso(data, registro, loteId, log, session) {
+
+        for (const [key, kilos] of Object.entries(data)) {
+            const [area, tipoDescarteId] = key.split("//");
+            const data = {
+                lote: loteId,
+                tipoFruta: registro.tipoFruta._id,
+                area: area,
+                tipoDescarte: tipoDescarteId,
+                kilos: kilos,
+                loteType: "Lote"
+            }
+
+            await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, log._id, session);
         }
     }
     // static async modificarIngresoCanastillas(data) {

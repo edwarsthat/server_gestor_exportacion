@@ -3,25 +3,10 @@ const { Schema } = mongoose;
 
 export const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
 
-    const descarteLavadoSchema = new Schema({
-        descarteGeneral: { type: Number, default: 0 },
-        pareja: { type: Number, default: 0 },
-        balin: { type: Number, default: 0 },
-    }, { _id: false });
-
-    const descarteEnceradoSchema = new Schema({
-        descarteGeneral: { type: Number, default: 0 },
-        pareja: { type: Number, default: 0 },
-        balin: { type: Number, default: 0 },
-        extra: { type: Number, default: 0 },
-        suelo: { type: Number, default: 0 },
-        frutaNacional: { type: Number, default: 0 },
-    }, { _id: false });
-
     const RegistroSchema = new Schema({
         fecha: { type: Date, default: () => new Date() },
         cliente: { type: Schema.Types.ObjectId, ref: 'ClientesNacionale' },
-        user: String,
+        user: { type: Schema.Types.ObjectId, ref: 'usuario' },
         placa: String,
         nombreConductor: String,
         telefono: String,
@@ -29,8 +14,7 @@ export const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
         remision: String,
         tipoFruta: String,
         kilos: Number,
-        descarteLavado: descarteLavadoSchema,
-        descarteEncerado: descarteEnceradoSchema
+        descartes: { type: Map, of: Number, default: {} },
     });
 
 
@@ -40,7 +24,7 @@ export const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
                 collection: 'historialDespachoDescarte',
                 documentId: doc._id,
                 operation: 'create',
-                user: doc._user,
+                user: doc.user,
                 action: "post_inventarios_frutaDescarte_frutaDescompuesta",
                 newValue: doc,
                 description: 'Creación de registro fruta descompuesta'

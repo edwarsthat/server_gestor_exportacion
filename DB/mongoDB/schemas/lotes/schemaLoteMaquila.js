@@ -119,6 +119,7 @@ export const defineLoteMaquila = async (conn, AuditLog) => {
         contenedores: [String],
         descartes: { type: Map, of: Number, default: {} },
         descartesDevueltos: { type: Map, of: Number, default: {} },
+        descartesComprados: { type: Map, of: Number, default: {} },
         deshidratacion: { type: Number, default: 100 },
         desverdizado: desverdizadoSchema,
         enf: { type: String },
