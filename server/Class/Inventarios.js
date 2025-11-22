@@ -6,20 +6,32 @@ import { InventariosService } from "../services/inventarios.js";
 const inventarioFrutaSinProcesarId = config.INVENTARIO_FRUTA_SIN_PROCESAR;
 
 export class InventariosHistorialRepository {
-    static async crearInventarioDescarte(data) {
+    static async crearInventarioDescarte() {
         try {
-            const { inventario, kilos_ingreso = 0, kilos_salida = 0 } = data;
             const fecha = new Date();
             fecha.setDate(fecha.getDate() - 1);
 
             const nuevoInventario = new db.InventarioDescarte({
                 fecha: fecha,
-                inventario,
-                kilos_ingreso,
-                kilos_salida
             });
 
             const resultado = await nuevoInventario.save();
+            return resultado;
+        } catch (error) {
+            throw new ConnectionDBError(`Error al crear inventario descarte: ${error.message}`);
+        }
+    }
+    static async put_cardex_invetariosdescartes(filter, update, options = {}) {
+        try {
+            const finalOptions = {
+                runValidators: false,
+                ...options,
+            };
+            const resultado = await db.InventarioDescarte.findOneAndUpdate(
+                filter,
+                update,
+                finalOptions
+            );
             return resultado;
         } catch (error) {
             throw new ConnectionDBError(`Error al crear inventario descarte: ${error.message}`);

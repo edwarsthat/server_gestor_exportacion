@@ -125,4 +125,24 @@ export class dataService {
             await registrarPasoLog(logId, "dataService.modificar_ef1_serial", "Completado");
         }
     }
+    static async get_Celifrut_serial() {
+        const idCelifrut = await Seriales.get_seriales("Celifrut-");
+        if (!idCelifrut || idCelifrut.length === 0) {
+            throw new Error("No se encontraron registros de Celifrut");
+        }
+        if (idCelifrut.length > 1) {
+            throw new Error("Se encontraron múltiples registros de idCelifrut, se esperaba uno solo");
+        }
+        if (!idCelifrut[0].serial || typeof idCelifrut[0].serial !== 'number') {
+            throw new Error("El campo 'serial' no es un número o no existe en el registro de idCelifrut");
+        }
+        return idCelifrut[0].name + idCelifrut[0].serial;
+    }
+    static async modificar_Celifrut_serial(session) {
+        await Seriales.modificar_seriales(
+            { name: "Celifrut-" },
+            { $inc: { serial: 1 } },
+            { session }
+        )
+    }
 }

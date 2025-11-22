@@ -90,25 +90,6 @@ export class VariablesDelSistema {
   }
 
 
-  static async incrementar_codigo_celifrut() {
-    /**
-   * Funcion que aumenta en 1 el serial del codigo idCelifrut que esta almacenado en el archivo json
-   *  en inventario  seriales.json
-   * 
-   * @throws - Devuelve un error si hay algun error abriendo y guardadndo el archivo
-   * @return {void} - no devuelve nada
-   */
-    try {
-      const idsJSON = fs.readFileSync(pathIDs);
-      const ids = JSON.parse(idsJSON);
-      ids.idCelifrut += 1;
-      const newidsJSON = JSON.stringify(ids);
-      fs.writeFileSync(pathIDs, newidsJSON);
-    } catch (err) {
-      throw new ProcessError(511, `Error incrementando el serial celifrut ${err.message}`)
-    }
-
-  }
   static modificar_predio_proceso = async (lote, cliente) => {
     /**
    * Función que modifica la información del predio en proceso en Redis.
@@ -156,23 +137,6 @@ export class VariablesDelSistema {
     }
   }
 
-  static async generar_codigo_celifrut() {
-    /**
-     * Se genera el codigo celifrut , es un codigo que se asigna a un lote que se crea 
-     * cuando se reprocesan los descartes de varios predios
-     * 
-     * @throws - Devuelve un error si hay algun error abriendo y guardadndo el archivo
-     * @return {string}  - El string con el codigo Celifrut- mas el consecutivo
-     */
-    try {
-      const idsJSON = fs.readFileSync(pathIDs);
-      const ids = JSON.parse(idsJSON);
-
-      return 'Celifrut-' + ids.idCelifrut;
-    } catch (err) {
-      throw new ProcessError(506, `Error creando el codigo celifrut: ${err.message}`)
-    }
-  }
   static async generar_codigo_informe_calidad() {
     /**
  * Se genera el codigo calidad del sistema, el codigo se genera sienfo CA- los primero caracteres
@@ -467,43 +431,6 @@ export class VariablesDelSistema {
 
     } catch (err) {
       throw new ProcessError(418, `Error modificando las variables del sistema: ${err.name}`)
-    }
-  }
-  /**
-     * Función que reprocesa un lote de tipo celifrutm lo envia a las aplicacion de descarte y lista de empaque.
-     *
-     * @param {Object} lote - El lote a reprocesar.
-     * @param {number} kilosTotal - La cantidad total de kilos a reprocesar.
-     * @returns {Promise<void>} - Promesa que se resuelve cuando el reprocesamiento ha terminado.
-     * @throws {ProcessError} - Lanza un error si ocurre un problema durante el reprocesamiento.
-     */
-  static async reprocesar_predio_celifrut(lote, kilosTotal) {
-    try {
-      const cliente = await getRedisClient();
-      const kilosReprocesadorExist = await cliente.exists("kilosReprocesadorHoy");
-      if (kilosReprocesadorExist !== 1) {
-        await cliente.set("kilosReprocesadorHoy", 0);
-      }
-      let kilosReprocesadosHoy = await cliente.get("kilosReprocesadorHoy");
-
-      if (isNaN(kilosReprocesadosHoy)) {
-        kilosReprocesadosHoy = 0;
-      }
-      const kilosReprocesadosRedis = Number(kilosReprocesadosHoy) + Number(kilosTotal);
-
-      await cliente.set("kilosReprocesadorHoy", kilosReprocesadosRedis);
-      await cliente.set("descarteLavado", 0);
-      await cliente.set("descarteEncerado", 0);
-      await cliente.hSet("predioProcesandoDescartes", {
-        _id: String(lote._id),
-        enf: String(lote.enf ?? ''),
-        predio: String(lote.predio),     // aquí ya es un ObjectId plano → conviértelo directo
-        nombrePredio: "Celifrut",
-        tipoFruta: String(lote.tipoFruta), // igual, puede ser ObjectId
-      });
-
-    } catch (err) {
-      throw new ProcessError(518, `Error modificando las variables del sistema: ${err.name}`)
     }
   }
   // #region Datos del proceso

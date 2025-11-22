@@ -15,7 +15,11 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
                     await AuditLogs.create(entry);
                 }
             }
-            catch (e) { console.error("[AuditLog] error:", e?.message); }
+            catch (e) { 
+                console.error("[AuditLog] error:", e?.message);
+                // Re-lanzar el error para que la transacción haga rollback
+                throw e;
+            }
         };
         const getAuditCtx = (ctx) => {
             // Query: this.getOptions(); Doc: this.$locals

@@ -18,9 +18,9 @@ export function initCronJobs() {
     });
 
     //snapshot del inventario descarte del dia
-    cron.schedule('5 5 * * *', async () => {
+    cron.schedule('36 16 * * *', async () => {
         await InventariosRepository.snapshot_inventario_descartes();
-
+        console.log("Snapshot inventario descartes realizado");
     });
 
     cron.schedule("10 5 * * *", async () => {

@@ -3,48 +3,16 @@ const { Schema } = mongoose;
 
 export const defineFrutaDescompuesta = async (conn) => {
 
-    const descarteLavadoSchema = new Schema({
-        descarteGeneral: { type: Number, default: 0 },
-        pareja: { type: Number, default: 0 },
-        balin: { type: Number, default: 0 },
-    }, { _id: false });
-
-    const descarteEnceradoSchema = new Schema({
-        descarteGeneral: { type: Number, default: 0 },
-        pareja: { type: Number, default: 0 },
-        balin: { type: Number, default: 0 },
-        extra: { type: Number, default: 0 },
-        suelo: { type: Number, default: 0 },
-        frutaNacional: { type: Number, default: 0 },
-    }, { _id: false });
 
     const frutaDescompuestaSchema = new Schema({
         kilos: Number,
         createdAt: { type: Date, default: () => new Date() },
-        user: String,
+        user: { type: Schema.Types.ObjectId, ref: 'usuario' },
         razon: String,
         comentario_adicional: String,
         tipoFruta: { type: String, required: true },
-        descarteLavado: descarteLavadoSchema,
-        descarteEncerado: descarteEnceradoSchema
-
+        descartes: { type: Map, of: Number, default: {} },
     });
-
-    // frutaDescompuestaSchema.post('save', async function (doc) {
-    //     try {
-    //         await AuditLog.create({
-    //             collection: 'frutaDescompuesta',
-    //             documentId: doc._id,
-    //             operation: 'create',
-    //             user: doc._user,
-    //             action: "put_inventarios_registros_fruta_descompuesta",
-    //             newValue: doc,
-    //             description: 'Creación de registro fruta descompuesta'
-    //         });
-    //     } catch (err) {
-    //         console.error('Error guardando auditoría:', err);
-    //     }
-    // });
 
     frutaDescompuestaSchema.pre('findOneAndUpdate', async function (next) {
         try {
@@ -57,22 +25,5 @@ export const defineFrutaDescompuesta = async (conn) => {
         }
     });
 
-    // frutaDescompuestaSchema.post('findOneAndUpdate', async function (res) {
-    //     try {
-
-    //         await AuditLog.create({
-    //             collection: 'frutaDescompuesta',
-    //             documentId: res?._id,
-    //             operation: 'update',
-    //             user: this.options?.user,        // Asegúrate de pasar estas options al llamar findOneAndUpdate
-    //             action: this.options?.action,
-    //             oldValue: this._oldValue,
-    //             newValue: res ? res.toObject() : null,
-    //             description: 'Actualización registro fruta descompuesta'
-    //         });
-    //     } catch (err) {
-    //         console.error('Error guardando auditoría:', err);
-    //     }
-    // });
     return conn.model("frutaDescompuesta", frutaDescompuestaSchema);
 }

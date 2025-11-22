@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-export const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
+export const defineHistorialDespachoDescarte = async (conn) => {
 
     const RegistroSchema = new Schema({
         fecha: { type: Date, default: () => new Date() },
@@ -18,22 +18,6 @@ export const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
     });
 
 
-    RegistroSchema.post('save', async function (doc) {
-        try {
-            await AuditLog.create({
-                collection: 'historialDespachoDescarte',
-                documentId: doc._id,
-                operation: 'create',
-                user: doc.user,
-                action: "post_inventarios_frutaDescarte_frutaDescompuesta",
-                newValue: doc,
-                description: 'Creación de registro fruta descompuesta'
-            });
-        } catch (err) {
-            console.error('Error guardando auditoría:', err);
-        }
-    });
-
     RegistroSchema.pre('findOneAndUpdate', async function (next) {
         try {
             // Guardamos el documento original (ANTES)
@@ -45,23 +29,6 @@ export const defineHistorialDespachoDescarte = async (conn, AuditLog) => {
         }
     });
 
-    RegistroSchema.post('findOneAndUpdate', async function (res) {
-        try {
-
-            await AuditLog.create({
-                collection: 'historialDespachoDescarte',
-                documentId: res?._id,
-                operation: 'update',
-                user: this.options?.user,        // Asegúrate de pasar estas options al llamar findOneAndUpdate
-                action: this.options?.action,
-                oldValue: this._oldValue,
-                newValue: res ? res.toObject() : null,
-                description: 'Actualización de historial despacho fruta descarte'
-            });
-        } catch (err) {
-            console.error('Error guardando auditoría:', err);
-        }
-    });
 
     const historialDespachoDescarte = conn.model("historialDespachoDescarte", RegistroSchema);
     return historialDespachoDescarte;

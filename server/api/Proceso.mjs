@@ -140,7 +140,6 @@ export class ProcesoRepository {
         })
         try {
 
-            const logData = { logId: log._id, user: user, action: "put_proceso_aplicaciones_descarteEncerado" }
 
             ProcesoValidations.put_proceso_aplicaciones_descarteEncerado().parse(data)
             await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteEncerado", "Completado");
@@ -172,7 +171,7 @@ export class ProcesoRepository {
                     "IndicadoresAPIRepository.put_indicadores_actualizar_indicador",
                     "Completado",
                     `Se actualizó el indicador kilosProcesadosHoy con ${kilos} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
-   
+
 
                 const data = {
                     lote: lote._id,
@@ -183,10 +182,26 @@ export class ProcesoRepository {
                     loteType: registroProceso[0].loteType
                 }
                 await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, log._id, session);
-                await VariablesDelSistema.sumarMetricaSimpleAsync("kilosProcesadosHoy", lote.tipoFruta.tipoFruta, kilosTotales, logData.logId);
+                if (lote.enf.startsWith("EF1-")) {
+                    console.log("Actualizando inventario descartes");
+
+                    await InventariosHistorialRepository.put_cardex_invetariosdescartes(
+                        {},
+                        {
+                            $inc: {
+                                [`kilos_ingreso.${lote.tipoFruta._id.toString()}`]: kilosTotales,
+                            },
+                        },
+                        {
+                            sort: { fecha: -1 },   
+                            new: true,
+                            session,
+                        }
+                    );
+                }
                 await registrarPasoLog(
                     log._id,
-                    "Modificacion de Redis e Indicadores",
+                    "Modificar inventario descartes",
                     "Completado",
                     `Se modificó el inventario de descarte y la métrica kilosProcesadosHoy con ${kilosTotales} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
             })

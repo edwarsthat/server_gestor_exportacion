@@ -22,6 +22,7 @@ import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
 import { parseMultTipoCaja } from "./helpers/contenedores.js";
 import config from "../../src/config/index.js";
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
+import { dataService } from "./data.js";
 
 export class InventariosService {
 
@@ -235,8 +236,7 @@ export class InventariosService {
             __v
         )
     }
-    static async procesar_formulario_inventario_descarte(data, session) {
-        console.log("data", data)
+    static async procesar_formulario_inventario_descarte(data, tipoFruta, session) {
         let totalKilos = 0;
 
         for (const [key, value] of Object.entries(data)) {
@@ -246,29 +246,33 @@ export class InventariosService {
 
             const registros = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
                 query: {
-                    tipoFruta: data.tipoFruta,
+                    tipoFruta: tipoFruta,
                     area: area,
-                    tipoDescarte: descarteId
+                    tipoDescarte: descarteId,
+                    estado: "ACTIVO",
+                    loteType: "Lote"
                 },
                 sort: { fecha: -1 },
             })
+            if (registros.length === 0) {
+                throw new InventariosLogicError(`No hay inventario suficiente para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
+            }
             for (const registro of registros) {
                 const nuevosKilos = kilos - registro.kilos;
-                console.log(nuevosKilos)
+
+
                 if (nuevosKilos <= 0) {
                     await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
                         { _id: registro._id },
                         { $set: { kilosActuales: - nuevosKilos } },
                         { user: null, action: 'Actualizar inventario descarte reproceso predio', session }
                     )
-                    console.log("modifico item y sale")
                 } else {
                     await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
                         { _id: registro._id },
-                        { $set: { kilosActuales: 0, estado:"AGOTADO" } },
+                        { $set: { kilosActuales: 0, estado: "AGOTADO" } },
                         { user: null, action: 'Actualizar inventario descarte reproceso predio', session }
                     )
-                    console.log("modifico item y sigue agotado")
                 }
                 kilos = nuevosKilos;
             }
@@ -276,13 +280,12 @@ export class InventariosService {
         return totalKilos;
 
     }
-    static async crear_lote_celifrut(tipoFruta, kilos, user, logContext = null) {
+    static async crear_lote_celifrut(tipoFruta, kilos, user, session) {
         try {
-            const codigo = await VariablesDelSistema.generar_codigo_celifrut()
-
+            const codigo = await dataService.get_Celifrut_serial()
             const lote = {
                 enf: codigo,
-                predio: '65c27f3870dd4b7f03ed9857',
+                predio: config.ID_CELIFRUT,
                 canastillas: '0',
                 kilos: kilos,
                 placa: 'AAA000',
@@ -295,22 +298,18 @@ export class InventariosService {
                 "fecha_ingreso_inventario": new Date(),
             }
 
-            const newLote = await LotesRepository.addLote(lote, user);
-
-            const query = {
+            const newLote = await LotesRepository.addLote(lote, user, {session});
+            const update = {
                 $inc: {
                     kilosVaciados: newLote.kilos,
                 },
                 fechaProceso: new Date()
             }
-
-            await LotesRepository.modificar_lote({ _id: newLote._id.toString() }, query, { user: user, action: "vaciarLote" });
-            await VariablesDelSistema.incrementar_codigo_celifrut();
-
-            if (logContext) {
-                await registrarPasoLog(logContext.logId, "inventarioServices.crear_lote_celifrut", "Completado");
-            }
-
+            await LotesRepository.actualizar_lote(
+                { _id: newLote._id},
+                update,
+                { calculateFields: true, vaciar: true, session })
+            await dataService.modificar_Celifrut_serial(session);
             return newLote
         } catch (error) {
             console.error("Error creando lote Celifrut:", error);
