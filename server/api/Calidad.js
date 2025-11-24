@@ -17,6 +17,7 @@ import { CalidadService } from "../services/calidad.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { ErrorCalidadLogicHandlers } from "./utils/errorsHandlers.js";
+import { LotesHelper } from "../helper/lotes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -424,12 +425,17 @@ export class CalidadRepository {
                 enf: { $regex: '^E', $options: 'i' },
                 $or: [
                     { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
-                    { fechaIngreso: { $gte: new Date(haceUnMes) } }
+                    { fecha_ingreso: { $gte: new Date(haceUnMes) } }
                 ]
             }
-            const select = { enf: 1, calidad: 1, tipoFruta: 1, __v: 1 }
+            const select = { enf: 1, calidad: 1, tipoFruta: 1, fecha_creacion: 1, __v: 1 }
             const lotes = await LotesRepository.getLotes2({ query: query, select: select })
-            return lotes
+            const lotesMaquila = await LotesRepository.getLotesMaquila({ query: query, select: select })
+            const result = [...lotes, ...lotesMaquila].sort(
+                (a, b) =>
+                    new Date(b.fecha_creacion) - new Date(a.fecha_creacion)
+            );
+            return result
         } catch (err) {
             if (err.status === 522) {
                 throw err
@@ -451,18 +457,10 @@ export class CalidadRepository {
             CalidadValidationsRepository.put_calidad_ingresos_calidadInterna().parse(data);
             await registrarPasoLog(log._id, "Validación de datos completada", "Completado");
 
-            const query = await CalidadService.crear_query_calidad_interna(data, user);
+            const update = await CalidadService.crear_query_calidad_interna(data, user);
             await registrarPasoLog(log._id, "CalidadService.crear_query_calidad_interna", "Completado");
 
-            await LotesRepository.actualizar_lote(
-                { _id: _id },
-                query,
-                {
-                    new: true,
-                    user: user._id,
-                    action: action
-                }
-            );
+            await LotesHelper.actualizar_lotes_helper(_id, update, { user, action });
             await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado");
 
             procesoEventEmitter.emit("server_event", {

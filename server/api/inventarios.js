@@ -306,10 +306,10 @@ export class InventariosRepository {
             await registrarPasoLog(log._id, "Validación de datos completada", "Completado");
 
             await session.withTransaction(async () => {
-                const tipoFruta = data.tipoFruta;
-                delete data.tipoFruta;
+                const tipoFruta = inventario.tipoFruta;
+                delete inventario.tipoFruta;
                 //se borra del inventario
-                const total = await InventariosService.procesar_formulario_inventario_descarte(data, tipoFruta, session)
+                const total = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session)
                 await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
 
                 if (total > 50 && user.Rol > 2) throw new Error("No puede crear un registro de fruta descompuesta de tantos kilos")

@@ -13,7 +13,7 @@ export const defineLoteMaquila = async (conn, AuditLog) => {
         ratio: Number,
         peso: Number,
         zumo: Number,
-        user: String,
+        user: { type: Schema.Types.ObjectId, ref: 'usuario' },
         semillas: Boolean,
         calidad: { type: Schema.Types.ObjectId, ref: 'calidades' },
         fecha: { type: Date, default: Date.now }
