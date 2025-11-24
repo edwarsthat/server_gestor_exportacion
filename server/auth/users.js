@@ -44,7 +44,6 @@ const permisos_generales = new Set([
     //obteniendo constantes
     "get_inventarios_cuartosFrios_listaEmpaque",
     "get_inventarios_cuartosFrios_detalles",
-    "get_constantes_sistema_clasificacion_descarte",
     "get_constantes_sistema_observaciones_calidad",
     "get_constantes_sistema_tipo_frutas",
     "get_constantes_sistema_paises_GGN",

@@ -356,10 +356,7 @@ export class CalidadRepository {
                     action: action
                 }
             )
-
-
         } catch (err) {
-            console.log(err)
             if (err.status === 523 || err.status === 522) {
                 throw err
             }
@@ -377,13 +374,15 @@ export class CalidadRepository {
                 enf: { $regex: '^E', $options: 'i' },
                 $or: [
                     { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
-                    { fechaIngreso: { $gte: new Date(haceUnMes) } }
+                    { fecha_ingreso: { $gte: new Date(haceUnMes) } }
                 ]
 
             }
-            const select = { enf: 1, calidad: 1, tipoFruta: 1, __v: 1 }
+            const select = { enf: 1, calidad: 1, tipoFruta: 1, fecha_creacion: 1, __v: 1 }
             const lotes = await LotesRepository.getLotes({ query: query, select: select })
-            return lotes
+            const lotesMaquila = await LotesRepository.getLotesMaquila({ query: query, select: select })
+            const result = [...lotes, ...lotesMaquila].sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion));
+            return result
         } catch (err) {
             if (err.status === 522) {
                 throw err
@@ -394,17 +393,15 @@ export class CalidadRepository {
     static async put_calidad_ingresos_clasificacionDescarte(req) {
         try {
             CalidadValidationsRepository.put_calidad_ingresos_clasificacionDescarte().parse(req.data);
-            const user = req.user;
+            const { user } = req;
             const { action, data, _id } = req.data;
-            const query = {
+            const update = {
                 ...data,
-                'calidad.clasificacionCalidad.fecha': new Date()
+                'calidad.clasificacionCalidad.fecha': new Date(),
+                'calidad.clasificacionCalidad.user': user._id
             }
-            await LotesRepository.actualizar_lote(
-                { _id: _id },
-                query,
-                { new: true, user: user, action: action }
-            );
+            await LotesHelper.actualizar_lotes_helper(_id, update, { user, action });
+
         } catch (err) {
             if (err.status === 523 || err.status === 522) {
                 throw err

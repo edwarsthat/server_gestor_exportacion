@@ -9,7 +9,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const inspeccion_calidad_path = path.join(__dirname, '..', '..', 'constants', 'inspeccionCalidad.json');
-const clasificacion_descarte_path = path.join(__dirname, '..', '..', 'constants', 'clasificacion_descarte.json');
 const observaciones_calidad_path = path.join(__dirname, '..', '..', 'constants', 'observacionesCalidad.json');
 const tipo_fruta_path = path.join(__dirname, '..', '..', 'constants', 'tipo_fruta.json');
 const paises_GGN_path = path.join(__dirname, '..', '..', 'constants', 'paisesEXP.json');
@@ -26,18 +25,6 @@ export class ConstantesDelSistema {
 
         } catch (err) {
             throw new ProcessError(526, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`)
-        }
-    }
-    static async get_constantes_sistema_clasificacion_descarte() {
-        try {
-
-            const dataJSON = fs.readFileSync(clasificacion_descarte_path);
-            const data = JSON.parse(dataJSON);
-
-            return data;
-
-        } catch (err) {
-            throw new ProcessError(410, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`)
         }
     }
     static async get_constantes_sistema_observaciones_calidad() {

@@ -24,7 +24,8 @@ export const defineLoteMaquila = async (conn, AuditLog) => {
             type: Map,
             of: String
         },
-        fecha: { type: Date, default: Date.now }
+        fecha: { type: Date, default: Date.now },
+        user: { type: Schema.Types.ObjectId, ref: 'usuario' },
 
     }, { _id: false, strict: false });
 
