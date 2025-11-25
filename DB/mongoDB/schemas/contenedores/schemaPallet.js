@@ -20,7 +20,7 @@ export const definePallet = async (conn, AuditLog) => {
         finalizado: { type: Boolean, default: false },
         fechaFinalizado: Date,
         estado: { type: String, enum: ['abierto', 'cerrado', 'embarcado'], default: 'abierto', index: true },
-        user: String,
+        user: { type: Schema.Types.ObjectId, ref: 'usuario' },
         createdAt: { type: Date, default: Date.now },
     });
 

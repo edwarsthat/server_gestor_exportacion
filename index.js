@@ -53,7 +53,7 @@ import { initCronCache } from './src/cron/cache.js';
          * @see module:DB/mongoDB/config/init~initMongoDB
          */
         await initMongoDB();
-        await tipoFrutaCache.cargar(5, 1000); 
+        await tipoFrutaCache.cargar(5, 1000);
 
         initRustRcp().catch(() => {
             console.warn('⚠️ No se pudo conectar al servidor Rust inicialmente. Se intentará reconectar en segundo plano.');
@@ -66,7 +66,7 @@ import { initCronCache } from './src/cron/cache.js';
         server.listen(PORT, HOST, () => {
             console.log(`El servidor está escuchando en el puerto ${PORT} y la dirección IP ${HOST}.`);
         });
-        server.listen(3010, '0.0.0.0', () => {
+        server.listen(3010, '192.168.20.81', () => {
             console.log('Server running on port 3010');
         });
 

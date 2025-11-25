@@ -183,7 +183,6 @@ export class ProcesoRepository {
                 }
                 await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, log._id, session);
                 if (lote.enf.startsWith("EF1-")) {
-                    console.log("Actualizando inventario descartes");
 
                     await InventariosHistorialRepository.put_cardex_invetariosdescartes(
                         {},
@@ -288,33 +287,14 @@ export class ProcesoRepository {
 
 
             let query = {
-                operacionRealizada: 'vaciarLote'
             }
 
-            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha')
+            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fechaProcesamiento')
 
-            const recordLotes = await RecordLotesRepository.getVaciadoRecord({ query: query })
-            const lotesIds = recordLotes.map(lote => lote.documento._id);
-
-            const lotes = await LotesRepository.getLotes2({
-                ids: lotesIds,
-                limit: recordLotes.length,
-                select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1 }
+            const data = await FrutaProcesada.get_frutaProcesada({
+                query: query,
             });
-            const resultado = recordLotes.map(item => {
-                const lote = lotes.find(lote => lote._id.toString() === item.documento._id);
-                if (lote) {
-                    if (Object.prototype.hasOwnProperty.call(item.documento, "$inc")) {
-                        item.documento = { ...lote, kilosVaciados: item.documento.$inc.kilosVaciados }
-                        return (item)
-                    }
-                    else {
-                        return item
-                    }
-                }
-                return null
-            }).filter(item => item !== null);
-            return resultado
+            return data
         } catch (err) {
             if (err.status === 522) {
                 throw err

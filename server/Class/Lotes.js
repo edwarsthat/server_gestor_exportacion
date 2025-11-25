@@ -349,7 +349,7 @@ export class LotesRepository {
             throw new PostError(409, `Error agregando lote maquila ${err.message}`);
         }
     }
-    static async getLotesMaquila(options = {}) {
+    static async getLotesMaquila(options = {}, { session = null } = {}) {
         const {
             ids = [],
             query = {},
@@ -377,6 +377,7 @@ export class LotesRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
+                .session(session)
                 .exec();
 
             return lotes

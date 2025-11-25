@@ -38,6 +38,8 @@ export const defineContenedores = async (conn, AuditLog) => {
     urlInforme: String,
     cajasTotal: Number,
     RrtoEstimado: String,
+    maquila: Boolean,
+
   });
 
   const criteriosSchema = new Schema({

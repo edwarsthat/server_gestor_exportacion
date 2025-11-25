@@ -35,17 +35,16 @@ class ProcesoService {
             throw new ProcessError(404, `No se encontró el contenedor con ID: ${ContenedorID}`);
         }
 
-
         //se obtiene el lote
-        const lotes = await LotesRepository.getLotes2({
-            ids: [loteID]
-        }, { session });
+        const lotes = await LotesHelper.obtener_lote_helper(
+            { ids: [loteID] },
+            { session }
+        );
 
         // Validar que se encontró el lote
         if (!lotes || lotes.length === 0) {
             throw new ProcessError(404, `No se encontró el lote con ID: ${loteID}`);
         }
-
         return { contenedor, lotes };
     }
     static async modificarLoteListaEmpaqueAddItem(item, kilos, _id, logData, session) {
@@ -65,11 +64,12 @@ class ProcesoService {
             $addToSet: { "salidaExportacion.contenedores": _id }
         }
 
-        await LotesRepository.actualizar_lote(
+        await LotesHelper.actualizar_lotes_helper(
             { _id: lote },
             query,
             { user: logData.user._id, action: logData.action, session }
-        );
+        )
+
         await registrarPasoLog(logData.logId, "ProcesoService.modificarLoteListaEmpaqueAddItem", "Completado");
         return true
     }
@@ -324,10 +324,18 @@ class ProcesoService {
         const { user } = logData
         // Actualizar contenedor con pallets modificados
         const { cajas } = item
+        let tipoLote = ""
+        console.log("lotes agregar item", lotes.length)
+        if (lotes[0].enf.startsWith("EF1-")) {
+            tipoLote = "Lote"
+        } else if (lotes[0].enf.startsWith("EF10-")) {
+            tipoLote = "loteMaquila"
+        }
 
         const itemnuevo = {
             ...item,
             user: user._id,
+            loteType: tipoLote,
             pallet: pallet,
             kilos: kilos,
             contenedor: _id,
