@@ -193,7 +193,7 @@ export class ProcesoRepository {
                             },
                         },
                         {
-                            sort: { fecha: -1 },   
+                            sort: { fecha: -1 },
                             new: true,
                             session,
                         }

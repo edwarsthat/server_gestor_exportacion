@@ -18,9 +18,13 @@ export class DespachoDescartesRepository {
             query = {},
             select = {},
             sort = { fecha: -1 },
-            limit = 50,
+            limit = 0,
             skip = 0,
-            populate = { path: 'cliente', select: 'cliente' }
+            populate = [
+                { path: 'cliente', select: 'cliente' },
+                { path: 'tipoFruta', select: 'tipoFruta' },
+                { path: "user", select: "usuario" }
+            ]
         } = options;
         try {
             let historialQuery = { ...query };

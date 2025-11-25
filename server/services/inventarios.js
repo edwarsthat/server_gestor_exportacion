@@ -252,16 +252,14 @@ export class InventariosService {
                     estado: "ACTIVO",
                     loteType: "Lote"
                 },
-                sort: { fecha: -1 },
+                sort: { fechaIngreso: 1 },
             })
             if (registros.length === 0) {
                 throw new InventariosLogicError(`No hay inventario suficiente para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
             }
             for (const registro of registros) {
-                const nuevosKilos = kilos - registro.kilos;
-
-
-                if (nuevosKilos <= 0) {
+                const nuevosKilos = Number(kilos) - Number(registro.kilosActuales);
+                if (nuevosKilos < 0) {
                     await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
                         { _id: registro._id },
                         { $set: { kilosActuales: - nuevosKilos } },
@@ -298,7 +296,7 @@ export class InventariosService {
                 "fecha_ingreso_inventario": new Date(),
             }
 
-            const newLote = await LotesRepository.addLote(lote, user, {session});
+            const newLote = await LotesRepository.addLote(lote, user, { session });
             const update = {
                 $inc: {
                     kilosVaciados: newLote.kilos,
@@ -306,7 +304,7 @@ export class InventariosService {
                 fechaProceso: new Date()
             }
             await LotesRepository.actualizar_lote(
-                { _id: newLote._id},
+                { _id: newLote._id },
                 update,
                 { calculateFields: true, vaciar: true, session })
             await dataService.modificar_Celifrut_serial(session);
@@ -347,32 +345,6 @@ export class InventariosService {
 
         return { cambioFruta, cambioIventario, registro: registro[0] }
 
-    }
-    static async procesar_formulario_inventario_registro_descarte(data) {
-        const descarteLavado = {};
-        const descarteEncerado = {};
-        let totalDescarte = 0;
-
-        // Procesar el objeto de entrada
-        Object.entries(data).forEach(([key, value]) => {
-            // Separar la clave por el punto para identificar tipo y subtipo
-            const [tipo, subtipo] = key.split('.');
-            const valorNumerico = value === '' ? 0 : parseInt(value);
-
-            if (tipo === 'descarteLavado') {
-                descarteLavado[subtipo] = valorNumerico;
-                totalDescarte += valorNumerico;
-            } else if (tipo === 'descarteEncerado') {
-                descarteEncerado[subtipo] = valorNumerico;
-                totalDescarte += valorNumerico;
-            }
-        });
-
-        return {
-            descarteLavado,
-            descarteEncerado,
-            total: totalDescarte
-        };
     }
     static async modificar_inventario_registro_cambioFruta(registro, newRegistro, descarteLavado, descarteEncerado) {
 
@@ -670,8 +642,6 @@ export class InventariosService {
 
         return lote;
     }
-
-
     static async construir_ef8_lote(data, enf, precio, user) {
         const totalCanastillas = Number(data.canastillasPropias || 0) + Number(data.canastillasVaciasPropias || 0);
         const totalCanastillasPrestadas = Number(data.canastillasVaciasPrestadas || 0) + Number(data.canastillasPrestadas || 0);

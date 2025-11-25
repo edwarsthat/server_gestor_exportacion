@@ -32,6 +32,7 @@ import { CrearDocumentosRepository } from "../services/crearDocumentos.js";
 import { LotesHelper } from "../helper/lotes.js";
 import { InventarioSimpleHelper } from "../helper/inventarioSimple.js";
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
+import { HistorialInventariosService } from "../services/inventarios/historialInventarios.js";
 
 
 export class InventariosRepository {
@@ -1901,42 +1902,44 @@ export class InventariosRepository {
         }
     }
     static async put_inventarios_historiales_despachoDescarte(req) {
+        const { user } = req;
+        const { action, data, _id } = req.data
+
+        let log
+        const session = await db.Lotes.db.startSession();
+
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
         try {
-            let { user } = req
-            const { action, data, _id } = req.data
             InventariosValidations.put_inventarios_historiales_despachoDescarte(data)
             const inventario = {}
             const newRegistro = {}
             //se obtienen los datos de inventario
             Object.keys(data).forEach(
                 key => {
-                    if (key.startsWith("descarteLavado") || key.startsWith("descarteEncerado")) {
+                    if (key.includes(":")) {
                         inventario[key] = data[key]
                     } else {
                         newRegistro[key] = data[key]
                     }
                 }
             );
-            const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_registro_descarte(inventario)
 
-            const { cambioFruta, cambioIventario, registro } = await InventariosService.revisar_cambio_registro_despachodescarte(_id, data)
+            await session.withTransaction(async () => {
+                //se suma o se resta del inventario descartes segun corresponda
+                const oldRegistro = await HistorialInventariosService.modificar_inventario_descartes_modificar_salida(_id, inventario, data.tipoFruta, user, session)
+                await registrarPasoLog(log._id, "HistorialInventariosService.modificar_inventario_descartes_modificar_salida", "Completado");
+                //se modifica el registro del despacho descarte
+                await HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte(_id, inventario, newRegistro, user, session)
+                await registrarPasoLog(log._id, "HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte", "Completado");
+                //actualizar salida del cardex inventario descarte
+                const response = await HistorialInventariosService.modificar_cardex_modificar_registro_despacho(oldRegistro[0], data.tipoFruta, inventario, user, session)
+                await registrarPasoLog(log._id, "HistorialInventariosService.modificar_cardex_modificar_registro_despacho", "Completado");
 
-            if (cambioFruta || cambioIventario) {
-                await InventariosService.modificar_inventario_registro_cambioFruta(registro, data, descarteLavado, descarteEncerado)
-            }
-
-            const query = {
-                ...newRegistro,
-                kilos: total,
-                descarteEncerado,
-                descarteLavado
-            }
-
-            await DespachoDescartesRepository.actualizar_registro(
-                { _id: _id },
-                query,
-                { user: user._id, action: action }
-            )
+            });
 
             procesoEventEmitter.emit("server_event", {
                 action: "descarte_change",
@@ -1944,11 +1947,11 @@ export class InventariosRepository {
             });
 
         } catch (err) {
-            console.error(err)
-            if (err.status === 521 || err.status === 518) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            await ErrorInventarioLogicHandlers(err, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     static async put_inventarios_registros_fruta_descompuesta(req) {
