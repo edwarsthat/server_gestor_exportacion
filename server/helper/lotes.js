@@ -18,7 +18,6 @@ export class LotesHelper {
         throw new Error('No se encontró el lote en ninguna colección');
     }
     static async obtener_lote_helper(filter = {}, options = {}) {
-        console.log(filter)
         const [r1, r2] = await Promise.allSettled([
             LotesRepository.getLotes2(filter, options),
             LotesRepository.getLotesMaquila(filter, options)

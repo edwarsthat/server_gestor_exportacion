@@ -112,30 +112,6 @@ export class VariablesDelSistema {
 
     }
   }
-  static modificar_predio_proceso_descartes = async (lote, cliente) => {
-    /**
-   * Función que modifica la información del predio en proceso descartes en Redis.
-   *
-   * @param {Object} lote - El lote con la información a actualizar.
-   * @param {Object} cliente - El cliente de Redis.
-   * @returns {Promise<void>} - Promesa que se resuelve cuando la modificación ha terminado.
-   * @throws {ConnectRedisError} - Lanza un error si ocurre un problema con la conexión a Redis.
-   */
-    try {
-      cliente = await getRedisClient();
-
-      await cliente.hSet("predioProcesandoDescartes", {
-        _id: lote._id.toString(),
-        enf: lote.enf,
-        predio: lote.predio._id.toString(),
-        nombrePredio: lote.predio.PREDIO,
-        tipoFruta: lote?.tipoFruta?._id?.toString() ?? lote.tipoFruta.toString(),
-      });
-
-    } catch (err) {
-      throw new ConnectRedisError(532, `Error con la conexion con redis predio descarte: ${err.name}`)
-    }
-  }
 
   static async generar_codigo_informe_calidad() {
     /**

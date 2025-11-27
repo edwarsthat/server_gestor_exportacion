@@ -20,6 +20,8 @@ import { fileURLToPath } from 'url';
 import { dataService } from '../services/data.js';
 import { LogsRepository } from '../Class/LogsSistema.js';
 import { registrarPasoLog } from './helper/logs.js';
+import { FrutaProcesada } from '../Class/frutaProcesada.js';
+import { LotesHelper } from '../helper/lotes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -30,9 +32,27 @@ export class SistemaRepository {
     static async put_sistema_proceso_habilitarPrediosDescarte(req) {
         try {
             const { data } = req.data
-            VariablesDelSistema.modificar_predio_proceso_descartes(data)
+            const registro = await FrutaProcesada.get_frutaProcesada({
+                ids: data,
+            })
+            delete registro[0]._doc._id
+            delete registro[0]._doc.createdAt
+            delete registro[0]._doc.updatedAt
+            delete registro[0]._doc.__v
+
+            const newRegistro = {
+                ...registro[0]._doc,
+                fechaProcesamiento: new Date(),
+                proceso: "Habilitar",
+                canastillas: 0,
+                loteId: registro[0]._doc.loteId._id,
+                tipoFruta: registro[0]._doc.tipoFruta._id,
+                predio: registro[0]._doc.predio._id,
+                user: req.user._id
+            }
+            await FrutaProcesada.addFrutaProcesada(newRegistro, req.user._id)
         } catch (err) {
-            if (err.status === 532) {
+            if (err.status === 521) {
                 throw err
             }
             throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
@@ -54,35 +74,15 @@ export class SistemaRepository {
             // Crear fechaFin (final del día en Colombia, pero en UTC)
             const fechaFin = new Date();
 
+            let query = {}
 
-            let query = {
-                operacionRealizada: 'vaciarLote'
-            }
+            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fechaProcesamiento')
 
-            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha')
 
-            const recordLotes = await RecordLotesRepository.getVaciadoRecord({ query: query })
-            const lotesIds = recordLotes.map(lote => lote.documento._id);
-
-            const lotes = await LotesRepository.getLotes({
-                ids: lotesIds,
-                limit: recordLotes.length,
-                select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1 }
+            const lotes = await FrutaProcesada.get_frutaProcesada({
+                query: query,
             });
-            const resultado = recordLotes.map(item => {
-                const lote = lotes.find(lote => lote._id.toString() === item.documento._id);
-                if (lote) {
-                    if (Object.prototype.hasOwnProperty.call(item.documento, "$inc")) {
-                        item.documento = { ...lote, kilosVaciados: item.documento.$inc.kilosVaciados }
-                        return (item)
-                    }
-                    else {
-                        return item
-                    }
-                }
-                return null
-            }).filter(item => item !== null);
-            return resultado
+            return lotes
         } catch (err) {
             if (err.status === 522) {
                 throw err
@@ -180,10 +180,16 @@ export class SistemaRepository {
         try {
             const lotes = await LotesRepository.getLotes({
                 sort: { fechaProceso: -1 },
-                select: { enf: 1 },
+                select: { enf: 1, fecha_creacion: 1 },
                 limit: 200
             })
-            return lotes
+            const lotesMaquila = await LotesRepository.getLotesMaquila({
+                sort: { fechaProceso: -1 },
+                select: { enf: 1, fecha_creacion: 1 },
+                limit: 100
+            })
+            const result = [...lotes, ...lotesMaquila].sort((a, b) => b.fecha_creacion - a.fecha_creacion)
+            return result
         } catch (err) {
             if (err.status === 531) {
                 throw err
@@ -192,27 +198,42 @@ export class SistemaRepository {
         }
     }
     static async put_sistema_habilitarInstancias_habilitarPredio(req) {
-        try {
-            const { user } = req
-            const { data } = req.data
-            await LotesRepository.actualizar_lote(
-                { _id: data },
-                { finalizado: false },
-                { action: "habilitarPredio", user: user }
-            );
+        const { user } = req
+        const { data } = req.data
+        let log
+        const session = await db.Contenedores.db.startSession();
+        log = await LogsRepository.create({
+            user: user._id,
+            action: "habilitarPredio",
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
 
-            const record = new db.recordLotes({
-                operacionRealizada: "vaciarLote",
-                user: user,
-                documento: {
-                    $inc: {
-                        kilosVaciados: 0,
-                    },
-                    fechaProceso: new Date(),
-                    _id: data
+        try {
+
+            await session.withTransaction(async () => {
+                const lote = await LotesHelper.actualizar_lotes_helper(
+                    { _id: data },
+                    { finalizado: false },
+                    { action: "habilitarPredio", user: user, session }
+                );
+                if (!lote) {
+                    throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
                 }
+                const loteType = lote.enf.startsWith("EF10-") ? "LoteMaquila" : "Lote"
+                const newRegistro = {
+                    loteId: lote._id,
+                    predio: lote.predio,
+                    loteType: loteType,
+                    tipoFruta: lote.tipoFruta,
+                    promedio: lote.promedio,
+                    canastillas: 0,
+                    user: user._id,
+                    proceso: 'Habilitar'
+                }
+                await FrutaProcesada.addFrutaProcesada(newRegistro, user, session)
             })
-            await record.save()
+
+
         } catch (err) {
             if (err.status === 531) {
                 throw err

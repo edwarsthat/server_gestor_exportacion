@@ -255,6 +255,7 @@ export class LotesRepository {
                     promedio: documento.promedio,
                     canastillas: canastillas,
                     user: userId,
+                    proceso: 'Vaceo'
 
                 });
                 await record.save({ session: options.session });
@@ -402,6 +403,7 @@ export class LotesRepository {
                     promedio: documento.promedio,
                     canastillas: canastillas,
                     user: userId,
+                    proceso: 'Vaceo'
 
                 });
                 await record.save({ session: options.session });
