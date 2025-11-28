@@ -13,12 +13,23 @@ export class FrutaProcesada {
                 { path: "user", select: "usuario nombre apellido" }
             ]);
     }
+    static async addFrutaProcesada(data, user, opts = {}) {
+        const { session } = opts;
+        try {
+            const registro = new db.frutaProcesada(data);
+            registro.user = user;
+            const saved = await registro.save({ session });
+            return saved;
+        } catch (err) {
+            throw new ConnectionDBError(521, `Error agregando fruta procesada ${err.message}`);
+        }
+    }
     static async get_frutaProcesada(options = {}) {
         const {
             ids = [],
             query = {},
             select = {},
-            sort = { fecha_creacion: -1 },
+            sort = { fechaProcesamiento: -1 },
             limit = 0,
             skip = 0,
             populate = [

@@ -14,6 +14,11 @@ export const defineFrutaProcesada = async (conn) => {
             required: true,
             enum: ['Lote', 'loteMaquila']
         },
+        proceso: {
+            type: String,
+            required: true,
+            enum: ['Vaceo', 'Habilitar']
+        },
         fechaProcesamiento: { type: Date, default: Date.now },
         tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas' },
         predio: { type: Schema.Types.ObjectId, ref: 'Proveedor' },

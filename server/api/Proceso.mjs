@@ -68,10 +68,10 @@ export class ProcesoRepository {
                 "calidad.fotosCalidad.fechaIngreso": Date.now(),
             }
 
-            await LotesRepository.actualizar_lote(
+            await LotesHelper.actualizar_lotes_helper(
                 { _id: _id },
                 query,
-                { new: true, user: user, action: "post_proceso_aplicaciones_fotoCalidad" }
+                { new: true, user: user._id, action: "post_proceso_aplicaciones_fotoCalidad" }
             );
         } catch (err) {
             if (err.status === 523) {
