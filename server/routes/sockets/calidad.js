@@ -57,8 +57,16 @@ export const apiSocketCalidad = {
         await CalidadRepository.put_calidad_informe_noPagarBalinLote(data)
         return successResponseRoutes()
     },
-    get_calidad_informes_lotesMaquila: async () => {
-        const response = await CalidadRepository.get_calidad_informes_lotesMaquila();
+    get_calidad_informes_lotesMaquila: async (req) => {
+        const response = await CalidadRepository.get_calidad_informes_lotesMaquila(req);
+        return successResponseRoutes(response)
+    },
+    get_calidad_informes_informeMaquila_numeroElementos: async (req) => {
+        const response = await CalidadRepository.get_calidad_informes_informeMaquila_numeroElementos(req)
+        return successResponseRoutes(response)
+    },
+    get_calidad_informe_loteMaquila_detalle: async (req) => {
+        const response = await CalidadRepository.get_calidad_informe_loteMaquila_detalle(req);
         return successResponseRoutes(response)
     },
     //#endregion

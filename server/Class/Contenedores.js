@@ -429,4 +429,13 @@ export class ContenedoresRepository {
             throw new ConnectionDBError(522, `Error contenedores ${err.message}`);
         }
     }
+    static async aggregateAndPopulate(pipeline, populateOptions) {
+        try {
+            const result = await db.itemPallet.aggregate(pipeline).exec();
+            await db.itemPallet.populate(result, populateOptions);
+            return result;
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error contenedores ${err.message}`);
+        }
+    }
 }

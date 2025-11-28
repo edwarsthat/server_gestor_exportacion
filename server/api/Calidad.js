@@ -1,4 +1,5 @@
 import { CalidadLogicError } from "../../Error/logicLayerError.js";
+import mongoose from 'mongoose';
 import { procesoEventEmitter } from "../../events/eventos.js";
 import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
 import { ContenedoresRepository } from "../Class/Contenedores.js";
@@ -18,6 +19,7 @@ import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { ErrorCalidadLogicHandlers } from "./utils/errorsHandlers.js";
 import { LotesHelper } from "../helper/lotes.js";
+import { populate } from "dotenv";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -232,7 +234,7 @@ export class CalidadRepository {
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_calidad_informes_informeProveedor_numeroElementos() {
+    static async get_calidad_informes_informeProveedor_numeroElementos(req) {
         try {
             const filtro = {
                 enf: { $regex: '^E', $options: 'i' },
@@ -365,47 +367,28 @@ export class CalidadRepository {
     }
     static async get_calidad_informes_lotesMaquila(req) {
         try {
-            const { data: datos } = req
-            const { page } = datos;
+
+            const { page } = req.data
             const resultsPerPage = 50;
-            const query = {
-                enf: { $regex: '^E', $options: 'i' }
-            }
+
             const lotes = await LotesRepository.getLotesMaquila({
-                query: query,
                 skip: (page - 1) * resultsPerPage,
                 select: {
                     enf: 1,
-                    tipoFruta: 1,
                     calidad: 1,
-                    __v: 1,
+                    tipoFruta: 1,
                     deshidratacion: 1,
                     kilos: 1,
-                    contenedores: 1,
                     canastillas: 1,
-                    descarteEncerado: 1,
-                    descarteLavado: 1,
-                    directoNacional: 1,
-                    frutaNacional: 1,
-                    fechaIngreso: 1,
-                    fecha_ingreso_patio: 1,
-                    fecha_salida_patio: 1,
                     fecha_ingreso_inventario: 1,
                     fecha_creacion: 1,
-                    fecha_estimada_llegada: 1,
-                    precio: 1,
                     aprobacionComercial: 1,
                     aprobacionProduccion: 1,
-                    numeroRemision: 1,
-                    observaciones: 1,
-                    flag_is_favorita: 1,
-                    flag_balin_free: 1,
                     fecha_finalizado_proceso: 1,
                     fecha_aprobacion_comercial: 1,
-                    salidaExportacion: 1,
-
                 },
                 limit: resultsPerPage,
+                skip: (page - 1) * resultsPerPage,
                 populate: [
                     { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' },
                     { path: 'precio', select: 'exportacion frutaNacional descarte' },
@@ -417,6 +400,85 @@ export class CalidadRepository {
             return lotes
         } catch (err) {
             if (err.status === 522) {
+                throw err
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_calidad_informes_informeMaquila_numeroElementos(req) {
+        try {
+            const { filtro = {} } = req.data
+            const numeroContenedores = await LotesRepository.get_numero_lotes_maquila(filtro)
+            return numeroContenedores
+
+        } catch (err) {
+            if (err.status === 524) {
+                throw err
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_calidad_informe_loteMaquila_detalle(req) {
+        try {
+            const { _id } = req.data
+
+            const pipeline = [
+                {
+                    '$match': {
+                        'lote': new mongoose.Types.ObjectId(_id)
+                    }
+                }, {
+                    '$group': {
+                        '_id': {
+                            'contenedor': '$contenedor',
+                            'calidad': '$calidad'
+                        },
+                        'totalKilos': {
+                            '$sum': '$kilos'
+                        },
+                        'count': {
+                            '$sum': 1
+                        }
+                    }
+                }, {
+                    '$project': {
+                        '_id': 0,
+                        'contenedor': '$_id.contenedor',
+                        'calidad': '$_id.calidad',
+                        'totalKilos': 1,
+                        'documentosAgrupados': '$count'
+                    }
+                }
+            ];
+
+            const populateOptions = [
+                { path: 'calidad', select: 'nombre descripcion' },
+                { path: 'contenedor', select: 'numeroContenedor infoContenedor.maquila' }
+            ];
+
+
+            const [lote, itemsExp] = await Promise.all([
+                LotesRepository.getLotesMaquila({
+                    ids: [_id],
+                    populate: [
+                        { path: 'predio', select: 'PREDIO GGN ICA' },
+                        { path: 'tipoFruta', select: 'tipoFruta' },
+                        { path: 'cliente', select: 'CLIENTE' },
+                        { path: "user", select: "usuario nombre apellido" },
+                        { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' }
+
+                    ]
+                }),
+                ContenedoresRepository.aggregateAndPopulate(pipeline, populateOptions)
+            ])
+
+            if (!lote || lote.length === 0) {
+                throw new CalidadLogicError(404, "Lote no encontrado.");
+            }
+
+            return { lote: lote[0], itemsPallets: itemsExp }
+        } catch (err) {
+            if (err.status === 524) {
                 throw err
             }
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
