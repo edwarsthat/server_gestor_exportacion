@@ -121,17 +121,6 @@ export class LotesRepository {
         }
     }
     static async modificar_lote_proceso(id, query, action, user, session = null) {
-        /**
-         * Modifica un lote en la base de datos de MongoDB desde las aplicaciones
-         * debido a que no requiere version del lote
-         *
-         * @param {string} id - ID del lote a modificar.
-         * @param {Object} query - Objeto con los cambios a aplicar al lote.
-         * @param {string} action - Descripción de la acción realizada.
-         * @param {string} user - Usuario que realiza la acción.
-         * @returns {Promise<Object>} - Promesa que resuelve al objeto del lote modificado.
-         * @throws {PutError} - Lanza un error si ocurre un problema al modificar el lote.
-         */
         try {
             const lote = await db.Lotes.findOneAndUpdate({ _id: id, }, query, { new: true, session });
 
@@ -305,7 +294,7 @@ export class LotesRepository {
                     documento = await db.Lotes.findOneAndUpdate(
                         filter,
                         { deshidratacion, rendimiento },
-                        recalcOptions // 👈 Usar opciones sin arrayFilters
+                        recalcOptions //  Usar opciones sin arrayFilters
                     ).populate([{ path: 'predio', select: 'PREDIO ICA GGN SISPAP' }, { path: 'tipoFruta' }]);
                 }
 
@@ -314,7 +303,6 @@ export class LotesRepository {
             return documento;
 
         } catch (err) {
-            // Aquí los errores se lamentan en verso
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
@@ -349,7 +337,7 @@ export class LotesRepository {
             throw new PostError(409, `Error agregando lote maquila ${err.message}`);
         }
     }
-    static async getLotesMaquila(options = {}) {
+    static async getLotesMaquila(options = {}, { session = null } = {}) {
         const {
             ids = [],
             query = {},
@@ -377,6 +365,7 @@ export class LotesRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
+                .session(session)
                 .exec();
 
             return lotes

@@ -11,7 +11,18 @@ export const defineItemPallet = async (conn, AuditLog) => {
     const itemPalletSchema = new Schema({
         pallet: { type: Schema.Types.ObjectId, ref: 'Pallet', required: true, index: true },
         contenedor: { type: Schema.Types.ObjectId, ref: 'Contenedor', required: true, index: true },
-        lote: { type: Schema.Types.ObjectId, ref: 'Lote', required: true, index: true },
+        lote: {
+            type: Schema.Types.ObjectId,
+            required: true,
+            refPath: 'loteType',
+            index: true
+        },
+        loteType: {
+            type: String,
+            required: true,
+            default: 'Lote',
+            enum: ['Lote', 'loteMaquila']
+        },
         tipoCaja: String,
         calibre: String,
         calidad: { type: Schema.Types.ObjectId, ref: 'calidades', index: true, required: false },
@@ -20,7 +31,7 @@ export const defineItemPallet = async (conn, AuditLog) => {
         SISPAP: { type: Boolean, default: false },
         GGN: { type: Boolean, default: false },
         kilos: Number,
-        user: String,
+        user: { type: Schema.Types.ObjectId, ref: 'usuario' },
         cajas: { type: Number, default: 0 },
     });
 

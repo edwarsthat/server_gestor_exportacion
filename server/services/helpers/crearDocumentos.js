@@ -52,20 +52,30 @@ export const mostrarKilose = (item) => {
         return "N/A";
     }
 
-    const peso = Number(partes[1]);
+    const pesoKg = Number(partes[1]);
 
-    if (isNaN(peso)) {
+    if (isNaN(pesoKg)) {
         console.error('Peso no es un número válido:', partes[1]);
         return "N/A";
     }
 
-    if (peso >= 18) return "40LB";
-    if (peso >= 17) return "37LB";
-    if (peso >= 15) return "35LB";
-    if (peso >= 13) return "30LB";
-    if (peso > 4 && peso < 5) return "4,5Kg";
+    // if (peso >= 18) return "40LB";
+    // if (peso >= 17) return "37LB";
+    // if (peso >= 15) return "35LB";
+    // if (peso >= 13) return "30LB";
+    // if (peso > 4 && peso < 5) return "4,5Kg";
 
-    return "N/A"; // Valor por defecto si no coincide ninguna condición
+    // return "N/A"; // Valor por defecto si no coincide ninguna condición
+
+// Conversión real a libras según regla ICA.Jp
+    const libras = (pesoKg * 1000) / 454;
+
+    const entero = Math.floor(libras);
+    const decimal = libras - entero;
+
+    const resultado = decimal >= 0.5 ? entero + 1 : entero;
+
+    return resultado + "LB";
 }
 export function numeroALetras(num) {
     const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];

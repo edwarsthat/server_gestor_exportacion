@@ -53,7 +53,7 @@ import { initCronCache } from './src/cron/cache.js';
          * @see module:DB/mongoDB/config/init~initMongoDB
          */
         await initMongoDB();
-        await tipoFrutaCache.cargar(5, 1000); 
+        await tipoFrutaCache.cargar(5, 1000);
 
         initRustRcp().catch(() => {
             console.warn('⚠️ No se pudo conectar al servidor Rust inicialmente. Se intentará reconectar en segundo plano.');

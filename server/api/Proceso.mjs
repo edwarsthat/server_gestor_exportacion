@@ -27,6 +27,7 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
 import { InventariosHistorialRepository } from "../Class/Inventarios.js";
+import { LotesHelper } from "../helper/lotes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -99,12 +100,32 @@ export class ProcesoRepository {
                     ],
                     $or: [
                         { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
-                        { fechaIngreso: { $gte: new Date(haceUnMes) } }
+                        { fecha_creacion: { $gte: new Date(haceUnMes) } }
                     ]
                 },
-                select: { enf: 1 }
+                select: { enf: 1, fecha_creacion: 1, tipoFruta: 1 }
             });
-            return lotes
+            const lotesMaquila = await LotesRepository.getLotesMaquila({
+                query: {
+                    $and: [
+                        {
+                            $or: [
+                                { 'calidad.fotosCalidad': { $exists: false } },
+                                { 'calidad.fotosCalidad.fechaIngreso': { $gte: new Date(hoyAM), $lt: new Date(hoyPM) } }
+                            ]
+                        },
+                        { enf: { $regex: '^E', $options: 'i' } },
+                    ],
+                    $or: [
+                        { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
+                        { fecha_creacion: { $gte: new Date(haceUnMes) } }
+                    ]
+                },
+                select: { enf: 1, fecha_creacion: 1, tipoFruta: 1 }
+            });
+            const result = [...lotes, ...lotesMaquila];
+            const resultOrdered = result.sort((a, b) => a.fecha_creacion - b.fecha_creacion)
+            return resultOrdered
         } catch (err) {
             if (err.status === 522) {
                 throw err
@@ -183,7 +204,6 @@ export class ProcesoRepository {
                 }
                 await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, log._id, session);
                 if (lote.enf.startsWith("EF1-")) {
-                    console.log("Actualizando inventario descartes");
 
                     await InventariosHistorialRepository.put_cardex_invetariosdescartes(
                         {},
@@ -288,33 +308,14 @@ export class ProcesoRepository {
 
 
             let query = {
-                operacionRealizada: 'vaciarLote'
             }
 
-            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha')
+            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fechaProcesamiento')
 
-            const recordLotes = await RecordLotesRepository.getVaciadoRecord({ query: query })
-            const lotesIds = recordLotes.map(lote => lote.documento._id);
-
-            const lotes = await LotesRepository.getLotes2({
-                ids: lotesIds,
-                limit: recordLotes.length,
-                select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1 }
+            const data = await FrutaProcesada.get_frutaProcesada({
+                query: query,
             });
-            const resultado = recordLotes.map(item => {
-                const lote = lotes.find(lote => lote._id.toString() === item.documento._id);
-                if (lote) {
-                    if (Object.prototype.hasOwnProperty.call(item.documento, "$inc")) {
-                        item.documento = { ...lote, kilosVaciados: item.documento.$inc.kilosVaciados }
-                        return (item)
-                    }
-                    else {
-                        return item
-                    }
-                }
-                return null
-            }).filter(item => item !== null);
-            return resultado
+            return data
         } catch (err) {
             if (err.status === 522) {
                 throw err
@@ -589,7 +590,6 @@ export class ProcesoRepository {
             const logContext = { logId: log._id, user, action };
 
             await session.withTransaction(async () => {
-
                 const items = await ProcesoService.eliminar_items_contenedor(
                     seleccion, logContext, session
                 );
@@ -713,17 +713,27 @@ export class ProcesoRepository {
                     }
                     const GGN = have_lote_GGN_export(idItem.lote, cont[0])
 
+                    await ContenedoresRepository.actualizar_contenedor(
+                        { _id: idItem.contenedor._id },
+                        { $inc: { totalCajas: -idItem.cajas, totalKilos: -idItem.kilos } },
+                        { session, new: true, action: action, user: user._id });
+
                     const itemPallet = await ContenedoresRepository.actualizar_palletItem(
                         { _id: idItem },
                         { contenedor: id2, pallet: newPallet[0]._id, GGN: GGN },
                         { session, user: user._id, action: action }
                     )
 
-                    await LotesRepository.actualizar_lote(
+                    await LotesHelper.actualizar_lotes_helper(
                         { _id: itemPallet.lote },
                         { $addToSet: { "salidaExportacion.contenedores": id2 } },
                         { session, user: user._id, action: action }
                     );
+
+                    await ContenedoresRepository.actualizar_contenedor(
+                        { _id: id2 },
+                        { $inc: { totalCajas: idItem.cajas, totalKilos: idItem.kilos } },
+                        { session, new: true, action: action, user: user._id });
 
                 }
 
@@ -785,14 +795,29 @@ export class ProcesoRepository {
 
                 if (cajas === oldItemPallet[0].cajas) {
                     await ContenedoresRepository.deleteItemPallet({ _id: oldItemPallet[0]._id }, { session, action: action, user: user._id });
+                    await registrarPasoLog(log._id, "Contenedor actualizado", "Completado", `Contenedor ID: ${oldItemPallet[0].contenedor._id}, Cajas restadas: ${cajas}, Kilos restados: ${kilos}`);
                 } else {
                     await ContenedoresRepository.actualizar_palletItem(
                         { _id: oldItemPallet[0]._id },
                         { $inc: { cajas: -cajas, kilos: -kilos } },
                         { session, user: user._id, action: action }
                     )
+                    await registrarPasoLog(log._id, "Contenedor actualizado", "Completado", `Contenedor ID: ${oldItemPallet[0].contenedor._id}, Cajas restadas: ${cajas}, Kilos restados: ${kilos}`);
                 }
-                await registrarPasoLog(log._id, "PalletItem actualizado", "Completado", `Item ID: ${oldItemPallet[0]._id}, Cajas restadas: ${cajas}, Kilos restados: ${kilos}`);
+
+                await ContenedoresRepository.actualizar_contenedor(
+                    { _id: oldItemPallet[0].contenedor._id },
+                    { $inc: { totalCajas: -cajas, totalKilos: -kilos } },
+                    { session, new: true, action: action, user: user._id });
+
+                await registrarPasoLog(log._id, "Contenedor actualizado", "Completado", `Contenedor ID: ${oldItemPallet[0].contenedor._id}, Cajas restadas: ${cajas}, Kilos restados: ${kilos}`);
+
+                await ContenedoresRepository.actualizar_contenedor(
+                    { _id: id2 },
+                    { $inc: { totalCajas: cajas, totalKilos: kilos } },
+                    { session, new: true, action: action, user: user._id });
+
+                await registrarPasoLog(log._id, "Contenedor actualizado", "Completado", `Contenedor ID: ${id2}, Cajas restadas: ${cajas}, Kilos restados: ${kilos}`);
 
                 const newItem = {
                     pallet: newPallet[0]._id,
@@ -808,10 +833,11 @@ export class ProcesoRepository {
                     usuario: user._id,
                     GGN: GGN,
                     SISPAP: oldItemPallet[0].SISPAP,
+                    loteType: oldItemPallet[0].loteType,
                 }
                 await ContenedoresRepository.addItemPallet(newItem, session);
 
-                await LotesRepository.actualizar_lote(
+                await LotesHelper.actualizar_lotes_helper(
                     { _id: oldItemPallet[0].lote._id },
                     { $addToSet: { "salidaExportacion.contenedores": id2 } },
                     { session, user: user._id, action: action }
