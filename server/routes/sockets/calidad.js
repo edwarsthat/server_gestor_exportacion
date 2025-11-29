@@ -33,10 +33,6 @@ export const apiSocketCalidad = {
         const response = await CalidadRepository.get_calidad_informes_imagenDefecto(data)
         return successResponseRoutes(response)
     },
-    get_calidad_informes_observacionesCalidad: async () => {
-        const response = await CalidadRepository.get_calidad_informes_observacionesCalidad()
-        return successResponseRoutes(response)
-    },
     get_calidad_informes_contenedoresLote: async (data) => {
         const response = await CalidadRepository.get_calidad_informes_contenedoresLote(data)
         return successResponseRoutes(response)

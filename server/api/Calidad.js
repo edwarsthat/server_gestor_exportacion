@@ -208,17 +208,6 @@ export class CalidadRepository {
         }
 
     }
-    static async get_calidad_informes_observacionesCalidad() {
-        try {
-            const response = await VariablesDelSistema.obtener_observaciones_calidad();
-            return response
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async get_calidad_informes_contenedoresLote(req) {
         try {
             const { data: datos } = req
