@@ -7,6 +7,7 @@ export const defineTipoFrutas = async (conn) => {
     const descarteGenetalSchema = new Schema({
         key: String,
         nombre: String,
+        observaciones: String,
     }, { _id: false });
 
     const TipoFrutaSchema = new Schema({

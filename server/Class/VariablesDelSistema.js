@@ -16,7 +16,6 @@ const pathIDs = path.join(__dirname, '..', '..', 'inventory', 'seriales.json');
 const inventarioPath = path.join(__dirname, '..', '..', 'inventory', 'inventario.json');
 const inventarioDesverdizadoPath = path.join(__dirname, '..', '..', 'inventory', 'inventarioDesverdizado.json');
 const ordenVaceoPath = path.join(__dirname, '..', '..', 'inventory', 'OrdenDeVaceo.json');
-const observacionesCalidadPath = path.join(__dirname, '..', '..', 'constants', 'observacionesCalidad.json');
 const canastillasPath = path.join(__dirname, '..', '..', 'inventory', 'canastillas.json');
 
 
@@ -924,17 +923,6 @@ export class VariablesDelSistema {
     }
   }
   //#region Constantes
-  static async obtener_observaciones_calidad() {
-    try {
-
-      const observacionesJSON = fs.readFileSync(observacionesCalidadPath);
-      const observaciones = JSON.parse(observacionesJSON);
-
-      return observaciones;
-    } catch (err) {
-      throw new ProcessError(522, `Error Obteniendo observaciones calidad ${err.name}`)
-    }
-  }
   //canastillas
   static async obtener_canastillas_inventario() {
     try {

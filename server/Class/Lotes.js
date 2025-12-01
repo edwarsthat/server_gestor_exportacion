@@ -456,6 +456,14 @@ export class LotesRepository {
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
+    static async get_numero_lotes_maquila(filtro = {}) {
+        try {
+            const count = await db.LotesMaquila.countDocuments(filtro);
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(524, `Error obteniendo cantidad lotes ${filtro} --- ${err.message}`);
+        }
+    }
     //#endregion
     //#region EF8
     static async crear_lote_EF8(data, user, logId = null) {
