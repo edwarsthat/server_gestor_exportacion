@@ -20,7 +20,8 @@ export const definePrecios = async (conn) => {
         calidades: [calidadesSchema],
         week: Number,
         year: Number,
-        comentario: String
+        comentario: String,
+        _user: { type: Schema.Types.ObjectId, ref: 'usuario' },
     })
 
     const Precios = conn.model("precio", PreciosSchema);

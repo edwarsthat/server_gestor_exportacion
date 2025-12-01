@@ -2,10 +2,12 @@ import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 
 export class PreciosRepository {
-    static async post_precio(data) {
+    static async post_precio(data, user, opts = {}) {
+        const { session } = opts;
         try {
             const registro = new db.Precios(data);
-            const saveregistro = await registro.save();
+            registro.user = user._id;
+            const saveregistro = await registro.save({ session });
             return saveregistro
         } catch (err) {
             throw new ConnectionDBError(521, `Precios -> ${err}`)

@@ -329,6 +329,7 @@ export class LotesRepository {
     static async addLoteMaquila(data, user, opts = {}) {
         const { session } = opts;
         try {
+
             const loteMaquila = new db.LotesMaquila(data);
             loteMaquila._user = user;
 

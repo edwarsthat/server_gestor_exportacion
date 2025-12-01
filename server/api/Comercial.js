@@ -21,6 +21,7 @@ import { Seriales } from "../Class/Seriales.js";
 import { dataRepository } from "./data.js";
 import { ErrorComercialLogicHandlers } from "./utils/errorsHandlers.js";
 import mongoose from "mongoose";
+import { LotesHelper } from "../helper/lotes.js";
 const { EMAIL, PASSWORD_EMAIL } = config;
 
 
@@ -628,13 +629,17 @@ export class ComercialRepository {
     static async post_comercial_precios_add_precio(req) {
         let log
         const { user } = req
+        const { action, data } = req.data
+        const session = await db.Lotes.db.startSession();
+
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
+
         try {
-            log = await LogsRepository.create({
-                user: user._id,
-                action: "mover_item_entre_contenedores",
-                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-            })
-            const { data } = req.data;
+
             const [yearStr, weekStr] = data.week.split("-W");
             const year = parseInt(yearStr, 10);
             const week = parseInt(weekStr, 10);
@@ -645,81 +650,84 @@ export class ComercialRepository {
             ComercialValidationsRepository.val_post_comercial_precios_add_precio().parse(data);
             await registrarPasoLog(log._id, "ComercialValidationsRepository.val_post_comercial_precios_add_precio", "Completado");
 
-            const exportacion = {};
-            for (const key in data) {
-                if (key.startsWith("exportacion.")) {
-                    const subKey = key.split(".")[1];
-                    exportacion[subKey] = Number(data[key]);
-                    delete data[key];
+            await session.withTransaction(async () => {
+                const exportacion = {};
+                for (const key in data) {
+                    if (key.startsWith("exportacion.")) {
+                        const subKey = key.split(".")[1];
+                        exportacion[subKey] = Number(data[key]);
+                        delete data[key];
+                    }
                 }
-            }
 
-            const precio = await PreciosRepository.post_precio({ ...data, exportacion })
-            await registrarPasoLog(log._id, "PreciosRepository.post_precio", "Completado");
+                const precio = await PreciosRepository.post_precio({ ...data, exportacion }, user, { session })
+                await registrarPasoLog(log._id, "PreciosRepository.post_precio", "Completado");
 
-            const query = {
-                _id: { $in: data.predios }
-            }
+                const query = {
+                    _id: { $in: data.predios }
+                }
 
-            const new_data = { [`precio.${data.tipoFruta}`]: precio._id }
+                const new_data = { [`precio.${data.tipoFruta}`]: precio._id }
 
-            await ProveedoresRepository.modificar_varios_proveedores(
-                query, new_data
-            )
-            await registrarPasoLog(log._id, "ProveedoresRepository.modificar_varios_proveedores", "Completado");
+                await ProveedoresRepository.modificar_varios_proveedores(
+                    query, new_data, { session, action: "post_comercial_precios_add_precio", user }
+                )
+                await registrarPasoLog(log._id, "ProveedoresRepository.modificar_varios_proveedores", "Completado");
 
+                const simple = new Date(year, 0, 1 + (week - 1) * 7);
+                const dow = simple.getDay();
 
-            const simple = new Date(year, 0, 1 + (week - 1) * 7);
-            const dow = simple.getDay();
+                const ISOweekStart = new Date(simple);
+                if (dow === 0) {
+                    ISOweekStart.setDate(simple.getDate() - 6);
+                } else {
+                    ISOweekStart.setDate(simple.getDate() - (dow - 1));
+                }
 
-            const ISOweekStart = new Date(simple);
-            if (dow === 0) {
-                ISOweekStart.setDate(simple.getDate() - 6);
-            } else {
-                ISOweekStart.setDate(simple.getDate() - (dow - 1));
-            }
+                const ISOweekEnd = new Date(ISOweekStart);
+                ISOweekEnd.setDate(ISOweekStart.getDate() + 7);
 
-            const ISOweekEnd = new Date(ISOweekStart);
-            ISOweekEnd.setDate(ISOweekStart.getDate() + 7);
+                let lotesQuery = {}
 
-            let lotesQuery = {}
+                lotesQuery = filtroFechaInicioFin(ISOweekStart, ISOweekEnd, lotesQuery, "fecha_ingreso_inventario")
 
-            lotesQuery = filtroFechaInicioFin(ISOweekStart, ISOweekEnd, lotesQuery, "fecha_ingreso_patio")
+                lotesQuery.tipoFruta = data.tipoFruta
 
-            lotesQuery.tipoFruta = data.tipoFruta
+                const lotesEF1 = await LotesRepository.getLotes({
+                    query: lotesQuery,
+                    select: { predio: 1, precio: 1, tipoFruta: 1 }
+                }, { session })
 
-            const lotes = await LotesRepository.getLotes({
-                query: lotesQuery,
-                select: { predio: 1, precio: 1, tipoFruta: 1 }
+                const lotesMaquila = await LotesRepository.getLotesMaquila({
+                    query: lotesQuery,
+                    select: { predio: 1, precio: 1, tipoFruta: 1 }
+                }, { session })
+
+                const lotes = [...lotesEF1, ...lotesMaquila]
+                await registrarPasoLog(log._id, "LotesHelper.obtener_lote_helper", "Completado");
+
+                for (const lote of lotes) {
+
+                    if (precio.predios.includes(lote.predio._id.toString())) {
+                        lote.precio = precio._id
+
+                        await LotesHelper.actualizar_lotes_helper(
+                            { _id: lote._id },
+                            lote,
+                            { user: user._id, action: "post_comercial_precios_add_precio", session },
+                        )
+                    }
+                }
+                await registrarPasoLog(log._id, "LotesHelper.actualizar_lotes_helper", "Completado");
+
             })
-            await registrarPasoLog(log._id, "LotesRepository.getLotes", "Completado");
 
-
-            for (const lote of lotes) {
-
-                if (precio.predios.includes(lote.predio._id.toString())) {
-                    lote.precio = precio._id
-
-                    await LotesRepository.actualizar_lote(
-                        { _id: lote._id },
-                        lote,
-                        { user: user._id, action: "post_comercial_precios_add_precio" },
-                        null, false
-                    )
-                }
-            }
-            await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado");
-
-
-        } catch (err) {
-            await registrarPasoLog(log._id, "Error en post_comercial_precios_add_precio", "Completado");
-
-            if (err.status === 521) {
-                throw err
-            }
-            throw new ProcessError(480, `Error ${err.type}: ${err.message}`)
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorProcesoLogicHandlers(error, log)
         } finally {
-            await registrarPasoLog(log._id, "post_comercial_precios_add_precio", "Finalizado");
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     static async put_comercial_precios_precioLotes(req) {
@@ -969,7 +977,7 @@ export class ComercialRepository {
             }
             //por tipo de fruta
             if (tipoFruta !== '') {
-                query["infoContenedor.tipoFruta"] = {  $in: [new mongoose.Types.ObjectId('686e6b450c34dee069775d4e')]}
+                query["infoContenedor.tipoFruta"] = { $in: [new mongoose.Types.ObjectId('686e6b450c34dee069775d4e')] }
             }
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'infoContenedor.fechaCreacion')

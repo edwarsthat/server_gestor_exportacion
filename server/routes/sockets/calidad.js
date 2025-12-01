@@ -65,6 +65,10 @@ export const apiSocketCalidad = {
         const response = await CalidadRepository.get_calidad_informe_loteMaquila_detalle(req);
         return successResponseRoutes(response)
     },
+    put_calidad_informesMaquila_aprobacionProduccion: async (data) => {
+        await CalidadRepository.put_calidad_informesMaquila_aprobacionProduccion(data)
+        return successResponseRoutes()
+    },
     //#endregion
     //#region ingresos calidad
     get_calidad_ingresos_clasificacionDescarte: async () => {

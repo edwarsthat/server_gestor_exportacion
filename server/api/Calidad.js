@@ -175,6 +175,7 @@ export class CalidadRepository {
                     fecha_finalizado_proceso: 1,
                     fecha_aprobacion_comercial: 1,
                     salidaExportacion: 1,
+                    descartes: 1
 
                 },
                 limit: resultsPerPage,
@@ -454,7 +455,8 @@ export class CalidadRepository {
                         { path: 'tipoFruta', select: 'tipoFruta' },
                         { path: 'cliente', select: 'CLIENTE' },
                         { path: "user", select: "usuario nombre apellido" },
-                        { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' }
+                        { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
+                        { path: 'precio', select: 'exportacion frutaNacional descarte' },
 
                     ]
                 }),
@@ -471,6 +473,58 @@ export class CalidadRepository {
                 throw err
             }
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_calidad_informesMaquila_aprobacionProduccion(req) {
+        const { user } = req;
+        const { action, _id } = req.data
+        let log
+        try {
+            log = await LogsRepository.create({
+                user: user._id,
+                action: action,
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
+            const logData = { logId: log._id, user: user, action: action }
+
+            let update = {
+                aprobacionProduccion: true,
+                fecha_finalizado_proceso: new Date()
+            }
+            const lote = await LotesRepository.getLotesMaquila({ ids: [_id] })
+            if (lote[0].salidaExportacion && lote[0].salidaExportacion.totalKilos > 0) {
+
+                const itemPallets = await ContenedoresRepository.getItemsPallets({
+                    query: { contenedor: { $in: lote[0].salidaExportacion.contenedores } }
+                })
+                await registrarPasoLog(logData.logId, "getLotes2 AND get_Contenedores_sin_lotes", "Completado");
+
+                const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id, logData);
+                if (lote[0].salidaExportacion.totalKilos !== exportacion) {
+                    throw new CalidadLogicError(400, `La suma de kilos en los contenedores (${exportacion} kg) no coincide con los kilos del lote (${lote[0].salidaExportacion.totalKilos} kg). Verifique por favor.`);
+                }
+                if (kilosGGN > 0) {
+                    update['salidaExportacion.kilosGGN'] = kilosGGN;
+                }
+
+                await CalidadService.verificarDescarteMaquila(lote[0])
+
+            }
+            await LotesRepository.actualizar_lote_Maquila(
+                { _id },
+                update,
+                { new: true, user: user._id, action: "put_calidad_informes_loteFinalizarInforme" }
+            );
+            await registrarPasoLog(logData.logId, "LotesRepository.actualizar_lote", "Completado");
+
+        } catch (err) {
+            await registrarPasoLog(log._id, "put_calidad_informes_loteFinalizarInforme", "Error", `${err.message}`);
+            if (err.status === 523 || err.status === 522) {
+                throw err
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "put_calidad_informes_loteFinalizarInforme", "Completado");
         }
     }
     //#endregion

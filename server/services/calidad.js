@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { fileTypeFromBuffer } from 'file-type'; // ✅ Así es como lo debes hacer
 import { registrarPasoLog } from '../api/helper/logs.js';
+import { CalidadServiceError } from '../../Error/ServiceError.js';
 
 
 const MAX_FILE_SIZE_MB = 10; // 10 megas
@@ -53,7 +54,6 @@ export class CalidadService {
 
         for (let i = 0; i < numeroCont; i++) {
             const item = itemPallets[i]
-            console.log(item)
             if (item.lote._id.toString() === _id) {
                 exportacion += item.kilos;
                 if (item.GGN) {
@@ -66,5 +66,23 @@ export class CalidadService {
         await registrarPasoLog(logData.logId, "CalidadService.obtenerExportacionContenedores", "Completado");
         return { exportacion, kilosGGN };
 
+    }
+    static async verificarDescarteMaquila(loteMaquila) {
+        try {
+            const descarteProceso = Object.values(loteMaquila.descartes).reduce((a, b) => a + b, 0);
+
+            const descarteRegistrado =
+                Object.values(loteMaquila.descartesDevueltos).reduce((a, b) => a + b, 0) +
+                Object.values(loteMaquila.descartesComprados).reduce((a, b) => a + b, 0)
+
+            if (descarteProceso !== descarteRegistrado) {
+                throw new CalidadServiceError("Aprobación no permitida: existe fruta pendientes de salida en el inventario de maquila.")
+            }
+
+
+            return true
+        } catch (err) {
+            throw new CalidadServiceError(err.message)
+        }
     }
 }
