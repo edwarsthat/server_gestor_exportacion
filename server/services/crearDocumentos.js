@@ -877,6 +877,8 @@ Fecha: 17 Oct 2020`
                 total_cajas: total_kilos.toFixed(2),
                 total_cajas_net: peso_bruto.toFixed(2),
                 temperatura: registro.temperatura,
+            //para que salga el numero de contedor . Jp
+                numeroContenedor: registro?.contenedor?.numeroContenedor || "N/A",
                 nit: registro.nit,
                 fecha_dia_escrito: numeroALetras(date.getDate()),
                 fecha_dia: date.getDate(),
