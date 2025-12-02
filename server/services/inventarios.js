@@ -23,14 +23,15 @@ import { parseMultTipoCaja } from "./helpers/contenedores.js";
 import config from "../../src/config/index.js";
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
 import { dataService } from "./data.js";
+import { DescartesRepository } from "../Class/Descartes.js";
 
 export class InventariosService {
 
-    static async obtenerPrecioProveedor(predioId, tipoFruta) {
+    static async obtenerPrecioProveedor(predioId, tipoFruta, session = null) {
         const proveedor = await ProveedoresRepository.get_proveedores({
             ids: [predioId],
             select: { precio: 1, PREDIO: 1, GGN: 1 }
-        });
+        }, session);
 
         if (!proveedor || proveedor.length === 0) {
             throw new Error("Proveedor no encontrado");
@@ -41,7 +42,7 @@ export class InventariosService {
             throw new Error(`No hay precio para la fruta ${tipoFruta}`);
         }
 
-        const precio = await PreciosRepository.get_precios({ ids: [idPrecio] });
+        const precio = await PreciosRepository.get_precios({ ids: [idPrecio] }, session);
         if (!precio || precio.length === 0) {
             throw new Error("Precio inválido");
         }
@@ -121,7 +122,7 @@ export class InventariosService {
         const prov = await ProveedoresRepository.actualizar_proveedores(
             { _id: _id },
             { $inc: { canastillas: cantidad } },
-            { session },
+            { session, user: user._id },
         );
 
         if (prov) {
@@ -131,7 +132,7 @@ export class InventariosService {
         const cli = await ClientesRepository.actualizar_clienteNacional(
             { _id: _id },
             { $inc: { canastillas: cantidad } },
-            { session },
+            { session, user: user._id },
         )
 
         if (cli) {
@@ -250,7 +251,7 @@ export class InventariosService {
                     area: area,
                     tipoDescarte: descarteId,
                     estado: "ACTIVO",
-                    loteType: "Lote"
+                    loteType: { $in: ["Lote", "Loteef8"] }
                 },
                 sort: { fechaIngreso: 1 },
             })
@@ -669,13 +670,52 @@ export class InventariosService {
 
         return { loteEF8, total }
     }
-    static async ingresarDescarteEf8(data, tipoFruta, logId) {
-        const descarte = {
+    static async ingresarDescarteEf8(data, tipoFruta, logId, session) {
+        const descarteObj = {
             descarteGeneral: data.descarteGeneral || 0,
             pareja: data.pareja || 0,
             balin: data.balin || 0,
         }
-        await RedisRepository.put_inventarioDescarte(descarte, 'descarteLavado:', tipoFruta, logId)
+        const descartesArr = ["descarteGeneral", "pareja", "balin"];
+        const descartesIds = await DescartesRepository.getDescartes({ ids: tipoFruta.descartes });
+        console.log(descartesIds)
+        for (const descarte of descartesArr) {
+            console.log(descarte)
+            if (descarteObj[descarte] === 0) continue;
+            const descarteId = descartesIds.find(d => d.nombre === descarte);
+            console.log(descarteId)
+            const newRegistro = {
+                lote: data._id,
+                tipoFruta: tipoFruta._id,
+                area: "LAVADO",
+                tipoDescarte: descarteId._id,
+                kilos: descarteObj[descarte],
+                kilosActuales: descarteObj[descarte],
+                loteType: "Loteef8"
+            }
+            await InventariosHistorialRepository.add_elemento_inventarioDescartes(newRegistro, logId, session);
+
+            await InventariosHistorialRepository.put_cardex_invetariosdescartes(
+                {},
+                {
+                    $inc: {
+                        [`kilos_ingreso.${tipoFruta._id.toString()}`]: descarteObj[descarte],
+                    },
+                },
+                {
+                    sort: { fecha: -1 },
+                    new: true,
+                    session,
+                }
+            );
+            await registrarPasoLog(
+                logId,
+                "Modificar inventario descartes",
+                "Completado",
+                `Se modificó el inventario de descarte con ${descarteObj[descarte]} kilos del tipo de fruta ${tipoFruta._id.toString()}`);
+
+        }
+
 
     }
     static async obtenerRecordLotesIngresoLote(filtro) {
@@ -775,7 +815,7 @@ export class InventariosService {
 
         return result;
     }
-    static async ingresarCanasillas(datos, user) {
+    static async ingresarCanasillas(datos, user, session = null) {
         const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)
         const canastillasPrestadas = Number(datos.canastillasPrestadas || 0) + Number(datos.canastillasVaciasPrestadas || 0)
 
@@ -790,12 +830,14 @@ export class InventariosService {
             user
         })
 
-        const [, , registroCanastillas,] = await Promise.all([
-            this.ajustarCanastillasProveedorCliente(datos.predio, -canastillasPropias),
-            this.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", canastillasPropias),
-            CanastillasRepository.post_registro(dataRegistro),
-            VariablesDelSistema.modificar_canastillas_inventario(canastillasPrestadas, "canastillasPrestadas"),
-        ])
+        await this.ajustarCanastillasProveedorCliente(datos.predio, -canastillasPropias, user, session)
+        await this.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", canastillasPropias, user, session)
+        const registroCanastillas = await CanastillasRepository.post_registro(dataRegistro)
+
+
+
+        await VariablesDelSistema.modificar_canastillas_inventario(canastillasPrestadas, "canastillasPrestadas")
+
 
         return registroCanastillas;
 

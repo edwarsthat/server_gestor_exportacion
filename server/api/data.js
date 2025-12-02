@@ -145,7 +145,6 @@ export class dataRepository {
             if (data === 'activos') {
                 query = {
                     query: { activo: true },
-                    limit: 'all',
                     select: {
                         PREDIO: 1,
                         'ICA.code': 1,
@@ -157,7 +156,6 @@ export class dataRepository {
                 }
             } else if (data === 'all') {
                 query = {
-                    limit: 'all',
                     select: { PREDIO: 1, 'ICA.code': 1, SISPAP: 1, GGN: 1, "CODIGO INTERNO": 1 }
                 }
             } else {
@@ -227,11 +225,12 @@ export class dataRepository {
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async incrementar_ef8_serial() {
+    static async incrementar_ef8_serial(session) {
         try {
             await Seriales.modificar_seriales(
                 { name: "EF8-" },
-                { $inc: { serial: 1 } }
+                { $inc: { serial: 1 } },
+                session
             )
         } catch (err) {
             if (err.status === 522) {

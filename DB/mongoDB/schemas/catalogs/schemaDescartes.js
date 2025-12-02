@@ -12,6 +12,7 @@ export const defineDescartes = async (conn) => {
         inventario: { type: Boolean, required: true },
         observaciones: { type: String, required: true },
         pago: { type: Boolean, required: true },
+        informe: { type: String, required: true },
     })
 
     const descartes = conn.model("descartes", descartesSchema);

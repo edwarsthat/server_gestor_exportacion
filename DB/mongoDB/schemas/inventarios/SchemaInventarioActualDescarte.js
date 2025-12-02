@@ -24,7 +24,7 @@ export const defineInventarioActualDescarte = async (conn) => {
             required: true,
             trim: true,
             enum: {
-                values: ['Lote', 'loteMaquila'],
+                values: ['Lote', 'loteMaquila', 'Loteef8'],
                 message: '{VALUE} no es un tipo de registro válido'
             },
             default: 'Lote'
@@ -105,7 +105,7 @@ export const defineInventarioActualDescarte = async (conn) => {
     });
 
     InventarioActualDescarteSchema.index(
-        { lote: 1, tipoDescarte: 1, tipoFruta:1, loteType: 1, area: 1, estado: 1 },
+        { lote: 1, tipoDescarte: 1, tipoFruta: 1, loteType: 1, area: 1, estado: 1 },
         {
             unique: true,
             name: 'idx_inventario_unico',

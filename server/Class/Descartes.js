@@ -1,5 +1,5 @@
-import { db } from "../../DB/mongoDB/config/init";
-import { ConnectionDBError } from "../../Error/ConnectionErrors";
+import { db } from "../../DB/mongoDB/config/init.js";
+import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 
 export class DescartesRepository {
     static async getDescartes(options = {}, { session = null } = {}) {

@@ -42,7 +42,7 @@ export class InventariosRepository {
             const inventario = await InventariosHistorialRepository.get_inventario_descarte({
                 query: {
                     estado: 'ACTIVO',
-                    loteType: "Lote",
+                    loteType: { $in: ["Lote", "Loteef8"] },
                 },
                 populate: [
                     { path: 'tipoFruta', select: "tipoFruta" },
@@ -2214,40 +2214,46 @@ export class InventariosRepository {
     }
     static async post_inventarios_EF8(req) {
         const { user } = req;
+        const { data, action } = req.data;
+
         let log
+        const session = await db.Lotes.db.startSession();
+
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
 
         try {
-            log = await LogsRepository.create({
-                user: user._id,
-                action: "post_inventarios_EF8",
-                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-            })
-            const { data } = req.data;
+
             InventariosValidations.post_inventarios_EF8().parse(data)
             await registrarPasoLog(log._id, "InventariosValidations.post_inventarios_EF8", "Completado");
 
-            const [EF8, tipoFruta] = await Promise.all([
-                dataService.get_ef8_serial(data.fecha_ingreso_inventario, log._id),
-                ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(data.tipoFruta, log._id)
-            ])
+            await session.withTransaction(async () => {
+                const [EF8, tipoFruta] = await Promise.all([
+                    dataService.get_ef8_serial(data.fecha_ingreso_inventario, log._id, session),
+                    ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(data.tipoFruta, log._id, session)
+                ])
 
-            const { precioId, } = await InventariosService.obtenerPrecioProveedor(data.predio, tipoFruta[0].tipoFruta);
-            await registrarPasoLog(log._id, "InventariosService.obtenerPrecioProveedor", "Completado");
+                const { precioId, } = await InventariosService.obtenerPrecioProveedor(data.predio, tipoFruta[0].tipoFruta, session);
+                await registrarPasoLog(log._id, "InventariosService.obtenerPrecioProveedor", "Completado");
 
-            const { loteEF8, } = await InventariosService.construir_ef8_lote(data, EF8, precioId, user);
-            await registrarPasoLog(log._id, "InventariosService.construir_ef8_lote", "Completado");
+                const { loteEF8, } = await InventariosService.construir_ef8_lote(data, EF8, precioId, user);
+                await registrarPasoLog(log._id, "InventariosService.construir_ef8_lote", "Completado");
 
-            const registroCanastillas = await InventariosService.ingresarCanasillas(data, user);
-            await registrarPasoLog(log._id, "InventariosService.ingresarCanasillas", "Completado");
+                const registroCanastillas = await InventariosService.ingresarCanasillas(data, user);
+                await registrarPasoLog(log._id, "InventariosService.ingresarCanasillas", "Completado");
 
-            await LotesRepository.crear_lote_EF8({ ...loteEF8, registroCanastillas: registroCanastillas._id }, user, log._id);
-            await registrarPasoLog(log._id, "LotesRepository.crear_lote_EF8", "Completado");
+                const registroEF8 = await LotesRepository.crear_lote_EF8({ ...loteEF8, registroCanastillas: registroCanastillas._id }, user, log._id);
+                await registrarPasoLog(log._id, "LotesRepository.crear_lote_EF8", "Completado");
 
-            await InventariosService.ingresarDescarteEf8(loteEF8, tipoFruta[0].tipoFruta, log._id)
-            await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
+                await InventariosService.ingresarDescarteEf8(registroEF8, tipoFruta[0], log._id)
+                await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
 
-            await dataRepository.incrementar_ef8_serial()
-            await registrarPasoLog(log._id, "dataService.incrementar_ef8_serial", "Completado");
+                await dataRepository.incrementar_ef8_serial()
+                await registrarPasoLog(log._id, "dataService.incrementar_ef8_serial", "Completado");
+            })
 
             procesoEventEmitter.emit("server_event", {
                 action: "descarte_change",

@@ -25,14 +25,14 @@ export class ProveedoresRepository {
             throw new ConnectionDBError(524, `Indicadores => ${err.message}`);
         }
     }
-    static async get_proveedores(options = {}) {
+    static async get_proveedores(options = {}, session = null) {
         try {
             const {
                 ids = [],
                 query = {},
                 select = {},
                 sort = { "CODIGO INTERNO": 1 },
-                limit = 25,
+                limit = 0,
                 skip = 0,
             } = options;
             let Query = { ...query };
@@ -41,13 +41,13 @@ export class ProveedoresRepository {
                 Query._id = { $in: ids };
             }
 
-            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
 
             const proveedores = await db.Proveedores.find(Query)
                 .select(select)
                 .sort(sort)
-                .limit(limitToUse)
+                .limit(limit)
                 .skip(skip)
+                .session(session)
                 .exec();
 
             return proveedores

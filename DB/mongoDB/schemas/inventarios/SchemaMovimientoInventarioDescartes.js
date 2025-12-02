@@ -12,12 +12,12 @@ export const defineInventarioMovimientosDescarte = async (conn) => {
         fechaMovimiento: { type: Date, default: () => new Date() },
         user: { type: Schema.Types.ObjectId, ref: "usuario", required: true },
         destino: { type: String, required: true },
-        tipoRegistro: { 
-            type: String, 
+        tipoRegistro: {
+            type: String,
             required: true,
             trim: true,
             enum: {
-                values: ['Lote', 'loteMaquila'],
+                values: ['Lote', 'loteMaquila', 'Loteef8'],
                 message: '{VALUE} no es un tipo de registro válido'
             },
             default: 'Lote'

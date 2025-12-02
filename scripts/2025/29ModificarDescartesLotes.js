@@ -92,6 +92,9 @@ async function main() {
                 for (const [key, value] of Object.entries(lote.descarteEncerado)) {
                     const descarteId = descartesMap.get(key);
 
+                    if (value === 0) {
+                        continue;
+                    }
                     if (!descarteId) {
                         console.error(`❌ No se encontró descarte "${key}" para lote ${lote._id}`);
                         continue;
@@ -109,6 +112,9 @@ async function main() {
                 for (const [key, value] of Object.entries(lote.descarteLavado)) {
                     const descarteId = descartesMap.get(key);
 
+                    if (value === 0) {
+                        continue;
+                    }
                     if (!descarteId) {
                         console.error(`❌ No se encontró descarte "${key}" para lote ${lote._id}`);
                         continue;

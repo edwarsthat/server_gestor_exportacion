@@ -4,72 +4,7 @@ import { cargarDescartes, cargarTipoFrutas } from "../../constants/constants.js"
 import { registrarPasoLog } from "../api/helper/logs.js";
 
 export class RedisRepository {
-    /**
- * Acumula los valores de descarte en el inventario general y en el inventario diario ("hoy") usando Redis.
- * 
- * Por cada campo recibido en `data`, suma el valor al hash de Redis correspondiente
- * tanto para el inventario acumulado como para el del día actual.
- * 
- * La validación de los datos debe realizarse antes de invocar este método.
- *
- * @static
- * @async
- * @param {Object} data - Objeto donde cada clave es el nombre del campo de descarte (por ejemplo: balin, descarteGeneral) y el valor es la cantidad a sumar.
- * @param {string} tipoDescarte - Tipo de descarte (por ejemplo, 'descarteLavado', 'descarteEncerado'), que define la parte variable de la clave en Redis.
- * @throws {ConnectRedisError} Lanza un error personalizado si ocurre un fallo en la comunicación con Redis.
- * @example
- * // Suma los valores recibidos al inventario de descarteLavado y al inventario de hoy
- * await put_inventarioDescarte(
- *   { balin: 2, descarteGeneral: 10, hojas: 0 },
- *   'descarteLavado'
- * );
- */
-    static async put_inventarioDescarte(data, tipoDescarte, tipoFruta, logData = null) {
-        let cliente
-        try {
-            cliente = await getRedisClient();
 
-            const inventario = tipoDescarte === 'descarteLavado' ?
-                ["descarteGeneral", "pareja", "balin"] :
-                ["descarteGeneral", "pareja", "balin", "extra", "suelo", "frutaNacional"]
-
-            const tareas = Object.entries(data)
-                .map(([campo, valor]) => {
-                    if (inventario.includes(campo))
-                        cliente.hIncrBy(`inventarioDescarte:${tipoFruta}:${tipoDescarte}`, campo, valor)
-                    cliente.hIncrBy(`inventarioDescarteHoy:${tipoFruta}:${tipoDescarte}`, campo, valor)
-                });
-
-            await Promise.all(tareas);
-
-            if (logData) {
-                await registrarPasoLog(logData.logId, "RedisRepository.put_inventarioDescarte", "Completado", `Tipo de descarte: ${tipoDescarte}, Tipo de fruta: ${tipoFruta}`);
-            }
-
-        } catch (err) {
-            throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
-        }
-    }
-    /**
-     * Resta los valores de descarte del inventario general cuando se realiza un reproceso.
-     * A diferencia de put_inventarioDescarte, este método solo afecta al inventario acumulado
-     * y resta los valores en lugar de sumarlos.
-     * 
-     * @static
-     * @async
-     * @param {Object} data - Objeto donde cada clave es el nombre del campo de descarte y el valor es la cantidad a restar
-     * @param {string} tipoDescarte - Tipo de descarte ('descarteLavado' o 'descarteEncerado')
-     * @param {string} tipoFruta - Tipo de fruta asociada al descarte ('Naranja' o 'Limon')
-     * @throws {ConnectRedisError} Si hay un error en la comunicación con Redis
-     * 
-     * @example
-     * // Resta cantidades del inventario de descarteLavado para Naranja
-     * await put_reprocesoDescarte(
-     *   { balin: 5, descarteGeneral: 10 },
-     *   'descarteLavado',
-     *   'Naranja'
-     * );
-     */
     static async put_reprocesoDescarte(data, tipoDescarte, tipoFruta, multi = null, logContext = null) {
         let cliente;
         try {
@@ -101,26 +36,7 @@ export class RedisRepository {
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
     }
-    /**
-     * Suma los valores de descarte del inventario general cuando se realiza un reproceso.
-     * A diferencia de put_inventarioDescarte, este método solo afecta al inventario acumulado
-     * y resta los valores en lugar de sumarlos.
-     * 
-     * @static
-     * @async
-     * @param {Object} data - Objeto donde cada clave es el nombre del campo de descarte y el valor es la cantidad a restar
-     * @param {string} tipoDescarte - Tipo de descarte ('descarteLavado' o 'descarteEncerado')
-     * @param {string} tipoFruta - Tipo de fruta asociada al descarte ('Naranja' o 'Limon')
-     * @throws {ConnectRedisError} Si hay un error en la comunicación con Redis
-     * 
-     * @example
-     * // Resta cantidades del inventario de descarteLavado para Naranja
-     * await put_reprocesoDescarte(
-     *   { balin: 5, descarteGeneral: 10 },
-     *   'descarteLavado',
-     *   'Naranja'
-     * );
-     */
+
     static async put_reprocesoDescarte_sumar(data, tipoDescarte, tipoFruta, multi = null) {
 
         const key = `inventarioDescarte:${tipoFruta}:${tipoDescarte}`;
@@ -143,26 +59,7 @@ export class RedisRepository {
             throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
         }
     }
-    /**
-     * Ingresa los valores de descarte del inventario general cuando se realiza un reproceso.
-     * A diferencia de put_reprocesoDescarte_set, este método solo afecta al inventario acumulado
-     * 
-     * 
-     * @static
-     * @async
-     * @param {Object} data - Objeto donde cada clave es el nombre del campo de descarte y el valor es la cantidad a restar
-     * @param {string} tipoDescarte - Tipo de descarte ('descarteLavado' o 'descarteEncerado')
-     * @param {string} tipoFruta - Tipo de fruta asociada al descarte ('Naranja' o 'Limon')
-     * @throws {ConnectRedisError} Si hay un error en la comunicación con Redis
-     * 
-     * @example
-     * // Resta cantidades del inventario de descarteLavado para Naranja
-     * await put_reprocesoDescarte(
-     *   { balin: 5, descarteGeneral: 10 },
-     *   'descarteLavado',
-     *   'Naranja'
-     * );
-     */
+
     static async put_reprocesoDescarte_set(data, tipoDescarte, tipoFruta, multi = null) {
         const key = `inventarioDescarte:${tipoFruta}:${tipoDescarte}`;
         let cliente;

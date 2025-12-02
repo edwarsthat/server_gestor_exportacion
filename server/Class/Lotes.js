@@ -467,14 +467,14 @@ export class LotesRepository {
     }
     //#endregion
     //#region EF8
-    static async crear_lote_EF8(data, user, logId = null) {
+    static async crear_lote_EF8(data, user, logId = null, session = null) {
         try {
             const query = {
                 ...data,
                 user: user._id
             }
             const lote = new db.LotesEF8(query);
-            const new_lote = await lote.save();
+            const new_lote = await lote.save({ session });
 
             if (logId) {
                 await registrarPasoLog(logId, "LotesRepository.crear_lote_EF8", "Completado");

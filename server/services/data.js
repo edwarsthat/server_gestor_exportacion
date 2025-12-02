@@ -2,8 +2,8 @@ import { registrarPasoLog } from "../api/helper/logs.js";
 import { Seriales } from "../Class/Seriales.js";
 
 export class dataService {
-    static async get_ef8_serial(fecha = null, logId) {
-        const EF8 = await Seriales.get_seriales("EF8-");
+    static async get_ef8_serial(fecha = null, logId, session = null) {
+        const EF8 = await Seriales.get_seriales("EF8-", session);
         if (!EF8 || EF8.length === 0) {
             throw new Error("No se encontraron registros de EF8");
         }

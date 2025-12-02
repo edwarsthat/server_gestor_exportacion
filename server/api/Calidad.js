@@ -148,41 +148,22 @@ export class CalidadRepository {
                 skip: (page - 1) * resultsPerPage,
                 select: {
                     enf: 1,
-                    tipoFruta: 1,
                     calidad: 1,
-                    __v: 1,
+                    tipoFruta: 1,
                     deshidratacion: 1,
                     kilos: 1,
-                    contenedores: 1,
                     canastillas: 1,
-                    descarteEncerado: 1,
-                    descarteLavado: 1,
-                    directoNacional: 1,
-                    frutaNacional: 1,
-                    fechaIngreso: 1,
-                    fecha_ingreso_patio: 1,
-                    fecha_salida_patio: 1,
                     fecha_ingreso_inventario: 1,
                     fecha_creacion: 1,
-                    fecha_estimada_llegada: 1,
-                    precio: 1,
                     aprobacionComercial: 1,
                     aprobacionProduccion: 1,
-                    numeroRemision: 1,
-                    observaciones: 1,
-                    flag_is_favorita: 1,
-                    flag_balin_free: 1,
                     fecha_finalizado_proceso: 1,
                     fecha_aprobacion_comercial: 1,
-                    salidaExportacion: 1,
-                    descartes: 1
 
                 },
                 limit: resultsPerPage,
                 populate: [
                     { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' },
-                    { path: 'precio', select: 'exportacion frutaNacional descarte' },
-                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
                     { path: 'tipoFruta' },
                 ]
 
@@ -190,6 +171,33 @@ export class CalidadRepository {
             return lotes
         } catch (err) {
             if (err.status === 522) {
+                throw err
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_calidad_informe_lote_detalle(req) {
+        try {
+            const { _id } = req.data
+
+            const lote = await LotesRepository.getLotes2({
+                ids: [_id],
+                populate: [
+                    { path: 'predio', select: 'PREDIO GGN ICA' },
+                    { path: 'tipoFruta', select: 'tipoFruta' },
+                    { path: "user", select: "usuario nombre apellido" },
+                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
+                    { path: 'precio', select: 'exportacion frutaNacional descarte' },
+                ]
+            });
+
+            if (!lote || lote.length === 0) {
+                throw new CalidadLogicError(404, "Lote no encontrado.");
+            }
+
+            return lote[0]
+        } catch (err) {
+            if (err.status === 524) {
                 throw err
             }
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
