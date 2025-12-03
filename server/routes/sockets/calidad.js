@@ -73,6 +73,10 @@ export const apiSocketCalidad = {
         await CalidadRepository.put_calidad_informesMaquila_aprobacionProduccion(data)
         return successResponseRoutes()
     },
+    put_calidad_informesMaquila_aprobacionComercial: async (data) => {
+        await CalidadRepository.put_calidad_informesMaquila_aprobacionComercial(data)
+        return successResponseRoutes()
+    },
     //#endregion
     //#region ingresos calidad
     get_calidad_ingresos_clasificacionDescarte: async () => {

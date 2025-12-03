@@ -1057,10 +1057,11 @@ export class InventariosService {
         const registros = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
             query: {
                 lote: _id,
-                $or: condiciones
+                $or: condiciones,
+                estado: "ACTIVO",
+                loteType: "loteMaquila"
             }
         }, { session });
-
         // Ordenar por fecha de creación
         return registros.sort((a, b) => a.createdAt - b.createdAt);
     }

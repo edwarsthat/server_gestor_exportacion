@@ -46,7 +46,7 @@ export class CalidadService {
             "calidad.calidadInterna.user": user._id
         }
     }
-    static async obtenerExportacionContenedores(itemPallets, _id, logData) {
+    static async obtenerExportacionContenedores(itemPallets, _id) {
         let exportacion = 0;
         let kilosGGN = 0;
 
@@ -63,22 +63,21 @@ export class CalidadService {
 
 
         }
-        await registrarPasoLog(logData.logId, "CalidadService.obtenerExportacionContenedores", "Completado");
         return { exportacion, kilosGGN };
 
     }
     static async verificarDescarteMaquila(loteMaquila) {
+
         try {
-            const descarteProceso = Object.values(loteMaquila.descartes).reduce((a, b) => a + b, 0);
+            const descarteProceso = [...loteMaquila.get("descartes").values()].reduce((a, b) => a + b, 0);
 
             const descarteRegistrado =
-                Object.values(loteMaquila.descartesDevueltos).reduce((a, b) => a + b, 0) +
-                Object.values(loteMaquila.descartesComprados).reduce((a, b) => a + b, 0)
+                [...loteMaquila.get("descartesDevueltos").values()].reduce((a, b) => a + b, 0) +
+                [...loteMaquila.get("descartesComprados").values()].reduce((a, b) => a + b, 0)
 
             if (descarteProceso !== descarteRegistrado) {
                 throw new CalidadServiceError("Aprobación no permitida: existe fruta pendientes de salida en el inventario de maquila.")
             }
-
 
             return true
         } catch (err) {

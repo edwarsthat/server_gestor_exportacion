@@ -273,7 +273,6 @@ export class CalidadRepository {
 
                 await registrarPasoLog(logData.logId, "getLotes2 AND get_Contenedores_sin_lotes", "Completado");
                 const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id, logData);
-                console.log({ exportacion, kilosGGN })
                 if (lote[0].salidaExportacion.totalKilos !== exportacion) {
                     throw new CalidadLogicError(400, `La suma de kilos en los contenedores (${exportacion} kg) no coincide con los kilos del lote (${lote[0].salidaExportacion.totalKilos} kg). Verifique por favor.`);
                 }
@@ -282,7 +281,6 @@ export class CalidadRepository {
                 }
 
             }
-            console.log(query)
             await LotesRepository.actualizar_lote(
                 { _id },
                 query,
@@ -507,7 +505,9 @@ export class CalidadRepository {
                 })
                 await registrarPasoLog(logData.logId, "getLotes2 AND get_Contenedores_sin_lotes", "Completado");
 
-                const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id, logData);
+                const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id);
+                await registrarPasoLog(logData.logId, "CalidadService.obtenerExportacionContenedores", "Completado");
+
                 if (lote[0].salidaExportacion.totalKilos !== exportacion) {
                     throw new CalidadLogicError(400, `La suma de kilos en los contenedores (${exportacion} kg) no coincide con los kilos del lote (${lote[0].salidaExportacion.totalKilos} kg). Verifique por favor.`);
                 }
@@ -533,6 +533,43 @@ export class CalidadRepository {
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         } finally {
             await registrarPasoLog(log._id, "put_calidad_informes_loteFinalizarInforme", "Completado");
+        }
+    }
+    static async put_calidad_informesMaquila_aprobacionComercial(req) {
+        try {
+            const { data, user } = req;
+            const { _id, action } = data;
+
+            const lote = await LotesRepository.getLotesMaquila({ ids: [_id] })
+
+            if (!lote || lote.length === 0) {
+                throw new CalidadLogicError(404, "Lote maquilado no encontrado.");
+            }
+
+            const newLote = lote[0].toObject();
+            newLote.aprobacionComercial = true
+            newLote.fecha_aprobacion_comercial = new Date()
+            // Actualizar contenedor con pallets modificados
+            await LotesRepository.actualizar_lote_Maquila(
+                { _id },
+                {
+                    $set: {
+                        aprobacionComercial: true,
+                        fecha_aprobacion_comercial: new Date()
+                    }
+                },
+                { new: true, user: user._id, action: action }
+            );
+
+            return true
+
+        } catch (err) {
+            if (err.status === 523 || err.status === 522) {
+                throw err
+            }
+            const mensaje = err && err.message ? err.message : JSON.stringify(err);
+            throw new CalidadLogicError(471, `Error al aprobar comercialmente: ${mensaje}`);
+
         }
     }
     //#endregion

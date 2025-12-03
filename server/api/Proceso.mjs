@@ -28,6 +28,7 @@ import { fileURLToPath } from 'url';
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
 import { InventariosHistorialRepository } from "../Class/Inventarios.js";
 import { LotesHelper } from "../helper/lotes.js";
+import { DescartesRepository } from "../Class/Descartes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -172,6 +173,8 @@ export class ProcesoRepository {
                         { path: 'tipoFruta', select: 'tipoFruta valorPromedio' }
                     ]
                 })
+                const descartesData = await DescartesRepository.getDescartes({ ids: [descarte] })
+                console.log(descartesData)
                 const kilosTotales = (Number(kilos) || 0) + ((Number(canastillas) || 0) * registroProceso[0].tipoFruta.valorPromedio);;
 
                 const query = {
@@ -180,6 +183,9 @@ export class ProcesoRepository {
                         [`descartes.${descarte}`]: kilosTotales
                     }
                 };
+                if (!descartesData[0].inventario) {
+                    query.$inc[`descartesDevueltos.${descarte}`] = kilosTotales;
+                }
 
                 const lote = await ProcesoService.modificarLotedescartes(registroProceso[0].loteId, query, user, action, session)
                 await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${registroProceso[0].loteId},`);
