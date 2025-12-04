@@ -17,6 +17,7 @@ const permisos_generales = new Set([
     "get_inventarios_historiales_numeroCanastillas_registros",
     "get_info_formulario_inspeccion_fruta",
     "get_contabilidad_informeMaquila_loteMaquila_detalle",
+    "get_contabilidad_informe_lote_detalle",
 
     //numero de elementos
     "get_inventarios_historiales_numeroRegistros_cuartosFrios",

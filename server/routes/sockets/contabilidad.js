@@ -10,6 +10,10 @@ export const apiSocketContabilidad = {
         const response = await ContabilidadRepository.get_contabilidad_informes_calidad_numeroElementos();
         return successResponseRoutes(response);
     },
+    get_contabilidad_informe_lote_detalle: async (data) => {
+        const response = await ContabilidadRepository.get_contabilidad_informe_lote_detalle(data);
+        return successResponseRoutes(response);
+    },
     get_contabilidad_informesMaquila_calidad: async (data) => {
         const response = await ContabilidadRepository.get_contabilidad_informesMaquila_calidad(data);
         return successResponseRoutes(response);

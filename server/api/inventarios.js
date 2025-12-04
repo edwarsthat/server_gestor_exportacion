@@ -1403,7 +1403,7 @@ export class InventariosRepository {
     static async get_inventarios_historiales_contenedores(req) {
         try {
             const { data } = req;
-            const { contenedores, fechaInicio, fechaFin, clientes, tipoFruta } = data
+            const { contenedores, fechaInicio, fechaFin, clientes, tipoFruta, maquila, exportacion } = data
             let query = {}
 
             //por numero de contenedores
@@ -1417,6 +1417,12 @@ export class InventariosRepository {
             //por tipo de fruta
             if (tipoFruta !== '') {
                 query["infoContenedor.tipoFruta"] = tipoFruta
+            }
+            if (maquila && !exportacion) {
+                query["infoContenedor.maquila"] = true
+            }
+            else if (!maquila && exportacion) {
+                query["infoContenedor.maquila"] = false
             }
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'infoContenedor.fechaCreacion')
@@ -1537,7 +1543,7 @@ export class InventariosRepository {
     static async get_inventarios_lotes_infoLotes(req) {
         try {
             const { data } = req
-            InventariosValidations.get_inventarios_lotes_infoLotes().parse(data)
+            InventariosValidations.get_inventarios_lotes_infoLotes().parse(data.filtro)
             const {
                 _id,
                 EF,
@@ -1548,7 +1554,7 @@ export class InventariosRepository {
                 proveedor,
                 tipoFecha,
                 tipoFruta
-            } = data;
+            } = data.filtro;
 
             let query = {}
             let sort
@@ -1566,32 +1572,34 @@ export class InventariosRepository {
 
             const lotes = await LotesRepository.getLotes2({
                 query: query,
-                limit: all ? 'all' : 50,
+                limit: all ? 0 : 50,
                 sort: sort,
                 populate: [
                     { path: 'predio', select: 'PREDIO ICA GGN SISPAP' },
                     { path: 'tipoFruta' },
-                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' }
+                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
+
                 ]
             });
-            const contenedoresArr = []
+            const lotesMaquila = await LotesRepository.getLotesMaquila({
+                query: query,
+                limit: all ? 0 : 50,
+                sort: sort,
+                populate: [
+                    { path: 'predio', select: 'PREDIO ICA GGN SISPAP' },
+                    { path: 'tipoFruta' },
+                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
 
-            lotes.forEach(element => {
-                element.contenedores.forEach(contenedor => contenedoresArr.push(contenedor))
+                ]
             })
-            const contenedoresSet = new Set(contenedoresArr)
-            const cont = [...contenedoresSet]
-            let contenedores
-            if (cont.length > 0) {
-                contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                    ids: cont,
-                    select: { numeroContenedor: 1, pallets: 1 }
-                });
-            } else {
-                contenedores = []
-            }
 
-            return { lotes: lotes, contenedores: contenedores }
+            const result = [...lotes, ...lotesMaquila].sort((a, b) => {
+                if (a.fecha_creacion < b.fecha_creacion) return 1;
+                if (a.fecha_creacion > b.fecha_creacion) return -1;
+                return 0;
+            })
+
+            return result
 
         } catch (err) {
             const erroresPermitidos = new Set([518, 523, 419]);
@@ -2042,7 +2050,7 @@ export class InventariosRepository {
 
             const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(datosValidados.tipoFruta, log._id)
             const [{ precioId, proveedor }, ef1] = await Promise.all([
-                InventariosService.obtenerPrecioProveedor(datosValidados.predio, tipoFruta[0].tipoFruta),
+                InventariosService.obtenerPrecioProveedor(datosValidados.predio, tipoFruta[0]._id),
                 dataService.get_ef1_serial(data.fecha_estimada_llegada, log._id),
             ])
             await registrarPasoLog(log._id, "Promise.all obtener precio, proveedor, ef1 y tipo de fruta", "Completado");
@@ -2138,8 +2146,8 @@ export class InventariosRepository {
             await registrarPasoLog(log._id, "InventariosValidations.post_inventarios_ingreso_maquila", "Completado");
 
             const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(datosValidados.tipoFruta, log._id)
-            const [{ proveedor }, ef10] = await Promise.all([
-                InventariosService.obtenerPrecioProveedor(datosValidados.predio, tipoFruta[0].tipoFruta),
+            const [{ precioId, proveedor }, ef10] = await Promise.all([
+                InventariosService.obtenerPrecioProveedor(datosValidados.predio, tipoFruta[0]._id),
                 dataService.get_ef10_serial(data.fecha_estimada_llegada, log._id),
             ])
             await registrarPasoLog(log._id, "Promise.all obtener precio, proveedor, ef1 y tipo de fruta", "Completado");
@@ -2147,7 +2155,7 @@ export class InventariosRepository {
             if (datos.GGN)
                 await InventariosService.validarGGN(proveedor, tipoFruta[0].tipoFruta, user)
 
-            const query = await InventariosService.construirQueryIngresoLoteMaquila(datosValidados, ef10, tipoFruta[0], user);
+            const query = await InventariosService.construirQueryIngresoLoteMaquila(datosValidados, ef10, precioId, tipoFruta[0], user);
 
             //Se crean los datos del registro de canastillas
             const dataRegistro = await InventariosService.crearRegistroInventarioCanastillas({

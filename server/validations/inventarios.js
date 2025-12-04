@@ -181,9 +181,8 @@ export class InventariosValidations {
     static get_inventarios_lotes_infoLotes() {
         return z.object({
             _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB").optional(),
-            EF: safeString(),
-            GGN: z.boolean(),
-            action: z.literal("get_inventarios_lotes_infoLotes"),
+            EF: optionalSafeString(),
+            GGN: z.boolean().optional(),
             buscar: safeString(),
             fechaFin: z.union([
                 z.literal(''),

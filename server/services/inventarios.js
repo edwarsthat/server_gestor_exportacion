@@ -64,7 +64,7 @@ export class InventariosService {
             user: user._id
         };
     }
-    static async construirQueryIngresoLoteMaquila(datos, enf, tipoFruta, user) {
+    static async construirQueryIngresoLoteMaquila(datos, enf, precioId, tipoFruta, user) {
         const fecha = new Date(datos.fecha_estimada_llegada);
 
         return {
@@ -74,7 +74,8 @@ export class InventariosService {
             fecha_salida_patio: fecha,
             fecha_ingreso_patio: fecha,
             fecha_ingreso_inventario: fecha,
-            user: user._id
+            user: user._id,
+            precio: precioId,
         };
     }
     static async incrementarEF() {
@@ -720,6 +721,7 @@ export class InventariosService {
     }
     static async obtenerRecordLotesIngresoLote(filtro) {
         const { fechaInicio, fechaFin, tipoFruta = "" } = filtro;
+        if (fechaInicio === "") return []
         let query = {}
         query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_estimada_llegada')
 
@@ -737,6 +739,8 @@ export class InventariosService {
     }
     static async obtenerRecordLotesIngresoLoteEF8(filtro) {
         const { fechaInicio, fechaFin, tipoFruta = "" } = filtro;
+        if (fechaInicio === "") return []
+
         let query = {}
         query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_ingreso_inventario')
 
@@ -754,6 +758,8 @@ export class InventariosService {
     }
     static async obtenerRecordLotesIngresoLoteMaquila(filtro) {
         const { fechaInicio, fechaFin, tipoFruta = "" } = filtro;
+        if (fechaInicio === "") return []
+
         let query = {}
         query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha_ingreso_inventario')
 

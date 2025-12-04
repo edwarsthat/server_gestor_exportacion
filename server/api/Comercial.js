@@ -731,50 +731,68 @@ export class ComercialRepository {
         }
     }
     static async put_comercial_precios_precioLotes(req) {
+
+        const { data: datos, user } = req
+        const { data, action } = datos
+        let log
+        const session = await db.Lotes.db.startSession();
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
         try {
-            const { data: datos, user } = req
-            const { data, action } = datos
-
-            let lotesQuery = {}
-
-            lotesQuery.enf = data.enf
-
-            const lotes = await LotesRepository.getLotes({
-                query: lotesQuery,
-                select: { predio: 1, precio: 1, tipoFruta: 1, fecha_ingreso_patio: 1 }
-            })
-
-            const fecha = new Date(lotes[0].fecha_ingreso_patio);
-            const year = fecha.getFullYear();
-            const week = getISOWeek(fecha);
-
-            data.week = week
-            data.year = year
-
-            ComercialValidationsRepository.val_post_comercial_precios_add_precio_lote(data);
-
-            const exportacion = {};
-            for (const key in data) {
-                if (key.startsWith("exportacion.")) {
-                    const subKey = key.split(".")[1];
-                    exportacion[subKey] = Number(data[key]);
-                    delete data[key];
+            await session.withTransaction(async () => {
+                let lotesQuery = {}
+                lotesQuery.enf = data.enf
+                let lotes
+                if (data.enf.startsWith("EF1-")) {
+                    lotes = await LotesRepository.getLotes2({
+                        query: lotesQuery,
+                        select: { predio: 1, precio: 1, tipoFruta: 1, fecha_ingreso_inventario: 1 }
+                    }, { session })
+                } else if (data.enf.startsWith("EF10-")) {
+                    lotes = await LotesRepository.getLotesMaquila({
+                        query: lotesQuery,
+                        select: { predio: 1, precio: 1, tipoFruta: 1, fecha_ingreso_inventario: 1 }
+                    }, { session })
+                } else {
+                    throw new Error("No se encontro el lote")
                 }
-            }
+                await registrarPasoLog(log._id, "LotesRepository.getLotes", "Completado");
+                const fecha = new Date(lotes[0].fecha_ingreso_inventario);
+                const year = fecha.getFullYear();
+                const week = getISOWeek(fecha);
 
-            const precio = await PreciosRepository.post_precio({ ...data, tipoFruta: lotes[0].tipoFruta._id, exportacion })
+                data.week = week
+                data.year = year
 
-            for (const lote of lotes) {
+                ComercialValidationsRepository.val_post_comercial_precios_add_precio_lote(data);
 
-                lote.precio = precio._id
+                const exportacion = {};
+                for (const key in data) {
+                    if (key.startsWith("exportacion.")) {
+                        const subKey = key.split(".")[1];
+                        exportacion[subKey] = Number(data[key]);
+                        delete data[key];
+                    }
+                }
 
-                await LotesRepository.actualizar_lote(
-                    { _id: lote._id },
-                    lote,
-                    { new: true, user: user, action: action }
-                );
-            }
+                const precio = await PreciosRepository.post_precio({ ...data, tipoFruta: lotes[0].tipoFruta._id, exportacion }, user, { session })
+                await registrarPasoLog(log._id, "PreciosRepository.post_precio", "Completado");
 
+
+                for (const lote of lotes) {
+                    lote.precio = precio._id
+                    await LotesHelper.actualizar_lotes_helper(
+                        { _id: lote._id },
+                        lote,
+                        { user: user._id, action: action, session }
+                    );
+                }
+                await registrarPasoLog(log._id, "LotesHelper.actualizar_lotes_helper", "Completado");
+
+            })
 
         } catch (err) {
 
