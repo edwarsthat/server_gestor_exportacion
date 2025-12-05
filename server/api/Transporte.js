@@ -375,7 +375,7 @@ export class TransporteRepository {
                 },
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
-                sort: { fecha: -1},
+                sort: { fecha: -1 },
             });
 
             return response;
@@ -718,11 +718,11 @@ export class TransporteRepository {
                     select: 'infoExportacion numeroContenedor infoContenedor  totalKilos  totalCajas pallets'
                 }
             });
-            console.log(response[0])
 
             if (response.length > 0 && response[0].contenedor) {
                 await response[0].contenedor.populate('infoContenedor.clienteInfo', 'CLIENTE');
                 await response[0].contenedor.populate('infoContenedor.tipoFruta', 'tipoFruta');
+
             }
             if (response.length === 0) {
                 throw new TransporteError(404, `Registro no encontrado`);
@@ -738,6 +738,9 @@ export class TransporteRepository {
                     mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                 }
             } else if (response[0].tipoVehiculo === "Tractomula") {
+                if (!response[0].contenedor.infoContenedor.cerrado) {
+                    throw new TransporteError(404, `Contenedor no cerrado`);
+                }
                 const zip = new JSZip();
 
                 const buffer1 = await CrearDocumentosRepository.crear_reporte_vehiculo(response[0])

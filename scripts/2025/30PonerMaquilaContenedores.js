@@ -66,54 +66,17 @@ async function main() {
         // Obtener colecciones
         const contenedoresCollection = database.collection('contenedors');
 
-        // Obtener todos los documentos
-        const contenedores = await contenedoresCollection.find({}).toArray();
+        // Actualizar directamente los documentos que no tienen el campo
+        console.log('� Ejecutando actualización...');
 
-        console.log('📄 Documentos encontrados:', contenedores.length);
+        const result = await contenedoresCollection.updateMany(
+            { "infoContenedor.maquila": { $exists: false } },
+            { $set: { "infoContenedor.maquila": false } }
+        );
 
-
-        // Array para operaciones bulk
-        const bulkOps = [];
-
-        for (const cont of contenedores) {
-
-
-            const updateDoc = {
-                $set: {
-                    "infoContenedor.maquila": false
-                }
-            };
-
-            bulkOps.push({
-                updateOne: {
-                    filter: { _id: cont._id },
-                    update: updateDoc
-                }
-            });
-
-        }
-
-        // Ejecutar operación bulk si hay cambios
-        if (bulkOps.length > 0) {
-            console.log(`🔄 Actualizando ${bulkOps.length} documentos...`);
-
-            const result = await lotesCollection.bulkWrite(bulkOps, {
-                ordered: false
-            });
-
-            console.log('✅ Resultado:');
-            console.log(`   - Modificados: ${result.modifiedCount}`);
-            console.log(`   - Coincidentes: ${result.matchedCount}`);
-
-            if (result.writeErrors && result.writeErrors.length > 0) {
-                console.error(`⚠️  Errores: ${result.writeErrors.length}`);
-                result.writeErrors.forEach(err => {
-                    console.error(`   Error en índice ${err.index}:`, err.errmsg);
-                });
-            }
-        } else {
-            console.log('ℹ️  No hay documentos para actualizar');
-        }
+        console.log('✅ Resultado:');
+        console.log(`   - Coincidentes (sin campo maquila): ${result.matchedCount}`);
+        console.log(`   - Modificados: ${result.modifiedCount}`);
 
         console.log('\n✅ Proceso completado exitosamente');
 

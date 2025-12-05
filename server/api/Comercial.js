@@ -982,7 +982,8 @@ export class ComercialRepository {
             const { data } = req;
             const { contenedores, fechaInicio, fechaFin, clientes, tipoFruta } = data
             let query = {
-                "infoContenedor.cerrado": true
+                "infoContenedor.cerrado": true,
+                "infoContenedor.maquila": false
             }
 
             //por numero de contenedores

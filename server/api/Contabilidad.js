@@ -107,6 +107,10 @@ export class ContabilidadRepository {
             const resultsPerPage = 50;
 
             const lotes = await LotesRepository.getLotesMaquila({
+                query: {
+                    aprobacionComercial: true,
+                    aprobacionProduccion: true,
+                },
                 skip: (page - 1) * resultsPerPage,
                 select: {
                     enf: 1,

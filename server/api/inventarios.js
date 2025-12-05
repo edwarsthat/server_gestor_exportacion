@@ -2345,6 +2345,8 @@ export class InventariosRepository {
             Object.keys(data).forEach(key => {
                 query.$set[`infoContenedor.${key}`] = data[key];
             })
+            console.log(query)
+
             await ContenedoresRepository.actualizar_contenedor(
                 { _id: idContenedor },
                 query,
