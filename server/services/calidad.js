@@ -75,6 +75,8 @@ export class CalidadService {
                 [...loteMaquila.get("descartesDevueltos").values()].reduce((a, b) => a + b, 0) +
                 [...loteMaquila.get("descartesComprados").values()].reduce((a, b) => a + b, 0)
 
+            console.log(descarteProceso, descarteRegistrado)
+
             if (descarteProceso !== descarteRegistrado) {
                 throw new CalidadServiceError("Aprobación no permitida: existe fruta pendientes de salida en el inventario de maquila.")
             }

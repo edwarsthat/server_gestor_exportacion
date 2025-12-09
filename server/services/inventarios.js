@@ -256,15 +256,23 @@ export class InventariosService {
                 },
                 sort: { fechaIngreso: 1 },
             })
+
             if (registros.length === 0) {
                 throw new InventariosLogicError(`No hay inventario suficiente para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
             }
+
             for (const registro of registros) {
-                const nuevosKilos = Number(kilos) - Number(registro.kilosActuales);
-                if (nuevosKilos < 0) {
+                if (kilos <= 0) break; // Ya se descontaron todos los kilos necesarios
+
+                // Calcular cuántos kilos se van a descontar de ESTE registro específico
+                const kilosADescontar = Math.min(kilos, registro.kilosActuales);
+                const kilosRestantes = registro.kilosActuales - kilosADescontar;
+
+                // Actualizar el registro
+                if (kilosRestantes > 0) {
                     await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
                         { _id: registro._id },
-                        { $set: { kilosActuales: - nuevosKilos } },
+                        { $set: { kilosActuales: kilosRestantes } },
                         { user: null, action: 'Actualizar inventario descarte reproceso predio', session }
                     )
                 } else {
@@ -274,11 +282,25 @@ export class InventariosService {
                         { user: null, action: 'Actualizar inventario descarte reproceso predio', session }
                     )
                 }
-                kilos = nuevosKilos;
+
+                // Registrar la SALIDA en el cardex (los kilos que realmente se descontaron)
+                await InventariosHistorialRepository.put_cardex_invetariosdescartes(
+                    {},
+                    { $inc: { [`kilos_salida.${tipoFruta}.${area}.${descarteId}`]: kilosADescontar } },
+                    { sort: { fecha: -1 }, new: true, session }
+                );
+
+                // Reducir los kilos pendientes por descontar
+                kilos -= kilosADescontar;
+            }
+
+            // Verificar que se pudieron descontar todos los kilos
+            if (kilos > 0) {
+                throw new InventariosLogicError(`No hay inventario suficiente. Faltan ${kilos} kilos para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
             }
         }
-        return totalKilos;
 
+        return totalKilos;
     }
     static async crear_lote_celifrut(tipoFruta, kilos, user, session) {
         try {
@@ -700,7 +722,7 @@ export class InventariosService {
                 {},
                 {
                     $inc: {
-                        [`kilos_ingreso.${tipoFruta._id.toString()}`]: descarteObj[descarte],
+                        [`kilos_ingreso.${tipoFruta._id.toString()}.LAVADO.${descarteId._id.toString()}`]: descarteObj[descarte],
                     },
                 },
                 {

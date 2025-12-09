@@ -174,7 +174,6 @@ export class ProcesoRepository {
                     ]
                 })
                 const descartesData = await DescartesRepository.getDescartes({ ids: [descarte] })
-                console.log(descartesData)
                 const kilosTotales = (Number(kilos) || 0) + ((Number(canastillas) || 0) * registroProceso[0].tipoFruta.valorPromedio);;
 
                 const query = {
@@ -215,7 +214,7 @@ export class ProcesoRepository {
                         {},
                         {
                             $inc: {
-                                [`kilos_ingreso.${lote.tipoFruta._id.toString()}`]: kilosTotales,
+                                [`kilos_ingreso.${lote.tipoFruta._id.toString()}.${tipo}.${descarte._id.toString()}`]: kilosTotales,
                             },
                         },
                         {

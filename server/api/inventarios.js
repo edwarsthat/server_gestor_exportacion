@@ -1,3 +1,4 @@
+
 import { ZodError } from "zod";
 import { InventariosLogicError } from "../../Error/logicLayerError.js";
 import { procesoEventEmitter } from "../../events/eventos.js";
@@ -208,13 +209,6 @@ export class InventariosRepository {
                 }
                 await DespachoDescartesRepository.crear_nuevo_despacho(newDespacho, user._id, session)
                 await registrarPasoLog(log._id, "DespachoDescartesRepository.crear_nuevo_despacho", "Completado");
-
-                await InventariosHistorialRepository.put_cardex_invetariosdescartes(
-                    {},
-                    { $inc: { [`kilos_salida.${tipoFruta}`]: totalKilos, } },
-                    { sort: { fecha: -1 }, new: true, session }
-                );
-                await registrarPasoLog(log._id, "InventariosHistorialRepository.put_cardex_invetariosdescartes", "Completado");
             })
 
         } catch (error) {
@@ -254,14 +248,6 @@ export class InventariosRepository {
                 //se crea el lote celifrut
                 await InventariosService.crear_lote_celifrut(tipoFruta, total, user._id, session);
                 await registrarPasoLog(log._id, "InventariosService.crear_lote_celifrut", "Completado");
-                //se agrega al cardex la salida
-                await InventariosHistorialRepository.put_cardex_invetariosdescartes(
-                    {},
-                    { $inc: { [`kilos_salida.${tipoFruta}`]: total } },
-                    { sort: { fecha: -1 }, new: true, session }
-                );
-                await registrarPasoLog(log._id, "InventariosHistorialRepository.put_cardex_invetariosdescartes", "Completado");
-                //se suman los datos al indicador diario
                 await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
                     { $inc: { [`kilos_vaciados.${tipoFruta._id}`]: Number(total) } }, session
                 );
@@ -324,13 +310,7 @@ export class InventariosRepository {
                 }
                 await FrutaDescompuestaRepository.post_fruta_descompuesta(query, user._id, { session });
                 await registrarPasoLog(log._id, "FrutaDescompuestaRepository.post_fruta_descompuesta", "Completado");
-                //se agrega al cardex la salida
-                await InventariosHistorialRepository.put_cardex_invetariosdescartes(
-                    {},
-                    { $inc: { [`kilos_salida.${tipoFruta}`]: total } },
-                    { sort: { fecha: -1 }, new: true, session }
-                );
-                await registrarPasoLog(log._id, "InventariosHistorialRepository.put_cardex_invetariosdescartes", "Completado");
+
             })
 
             procesoEventEmitter.emit("server_event", {
@@ -1020,7 +1000,12 @@ export class InventariosRepository {
                     await InventariosHistorialRepository.put_cardex_invetariosdescartes(
                         {},
                         {
-                            $inc: { [`kilos_ingreso.${registros[0].tipoFruta._id.toString()}`]: kilosTotales, },
+                            $inc: {
+                                [`kilos_ingreso.
+                                    ${registros[0].tipoFruta._id.toString()}
+                                    .${registros[0].area}
+                                    .${registros[0].descarte._id.toString()}`]: kilosTotales,
+                            },
                         },
                         {
                             sort: { fecha: -1 },
@@ -1458,7 +1443,7 @@ export class InventariosRepository {
 
             const registros = await FrutaDescompuestaRepository.get_fruta_descompuesta({
                 skip: (page - 1) * resultsPerPage,
-
+                limit: resultsPerPage,
             })
 
             return registros
@@ -1964,48 +1949,13 @@ export class InventariosRepository {
     }
     static async put_inventarios_registros_fruta_descompuesta(req) {
         try {
-            let { user } = req
-            const { action, data, _id } = req.data
+            // let { user } = req
+            // const { action, data, _id } = req.data
 
             InventariosValidations.put_inventarios_registros_fruta_descompuesta().parse(data)
+            throw new Error("Opcion no soportada")
 
-            const inventario = {}
-            const newRegistro = {}
-            //se obtienen los datos de inventario
-            Object.keys(data).forEach(
-                key => {
-                    if (key.startsWith("descarteLavado") || key.startsWith("descarteEncerado")) {
-                        inventario[key] = data[key]
-                    } else {
-                        newRegistro[key] = data[key]
-                    }
-                }
-            );
 
-            const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_registro_descarte(inventario)
-            const { cambioFruta, cambioIventario, registro } = await InventariosService.revisar_cambio_registro_frutaDescompuestae(_id, data)
-
-            if (cambioFruta || cambioIventario) {
-                await InventariosService.modificar_inventario_registro_cambioFruta(registro, data, descarteLavado, descarteEncerado)
-            }
-
-            const query = {
-                ...newRegistro,
-                kilos_total: total,
-                descarteEncerado,
-                descarteLavado
-            }
-
-            await FrutaDescompuestaRepository.actualizar_registro(
-                { _id: _id },
-                query,
-                { user: user._id, action: action }
-            )
-
-            procesoEventEmitter.emit("server_event", {
-                action: "descarte_change",
-                data: {}
-            });
         } catch (err) {
             if (err.status === 523) {
                 throw err
@@ -2345,7 +2295,6 @@ export class InventariosRepository {
             Object.keys(data).forEach(key => {
                 query.$set[`infoContenedor.${key}`] = data[key];
             })
-            console.log(query)
 
             await ContenedoresRepository.actualizar_contenedor(
                 { _id: idContenedor },
@@ -2448,6 +2397,50 @@ export class InventariosRepository {
     //#region inventarios historiales
     static async snapshot_inventario_descartes() {
         try {
+
+            const itemsDescartes = await InventariosHistorialRepository.get_inventario_descarte({
+                query: {
+                    estado: "ACTIVO",
+                    loteType: "lote"
+                },
+            })
+            const inventario = {}
+            for (const item of itemsDescartes) {
+                if (!inventario[item.tipoFruta]) {
+                    inventario[item.tipoFruta] = {}
+                }
+                if (!inventario[item.tipoFruta][item.area]) {
+                    inventario[item.tipoFruta][item.area] = {}
+                }
+                if (!inventario[item.tipoFruta][item.area][item.calidad]) {
+                    inventario[item.tipoFruta][item.area][item.calidad] = 0
+                }
+                inventario[item.tipoFruta][item.area][item.calidad] += item.cantidad
+            }
+
+            await InventariosHistorialRepository.put_cardex_invetariosdescartes(
+                {},
+                {
+                    $set: {
+                        inventario: inventario,
+                    },
+                },
+                {
+                    sort: { fecha: -1 },
+                    new: true,
+                }
+            );
+
+
+        } catch (err) {
+            if (err.status === 500) {
+                throw err
+            }
+            throw new InventariosLogicError(500, `Error al crear el snapshot del inventario: ${err.message}`)
+        }
+    }
+    static async crear_snapshot_inventario_descartes() {
+        try {
             await InventariosHistorialRepository.crearInventarioDescarte()
         } catch (err) {
             if (err.status === 500) {
@@ -2456,7 +2449,6 @@ export class InventariosRepository {
             throw new InventariosLogicError(500, `Error al crear el snapshot del inventario: ${err.message}`)
         }
     }
-
 
     //#endregion
 }

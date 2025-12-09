@@ -83,6 +83,7 @@ import { defineLoteMaquila } from '../schemas/lotes/schemaLoteMaquila.js';
 import { defineFrutaProcesada } from '../schemas/lotes/schemaFrutaProcesada.js';
 import { defineInventarioActualDescarte } from '../schemas/inventarios/SchemaInventarioActualDescarte.js';
 import { defineInventarioMovimientosDescarte } from '../schemas/inventarios/SchemaMovimientoInventarioDescartes.js';
+import { defineHabilitarEstancia } from '../schemas/proceso/HabilitarEstancaisSchema.js';
 
 export const db = {};
 export const connections = {};
@@ -410,6 +411,10 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Seriales...");
         db.Seriales = await defineSeriales(sysConn);
         console.log("✅ Seriales definidos");
+
+        console.log("⚡ Definiendo Habilitar Instancia...");
+        db.HabilitarInstancia = await defineHabilitarEstancia(sysConn);
+        console.log("✅ Habilitar Instancia definido");
 
         console.log("🎉 Todos los schemas de proceso han sido definidos correctamente.")
 

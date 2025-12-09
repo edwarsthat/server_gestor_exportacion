@@ -4,7 +4,7 @@
  */
 
 import { MongoClient } from 'mongodb';
-import config from '../../src/config/index.js';
+import config from '../../../src/config/index.js';
 import { ObjectId } from 'mongodb';
 
 const { MONGODB_PROCESO } = config;
@@ -64,66 +64,83 @@ async function main() {
         const database = await connectProcesoDB();
 
         // Obtener colecciones
-        const lotesCollection = database.collection('lotes');
+        const despachoDescarte = database.collection('historialdespachodescartes');
         const descartesCollection = database.collection('descartes');
 
         // Obtener todos los documentos
-        const lotes = await lotesCollection.find({}).toArray();
+        const despachoDocs = await despachoDescarte.find({}).toArray();
         const descartes = await descartesCollection.find({}).toArray();
 
-        console.log('📄 Documentos encontrados:', lotes.length);
+        console.log('📄 Documentos encontrados:', despachoDocs.length);
 
         // Crear un Map para búsquedas O(1)
         const descartesMap = new Map(
             descartes.map(d => [d.nombre, d._id])
         );
 
+        // Mapa de conversión de frutas
+        const frutasMap = {
+            "Naranja": "686e6b940c34dee069775d4f",
+            "Limon": "686e6b450c34dee069775d4e",
+            "Mandarina": "6877f45ae35ac9d2a0ab08e4"
+        };
+
         // Array para operaciones bulk
         const bulkOps = [];
 
-        for (const lote of lotes) {
+        for (const doc of despachoDocs) {
             const updateDoc = { $set: {} };
             let hasChanges = false;
+
+            // Procesar tipoFruta
+            if (doc.tipoFruta) {
+                // Si ya es ObjectId, no hacer nada
+                if (doc.tipoFruta instanceof ObjectId) {
+                    // No necesita conversión
+                }
+                // Si es un string de nombre de fruta
+                else if (typeof doc.tipoFruta === 'string' && frutasMap[doc.tipoFruta]) {
+                    updateDoc.$set.tipoFruta = new ObjectId(frutasMap[doc.tipoFruta]);
+                    hasChanges = true;
+                }
+                // Si es un string que parece ObjectId válido
+                else if (typeof doc.tipoFruta === 'string' && /^[0-9a-fA-F]{24}$/.test(doc.tipoFruta)) {
+                    updateDoc.$set.tipoFruta = new ObjectId(doc.tipoFruta);
+                    hasChanges = true;
+                }
+                // Tipo desconocido
+                else {
+                    console.error(`❌ Tipo de fruta desconocido "${doc.tipoFruta}" (tipo: ${typeof doc.tipoFruta}) para doc ${doc._id}`);
+                }
+            }
 
             const newDescartes = {};
 
             // Procesar descarteEncerado
-            if (lote.descarteEncerado) {
-                for (const [key, value] of Object.entries(lote.descarteEncerado)) {
+            if (doc.descarteEncerado) {
+                for (const [key, value] of Object.entries(doc.descarteEncerado)) {
                     const descarteId = descartesMap.get(key);
 
-                    if (value === 0) {
-                        continue;
-                    }
                     if (!descarteId) {
-                        console.error(`❌ No se encontró descarte "${key}" para lote ${lote._id}`);
+                        console.error(`❌ No se encontró descarte "${key}" para doc ${doc._id}`);
                         continue;
-                    }
-                    if (!newDescartes[`${descarteId.toString()}`]) {
-                        newDescartes[`${descarteId.toString()}`] = 0;
                     }
 
-                    newDescartes[`${descarteId.toString()}`] += value;
+                    newDescartes[`ENCERADO:${descarteId.toString()}`] = value;
                 }
             }
 
             // Procesar descarteLavado
-            if (lote.descarteLavado) {
-                for (const [key, value] of Object.entries(lote.descarteLavado)) {
+            if (doc.descarteLavado) {
+                for (const [key, value] of Object.entries(doc.descarteLavado)) {
                     const descarteId = descartesMap.get(key);
 
-                    if (value === 0) {
-                        continue;
-                    }
                     if (!descarteId) {
-                        console.error(`❌ No se encontró descarte "${key}" para lote ${lote._id}`);
+                        console.error(`❌ No se encontró descarte "${key}" para doc ${doc._id}`);
                         continue;
-                    }
-                    if (!newDescartes[`${descarteId.toString()}`]) {
-                        newDescartes[`${descarteId.toString()}`] = 0;
                     }
 
-                    newDescartes[`${descarteId.toString()}`] += value;
+                    newDescartes[`LAVADO:${descarteId.toString()}`] = value;
                 }
             }
 
@@ -137,7 +154,7 @@ async function main() {
             if (hasChanges) {
                 bulkOps.push({
                     updateOne: {
-                        filter: { _id: lote._id },
+                        filter: { _id: doc._id },
                         update: updateDoc
                     }
                 });
@@ -148,7 +165,7 @@ async function main() {
         if (bulkOps.length > 0) {
             console.log(`🔄 Actualizando ${bulkOps.length} documentos...`);
 
-            const result = await lotesCollection.bulkWrite(bulkOps, {
+            const result = await despachoDescarte.bulkWrite(bulkOps, {
                 ordered: false
             });
 

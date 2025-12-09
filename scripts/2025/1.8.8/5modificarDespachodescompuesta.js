@@ -4,7 +4,7 @@
  */
 
 import { MongoClient } from 'mongodb';
-import config from '../../src/config/index.js';
+import config from '../../../src/config/index.js';
 import { ObjectId } from 'mongodb';
 
 const { MONGODB_PROCESO } = config;
@@ -64,14 +64,15 @@ async function main() {
         const database = await connectProcesoDB();
 
         // Obtener colecciones
-        const despachoDescarte = database.collection('historialdespachodescartes');
+        const descompuestaCollection = database.collection('frutadescompuestas');
         const descartesCollection = database.collection('descartes');
 
-        // Obtener todos los documentos
-        const despachoDocs = await despachoDescarte.find({}).toArray();
+        // Actualizar directamente los documentos que no tienen el campo
+        console.log('🔄 Iniciando proceso de actualización...');
+
+        const docs = await descompuestaCollection.find({}).toArray();
         const descartes = await descartesCollection.find({}).toArray();
 
-        console.log('📄 Documentos encontrados:', despachoDocs.length);
 
         // Crear un Map para búsquedas O(1)
         const descartesMap = new Map(
@@ -84,13 +85,17 @@ async function main() {
             "Limon": "686e6b450c34dee069775d4e",
             "Mandarina": "6877f45ae35ac9d2a0ab08e4"
         };
-
         // Array para operaciones bulk
         const bulkOps = [];
+        let procesados = 0;
+        let conCambios = 0;
 
-        for (const doc of despachoDocs) {
+        console.log(`📊 Total de documentos encontrados: ${docs.length}`);
+
+        for (const doc of docs) {
             const updateDoc = { $set: {} };
             let hasChanges = false;
+            procesados++;
 
             // Procesar tipoFruta
             if (doc.tipoFruta) {
@@ -103,14 +108,32 @@ async function main() {
                     updateDoc.$set.tipoFruta = new ObjectId(frutasMap[doc.tipoFruta]);
                     hasChanges = true;
                 }
-                // Si es un string que parece ObjectId válido
+                // Si es un string que parece ObjectId válido (24 caracteres hex)
                 else if (typeof doc.tipoFruta === 'string' && /^[0-9a-fA-F]{24}$/.test(doc.tipoFruta)) {
                     updateDoc.$set.tipoFruta = new ObjectId(doc.tipoFruta);
                     hasChanges = true;
                 }
                 // Tipo desconocido
+                else if (doc.tipoFruta !== "" && doc.tipoFruta !== null) {
+                    // Solo advertir si tiene valor
+                    console.warn(`⚠️ Tipo de fruta desconocido "${doc.tipoFruta}" (tipo: ${typeof doc.tipoFruta}) para doc ${doc._id}`);
+                }
+            }
+
+            // Procesar user
+            if (doc.user) {
+                // Si ya es ObjectId, no hacer nada
+                if (doc.user instanceof ObjectId) {
+                    // No necesita conversión
+                }
+                // Si es un string que parece ObjectId válido
+                else if (typeof doc.user === 'string' && /^[0-9a-fA-F]{24}$/.test(doc.user)) {
+                    updateDoc.$set.user = new ObjectId(doc.user);
+                    hasChanges = true;
+                }
+                // Tipo desconocido
                 else {
-                    console.error(`❌ Tipo de fruta desconocido "${doc.tipoFruta}" (tipo: ${typeof doc.tipoFruta}) para doc ${doc._id}`);
+                    console.warn(`⚠️ Campo 'user' con formato desconocido "${doc.user}" (tipo: ${typeof doc.user}) para doc ${doc._id}`);
                 }
             }
 
@@ -119,13 +142,14 @@ async function main() {
             // Procesar descarteEncerado
             if (doc.descarteEncerado) {
                 for (const [key, value] of Object.entries(doc.descarteEncerado)) {
+                    if (Number(value) === 0) continue;
+
                     const descarteId = descartesMap.get(key);
 
                     if (!descarteId) {
-                        console.error(`❌ No se encontró descarte "${key}" para doc ${doc._id}`);
+                        console.warn(`⚠️ Validación: No se encontró descarte Encerado "${key}" para doc ${doc._id}`);
                         continue;
                     }
-
                     newDescartes[`ENCERADO:${descarteId.toString()}`] = value;
                 }
             }
@@ -133,13 +157,14 @@ async function main() {
             // Procesar descarteLavado
             if (doc.descarteLavado) {
                 for (const [key, value] of Object.entries(doc.descarteLavado)) {
+                    if (Number(value) === 0) continue;
+
                     const descarteId = descartesMap.get(key);
 
                     if (!descarteId) {
-                        console.error(`❌ No se encontró descarte "${key}" para doc ${doc._id}`);
+                        console.warn(`⚠️ Validación: No se encontró descarte Lavado "${key}" para doc ${doc._id}`);
                         continue;
                     }
-
                     newDescartes[`LAVADO:${descarteId.toString()}`] = value;
                 }
             }
@@ -158,29 +183,23 @@ async function main() {
                         update: updateDoc
                     }
                 });
+                conCambios++;
             }
         }
 
-        // Ejecutar operación bulk si hay cambios
+        console.log(`📝 Se prepararon ${bulkOps.length} operaciones de actualización.`);
+
         if (bulkOps.length > 0) {
-            console.log(`🔄 Actualizando ${bulkOps.length} documentos...`);
+            console.log('🚀 Ejecutando bulkWrite...');
+            const result = await descompuestaCollection.bulkWrite(bulkOps);
 
-            const result = await despachoDescarte.bulkWrite(bulkOps, {
-                ordered: false
-            });
-
-            console.log('✅ Resultado:');
-            console.log(`   - Modificados: ${result.modifiedCount}`);
-            console.log(`   - Coincidentes: ${result.matchedCount}`);
-
-            if (result.writeErrors && result.writeErrors.length > 0) {
-                console.error(`⚠️  Errores: ${result.writeErrors.length}`);
-                result.writeErrors.forEach(err => {
-                    console.error(`   Error en índice ${err.index}:`, err.errmsg);
-                });
-            }
+            console.log('✅ Resultado de la actualización:');
+            console.log(`   - Documentos coincidentes: ${result.matchedCount}`);
+            console.log(`   - Documentos modificados: ${result.modifiedCount}`);
+            console.log(`   - Documentos insertados: ${result.insertedCount}`);
+            console.log(`   - Documentos eliminados: ${result.deletedCount}`);
         } else {
-            console.log('ℹ️  No hay documentos para actualizar');
+            console.log('ℹ️ No hay cambios pendientes para aplicar.');
         }
 
         console.log('\n✅ Proceso completado exitosamente');
@@ -193,6 +212,6 @@ async function main() {
         await closeConnection();
     }
 }
+
 // Ejecutar el script
 main();
-

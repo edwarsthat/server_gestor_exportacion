@@ -22,7 +22,11 @@ export class FrutaDescompuestaRepository {
             query = {},
             select = {},
             sort = { createdAt: -1 },
-            limit = 50,
+            limit = 0,
+            populate = [
+                { path: 'tipoFruta', select: "tipoFruta" },
+                { path: 'user', select: "usuario" },
+            ],
             skip = 0,
         } = options;
         try {
@@ -37,6 +41,7 @@ export class FrutaDescompuestaRepository {
                 .sort(sort)
                 .limit(limit)
                 .skip(skip)
+                .populate(populate)
                 .exec();
 
             return registros
@@ -79,16 +84,16 @@ export class FrutaDescompuestaRepository {
         }
     }
 
-/**
-* Función genérica para actualizar documentos en MongoDB usando Mongoose
-*
-* @param {Model} model - Modelo Mongoose (db.Lotes, etc.)
-* @param {Object} filter - Objeto de filtrado para encontrar el documento
-* @param {Object} update - Objeto con los campos a actualizar
-* @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
-* @param {ClientSession} session - Sesión de transacción (opcional)
-* @returns Documento actualizado
-*/
+    /**
+    * Función genérica para actualizar documentos en MongoDB usando Mongoose
+    *
+    * @param {Model} model - Modelo Mongoose (db.Lotes, etc.)
+    * @param {Object} filter - Objeto de filtrado para encontrar el documento
+    * @param {Object} update - Objeto con los campos a actualizar
+    * @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
+    * @param {ClientSession} session - Sesión de transacción (opcional)
+    * @returns Documento actualizado
+    */
     static async actualizar_registro(filter, update, options = {}, session = null, user = '', action = '') {
         const defaultOptions = { new: true }; // retorna el documento actualizado
         const finalOptions = session

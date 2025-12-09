@@ -10,7 +10,7 @@ export const defineFrutaDescompuesta = async (conn) => {
         user: { type: Schema.Types.ObjectId, ref: 'usuario' },
         razon: String,
         comentario_adicional: String,
-        tipoFruta: { type: String, required: true },
+        tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas' },
         descartes: { type: Map, of: Number, default: {} },
     });
 

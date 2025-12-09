@@ -9,7 +9,7 @@ export class InventariosHistorialRepository {
     static async crearInventarioDescarte() {
         try {
             const fecha = new Date();
-            fecha.setDate(fecha.getDate() - 1);
+            fecha.setDate(fecha.getDate());
 
             const nuevoInventario = new db.InventarioDescarte({
                 fecha: fecha,

@@ -514,10 +514,10 @@ export class CalidadRepository {
                 if (kilosGGN > 0) {
                     update['salidaExportacion.kilosGGN'] = kilosGGN;
                 }
-
-                await CalidadService.verificarDescarteMaquila(lote[0])
-
             }
+
+            await CalidadService.verificarDescarteMaquila(lote[0])
+
             await LotesRepository.actualizar_lote_Maquila(
                 { _id },
                 update,

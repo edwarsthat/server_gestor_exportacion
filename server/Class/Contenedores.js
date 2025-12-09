@@ -192,7 +192,7 @@ export class ContenedoresRepository {
             select = {},
             sort = { numeroPallet: 1 },
             populate = { path: 'calidad', select: 'nombre descripcion' },
-            limit = 50,
+            limit = 0,
             skip = 0,
         } = options;
         try {
@@ -202,12 +202,10 @@ export class ContenedoresRepository {
                 palletQuery._id = { $in: ids };
             }
 
-            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
-
             const response = await db.Pallet.find(palletQuery)
                 .select(select)
                 .sort(sort)
-                .limit(limitToUse)
+                .limit(limit)
                 .populate(populate)
                 .skip(skip)
                 .session(session || null)
