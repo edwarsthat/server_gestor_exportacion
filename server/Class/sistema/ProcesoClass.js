@@ -1,4 +1,7 @@
-import { PostError } from "../../../Error/ConnectionErrors";
+import { PostError } from "../../../Error/ConnectionErrors.js";
+import { ConnectionDBError } from "../../../Error/ConnectionErrors.js";
+// import { db } from "../../Database/Database.js";
+import { db } from "../../../DB/mongoDB/config/init.js";
 
 export class SistemaProcesoClass {
     static async addRegistroHabilitarEstancia(data, user, opts = {}) {
