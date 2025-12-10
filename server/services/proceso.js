@@ -887,26 +887,6 @@ class ProcesoService {
 
         }
     }
-    static async obtenerUsuariosRegistrosTrazabilidadEf1(registros) {
-        const usuariosIds = new Set();
-
-        for (const registro of registros) {
-            if (registro.usuario) {
-                usuariosIds.add(registro.usuario.toString());
-            }
-        }
-        const usuarios = await UsuariosRepository.get_users({
-            ids: Array.from(usuariosIds),
-            limit: 'all'
-        })
-        for (const registro of registros) {
-            if (registro.user) {
-                const usuario = usuarios.find(u => u._id.toString() === registro.user.toString());
-                registro.user = usuario.usuario || registro.user;
-
-            }
-        }
-    }
 }
 
 export { ProcesoService };

@@ -5,13 +5,13 @@ import fs from 'fs';
 import { registrarPasoLog } from "../api/helper/logs.js";
 
 export class LotesRepository {
-    static async addLote(data, user, opts = {}) {
-        const { session } = opts;
+    static async addLote(data, opts = {}) {
+        const { session, user, action } = opts;
         try {
             const lote = new db.Lotes(data);
             lote._user = user;
 
-            const saved = await lote.save({ session });
+            const saved = await lote.save({ session, action });
             return saved;
         } catch (err) {
             throw new PostError(409, `Error agregando lote ${err.message}`);
