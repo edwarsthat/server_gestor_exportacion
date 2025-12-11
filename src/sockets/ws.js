@@ -14,6 +14,7 @@ import { apiSocketInventarios } from "../../server/routes/sockets/inventarios.js
 import { apiSocketProceso } from "../../server/routes/sockets/proceso.js";
 import { apiSocketPython } from "../../server/routes/sockets/pythonRoute.js";
 import { apiSocketSistema } from "../../server/routes/sockets/sistema.js";
+import { apiSocketTalentoHumano } from "../../server/routes/sockets/talentoHumano.js";
 import { apiSocketTransporte } from "../../server/routes/sockets/transporte.js";
 
 
@@ -132,6 +133,8 @@ export function initSockets(io) {
                 handleRequest(data, callback, apiSocketPython);
             } else if (dominio === "contabilidad") {
                 handleRequest(data, callback, apiSocketContabilidad);
+            } else if (dominio === "talentoHumano") {
+                handleRequest(data, callback, apiSocketTalentoHumano);
             }
             else {
                 handleRequest(data, callback, apiSocket);
