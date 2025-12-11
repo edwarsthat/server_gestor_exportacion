@@ -24,7 +24,7 @@ export const defineCargo = async (conn) => {
     }, { _id: false, strict: false });
 
     const cargoSchema = new Schema({
-        Cargo: String,
+        Cargo: { type: String, required: true, unique: true },
         createdAt: { type: Date, default: Date.now },
         "Inventario y Logística": seccionSchema,
         Calidad: seccionSchema,

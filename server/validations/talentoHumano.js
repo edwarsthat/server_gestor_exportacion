@@ -9,4 +9,10 @@ export class TalentoHumanoValidations {
             tipoIdentificacion: z.string({ required_error: "El tipo de identificación es requerido" }).min(1, "El tipo de identificación no puede estar vacío"),
         })
     }
+    static post_talentoHumano_cargos_ingresoCargo() {
+        return z.object({
+            nombre: z.string().min(1, "El nombre es obligatorio"),
+            areasAcceso: z.array(z.string()).min(1, "Al menos una área de acceso es obligatoria"),
+        })
+    }
 }

@@ -18,7 +18,7 @@ const permisos_generales = new Set([
     "get_info_formulario_inspeccion_fruta",
     "get_contabilidad_informeMaquila_loteMaquila_detalle",
     "get_contabilidad_informe_lote_detalle",
-
+    "get_talentoHumano_cargosPersonal_ingresoPersonal",
     //numero de elementos
     "get_inventarios_historiales_numeroRegistros_cuartosFrios",
     "get_inventarios_historiales_listasDeEmpaque_numeroRegistros",
@@ -64,6 +64,7 @@ const permisos_generales = new Set([
     "get_data_proveedores",
     "get_data_cuartosFrios",
     "get_data_tipoFruta2",
+    "get_data_areasAcceso",
 
     "get_proceso_aplicaciones_listaEmpaque_pallets",
     "get_proceso_aplicaciones_listaEmpaque_itemsPallet",

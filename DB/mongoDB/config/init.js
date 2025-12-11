@@ -62,6 +62,7 @@ import { defineInventarioMovimientosDescarte } from '../schemas/inventarios/Sche
 import { defineHabilitarEstancia } from '../schemas/proceso/HabilitarEstancaisSchema.js';
 import { defineSchemaPersonal } from '../schemas/personal/SchemaPersonal.js';
 import { defineSchemaCargosPersonal } from '../schemas/personal/SchemaCargosPersonal.js';
+import { defineSchemaAreasFisicas } from '../schemas/catalogs/schemaAreasFisicas.js';
 
 export const db = {};
 export const connections = {};
@@ -236,6 +237,7 @@ const defineSchemasProceso = async (sysConn) => {
 
 
         console.log("✅ AuditLog definido");
+        //#region Areas fisicas
         // inventarios
         console.log("⚡ Definiendo Cuartos Frios...");
         db.CuartosFrios = await defineCuartosFrios(sysConn, AuditCuartosFrios);
@@ -243,7 +245,9 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Inventarios Simples...");
         db.InventariosSimples = await defineInventarioSimple(sysConn, AuditInventariosSimples);
         console.log("✅ Inventarios Simples definidos");
-
+        db.AreasFisicas = await defineSchemaAreasFisicas(sysConn);
+        console.log("✅ Areas Fisicas definidos");
+        //#endregion
 
 
         // Esquemas relacionados con clientes (base para otras dependencias)

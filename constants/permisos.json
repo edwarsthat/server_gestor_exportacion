@@ -26,7 +26,8 @@
                 "permisos": {
                     "Ingresar parametros": "put_inventarios_frutaDesverdizando_parametros",
                     "Finalizar desverdizado": "put_inventarios_frutaDesverdizado_finalizar",
-                    "Obtener fruta desverdizada": "get_inventarios_frutaDesverdizando_lotes"
+                    "Obtener fruta desverdizada": "get_inventarios_frutaDesverdizando_lotes",
+                    "Mover fruta": "put_inventarios_frutaDesverdizado_mover"
                 },
                 "_id": {
                     "$oid": "66b66eb677549ed0672a9017"
@@ -51,10 +52,42 @@
                     "Reprocesar Predio": "put_inventarios_frutaDescarte_reprocesarFruta",
                     "Reprocesar varios predios": "put_inventarios_frutaDescarte_reprocesarCelifrut",
                     "Despachar fruta": "put_inventarios_frutaDescarte_despachoDescarte",
-                    "Crear registro fruta descompuesta": "post_inventarios_frutaDescarte_frutaDescompuesta"
+                    "Crear registro fruta descompuesta": "post_inventarios_frutaDescarte_frutaDescompuesta",
+                    "reiniciar inventario": "reiniciar_inventario_descarte"
                 },
                 "_id": {
                     "$oid": "66b66ee777549ed0672a9019"
+                }
+            },
+            "Inventario canastillas": {
+                "titulo": "invetario canastillas",
+                "_id": {
+                    "$oid": "67ed9fe1c3fdbe833d4599bd"
+                },
+                "permisos": {
+                    "Movimiento de canastillas": "post_inventarios_canastillas_registro",
+                    "Obtener inventario": "get_inventarios_canastillas_canastillasCelifrut",
+                    "Modificar inventario": "put_inventarios_canastillas_celifrut"
+                }
+            },
+            "Inventario Cuartos Fríos": {
+                "titulo": "Inventario de los cuartos frios",
+                "_id": {
+                    "$oid": "68c86c1799dddf63af97548e"
+                },
+                "permisos": {
+                    "Obtener inventario cuartos frios": "get_inventarios_cuartosFrios",
+                    "Dar salida cuarto frio": "put_inventarios_cuartosFrios_salida_item"
+                }
+            },
+            "Inventario Maquila Descarte": {
+                "titulo": "Inventario del descarte del proceso de maquila",
+                "_id": {
+                    "$oid": "69175670e01f6abe61c8af22"
+                },
+                "permisos": {
+                    "Ver inventario": "get_inventarios_descarteMaquila",
+                    "Salida Inventario": "put_inventarios_salida_descarteMaquila"
                 }
             }
         },
@@ -104,7 +137,8 @@
                     "$oid": "66bd248bb1d612b0ec3b4bb9"
                 },
                 "permisos": {
-                    "Ver historial despacho descarte": "get_inventarios_historiales_despachoDescarte"
+                    "Modificar registro": "put_inventarios_historiales_despachoDescarte",
+                    "Obtener registros": "get_inventarios_historiales_despachoDescarte"
                 }
             },
             "Listas de empaque": {
@@ -113,7 +147,8 @@
                     "$oid": "66e06dff4440112c276a5bbb"
                 },
                 "permisos": {
-                    "Obtener contenedores": "get_inventarios_historiales_listasDeEmpaque"
+                    "Obtener contenedores": "get_inventarios_historiales_listasDeEmpaque",
+                    "Descargar lista de empaque": "get_inventarios_historiales_listaDeEmpaque_crearDocumento"
                 }
             },
             "Contenedores": {
@@ -155,18 +190,53 @@
                     "Obtener registros fruta descompuesta": "get_inventarios_registros_fruta_descompuesta",
                     "Modificar registro fruta descompuesta": "put_inventarios_registros_fruta_descompuesta"
                 }
+            },
+            "Canastillas": {
+                "titulo": "Historial registro canastillas",
+                "_id": {
+                    "$oid": "67f6e82e563bdb1fb94b3b71"
+                },
+                "permisos": {
+                    "Obtener registros": "get_inventarios_historiales_canastillas_registros"
+                }
+            },
+            "Registros Inventarios Descartes": {
+                "titulo": "Historial registro ingresos y salidas del inventario descartes",
+                "_id": {
+                    "$oid": "6877b961e35ac9d2a0ab08cd"
+                },
+                "permisos": {
+                    "Obtener registros": "get_inventarios_historiales_registros_inventarioDescartes"
+                }
             }
         },
         "Ingresos Inventario": {
-            "Ingreso de fruta": {
+            "Ingreso de fruta EF1": {
                 "titulo": "Ingreso de fruta",
                 "permisos": {
-                    "Obtener EF1": "get_inventarios_ingresos_ef1",
                     "Guardar Lote": "post_inventarios_ingreso_lote",
-                    "Obtener EF8": "get_inventarios_ingresos_ef8"
+                    "Obtener EF": "get_inventarios_ingresos_ef"
                 },
                 "_id": {
                     "$oid": "66b66fe277549ed0672a901e"
+                }
+            },
+            "Ingreso de fruta EF8": {
+                "titulo": "Ingreso de los lotes EF8",
+                "_id": {
+                    "$oid": "686d4e5f3086d22452dedc09"
+                },
+                "permisos": {
+                    "Ingresar EF8": "post_inventarios_EF8"
+                }
+            },
+            "Ingreso de fruta Maquila": {
+                "titulo": "Ingreso de predios maquila",
+                "_id": {
+                    "$oid": "6911ec2ba1cf6dcb986f5888"
+                },
+                "permisos": {
+                    "Ingresar Lote": "post_inventarios_maquila"
                 }
             }
         },
@@ -209,16 +279,6 @@
     },
     "Calidad": {
         "Historiales Calidad": {
-            "Hisotiral Calidad interna": {
-                "titulo": "Historial Calidad interna",
-                "permisos": {
-                    "Ver historial calidad interna": "get_calidad_historial_calidadInterna",
-                    "Modificar calidad interna": "put_calidad_historial_calidadInterna"
-                },
-                "_id": {
-                    "$oid": "66b66ff077549ed0672a901f"
-                }
-            },
             "Historial Clasificación descarte": {
                 "titulo": "Historial clasificación descarte",
                 "permisos": {
@@ -228,6 +288,16 @@
                 "_id": {
                     "$oid": "66b66ff977549ed0672a9020"
                 }
+            },
+            "Historial Calidad interna": {
+                "titulo": "Historial Calidad interna",
+                "permisos": {
+                    "Ver historial calidad interna": "get_calidad_historial_calidadInterna",
+                    "Modificar calidad interna": "put_calidad_historial_calidadInterna"
+                },
+                "_id": {
+                    "$oid": "66b66ff077549ed0672a901f"
+                }
             }
         },
         "Informes Calidad": {
@@ -236,13 +306,26 @@
                 "permisos": {
                     "Ver lotes": "get_calidad_informes_lotesInformesProveedor",
                     "Obtener fotos calidad": "get_calidad_informes_imagenDefecto",
-                    "Se obtienen las observaciones de calidad": "get_calidad_informes_observacionesCalidad",
                     "Obtener contenedores": "get_calidad_informes_contenedoresLote",
                     "Finalizar informe": "put_calidad_informes_loteFinalizarInforme",
-                    "No pagar balin": "put_calidad_informe_noPagarBalinLote"
+                    "No pagar balin": "put_calidad_informe_noPagarBalinLote",
+                    "Aprobacion Comercial": "put_calidad_informes_aprobacionComercial",
+                    "Ver detalle lote": "get_calidad_informe_lote_detalle"
                 },
                 "_id": {
                     "$oid": "66b6700677549ed0672a9021"
+                }
+            },
+            "Informe Maquila": {
+                "titulo": "Informe de el proceso de maquila",
+                "_id": {
+                    "$oid": "6928ba1d929c6db1a5e5910f"
+                },
+                "permisos": {
+                    "Obtener Lotes maquila": "get_calidad_informes_lotesMaquila",
+                    "Obtener Lote detalle": "get_calidad_informe_loteMaquila_detalle",
+                    "Aprobacion Produccion": "put_calidad_informesMaquila_aprobacionProduccion",
+                    "Aprobacion Comercial": "put_calidad_informesMaquila_aprobacionComercial"
                 }
             }
         },
@@ -364,6 +447,18 @@
                     "Obtener formularios control de plagas": "get_calidad_formulario_controlPlagas"
                 }
             }
+        },
+        "Reclamaciones": {
+            "Historial reclamaciones": {
+                "titutlo": "Reclamaciones de clientes",
+                "_id": {
+                    "$oid": "6841cf9549ced0a52dcb9e71"
+                },
+                "permisos": {
+                    "Obtener los registros": "get_calidad_reclamaciones_contenedores",
+                    "Obtener archivo": "get_calidad_reclamaciones_contenedores_obtenerArchivo"
+                }
+            }
         }
     },
     "Sistema": {
@@ -394,6 +489,16 @@
                     "obtener datos proceso": "get_sistema_proceso_dataProceso",
                     "obtener predio procesando": "obtener_predio_procesando"
                 }
+            },
+            "Habilitar instancias": {
+                "titulo": "desde donde se pueden habilitar instancias cerradas",
+                "_id": {
+                    "$oid": "67ffddd658173c8d904ca83f"
+                },
+                "permisos": {
+                    "Habilitar predios": "put_sistema_habilitarInstancias_habilitarPredio",
+                    "Obtener Predios": "get_sistema_habilitarInstancias_lotes"
+                }
             }
         },
         "Formatos": {
@@ -406,19 +511,37 @@
                     "Crear informe": "*"
                 }
             }
+        },
+        "Parametros del sistema": {
+            "Configuracion seriales": {
+                "titulo": "Donde se modifica el serial de los datos",
+                "_id": {
+                    "$oid": "67e5a505e969cfac1467f2ac"
+                },
+                "permisos": {
+                    "Obtener EF1": "get_sistema_parametros_configuracionSeriales_EF1",
+                    "Modificar EF1": "put_sistema_parametros_configuracionSeriales_EF1",
+                    "Modificar EF8": "put_sistema_parametros_configuracionSeriales_EF8",
+                    "Obtener EF8": "get_sistema_parametros_configuracionSeriales_EF8",
+                    "Obtener Serial Celifrut": "get_sistema_parametros_configuracionSeriales_Celifrut",
+                    "Modificar Celifrut": "put_sistema_parametros_configuracionSeriales_Celifrut"
+                }
+            }
+        },
+        "ModificarSistema": {
+            "ReiniciarOrdenVaceo": {
+                "titulo": "Reinicia la orden de vaceo",
+                "_id": {
+                    "$oid": "68b306532348b244052a4305"
+                },
+                "permisos": {
+                    "Modificar Orden Vaceo": "put_sistema_reiniciar_orden_vaceo"
+                }
+            }
         }
     },
     "Indicadores": {
         "Operaciones": {
-            "Eficiencia de la fruta": {
-                "titulo": "Eficiencia de la fruta",
-                "permisos": {
-                    "Ver indicador Eficiencia de la fruta": "getInfoIndicadoresProceso"
-                },
-                "_id": {
-                    "$oid": "66b6704777549ed0672a9025"
-                }
-            },
             "Registro Eficiencia operativa": {
                 "titulo": "Donde se miran los registros de la eficiencia operativa",
                 "_id": {
@@ -435,9 +558,17 @@
                     "$oid": "6793dfb319615dcbaf5b7a47"
                 },
                 "permisos": {
-                    "Obtener los registros": "get_indicadores_operaciones_registrosDiarios",
-                    "Obtener lotes": "get_indicadores_operaciones_lotes",
-                    "Obtener volante calidad": "get_indicadores_operaciones_noCalidad"
+                    "Obtener kilos procesados hora": "get_indicadores_operaciones_kilosProcesados",
+                    "Obtener rendimiento predios": "get_indicadores_operaciones_rendimientoPredios"
+                }
+            },
+            "Registro Exportacion Proceso": {
+                "titulo": "Donde se mira los registros de la exportacion diaria",
+                "_id": {
+                    "$oid": "686548e53a30d3a485152968"
+                },
+                "permisos": {
+                    "Obtener Registros Indicadores Exportacion": "get_indicadores_registros_exportacionesDiaria"
                 }
             }
         }
@@ -458,7 +589,7 @@
                 "titulo": "Descarte lavado",
                 "permisos": {
                     "Ver predio procesando": "get_proceso_aplicaciones_descarteLavado",
-                    "Ingresar descarte lavado": "put_proceso_aplicaciones_descarteLavado"
+                    "Ingresar descarte lavado": "put_proceso_aplicaciones_descarte"
                 },
                 "_id": {
                     "$oid": "66b6706477549ed0672a9027"
@@ -468,7 +599,7 @@
                 "titulo": "Descarte encerado",
                 "permisos": {
                     "Ver predio procesando": "get_proceso_aplicaciones_descarteLavado",
-                    "Ingresar descarte encerado": "put_proceso_aplicaciones_descarteEncerado"
+                    "Ingresar descarte encerado": "put_proceso_aplicaciones_descarte"
                 },
                 "_id": {
                     "$oid": "66b6706e77549ed0672a9028"
@@ -487,9 +618,10 @@
                     "Liberar pallet": "put_proceso_aplicaciones_listaEmpaque_liberarPallet",
                     "Cerrar contenedor": "put_proceso_aplicaciones_listaEmpaque_Cerrar",
                     "Modificar cajas": "put_proceso_aplicaciones_listaEmpaque_modificarItems",
-                    "Añadir pallet": "add_pallet_listaempaque",
+                    "Añadir pallet": "put_proceso_add_pallet_listaempaque",
                     "Eliminar items desktop": "put_proceso_aplicaciones_listaEmpaque_eliminarItem_desktop",
-                    "Modificar items desktop": "put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop"
+                    "Modificar items desktop": "put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop",
+                    "Enviar pallet cuarto frio": "put_inventarios_pallet_eviarCuartoFrio"
                 },
                 "_id": {
                     "$oid": "66b6707777549ed0672a9029"
@@ -524,6 +656,17 @@
                     "$oid": "66b6709877549ed0672a902c"
                 }
             }
+        },
+        "Trazabilidad": {
+            "EF1": {
+                "titulo": "Historial de los movimientos , cambios e ingresos a la coleccion Lotes",
+                "_id": {
+                    "$oid": "68c195ffcfa49b2e567f13c6"
+                },
+                "permisos": {
+                    "Obtener registros": "get_proceso_registros_trazabilidad_ef1"
+                }
+            }
         }
     },
     "Comercial": {
@@ -538,6 +681,16 @@
                 },
                 "_id": {
                     "$oid": "66b670c077549ed0672a902f"
+                }
+            },
+            "Clientes nacionales": {
+                "titulo": "clientes nacionales",
+                "_id": {
+                    "$oid": "67f984b8eaca8baa26e78eee"
+                },
+                "permisos": {
+                    "Obtener Clientes nacionales": "get_comercial_clientesNacionales",
+                    "Modificar Cliente nacional": "put_comercial_clientes_clienteNacional"
                 }
             }
         },
@@ -562,6 +715,15 @@
                 },
                 "_id": {
                     "$oid": "66b670d677549ed0672a9031"
+                }
+            },
+            "Ingresar Cliente Nacional": {
+                "titulo": "Se ingresa el cliente nacional",
+                "_id": {
+                    "$oid": "67f8384a54a33e235e2f6bf9"
+                },
+                "permisos": {
+                    "Crear cliente Nacional": "post_comercial_clienteNacional"
                 }
             }
         },
@@ -596,6 +758,17 @@
                     "Ingresar precio": "put_comercial_precios_precioLotes"
                 }
             }
+        },
+        "Indicadores": {
+            "Costos Fruta por Contenedor": {
+                "titulo": "Se ven los costos de la fruta por contenedor",
+                "_id": {
+                    "$oid": "68b8ac7f7cbaefd8b4c0fa61"
+                },
+                "permisos": {
+                    "Obtener indicador": "get_comercial_costo_contenedores"
+                }
+            }
         }
     },
     "Gestión de cuentas": {
@@ -616,9 +789,9 @@
                 "titulo": "Donde se gestionan los usuarios del sistema",
                 "permisos": {
                     "Ver usuarios": "get_gestionCuentas_usuarios",
-                    "Crear usuarios": "add_user",
-                    "Desactivar cuenta": "desactivar_user",
-                    "Modificar Usuario": "modificar_usuario"
+                    "Crear usuarios": "post_gestionCuentas_usuario",
+                    "Desactivar cuenta": "put_gestionCuentas_usuarioEstado",
+                    "Modificar Usuario": "put_gestionCuentas_usuario"
                 },
                 "_id": {
                     "$oid": "66b670e977549ed0672a9033"
@@ -628,28 +801,6 @@
     },
     "Rol": 0,
     "Transporte": {
-        "Programaciones": {
-            "Programación Tractomulas": {
-                "titulo": "Programación mulas",
-                "_id": {
-                    "$oid": "66cc8a24faeed9f06595f551"
-                },
-                "permisos": {
-                    "Obtener contenedores": "get_transporte_mula_contenedores",
-                    "Crear programacion": "post_transporte_programacion_mula"
-                }
-            },
-            "Programacion exportación": {
-                "titulo": "Formulario ingreso datos exportacion transporte",
-                "permisos": {
-                    "obtener contenedores": "get_transporte_exportacion_contenedores",
-                    "Guardar datos exportacion": "post_transporte_programacion_exportacion"
-                },
-                "_id": {
-                    "$oid": "67487597e297c515615415df"
-                }
-            }
-        },
         "Registros": {
             "Registros exportación": {
                 "titulo": "Registros de los datos de exportación",
@@ -657,18 +808,8 @@
                     "$oid": "67489905e297c515615415e8"
                 },
                 "permisos": {
-                    "Obtener registros": "get_transporte_registro_exportacion",
-                    "Modificar registro": "post_transporte_programacion_exportacion_modificar"
-                }
-            },
-            "Registro programación mula": {
-                "titulo": "Registro de la programacion de la mula",
-                "_id": {
-                    "$oid": "6748df7ae297c515615415e9"
-                },
-                "permisos": {
-                    "Obtener contenedores": "get_transporte_registro_programacion_mula",
-                    "Modificar programación mula": "post_transporte_programacion_mula_modificar"
+                    "Obtener registros": "get_transporte_registros_exportacion",
+                    "Modificar registro": "put_transporte_registros_exportacion"
                 }
             },
             "Registro formularios": {
@@ -677,8 +818,27 @@
                     "$oid": "6749d4535a6f3f420f703738"
                 },
                 "permisos": {
-                    "Obtener registros": "get_transporte_registro_formularios_inspeccion",
-                    "Modificar registro": "post_transporte_registros_inspeccionMula_modificar"
+                    "Obtener registros": "get_transporte_registros_formulariosInspeccion",
+                    "Modificar registro": "put_transporte_registros_inspeccionMula"
+                }
+            },
+            "Registro Entrega de precinto": {
+                "titulo": "Registro entrega de precintos",
+                "_id": {
+                    "$oid": "684d8891ee66d0256953d54a"
+                },
+                "permisos": {
+                    "Obtener registros entrega precinto": "get_transporte_registros_entregaPrecintos"
+                }
+            },
+            "Registro salida exportación": {
+                "titulo": "Registro de la programacion de la mula",
+                "_id": {
+                    "$oid": "6748df7ae297c515615415e9"
+                },
+                "permisos": {
+                    "Obtener contenedores": "get_transporte_registros_salida_vehiculo_exportacion",
+                    "Modificar programación mula": "put_transporte_registros_programacionMula"
                 }
             }
         },
@@ -690,7 +850,7 @@
                 },
                 "permisos": {
                     "Obtener contenedores con programación mula": "get_transporte_formulario_contenedores",
-                    "Guardar insepccion mula": "post_transporte_formulario_inspeccion_mula"
+                    "Guardar insepccion mula": "put_transporte_formulario_inspeccionMula"
                 }
             }
         },
@@ -701,7 +861,40 @@
                     "$oid": "674a223e5a6f3f420f70373c"
                 },
                 "permisos": {
-                    "Obtener los contenedores": "get_transporte_documentos_programacionMula_contenedores"
+                    "Obtener los contenedores": "get_transporte_documentos_programacionMula_contenedores",
+                    "Generar documentos": "get_transporte_documentos_generarDocumentos"
+                }
+            }
+        },
+        "Ingresos": {
+            "Programacion exportación": {
+                "titulo": "Formulario ingreso datos exportacion transporte",
+                "permisos": {
+                    "obtener contenedores": "get_transporte_programaciones_exportacion_contenedores",
+                    "Guardar datos exportacion": "put_transporte_programaciones_exportacion"
+                },
+                "_id": {
+                    "$oid": "67487597e297c515615415df"
+                }
+            },
+            "Entrega precinto": {
+                "titulo": "Registro entrega prescinto",
+                "_id": {
+                    "$oid": "684b3bcd923559f1734fd96d"
+                },
+                "permisos": {
+                    "Obtener contenedores": "get_transporte_contenedores_entregaPrescinto",
+                    "Ingresar entrega": "post_transporte_conenedor_entregaPrecinto"
+                }
+            },
+            "Programación Vehiculo": {
+                "titulo": "Programación mulas",
+                "_id": {
+                    "$oid": "66cc8a24faeed9f06595f551"
+                },
+                "permisos": {
+                    "Obtener contenedores": "get_transporte_programaciones_mulaContenedores",
+                    "Crear programacion": "put_transporte_programaciones_mulaContenedor"
                 }
             }
         }
@@ -714,7 +907,16 @@
                     "$oid": "6720ec07f716c8c77cb3446d"
                 },
                 "permisos": {
-                    "Obtener lotes finalizados": "obtener_lotes_contabilidad_informes_calidad"
+                    "Obtener lotes finalizados": "get_contabilidad_informes_calidad"
+                }
+            },
+            "Informe Maquila": {
+                "Titulo": "Informes para maquila0",
+                "_id": {
+                    "$oid": "69308785f1a628c96420a8c6"
+                },
+                "permisos": {
+                    "Obtener lote finalizado": "get_contabilidad_informesMaquila_calidad"
                 }
             }
         }
@@ -727,7 +929,47 @@
                     "$oid": "67cf48657141a5d595bad1b6"
                 },
                 "permisos": {
-                    "obtener data": "*"
+                    "obtener data": "get_python_data_porcentageExportacion"
+                }
+            }
+        }
+    },
+    "tests": {
+        "inventarios": {
+            "inventariosDescartes": {
+                "titulo": "Probar inventarios",
+                "_id": {
+                    "$oid": "683f6335ffdf0b43a5f18e2b"
+                },
+                "permisos": {
+                    "reiniciar inventario": "sys_reiniciar_inventario_descarte",
+                    "Agregar inventario descarte": "sys_add_inventarios_descarte"
+                }
+            }
+        }
+    },
+    "catalogos": {
+        "estructuras": {
+            "Cuartos desverdizados": {
+                "titulo": "Datos sobre los cuartos de desverdizado",
+                "_id": {
+                    "$oid": "6847473316206012d825def9"
+                },
+                "permisos": {
+                    "Obtener cuartos desverdizados": "get_data_cuartosDesverdizados"
+                }
+            }
+        }
+    },
+    "Talento Humano": {
+        "Personal": {
+            "Ingreso Personal": {
+                "titulo": "Donde se ingresa el personal de la planta",
+                "_id": {
+                    "$oid": "693ac4741a12c4744aa95f45"
+                },
+                "permisos": {
+                    "Ingreso personal": "post_talentoHumano_personal_ingresoPersonal"
                 }
             }
         }

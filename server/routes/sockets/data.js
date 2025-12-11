@@ -46,5 +46,9 @@ export const apiSocketData = {
     get_data_cuartosFrios: async (req) => {
         const response = await dataRepository.get_data_cuartosFrios(req)
         return successResponseRoutes(response)
+    },
+    get_data_areasAcceso: async () => {
+        const response = await dataRepository.get_data_areasAcceso()
+        return successResponseRoutes(response)
     }
 }
