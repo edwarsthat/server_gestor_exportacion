@@ -123,6 +123,14 @@ export const apiSocketInventarios = {
         await InventariosRepository.put_inventarios_cuartosFrios_salida_item(data)
         return successResponseRoutes()
     },
+    get_inventarios_descarteMaquila: async (data) => {
+        const response = await InventariosRepository.get_inventarios_descarteMaquila(data)
+        return successResponseRoutes(response)
+    },
+    put_inventarios_salida_descarteMaquila:  async (data) => {
+        await InventariosRepository.put_inventarios_salida_descarteMaquila(data)
+        return successResponseRoutes()
+    },
     //#endregion
     //#region historiales
     get_inventarios_historialProcesado_frutaProcesada: async (data) => {
@@ -237,6 +245,10 @@ export const apiSocketInventarios = {
     },
     post_inventarios_ingreso_lote: async (data) => {
         await InventariosRepository.post_inventarios_ingreso_lote(data);
+        return successResponseRoutes()
+    },
+    post_inventarios_maquila: async (data) => {
+        await InventariosRepository.post_inventarios_ingreso_maquila(data);
         return successResponseRoutes()
     },
     post_inventarios_EF8: async (data) => {

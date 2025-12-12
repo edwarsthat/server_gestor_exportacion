@@ -15,12 +15,8 @@ export const apiSocketProceso = {
         const response = await ProcesoRepository.get_proceso_aplicaciones_descarteLavado()
         return successResponseRoutes(response)
     },
-    put_proceso_aplicaciones_descarteLavado: async (data) => {
-        await ProcesoRepository.put_proceso_aplicaciones_descarteLavado(data)
-        return successResponseRoutes()
-    },
-    put_proceso_aplicaciones_descarteEncerado: async (data) => {
-        await ProcesoRepository.put_proceso_aplicaciones_descarteEncerado(data)
+    put_proceso_aplicaciones_descarte: async (data) => {
+        await ProcesoRepository.put_proceso_aplicaciones_descarte(data)
         return successResponseRoutes()
     },
 

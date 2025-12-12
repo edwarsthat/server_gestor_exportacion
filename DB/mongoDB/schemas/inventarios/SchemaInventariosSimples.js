@@ -7,6 +7,11 @@ export const defineInventarioSimple = async (conn, AuditInventariosSimples) => {
         canastillas: { type: Number, required: true, min: 0, default: 0 },
     }, { _id: false });
 
+    const ItemInventarioMaquilaSchema = new Schema({
+        lote: { type: Schema.Types.ObjectId, ref: "loteMaquila", required: true },
+        canastillas: { type: Number, required: true, min: 0, default: 0 },
+    }, { _id: false });
+
     ItemInventarioSchema.index({ lote: 1 }, { unique: true, sparse: true });
 
     const InventarioSimpleSchema = new Schema({
@@ -14,10 +19,11 @@ export const defineInventarioSimple = async (conn, AuditInventariosSimples) => {
         descripcion: { type: String, default: "" },
         updatedAt: { type: Date, default: () => new Date() },
         inventario: { type: [ItemInventarioSchema], default: [] },
+        inventarioMaquila: { type: [ItemInventarioMaquilaSchema], default: [] },
         ordenVaceo: [{ type: Schema.Types.ObjectId, ref: "Lote" }],
     }, {
         timestamps: { updatedAt: 'updatedAt', createdAt: false },
-        versionKey: '__v' 
+        versionKey: '__v'
     });
 
     // ✔ Actualiza updatedAt también en updates tipo query

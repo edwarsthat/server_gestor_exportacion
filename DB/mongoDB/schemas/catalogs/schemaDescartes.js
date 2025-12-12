@@ -8,8 +8,11 @@ export const defineDescartes = async (conn) => {
         _id: { type: Schema.Types.ObjectId, required: true, auto: true },
         nombre: { type: String, required: true },
         descripcion: { type: String, required: true },
-        inventario: { type: Boolean, required: true, default: false },
-        seccion: { type: String, required: true },
+        seccion: { type: [String], required: true },
+        inventario: { type: Boolean, required: true },
+        observaciones: { type: String, required: true },
+        pago: { type: Boolean, required: true },
+        informe: { type: String, required: true },
     })
 
     const descartes = conn.model("descartes", descartesSchema);

@@ -25,14 +25,14 @@ export class ProveedoresRepository {
             throw new ConnectionDBError(524, `Indicadores => ${err.message}`);
         }
     }
-    static async get_proveedores(options = {}) {
+    static async get_proveedores(options = {}, session = null) {
         try {
             const {
                 ids = [],
                 query = {},
                 select = {},
                 sort = { "CODIGO INTERNO": 1 },
-                limit = 25,
+                limit = 0,
                 skip = 0,
             } = options;
             let Query = { ...query };
@@ -41,13 +41,13 @@ export class ProveedoresRepository {
                 Query._id = { $in: ids };
             }
 
-            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
 
             const proveedores = await db.Proveedores.find(Query)
                 .select(select)
                 .sort(sort)
-                .limit(limitToUse)
+                .limit(limit)
                 .skip(skip)
+                .session(session)
                 .exec();
 
             return proveedores
@@ -92,9 +92,9 @@ export class ProveedoresRepository {
     }
     static async actualizar_proveedores(filter, update, options = {}) {
         const finalOptions = {
-            returnDocument: "after",  
-            runValidators: true,       
-            ...options,                
+            returnDocument: "after",
+            runValidators: true,
+            ...options,
         };
 
         try {
@@ -114,16 +114,17 @@ export class ProveedoresRepository {
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
-    static async modificar_varios_proveedores(query, data, action, user) {
+    static async modificar_varios_proveedores(query, data, opts = {}) {
+        const { session, action = "", user = "" } = opts;
         try {
-            await db.Proveedores.updateMany(query, data)
+            await db.Proveedores.updateMany(query, data, { session })
 
             let record = new db.recordProveedor({
                 operacionRealizada: action,
                 user: user,
                 documento: data
             })
-            await record.save()
+            await record.save({ session })
 
 
         } catch (err) {

@@ -15,13 +15,7 @@ export class tipoFrutaCache {
 
                 tipoFruta.forEach(item => {
                     const id = item._id;
-                    tipoFrutaMap[id] = {
-                        tipoFruta: item.tipoFruta,
-                        _id: item._id,
-                        codNacional: item.codNacional,
-                        codExportacion: item.codExportacion,
-                        valorPromedio: item.valorPromedio
-                    };
+                    tipoFrutaMap[id] = item;
                 });
 
                 console.log(`[CACHE] TipoFruta cache cargado exitosamente en intento ${intento}`);

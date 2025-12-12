@@ -29,12 +29,12 @@ export const apiSocketCalidad = {
         const response = await CalidadRepository.get_calidad_informes_lotesInformesProveedor(data);
         return successResponseRoutes(response)
     },
-    get_calidad_informes_imagenDefecto: async (data) => {
-        const response = await CalidadRepository.get_calidad_informes_imagenDefecto(data)
+    get_calidad_informe_lote_detalle: async (data) => {
+        const response = await CalidadRepository.get_calidad_informe_lote_detalle(data);
         return successResponseRoutes(response)
     },
-    get_calidad_informes_observacionesCalidad: async () => {
-        const response = await CalidadRepository.get_calidad_informes_observacionesCalidad()
+    get_calidad_informes_imagenDefecto: async (data) => {
+        const response = await CalidadRepository.get_calidad_informes_imagenDefecto(data)
         return successResponseRoutes(response)
     },
     get_calidad_informes_contenedoresLote: async (data) => {
@@ -55,6 +55,26 @@ export const apiSocketCalidad = {
     },
     put_calidad_informe_noPagarBalinLote: async (data) => {
         await CalidadRepository.put_calidad_informe_noPagarBalinLote(data)
+        return successResponseRoutes()
+    },
+    get_calidad_informes_lotesMaquila: async (req) => {
+        const response = await CalidadRepository.get_calidad_informes_lotesMaquila(req);
+        return successResponseRoutes(response)
+    },
+    get_calidad_informes_informeMaquila_numeroElementos: async (req) => {
+        const response = await CalidadRepository.get_calidad_informes_informeMaquila_numeroElementos(req)
+        return successResponseRoutes(response)
+    },
+    get_calidad_informe_loteMaquila_detalle: async (req) => {
+        const response = await CalidadRepository.get_calidad_informe_loteMaquila_detalle(req);
+        return successResponseRoutes(response)
+    },
+    put_calidad_informesMaquila_aprobacionProduccion: async (data) => {
+        await CalidadRepository.put_calidad_informesMaquila_aprobacionProduccion(data)
+        return successResponseRoutes()
+    },
+    put_calidad_informesMaquila_aprobacionComercial: async (data) => {
+        await CalidadRepository.put_calidad_informesMaquila_aprobacionComercial(data)
         return successResponseRoutes()
     },
     //#endregion

@@ -24,6 +24,7 @@ export class ComercialService {
                 cajasTotal: Number(data.cajasTotal),
                 rtoEstimado: data.rtoEstimado,
                 ultimaModificacion: new Date(),
+                maquila: data.maquila,
             },
             pallets: 0,
         }

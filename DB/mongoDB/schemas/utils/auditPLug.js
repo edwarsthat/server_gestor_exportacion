@@ -8,14 +8,18 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
 
         // Helpers
         const writeLog = async (entry, session = null) => {
-            try { 
+            try {
                 if (session) {
                     await AuditLogs.create([entry], { session });
                 } else {
                     await AuditLogs.create(entry);
                 }
             }
-            catch (e) { console.error("[AuditLog] error:", e?.message); }
+            catch (e) {
+                console.error("[AuditLog] error:", e?.message);
+                // Re-lanzar el error para que la transacción haga rollback
+                throw e;
+            }
         };
         const getAuditCtx = (ctx) => {
             // Query: this.getOptions(); Doc: this.$locals
@@ -46,37 +50,40 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
         }
 
         // ---------- SAVE (create/update con doc.save) ----------
-        schema.pre("save", { document: true, query: false }, async function () {
+        schema.pre("save", async function (next) {
             if (this.isNew) {
-                this.$locals._before = null;
-            } else {
-                const original = await this.constructor.findById(this._id).lean();
-                this.$locals._before = original || null;
+                this._op = 'create';
+                this._oldValue = null;
             }
+            next();
         });
 
-        schema.post("save", { document: true, query: false }, async function (doc) {
-            const before = this.$locals._before;
-            const after = doc.toObject({ depopulate: true });
-            const op = "create";
-            const changes = before ? deepDiff(before, after) : [];
-            const { user, action, description, session } = (this.$locals.$audit || {});
+        schema.post("save", async function (doc, next) {
 
-            const { oldChanged, newChanged } = op === 'update'
-                ? pickChanged(before || {}, after || {}, changes)
-                : { oldChanged: undefined, newChanged: after };
+            const session = doc.$session();
+            const userId = doc.user;
+            const action = doc.action;
+
+            const op = doc._op || 'UPDATE';
+            const oldChanged = null;
+            const changes = doc._modifiedPaths || [];
+            const collectionName = doc.constructor.modelName;
+
+            const newChanged = doc.toObject({ depopulate: true });
 
             await writeLog({
                 coleccion: collectionName,
                 documentId: doc._id,
                 operation: op,
-                user,
-                action,
+                user: userId,
+                action: op === 'create' ? 'Documento Creado' : 'Documento Actualizado',
                 oldValue: oldChanged,
                 newValue: newChanged,
-                changes,
-                description
+                changes: changes,
+                description: action
             }, session);
+
+            next();
         });
 
         // ---------- findOneAndUpdate / findOneAndReplace ----------
@@ -128,17 +135,27 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
 
                     // Solo los cambios, no el pergamino completo
                     const cambios = deepDiff(this._oldValue, res.toObject({ depopulate: true }));
+
+                    // Extraer el _id del usuario si es un objeto
+                    const userId = this.options.user?._id || this.options.user;
+
+                    // Log para debug
+                    console.log('[AUDIT DEBUG] Cambios detectados:', cambios.length);
+                    console.log('[AUDIT DEBUG] User ID:', userId);
+                    console.log('[AUDIT DEBUG] Action:', this.options.action);
+
                     if (cambios.length > 0) {
                         const session = this.options?.session || null;
                         await writeLog({
-                            collection: collectionName,
+                            coleccion: collectionName,
                             documentId: res._id,
                             operation: 'update',
-                            user: this.options.user,
+                            user: userId,
                             action: this.options.action,
                             changes: cambios,
                             description: this.options.description,
                         }, session);
+                        console.log('[AUDIT DEBUG] Log guardado exitosamente');
                     }
                 }
             } catch (err) {

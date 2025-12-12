@@ -130,12 +130,6 @@ export const apiSocket = {
         const response = await ProcesoRepository.get_record_lote_ingreso_inventario(data)
         return { status: 200, message: 'Ok', data: response }
     },
-    get_constantes_sistema_clasificacion_descarte: async (req) => {
-        const { data } = req;
-        const response = await ConstantesDelSistema.get_constantes_sistema_clasificacion_descarte(data)
-        return { status: 200, message: 'Ok', data: response }
-    },
-
 
 
     get_comercial_precios_registros_precios_proveedor: async (req) => {

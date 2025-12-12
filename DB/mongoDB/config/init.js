@@ -1,27 +1,3 @@
-/**
- * @file Configuración e inicialización de la base de datos MongoDB para el sistema.
- *
- * @summary
- * Este módulo centraliza la lógica para:<br>
- * - Verificar y arrancar el servicio de MongoDB si es necesario.<br>
- * - Establecer conexiones independientes a las bases de datos <b>'proceso'</b> y <b>'sistema'</b>.<br>
- * - Registrar y definir todos los esquemas de Mongoose para cada base de datos.<br>
- * - Exponer la función principal <code>initMongoDB</code> para inicializar todo el sistema de base de datos.
- *
- * @description
- * <h3>Estructura principal del módulo</h3>
- * <ul>
- *   <li><b>checkMongoDBRunning</b>: Verifica si MongoDB responde.</li>
- *   <li><b>startMongoDB</b>: Intenta iniciar el servicio de MongoDB.</li>
- *   <li><b>waitForMongoDB</b>: Espera hasta que MongoDB esté listo.</li>
- *   <li><b>initMongoDB</b>: Orquesta la verificación, arranque y conexión a las bases de datos y define los esquemas.</li>
- *   <li><b>defineSchemasProceso</b> / <b>defineSchemasSistema</b>: Registra los modelos de Mongoose para cada base de datos.</li>
- * </ul>
- *
- * @module DB/mongoDB/config/init
- */
-
-
 
 import config from '../../../src/config/index.js';
 const { MONGODB_SISTEMA } = config;
@@ -52,7 +28,6 @@ import { defineHistorialDescarte } from '../schemas/lotes/schemaHistorialDescart
 import { defineHistorialDespachoDescarte } from '../schemas/lotes/schemaHistorialDespachosDescartes.js';
 import { defineTurnoData } from '../schemas/proceso/TurnoData.js';
 import { defineRecordProveedor } from '../schemas/proveedores/schemaRecordProveedores.js';
-import { defineRecordLotes } from '../schemas/lotes/schemaRecordLotes.js';
 import { defineIndicadores } from '../schemas/indicadores/schemaIndicadoresProceso.js';
 import { definePrecios } from '../schemas/precios/schemaPrecios.js';
 import { defineModificarElemento } from '../schemas/transaccionesRecord/ModificacionesRecord.js';
@@ -63,7 +38,6 @@ import { defineClientesNacionales } from '../schemas/clientes/schemaClientesNaci
 import { defineAuditLogs } from '../schemas/audit/AuditLogSchema.js';
 import { defineCuartosdesverdizado } from '../schemas/catalogs/schemaCuartosDesverdizado.js';
 import { defineAuditSistemaLogs } from '../schemas/audit/AuditLosSistemaSchema.js';
-import { defineAuditDescartes } from '../schemas/audit/ReporteIngresoDescartesSchema.js';
 import { defineInventarioDescarte } from '../schemas/inventarios/SchemaInventarioDescartes.js';
 import { defineTipoFrutas } from '../schemas/catalogs/schemaTipoFruta.js';
 import { defineLoteEf8 } from '../schemas/lotes/schemaLoteEf8.js';
@@ -80,21 +54,17 @@ import { defineCalidades } from '../schemas/catalogs/schemaCalidades.js';
 import { defineItemPallet } from '../schemas/contenedores/schemaItemsPallet.js';
 import { defineAuditLogContenedores } from '../schemas/audit/AuditLogsContenedores.js';
 import { defineDescartes } from '../schemas/catalogs/schemaDescartes.js';
+import { defineAuditLoteMaquila } from '../schemas/audit/AuditLogLoteMaquila.js';
+import { defineLoteMaquila } from '../schemas/lotes/schemaLoteMaquila.js';
+import { defineFrutaProcesada } from '../schemas/lotes/schemaFrutaProcesada.js';
+import { defineInventarioActualDescarte } from '../schemas/inventarios/SchemaInventarioActualDescarte.js';
+import { defineInventarioMovimientosDescarte } from '../schemas/inventarios/SchemaMovimientoInventarioDescartes.js';
+import { defineHabilitarEstancia } from '../schemas/proceso/HabilitarEstanciasSchema.js';
 
 export const db = {};
 export const connections = {};
 
-/**
-* Verifica si el servicio de MongoDB está corriendo y responde a conexiones.
-*
-* Intenta establecer una conexión temporal a la base de datos definida en la variable de entorno `MONGODB_SISTEMA`.
-* Si la conexión es exitosa, la cierra inmediatamente y retorna `true`. Si falla, retorna `false`.
-*
-* @async
-* @function checkMongoDBRunning
-* @memberof module:DB/mongoDB/config/init
-* @returns {Promise<boolean>} Retorna `true` si MongoDB responde, `false` si no es posible conectarse.
-*/
+
 const checkMongoDBRunning = async () => {
     try {
         console.log("🧪 Probando conexión con MongoDB...");
@@ -247,6 +217,21 @@ const defineSchemasProceso = async (sysConn) => {
         db.AuditRegistroExportacionVehiculo = AuditRegistroExportacionVehiculo;
         const AuditRegistroExportacionContenedor = await defineAuditLogContenedores(sysConn);
         db.AuditRegistroExportacionContenedor = AuditRegistroExportacionContenedor;
+        const AuditLotesMaquila = await defineAuditLoteMaquila(sysConn);
+        db.AuditLotesMaquila = AuditLotesMaquila;
+
+        console.log("⚡ Definiendo Cargo...");
+        db.Cargo = await defineCargo(sysConn);
+        console.log("✅ Cargo definido");
+
+        console.log("⚡ Definiendo recordCargo...");
+        db.recordCargo = await defineRecordcargo(sysConn);
+        console.log("✅ recordCargo definido");
+
+        console.log("⚡ Definiendo Usuarios...");
+        db.Usuarios = await defineUser(sysConn);
+        console.log("✅ Usuarios definido");
+
 
         console.log("✅ AuditLog definido");
         // inventarios
@@ -256,6 +241,7 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Inventarios Simples...");
         db.InventariosSimples = await defineInventarioSimple(sysConn, AuditInventariosSimples);
         console.log("✅ Inventarios Simples definidos");
+
 
 
         // Esquemas relacionados con clientes (base para otras dependencias)
@@ -351,9 +337,13 @@ const defineSchemasProceso = async (sysConn) => {
         db.Lotes = await defineLotes(sysConn, AuditLog);
         console.log("✅ Lotes definido");
 
-        console.log("⚡ Definiendo recordLotes...");
-        db.recordLotes = await defineRecordLotes(sysConn);
-        console.log("✅ recordLotes definido");
+        console.log("⚡ Definiendo Lotes maquila...");
+        db.LotesMaquila = await defineLoteMaquila(sysConn, AuditLotesMaquila);
+        console.log("✅ Lotes maquila definido");
+
+        console.log("⚡ Definiendo frutaProcesada...");
+        db.frutaProcesada = await defineFrutaProcesada(sysConn);
+        console.log("✅ frutaProcesada definido");
 
         console.log("⚡ Definiendo Lotes EF8...");
         db.LotesEF8 = await defineLoteEf8(sysConn, AuditLoteEF8);
@@ -376,9 +366,30 @@ const defineSchemasProceso = async (sysConn) => {
         db.InventarioDescarte = await defineInventarioDescarte(sysConn);
         console.log("✅ InventarioDescarte definido");
 
+        console.log("⚡ Definiendo Inventario descarte...");
+        db.InventarioActualDescarte = await defineInventarioActualDescarte(sysConn);
+        console.log("✅ InventarioActualDescarte definido");
+
+        console.log("⚡ Definiendo Inventario descarte...");
+        db.InventarioMovimientoDescarte = await defineInventarioMovimientosDescarte(sysConn);
+        console.log("✅ InventarioMovimientoDescarte definido");
+
         console.log("⚡ Definiendo Seriales...");
         db.Seriales = await defineSeriales(sysConn);
         console.log("✅ Seriales definidos");
+
+        console.log("⚡ Definiendo Habilitar Instancia...");
+        db.HabilitarEstancia = await defineHabilitarEstancia(sysConn); //es HabilitarEstancia no HabilitarInstancia
+        console.log("✅ Habilitar Instancia definido");
+
+        //#region Personal
+        console.log("⚡ Definiendo Cargos Personal...");
+        db.CargosPersonal = await defineSchemaCargosPersonal(sysConn);
+        console.log("✅ Cargos Personal definido");
+        console.log("⚡ Definiendo Personal...");
+        db.Personal = await defineSchemaPersonal(sysConn);
+        console.log("✅ Personal definido");
+        //#endregion
 
         console.log("🎉 Todos los schemas de proceso han sido definidos correctamente.")
 
@@ -402,9 +413,9 @@ const defineSchemasSistema = async (sysConn) => {
     try {
         console.log("🔍 Iniciando definición de schemas sistema...");
 
-        console.log("⚡ Definiendo Cargo...");
-        db.Cargo = await defineCargo(sysConn);
-        console.log("✅ Cargo definido");
+        // console.log("⚡ Definiendo Cargo...");
+        // db.Cargo = await defineCargo(sysConn);
+        // console.log("✅ Cargo definido");
 
         console.log("⚡ Definiendo recordCargo...");
         db.recordCargo = await defineRecordcargo(sysConn);
@@ -447,11 +458,6 @@ const defineSchemasSistema = async (sysConn) => {
         console.log("⚡ Definiendo Errores...");
         db.Errores = await defineErrores(sysConn);
         console.log("✅ Errores definido");
-
-        console.log("⚡ Definiendo Record ingreso descartes...");
-        db.IngresoDescartes = await defineAuditDescartes(sysConn);
-        console.log("✅ Record ingreso descartes definido");
-
 
         console.log("🎉 Todos los schemas de sistema han sido definidos correctamente.");
 

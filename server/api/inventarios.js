@@ -1,3 +1,4 @@
+
 import { ZodError } from "zod";
 import { InventariosLogicError } from "../../Error/logicLayerError.js";
 import { procesoEventEmitter } from "../../events/eventos.js";
@@ -11,7 +12,6 @@ import { LotesRepository } from "../Class/Lotes.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { InventariosValidations } from "../validations/inventarios.js";
 import { filtroFechaInicioFin } from "./utils/filtros.js";
-import { transformObjectInventarioDescarte } from "./utils/objectsTransforms.js";
 import { InventariosService } from "../services/inventarios.js";
 import { RedisRepository } from "../Class/RedisData.js";
 import { InventariosHistorialRepository } from "../Class/Inventarios.js";
@@ -30,17 +30,32 @@ import { ErrorInventarioLogicHandlers } from "./utils/errorsHandlers.js";
 import config from "../../src/config/index.js";
 import { IndicadoresAPIRepository } from "./IndicadoresAPI.js";
 import { CrearDocumentosRepository } from "../services/crearDocumentos.js";
+import { LotesHelper } from "../helper/lotes.js";
+import { InventarioSimpleHelper } from "../helper/inventarioSimple.js";
+import { FrutaProcesada } from "../Class/frutaProcesada.js";
+import { HistorialInventariosService } from "../services/inventarios/historialInventarios.js";
 
 
 export class InventariosRepository {
     //#region inventarios
     static async get_inventarios_frutaDescarte_fruta() {
         try {
+            const inventario = await InventariosHistorialRepository.get_inventario_descarte({
+                query: {
+                    estado: 'ACTIVO',
+                    loteType: { $in: ["Lote", "Loteef8"] },
+                },
+                populate: [
+                    { path: 'tipoFruta', select: "tipoFruta" },
+                    { path: 'lote', select: "enf" },
+                    { path: 'tipoDescarte', select: "nombre inventario" },
+                ]
+            })
 
-            const inventario = await RedisRepository.get_inventarioDescarte();
-            return inventario;
+            return inventario
         } catch (err) {
-            if (err.status === 518 || err.status === 413) {
+            console.error(err)
+            if (err.status === 522) {
                 throw err
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
@@ -59,11 +74,16 @@ export class InventariosRepository {
     }
     static async get_inventarios_frutaSinProcesar_frutaEnInventario() {
         try {
+            const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
             const resultado = await InventariosHistorialRepository.getInventarioFrutaSinProcesar({
-                ids: ["68cecc4cff82bb2930e43d05"]
-            })
-            const inventario = await InventariosHistorialRepository.get_inventario_simple("68cecc4cff82bb2930e43d05")
-            return { fruta: resultado, version: inventario.__v }
+                ids: [inventarioID]
+            });
+            const resultadoMaquila = await InventariosHistorialRepository.getInventarioFrutaSinProcesarMaquila({
+                ids: [inventarioID]
+            });
+            const concatResult = resultado.concat(resultadoMaquila);
+            const inventario = await InventariosHistorialRepository.get_inventario_simple(inventarioID)
+            return { fruta: concatResult, version: inventario.__v }
         } catch (err) {
             console.error("Error en get_inventarios_frutaSinProcesar_frutaEnInventario", err);
             if (err.status === 518 || err.status === 413) {
@@ -72,7 +92,6 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-
     static async put_inventarios_frutaDesverdizando_parametros(req) {
         try {
             InventariosValidations.put_inventarios_frutaDesverdizando_parametros().parse(req.data)
@@ -141,7 +160,7 @@ export class InventariosRepository {
                     `Lote ${_id} actualizado con desverdizado.fechaFinalizar: ${new Date().toISOString()}`,);
 
                 const descripcion = `Desverdizado - Canastillas incrementadas: ${newLote.desverdizado.canastillasIngreso}`
-                await InventariosService.modificarSumarInventarioFrutaSinProocesar(Number(newLote.desverdizado.canastillasIngreso), user, action, _id, log, session, descripcion)
+                await InventariosService.modificarSumarInventarioFrutaSinProocesar(Number(newLote.desverdizado.canastillasIngreso), user, action, _id, 'lote', log, session, descripcion)
 
             })
 
@@ -162,99 +181,84 @@ export class InventariosRepository {
         }
     }
     static async put_inventarios_frutaDescarte_despachoDescarte(req) {
-
         const { user } = req;
-        const { data, inventario } = req.data;
-        let descarteLavado, descarteEncerado, tipoFruta
+        const { data, inventario, action } = req.data;
+        let log;
+        const session = await db.Lotes.db.startSession();
+        if (!session) {
+            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
+        }
+        log = await LogsRepository.create({
+            user: user,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
         try {
             InventariosValidations.put_inventarios_frutaDescarte_despachoDescarte().parse(req.data)
+            await session.withTransaction(async () => {
+                const tipoFruta = inventario.tipoFruta;
+                delete inventario.tipoFruta;
 
+                const totalKilos = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session)
+                await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
+                const newDespacho = {
+                    ...data,
+                    tipoFruta: tipoFruta,
+                    descartes: inventario
 
-            //se crea el registro
-            const tiposFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(
-                inventario.tipoFruta
-            )
-
-            tipoFruta = tiposFrutas[0].tipoFruta;
-
-            ({ descarteLavado, descarteEncerado } = await InventariosService.procesar_formulario_inventario_descarte(inventario));
-
-
-            const newDespacho = {
-                ...data,
-                descarteLavado,
-                descarteEncerado,
-                tipoFruta: tipoFruta,
-                user: user._id
-            }
-            //se modifica el inventario
-            const [, registro] = await Promise.all([
-                InventariosService.frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, tipoFruta),
-                DespachoDescartesRepository.crear_nuevo_despacho(newDespacho, user._id),
-                RedisRepository.salidas_inventario_descartes(inventario, tipoFruta),
-            ])
-
-            procesoEventEmitter.emit("server_event", {
-                action: "descarte_change",
-                data: {}
-            });
-            return registro
-
-        } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}][${tipoFruta}]`, err);
-            if (err.status === 518 || err.status === 413) {
-                throw err
-            } else if (err.status === 521) {
-                if (descarteLavado && descarteEncerado && tipoFruta) {
-                    await InventariosService.frutaDescarte_despachoDescarte_redis_restore(descarteLavado, descarteEncerado, tipoFruta);
                 }
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+                await DespachoDescartesRepository.crear_nuevo_despacho(newDespacho, user._id, session)
+                await registrarPasoLog(log._id, "DespachoDescartesRepository.crear_nuevo_despacho", "Completado");
+            })
+
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await registrarPasoLog(log._id, "Error", "Fallido", error.message);
+            await InventariosLogicError(error, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
 
     }
     static async put_inventarios_frutaDescarte_reprocesarFruta(req) {
-        let log
         const { user } = req;
+        const { data, action } = req.data;
+        let log;
+        const session = await db.Lotes.db.startSession();
+        if (!session) {
+            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
+        }
+        log = await LogsRepository.create({
+            user: user,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
         try {
-            log = await LogsRepository.create({
-                user: user,
-                action: "put_inventarios_frutaDescarte_reprocesarFruta",
-                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-            })
-
-            const logContext = { logId: log._id, user, action: "put_inventarios_frutaDescarte_reprocesarFruta" };
-
-            const { data } = req.data
-            const { _id } = req.user
 
             InventariosValidations.put_inventarios_frutaDescarte_reprocesarFruta().parse(data)
             await registrarPasoLog(log._id, "Validación de datos completada", "Completado");
 
-            const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(data)
-            await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
+            await session.withTransaction(async () => {
+                const tipoFruta = data.tipoFruta;
+                delete data.tipoFruta;
+                //se borra del inventario
+                const total = await InventariosService.procesar_formulario_inventario_descarte(data, tipoFruta, session)
+                await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
+                //se crea el lote celifrut
+                await InventariosService.crear_lote_celifrut(tipoFruta, total, user._id, session);
+                await registrarPasoLog(log._id, "InventariosService.crear_lote_celifrut", "Completado");
+                await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
+                    { $inc: { [`kilos_vaciados.${tipoFruta._id}`]: Number(total) } }, session
+                );
+                await registrarPasoLog(log._id, "IndicadoresAPIRepository.put_indicadores_actualizar_indicador", "Completado", `Se actualizó el indicador kilos_vaciados con ${total} kilos del tipo de fruta ${tipoFruta._id}`);
 
-            const tipoFruta = await TiposFruta.get_tiposFruta({ query: { _id: data.tipoFruta } });
-            await registrarPasoLog(log._id, "TiposFruta.get_tiposFruta", "Completado");
-
-            //se modifica el inventario
-            const [loteCreado] = await Promise.all([
-                InventariosService.crear_lote_celifrut(tipoFruta[0]._id, total, _id, logContext),
-                RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', data.tipoFruta, null, logContext),
-                RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', data.tipoFruta, null, logContext),
-                RedisRepository.salidas_inventario_descartes(data, data.tipoFruta, logContext),
-
-            ])
-            // Ahora loteCreado tiene el lote REAL
-            await VariablesDelSistema.reprocesar_predio_celifrut(loteCreado, total)
-            await registrarPasoLog(log._id, "VariablesDelSistema.reprocesar_predio_celifrut", "Completado");
-
+            })
             procesoEventEmitter.emit("server_event", {
                 action: "descarte_change",
                 data: {}
             });
-
-            return loteCreado._id
+            return true
 
         } catch (err) {
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
@@ -266,126 +270,67 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         } finally {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-        }
-    }
-    static async put_inventarios_frutaDescarte_reprocesarCelifrut(req) {
-        try {
-            const { data, user } = req
-            const { lote, lotes } = data
-
-            const codigo = await VariablesDelSistema.generar_codigo_celifrut()
-            const enf_lote = { ...lote, enf: codigo }
-            const newLote = await LotesRepository.crear_lote(enf_lote, user, lotes);
-
-            const query = {
-                $inc: {
-                    kilosVaciados: newLote.kilos,
-                    __v: 1,
-                },
-                fechaProceso: new Date()
-            }
-
-
-            await LotesRepository.modificar_lote(newLote._id.toString(), query, { user: user, action: "vaciarLote" });
-            await VariablesDelSistema.incrementar_codigo_celifrut();
-
-
-            for (let i = 0; i < lotes.length; i++) {
-                const loteObj = await transformObjectInventarioDescarte(lotes[i]);
-                if (loteObj.descarteLavado) {
-                    await VariablesDelSistema.modificar_inventario_descarte(
-                        loteObj._id,
-                        loteObj.descarteLavado,
-                        'descarteLavado',
-                        newLote.tipoFruta
-                    )
-                }
-                if (loteObj.descarteEncerado) {
-                    await VariablesDelSistema.modificar_inventario_descarte(
-                        loteObj._id,
-                        loteObj.descarteEncerado,
-                        'descarteEncerado',
-                        newLote.tipoFruta
-                    )
-                }
-                await VariablesDelSistema.reprocesar_predio_celifrut(newLote, newLote.kilos)
-
-                procesoEventEmitter.emit("proceso_event", {
-                    predio: [newLote]
-                });
-                procesoEventEmitter.emit("predio_vaciado", {
-                    predio: [newLote]
-                });
-
-            }
-        } catch (err) {
-            console.error(err)
-            if (
-                err.status === 518 ||
-                err.status === 413 ||
-                err.status === 506 ||
-                err.status === 521 ||
-                err.status === 511 ||
-                err.status === 523
-            ) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+            await session.endSession();
         }
     }
     static async post_inventarios_frutaDescarte_frutaDescompuesta(req) {
-        let descarteLavado, descarteEncerado, tipoFruta, total
+
+        const { user } = req;
+        const { data, inventario, action } = req.data;
+        let log;
+        const session = await db.Lotes.db.startSession();
+        if (!session) {
+            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
+        }
+        log = await LogsRepository.create({
+            user: user,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
+
         try {
             InventariosValidations.post_inventarios_frutaDescarte_frutaDescompuesta().parse(req.data)
+            await registrarPasoLog(log._id, "Validación de datos completada", "Completado");
 
-            const { user } = req;
-            const { data, inventario } = req.data;
+            await session.withTransaction(async () => {
+                const tipoFruta = inventario.tipoFruta;
+                delete inventario.tipoFruta;
+                //se borra del inventario
+                const total = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session)
+                await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
 
-            //se crea el registro
-            //se crea el registro
-            const tiposFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(
-                inventario.tipoFruta
-            )
+                if (total > 50 && user.Rol > 2) throw new Error("No puede crear un registro de fruta descompuesta de tantos kilos")
+                //se crea el registro de fruta descompuesta
+                const query = {
+                    ...data,
+                    inventario,
+                    tipoFruta: tipoFruta,
+                    user: user._id,
+                    kilos: total
+                }
+                await FrutaDescompuestaRepository.post_fruta_descompuesta(query, user._id, { session });
+                await registrarPasoLog(log._id, "FrutaDescompuestaRepository.post_fruta_descompuesta", "Completado");
 
-            tipoFruta = tiposFrutas[0].tipoFruta;
-
-
-            ({ descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_descarte(inventario));
-
-            if (total > 50 && user.Rol > 2) throw new Error("No puede crear un registro de fruta descompuesta de tantos kilos")
-
-            const query = {
-                ...data,
-                descarteLavado,
-                descarteEncerado,
-                tipoFruta: tipoFruta,
-                user: user.user,
-                kilos: total
-            }
-            //se modifica el inventario
-            const [, registro] = await Promise.all([
-                InventariosService.frutaDescarte_despachoDescarte_redis_store(descarteLavado, descarteEncerado, tipoFruta),
-                FrutaDescompuestaRepository.post_fruta_descompuesta(query, user._id),
-                RedisRepository.salidas_inventario_descartes(inventario, tipoFruta),
-            ])
+            })
 
             procesoEventEmitter.emit("server_event", {
                 action: "descarte_change",
                 data: {}
             });
 
-            return registro
+            return true
 
         } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}][${tipoFruta}]`, err);
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
+
             if (err.status === 518 || err.status === 413) {
                 throw err
-            } else if (err.status === 521) {
-                if (descarteLavado && descarteEncerado && tipoFruta) {
-                    await InventariosService.frutaDescarte_despachoDescarte_redis_restore(descarteLavado, descarteEncerado, tipoFruta);
-                }
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
+            await session.endSession();
         }
     }
     static async put_inventarios_canastillas_celifrut(req) {
@@ -477,11 +422,15 @@ export class InventariosRepository {
         }
     }
     static async get_inventarios_ordenVaceo_inventario() {
-
+        const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
         const resultado = await InventariosHistorialRepository.getInventarioFrutaSinProcesar({
-            ids: ["68cecc4cff82bb2930e43d05"]
-        })
-        return resultado
+            ids: [inventarioID]
+        });
+        const resultadoMaquila = await InventariosHistorialRepository.getInventarioFrutaSinProcesarMaquila({
+            ids: [inventarioID]
+        });
+        const concatResult = resultado.concat(resultadoMaquila);
+        return concatResult
 
     }
     static async put_inventarios_frutaSinProcesar_desverdizado(req) {
@@ -518,7 +467,7 @@ export class InventariosRepository {
                 await InventariosService.check_inventarioVersion(config.INVENTARIO_FRUTA_SIN_PROCESAR, __v)
                 await InventariosService.item_in_ordenVaceo(loteId)
 
-                await LotesRepository.actualizar_lote(
+                const loteNew = await LotesRepository.actualizar_lote(
                     { _id: loteId },
                     update,
                     { user: user._id, action: action, session }
@@ -526,7 +475,7 @@ export class InventariosRepository {
                 await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", `Lote ${loteId} actualizado con desverdizado.canastillasIngreso: ${canastillas}`);
 
                 const descripcion = `Desverdizado - Canastillas decrementadas: ${canastillas}`
-                await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(canastillas), user, action, loteId, log, session, descripcion);
+                await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(canastillas), user, action, loteNew, log, session, descripcion);
             })
 
             procesoEventEmitter.emit("server_event", {
@@ -592,7 +541,7 @@ export class InventariosRepository {
                     );
 
                     const descripcion = `Desverdizado - Canastillas incrementadas: ${cantidad}`
-                    await InventariosService.modificarSumarInventarioFrutaSinProocesar(Number(cantidad), user, action, _id, log, session, descripcion)
+                    await InventariosService.modificarSumarInventarioFrutaSinProocesar(Number(cantidad), user, action, _id, 'lote', log, session, descripcion)
 
                     if (newLote.desverdizado.canastillasIngreso <= 0) {
                         const update2 = {
@@ -638,25 +587,6 @@ export class InventariosRepository {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
-    static async set_inventarios_inventario(data) {
-        try {
-            InventariosValidations.set_inventarios_inventario().parse(data)
-            const { tipoFruta } = data;
-            const { descarteLavado, descarteEncerado } = await InventariosService.procesar_formulario_inventario_descarte(data);
-
-            await Promise.all([
-                RedisRepository.put_reprocesoDescarte_set(descarteLavado, "descarteLavado", tipoFruta),
-                RedisRepository.put_reprocesoDescarte_set(descarteEncerado, "descarteEncerado", tipoFruta),
-            ])
-
-        } catch (err) {
-            if (err.status === 518 || err.status === 413) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-
-    }
     static async put_inventarios_ordenVaceo_vacear(req) {
         let log
         const { user, data } = req;
@@ -674,7 +604,7 @@ export class InventariosRepository {
             acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
         });
         try {
-
+            let lote
             const loteAnterior = await InventariosService.probar_deshidratacion_loteProcesando(user)
             await registrarPasoLog(log._id, "InventariosService.probar_deshidratacion_loteProcesando", "Completado");
 
@@ -685,17 +615,22 @@ export class InventariosRepository {
                 finalizado: false,
                 fechaProceso: new Date()
             }
-
-            const lote = await LotesRepository.getLotes2({ ids: [_id] });
-            await registrarPasoLog(log._id, "LotesRepository.getLotes", "Completado", `Se obtuvo el lote con ID ${_id} para vaciarlo, kilosVaciados: ${kilosVaciados}`);
-
             await session.withTransaction(async () => {
-                await LotesRepository.modificar_lote(_id, query, { user: user._id, action: "vaciarLote" }, session);
-                await registrarPasoLog(log._id, "LotesRepository.modificar_lote", "Completado", `Se modificó el lote con ID ${_id} para vaciarlo, kilosVaciados: ${kilosVaciados}`);
 
                 const item = await InventariosHistorialRepository.get_item_frutaSinProcesar(_id);
+
+                lote = await LotesHelper.actualizar_lotes_helper(
+                    { _id: _id },
+                    query,
+                    {
+                        user: user._id, action: "vaciarLote", canastillas: item.canastillas,
+                        vaciar: true, session
+                    }
+                )
+                await registrarPasoLog(log._id, "LotesRepository.modificar_lote", "Completado", `Se modificó el lote con ID ${_id} para vaciarlo, kilosVaciados: ${kilosVaciados}`);
+
                 const descripcion = `Vaceo - Canastillas decrementadas: ${item.canastillas}`
-                await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(item.canastillas), user, action, _id, log, session, descripcion);
+                await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(item.canastillas), user, action, lote, log, session, descripcion);
                 await InventariosHistorialRepository.put_borrar_item_ordenVaceo(session);
                 await registrarPasoLog(
                     log._id,
@@ -703,17 +638,26 @@ export class InventariosRepository {
                     "Completado",
                     `Se eliminó el item ${item._id} del inventario de fruta sin procesar`);
 
+
+
                 if (!loteAnterior === "No vaceo") {
-                    await LotesRepository.actualizar_lote({ _id: loteAnterior._id }, { finalizado: true }, { user: user, action: "finalizado", session });
+                    if (loteAnterior.enf.startsWith("EF1-")) {
+                        await LotesRepository.modificar_lote(loteAnterior._id, { finalizado: true }, { user: user, action: "finalizado", session });
+                    } else {
+                        await LotesRepository.actualizar_lote_Maquila(
+                            { _id: loteAnterior._id },
+                            { finalizado: true },
+                            { user: user, action: "finalizado", session, },
+                        );
+                    }
                     await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Se actualizó el lote ${loteAnterior._id} a finalizado: true`);
                 }
 
                 await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
-                    { $inc: { [`kilos_vaciados.${lote[0].tipoFruta._id.toString()}`]: Number(kilosVaciados) } }, session
+                    { $inc: { [`kilos_vaciados.${lote.tipoFruta._id.toString()}`]: Number(kilosVaciados) } }, session
                 );
-                await registrarPasoLog(log._id, "IndicadoresAPIRepository.put_indicadores_actualizar_indicador", "Completado", `Se actualizó el indicador kilos_vaciados con ${kilosVaciados} kilos del tipo de fruta ${lote[0].tipoFruta._id.toString()}`);
+                await registrarPasoLog(log._id, "IndicadoresAPIRepository.put_indicadores_actualizar_indicador", "Completado", `Se actualizó el indicador kilos_vaciados con ${kilosVaciados} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
 
-                await VariablesDelSistema.procesarEF1(lote[0], log._id);
             });
 
             //para lista de empaque
@@ -1007,56 +951,97 @@ export class InventariosRepository {
             throw error;
         }
     }
+    static async get_inventarios_descarteMaquila() {
+        try {
+            const inventario = await InventariosHistorialRepository.get_inventario_descarte_maquila({
+                query: {
+                    estado: 'ACTIVO',
+                    loteType: "loteMaquila",
+                },
+                populate: [
+                    { path: 'tipoFruta', select: "tipoFruta" },
+                    { path: 'lote', select: "enf" },
+                    { path: 'tipoDescarte', select: "nombre inventario" },
+                ]
+            })
+            return inventario
+        } catch (err) {
+            console.error(err)
+            if (err.status === 522) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_inventarios_salida_descarteMaquila(req) {
+        const { user } = req;
+        const { data, _id, tipoSalidaSeleccionado, remision, action } = req.data
+        let log;
 
+        log = await LogsRepository.create({
+            user: user,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        });
+
+        const session = await db.InventarioActualDescarte?.db.startSession();
+        if (!session) {
+            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
+        }
+        try {
+            await session.withTransaction(async () => {
+                const registros = await InventariosService.obtener_registros_inventario_descarteMaquila(_id, data, session);
+                await InventariosService.eliminarKilos_inventario_descarte(registros, data, log, user, session);
+                await InventariosService.modificar_lotes_inventario_descarteMaquila(data, _id, remision, tipoSalidaSeleccionado, log, user, session);
+                if (tipoSalidaSeleccionado === 'Comprar') {
+                    console.log(registros)
+                    await InventariosService.ingresarFrutaDescarteMaquilaDescarteProceso(data, registros[0], _id, log, session);
+                    const kilosTotales = Object.values(data).reduce((acc, curr) => acc + Number(curr || 0), 0);
+                    await InventariosHistorialRepository.put_cardex_invetariosdescartes(
+                        {},
+                        {
+                            $inc: {
+                                [`kilos_ingreso.
+                                    ${registros[0].tipoFruta.toString()}
+                                    .${registros[0].area}
+                                    .${registros[0].tipoDescarte.toString()}`]: kilosTotales,
+                            },
+                        },
+                        {
+                            sort: { fecha: -1 },
+                            new: true,
+                            session,
+                        }
+                    );
+
+                }
+            })
+
+        } catch (err) {
+            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await session.endSession();
+            if (log) {
+                await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
+            }
+        }
+    }
     //#endregion
     //#region Historiales
-    static async get_inventarios_historialProcesado_frutaProcesada(data) {
+    static async get_inventarios_historialProcesado_frutaProcesada(req) {
         try {
-            InventariosValidations.get_inventarios_historialProcesado_frutaProcesada(data.data)
-            const { fechaInicio, fechaFin } = data.data
-            let query = {
-                operacionRealizada: 'vaciarLote'
+            InventariosValidations.get_inventarios_historialProcesado_frutaProcesada(req.data)
+
+            const { fechaInicio, fechaFin, tipoFruta } = req.data.filtro
+            const query = filtroFechaInicioFin(fechaInicio, fechaFin, {}, 'fechaProcesamiento')
+            if (tipoFruta) {
+                query.tipoFruta = tipoFruta
             }
 
-
-            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fecha')
-
-            const recordLotes = await RecordLotesRepository.getVaciadoRecord({ query: query })
-            const lotesIds = recordLotes.map(lote => lote.documento._id);
-            const usuariosIds = recordLotes.map(lote => lote.user);
-
-            const arrUsers = [...new Set(usuariosIds)];
-            const arrUsersFiltrado = arrUsers.filter(user => mongoose.isObjectIdOrHexString(user));
-            const arrLotes = [...new Set(lotesIds)];
-
-            const [lotes, usuarios] = await Promise.all([
-                LotesRepository.getLotes2({
-                    ids: arrLotes,
-                    limit: "all",
-                    select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1, GGN: 1 }
-                }),
-                UsuariosRepository.get_users({
-                    ids: arrUsersFiltrado,
-                    limit: "all"
-                })
-            ]);
-
-            const resultado = recordLotes.map(item => {
-                const lote = lotes.find(lote => lote._id.toString() === item.documento._id);
-                const user = usuarios.find(user => user._id.toString() === item.user.toString());
-
-                if (lote) {
-                    if (Object.prototype.hasOwnProperty.call(item.documento, "$inc")) {
-                        item.documento = { ...lote, kilosVaciados: item.documento.$inc.kilosVaciados, }
-                        return { ...item._doc, user: user?.nombre || "" + " " + user?.apellido || "" }
-                    }
-                    else {
-                        return { ...item._doc, user: user?.nombre || "" + " " + user?.apellido || "" }
-                    }
-                }
-                return null
-            }).filter(item => item !== null);
-            return resultado
+            const resultados = await FrutaProcesada.get_frutaProcesada({ query: query })
+            return resultados
         } catch (err) {
             console.error(err)
             if (err.status === 522) {
@@ -1084,17 +1069,22 @@ export class InventariosRepository {
             const { data } = req
             const { filtro } = data;
 
-            let result = []
+            let EF1 = []
+            let EF8 = []
+            let EF10 = []
 
-            if (filtro.EF1 && !filtro.EF8) {
-                result = await InventariosService.obtenerRecordLotesIngresoLote(filtro)
+            if (filtro.EF1) {
+                EF1 = await InventariosService.obtenerRecordLotesIngresoLote(filtro)
             }
-            else if (filtro.EF8 && !filtro.EF1) {
-                result = await InventariosService.obtenerRecordLotesIngresoLoteEF8(filtro)
-            } else {
-                result = await InventariosService.obtenerRecordLotesIngresolote_EF1_EF8(filtro)
+            if (filtro.EF8) {
+                EF8 = await InventariosService.obtenerRecordLotesIngresoLoteEF8(filtro)
             }
-            return result;
+            if (filtro.EF10) {
+                EF10 = await InventariosService.obtenerRecordLotesIngresoLoteMaquila(filtro)
+            }
+            const concatenado = EF1.concat(EF8).concat(EF10)
+            const sortResult = concatenado.sort((a, b) => b.fecha_creacion - a.fecha_creacion);
+            return sortResult;
         } catch (err) {
             console.error("Error en get_inventarios_historiales_ingresoFruta_registros", err);
             if (err.status === 522) {
@@ -1104,96 +1094,106 @@ export class InventariosRepository {
         }
     }
     static async put_inventarios_historiales_ingresoFruta_modificar(req) {
-        let log
+        let log;
+        const { user } = req;
+        const { type } = req.data
+        const session = await db.Lotes.db.startSession();
 
+        log = await LogsRepository.create({
+            user: user._id,
+            action: "put_inventarios_historiales_ingresoFruta_modificar",
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
         try {
-            const { user } = req;
-            const { type } = req.data
-            log = await LogsRepository.create({
-                user: user._id,
-                action: "put_inventarios_historiales_ingresoFruta_modificar",
-                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-            })
-            if (type === 'loteEF1') {
-                const { action, data, _id } = req.data
 
-                InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar(req.data)
-                await registrarPasoLog(log._id, "InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar", "Completado");
+            await session.withTransaction(async () => {
 
-                const queryLote = {
-                    ...data,
-                    fecha_ingreso_patio: data.fecha_ingreso_inventario,
-                    fecha_salida_patio: data.fecha_ingreso_inventario,
-                    fecha_estimada_llegada: data.fecha_ingreso_inventario,
+                if (type === 'loteEF1') {
+                    const { action, data, _id } = req.data
+
+                    InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar(req.data)
+                    await registrarPasoLog(log._id, "InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar", "Completado");
+
+                    const newPromedio = Math.round(data.kilos / data.canastillas)
+
+                    const queryLote = {
+                        ...data,
+                        promedio: newPromedio,
+                        fecha_ingreso_patio: data.fecha_ingreso_inventario,
+                        fecha_salida_patio: data.fecha_ingreso_inventario,
+                        fecha_estimada_llegada: data.fecha_ingreso_inventario,
+                    }
+
+                    await LotesHelper.actualizar_lotes_helper(
+                        _id, queryLote,
+                        { user: user._id, action: action, session: session, softNotFound: true })
+                    await registrarPasoLog(log._id, "LotesHelper.actualizar_lotes_helper", "Completado");
+
+                    await InventarioSimpleHelper.set_inventario_fruta_sin_procesar(_id, data.canastillas, user, session);
+                    await registrarPasoLog(log._id, "InventarioSimpleHelper.set_inventario_fruta_sin_procesar", "Completado");
+
+                } else if (type === 'loteEF8') {
+
+                    const { data, _id } = req.data
+
+                    InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar_EF8(data)
+                    const oldLoteEf8 = await LotesRepository.getLotesEF8({ ids: [_id] })
+                    await registrarPasoLog(log._id, "LotesRepository.getLotesEF8", "Completado");
+
+                    const oldTipoFruta = await TiposFruta.get_tiposFruta({ ids: [oldLoteEf8[0].tipoFruta] })
+                    await registrarPasoLog(log._id, "TiposFruta.get_tiposFruta", "Completado");
+
+                    const loteEF8 = await LotesRepository.actualizar_lote_EF8({ _id: _id }, data, { user: user.user._id, action: data.action })
+                    await registrarPasoLog(log._id, "LotesRepository.actualizar_lote_EF8", "Completado");
+
+                    const newTipoFruta = await TiposFruta.get_tiposFruta({ ids: [loteEF8.tipoFruta] })
+                    await registrarPasoLog(log._id, "TiposFruta.get_tiposFruta", "Completado");
+
+                    const registroIngresoCanastillas = await CanastillasRepository.get_registros_canastillas({ ids: [loteEF8.registroCanastillas] })
+                    await registrarPasoLog(log._id, "CanastillasRepository.get_registros_canastillas", "Completado");
+
+                    if (
+                        registroIngresoCanastillas[0].cantidad.propias != data.canastillas ||
+                        registroIngresoCanastillas[0].cantidad.prestadas != data.canastillasPrestadas
+                    ) {
+                        await CanastillasRepository.actualizar_registro(
+                            { _id: registroIngresoCanastillas[0]._id },
+                            { cantidad: { propias: data.canastillas, prestadas: data.canastillasPrestadas } },
+                        )
+
+                        await InventariosService.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", Number(-registroIngresoCanastillas[0].cantidad.propias))
+                        await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+
+                        await InventariosService.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", Number(data.canastillas))
+                        await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+
+                        await VariablesDelSistema.modificar_canastillas_inventario(-Number(registroIngresoCanastillas[0].cantidad.prestadas), "canastillasPrestadas")
+                        await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");
+
+                        await VariablesDelSistema.modificar_canastillas_inventario(Number(data.canastillasPrestadas), "canastillasPrestadas")
+                        await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");
+
+                    }
+
+                    const oldKilos = {
+                        descarteGeneral: -oldLoteEf8[0].descarteGeneral || 0,
+                        pareja: -oldLoteEf8[0].pareja || 0,
+                        balin: -oldLoteEf8[0].balin || 0,
+                    }
+                    const newKilos = {
+                        descarteGeneral: loteEF8.descarteGeneral || 0,
+                        pareja: loteEF8.pareja || 0,
+                        balin: loteEF8.balin || 0,
+                    }
+                    //se restan los datos antiguos del lote y se suman los nuevos
+                    await InventariosService.ingresarDescarteEf8(oldKilos, oldTipoFruta[0].tipoFruta)
+                    await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
+
+                    await InventariosService.ingresarDescarteEf8(newKilos, newTipoFruta[0].tipoFruta)
+                    await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
+
                 }
-
-                await InventariosService.modificarLote_regresoHistorialFrutaIngreso(
-                    _id, queryLote, user, action
-                )
-                await registrarPasoLog(log._id, "InventariosService.modificarLote_regresoHistorialFrutaIngreso", "Completado");
-
-
-            } else if (type === 'loteEF8') {
-
-                const { data, _id } = req.data
-
-                InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar_EF8(data)
-                const oldLoteEf8 = await LotesRepository.getLotesEF8({ ids: [_id] })
-                await registrarPasoLog(log._id, "LotesRepository.getLotesEF8", "Completado");
-
-                const oldTipoFruta = await TiposFruta.get_tiposFruta({ ids: [oldLoteEf8[0].tipoFruta] })
-                await registrarPasoLog(log._id, "TiposFruta.get_tiposFruta", "Completado");
-
-                const loteEF8 = await LotesRepository.actualizar_lote_EF8({ _id: _id }, data, { user: user.user._id, action: data.action })
-                await registrarPasoLog(log._id, "LotesRepository.actualizar_lote_EF8", "Completado");
-
-                const newTipoFruta = await TiposFruta.get_tiposFruta({ ids: [loteEF8.tipoFruta] })
-                await registrarPasoLog(log._id, "TiposFruta.get_tiposFruta", "Completado");
-
-                const registroIngresoCanastillas = await CanastillasRepository.get_registros_canastillas({ ids: [loteEF8.registroCanastillas] })
-                await registrarPasoLog(log._id, "CanastillasRepository.get_registros_canastillas", "Completado");
-
-                if (
-                    registroIngresoCanastillas[0].cantidad.propias != data.canastillas ||
-                    registroIngresoCanastillas[0].cantidad.prestadas != data.canastillasPrestadas
-                ) {
-                    await CanastillasRepository.actualizar_registro(
-                        { _id: registroIngresoCanastillas[0]._id },
-                        { cantidad: { propias: data.canastillas, prestadas: data.canastillasPrestadas } },
-                    )
-
-                    await InventariosService.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", Number(-registroIngresoCanastillas[0].cantidad.propias))
-                    await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
-
-                    await InventariosService.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", Number(data.canastillas))
-                    await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
-
-                    await VariablesDelSistema.modificar_canastillas_inventario(-Number(registroIngresoCanastillas[0].cantidad.prestadas), "canastillasPrestadas")
-                    await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");
-
-                    await VariablesDelSistema.modificar_canastillas_inventario(Number(data.canastillasPrestadas), "canastillasPrestadas")
-                    await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");
-
-                }
-
-                const oldKilos = {
-                    descarteGeneral: -oldLoteEf8[0].descarteGeneral || 0,
-                    pareja: -oldLoteEf8[0].pareja || 0,
-                    balin: -oldLoteEf8[0].balin || 0,
-                }
-                const newKilos = {
-                    descarteGeneral: loteEF8.descarteGeneral || 0,
-                    pareja: loteEF8.pareja || 0,
-                    balin: loteEF8.balin || 0,
-                }
-                //se restan los datos antiguos del lote y se suman los nuevos
-                await InventariosService.ingresarDescarteEf8(oldKilos, oldTipoFruta[0].tipoFruta)
-                await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
-
-                await InventariosService.ingresarDescarteEf8(newKilos, newTipoFruta[0].tipoFruta)
-                await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
-
-            }
+            });
 
             procesoEventEmitter.emit("server_event", {
                 action: "descarte_change",
@@ -1388,7 +1388,7 @@ export class InventariosRepository {
     static async get_inventarios_historiales_contenedores(req) {
         try {
             const { data } = req;
-            const { contenedores, fechaInicio, fechaFin, clientes, tipoFruta } = data
+            const { contenedores, fechaInicio, fechaFin, clientes, tipoFruta, maquila, exportacion } = data
             let query = {}
 
             //por numero de contenedores
@@ -1402,6 +1402,12 @@ export class InventariosRepository {
             //por tipo de fruta
             if (tipoFruta !== '') {
                 query["infoContenedor.tipoFruta"] = tipoFruta
+            }
+            if (maquila && !exportacion) {
+                query["infoContenedor.maquila"] = true
+            }
+            else if (!maquila && exportacion) {
+                query["infoContenedor.maquila"] = false
             }
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'infoContenedor.fechaCreacion')
@@ -1437,7 +1443,7 @@ export class InventariosRepository {
 
             const registros = await FrutaDescompuestaRepository.get_fruta_descompuesta({
                 skip: (page - 1) * resultsPerPage,
-
+                limit: resultsPerPage,
             })
 
             return registros
@@ -1522,7 +1528,7 @@ export class InventariosRepository {
     static async get_inventarios_lotes_infoLotes(req) {
         try {
             const { data } = req
-            InventariosValidations.get_inventarios_lotes_infoLotes().parse(data)
+            InventariosValidations.get_inventarios_lotes_infoLotes().parse(data.filtro)
             const {
                 _id,
                 EF,
@@ -1533,7 +1539,7 @@ export class InventariosRepository {
                 proveedor,
                 tipoFecha,
                 tipoFruta
-            } = data;
+            } = data.filtro;
 
             let query = {}
             let sort
@@ -1551,32 +1557,34 @@ export class InventariosRepository {
 
             const lotes = await LotesRepository.getLotes2({
                 query: query,
-                limit: all ? 'all' : 50,
+                limit: all ? 0 : 50,
                 sort: sort,
                 populate: [
                     { path: 'predio', select: 'PREDIO ICA GGN SISPAP' },
                     { path: 'tipoFruta' },
-                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' }
+                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
+
                 ]
             });
-            const contenedoresArr = []
+            const lotesMaquila = await LotesRepository.getLotesMaquila({
+                query: query,
+                limit: all ? 0 : 50,
+                sort: sort,
+                populate: [
+                    { path: 'predio', select: 'PREDIO ICA GGN SISPAP' },
+                    { path: 'tipoFruta' },
+                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
 
-            lotes.forEach(element => {
-                element.contenedores.forEach(contenedor => contenedoresArr.push(contenedor))
+                ]
             })
-            const contenedoresSet = new Set(contenedoresArr)
-            const cont = [...contenedoresSet]
-            let contenedores
-            if (cont.length > 0) {
-                contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                    ids: cont,
-                    select: { numeroContenedor: 1, pallets: 1 }
-                });
-            } else {
-                contenedores = []
-            }
 
-            return { lotes: lotes, contenedores: contenedores }
+            const result = [...lotes, ...lotesMaquila].sort((a, b) => {
+                if (a.fecha_creacion < b.fecha_creacion) return 1;
+                if (a.fecha_creacion > b.fecha_creacion) return -1;
+                return 0;
+            })
+
+            return result
 
         } catch (err) {
             const erroresPermitidos = new Set([518, 523, 419]);
@@ -1727,8 +1735,8 @@ export class InventariosRepository {
     }
     static async put_inventarios_historialProcesado_modificarHistorial(req) {
         const { user } = req;
-        const { _id, kilosVaciados, inventario, action, historialLote } = req.data;
-
+        const { _id, canastillas, action } = req.data;
+        console.log("Modificar historial fruta procesada:", req);
         let log
         const session = await db.Lotes.db.startSession();
 
@@ -1741,46 +1749,39 @@ export class InventariosRepository {
 
             InventariosValidations.put_inventarios_historialProcesado_modificarHistorial().parse(req.data)
 
-            const { _idRecord, kilosHistorial, __vHistorial } = historialLote;
-
-            //modificar Lote
-            const queryLote = {
-                $inc: {
-                    kilosVaciados: kilosVaciados,
-                }
-            }
-            const queryRecord = {
-                $inc: {
-                    "documento.$inc.kilosVaciados": kilosHistorial,
-                    __v: 1
-                }
-            }
 
             await session.withTransaction(async () => {
-                //se modifica el lote
-                const lote = await LotesRepository.actualizar_lote(
+                //se modifica el record
+                const frutaProcesada = await FrutaProcesada.actualizar_frutaProcesada(
                     { _id: _id },
-                    queryLote,
-                    "Regreso de fruta procesada",
+                    { $inc: { canastillas: -canastillas } },
                     { new: true, user: user, action: action, session: session },
                 )
                 await registrarPasoLog(
                     log._id,
-                    "InventariosService.modificarLote_regresoHistorialFrutaProcesada",
-                    "Completado", `Lote ${_id} modificado con kilosVaciados: ${kilosVaciados}`);
+                    "RecordLotesRepository.modificarRecord",
+                    "Completado", `RecordLote ${_id} modificado con kilosVaciados: ${canastillas}`);
+                const newKilos = Math.round(frutaProcesada.promedio * canastillas);
 
-                const descripcion = `Modificación de historial de fruta procesada - Kilos vaciados ajustados en: ${kilosVaciados}`
-                await InventariosService.modificarSumarInventarioFrutaSinProocesar(inventario, user, action, _id, log, session, descripcion)
+                //se modifica el lote
+                const lote = await LotesHelper.actualizar_lotes_helper(
+                    { _id: frutaProcesada.loteId },
+                    { $inc: { kilosVaciados: -newKilos } },
+                    { new: true, user: user, action: action, session: session },
+                )
 
-                //se modifica el record
-                await RecordLotesRepository.modificarRecord(_idRecord, queryRecord, __vHistorial, session)
                 await registrarPasoLog(
                     log._id,
-                    "RecordLotesRepository.modificarRecord",
-                    "Completado", `RecordLote ${_idRecord} modificado con kilosVaciados: ${kilosHistorial}`);
+                    "InventariosService.modificarLote_regresoHistorialFrutaProcesada",
+                    "Completado", `Lote ${_id} modificado con kilosVaciados: ${newKilos}`);
+
+                const descripcion = `Modificación de historial de fruta procesada - Kilos vaciados ajustados en: ${newKilos}`
+                await InventariosService.modificarSumarInventarioFrutaSinProocesar(
+                    canastillas, user, action, lote._id, frutaProcesada.loteType, log, session, descripcion
+                )
 
                 await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
-                    { $inc: { [`kilos_vaciados.${lote.tipoFruta._id.toString()}`]: Number(kilosHistorial) } }, session
+                    { $inc: { [`kilos_vaciados.${lote.tipoFruta._id.toString()}`]: -Number(newKilos) } }, session
                 );
             })
             procesoEventEmitter.emit("server_event", {
@@ -1867,7 +1868,7 @@ export class InventariosRepository {
 
             await session.withTransaction(async () => {
                 const descripcion = `Modificación de historial de directo nacional - Canastillas ajustadas en: ${canastillas}, kilos ajustados en: ${directoNacional}`
-                await InventariosService.modificarSumarInventarioFrutaSinProocesar(canastillas, user, action, lote._id, log, session, descripcion)
+                await InventariosService.modificarSumarInventarioFrutaSinProocesar(canastillas, user, action, lote._id, 'lote', log, session, descripcion)
 
                 const loteChanged = await LotesRepository.actualizar_lote(
                     { _id: lote._id, },
@@ -1894,42 +1895,44 @@ export class InventariosRepository {
         }
     }
     static async put_inventarios_historiales_despachoDescarte(req) {
+        const { user } = req;
+        const { action, data, _id } = req.data
+
+        let log
+        const session = await db.Lotes.db.startSession();
+
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
         try {
-            let { user } = req
-            const { action, data, _id } = req.data
             InventariosValidations.put_inventarios_historiales_despachoDescarte(data)
             const inventario = {}
             const newRegistro = {}
             //se obtienen los datos de inventario
             Object.keys(data).forEach(
                 key => {
-                    if (key.startsWith("descarteLavado") || key.startsWith("descarteEncerado")) {
+                    if (key.includes(":")) {
                         inventario[key] = data[key]
                     } else {
                         newRegistro[key] = data[key]
                     }
                 }
             );
-            const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_registro_descarte(inventario)
 
-            const { cambioFruta, cambioIventario, registro } = await InventariosService.revisar_cambio_registro_despachodescarte(_id, data)
+            await session.withTransaction(async () => {
+                //se suma o se resta del inventario descartes segun corresponda
+                const oldRegistro = await HistorialInventariosService.modificar_inventario_descartes_modificar_salida(_id, inventario, data.tipoFruta, user, session)
+                await registrarPasoLog(log._id, "HistorialInventariosService.modificar_inventario_descartes_modificar_salida", "Completado");
+                //se modifica el registro del despacho descarte
+                await HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte(_id, inventario, newRegistro, user, session)
+                await registrarPasoLog(log._id, "HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte", "Completado");
+                //actualizar salida del cardex inventario descarte
+                const response = await HistorialInventariosService.modificar_cardex_modificar_registro_despacho(oldRegistro[0], data.tipoFruta, inventario, user, session)
+                await registrarPasoLog(log._id, "HistorialInventariosService.modificar_cardex_modificar_registro_despacho", "Completado");
 
-            if (cambioFruta || cambioIventario) {
-                await InventariosService.modificar_inventario_registro_cambioFruta(registro, data, descarteLavado, descarteEncerado)
-            }
-
-            const query = {
-                ...newRegistro,
-                kilos: total,
-                descarteEncerado,
-                descarteLavado
-            }
-
-            await DespachoDescartesRepository.actualizar_registro(
-                { _id: _id },
-                query,
-                { user: user._id, action: action }
-            )
+            });
 
             procesoEventEmitter.emit("server_event", {
                 action: "descarte_change",
@@ -1937,57 +1940,22 @@ export class InventariosRepository {
             });
 
         } catch (err) {
-            console.error(err)
-            if (err.status === 521 || err.status === 518) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            await ErrorInventarioLogicHandlers(err, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
     static async put_inventarios_registros_fruta_descompuesta(req) {
         try {
-            let { user } = req
-            const { action, data, _id } = req.data
+            // let { user } = req
+            // const { action, data, _id } = req.data
 
             InventariosValidations.put_inventarios_registros_fruta_descompuesta().parse(data)
+            throw new Error("Opcion no soportada")
 
-            const inventario = {}
-            const newRegistro = {}
-            //se obtienen los datos de inventario
-            Object.keys(data).forEach(
-                key => {
-                    if (key.startsWith("descarteLavado") || key.startsWith("descarteEncerado")) {
-                        inventario[key] = data[key]
-                    } else {
-                        newRegistro[key] = data[key]
-                    }
-                }
-            );
 
-            const { descarteLavado, descarteEncerado, total } = await InventariosService.procesar_formulario_inventario_registro_descarte(inventario)
-            const { cambioFruta, cambioIventario, registro } = await InventariosService.revisar_cambio_registro_frutaDescompuestae(_id, data)
-
-            if (cambioFruta || cambioIventario) {
-                await InventariosService.modificar_inventario_registro_cambioFruta(registro, data, descarteLavado, descarteEncerado)
-            }
-
-            const query = {
-                ...newRegistro,
-                kilos_total: total,
-                descarteEncerado,
-                descarteLavado
-            }
-
-            await FrutaDescompuestaRepository.actualizar_registro(
-                { _id: _id },
-                query,
-                { user: user._id, action: action }
-            )
-
-            procesoEventEmitter.emit("server_event", {
-                action: "descarte_change",
-                data: {}
-            });
         } catch (err) {
             if (err.status === 523) {
                 throw err
@@ -2013,7 +1981,7 @@ export class InventariosRepository {
     static async post_inventarios_ingreso_lote(req) {
         const { user } = req;
         const { data, action } = req;
-
+        const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
         let log
         const session = await db.Lotes.db.startSession();
 
@@ -2032,7 +2000,7 @@ export class InventariosRepository {
 
             const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(datosValidados.tipoFruta, log._id)
             const [{ precioId, proveedor }, ef1] = await Promise.all([
-                InventariosService.obtenerPrecioProveedor(datosValidados.predio, tipoFruta[0].tipoFruta),
+                InventariosService.obtenerPrecioProveedor(datosValidados.predio, tipoFruta[0]._id),
                 dataService.get_ef1_serial(data.fecha_estimada_llegada, log._id),
             ])
             await registrarPasoLog(log._id, "Promise.all obtener precio, proveedor, ef1 y tipo de fruta", "Completado");
@@ -2058,12 +2026,12 @@ export class InventariosRepository {
             let lote
             await session.withTransaction(async () => {
 
-                lote = await LotesRepository.addLote(query, user, { session });
+                lote = await LotesRepository.addLote(query, { session, user: user._id, action: action });
                 await registrarPasoLog(log._id, "LotesRepository.addLote", "Completado");
 
                 // await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
                 await InventariosHistorialRepository.put_inventarioSimple(
-                    { _id: "68cecc4cff82bb2930e43d05" },
+                    { _id: inventarioID },
                     { $push: { inventario: { lote: lote._id, canastillas: Number(lote.canastillas) } }, $inc: { __v: 1 } },
                     { session, user: user._id, action: "ingreso_lote", operation: "ingreso", skipAudit: false }
                 );
@@ -2105,42 +2073,145 @@ export class InventariosRepository {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
-    static async post_inventarios_EF8(req) {
+    static async post_inventarios_ingreso_maquila(req) {
         const { user } = req;
+        const { data, action } = req;
+
+        const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
+
         let log
+        const session = await db.Lotes.db.startSession();
+
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
 
         try {
-            log = await LogsRepository.create({
-                user: user._id,
-                action: "post_inventarios_EF8",
-                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+
+            const { dataLote: datos, dataCanastillas } = data
+
+            const datosValidados = InventariosValidations.post_inventarios_ingreso_maquila().parse(datos)
+            await registrarPasoLog(log._id, "InventariosValidations.post_inventarios_ingreso_maquila", "Completado");
+
+            const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(datosValidados.tipoFruta, log._id)
+            const [{ precioId, proveedor }, ef10] = await Promise.all([
+                InventariosService.obtenerPrecioProveedor(datosValidados.predio, tipoFruta[0]._id),
+                dataService.get_ef10_serial(data.fecha_estimada_llegada, log._id),
+            ])
+            await registrarPasoLog(log._id, "Promise.all obtener precio, proveedor, ef1 y tipo de fruta", "Completado");
+
+            if (datos.GGN)
+                await InventariosService.validarGGN(proveedor, tipoFruta[0].tipoFruta, user)
+
+            const query = await InventariosService.construirQueryIngresoLoteMaquila(datosValidados, ef10, precioId, tipoFruta[0], user);
+
+            //Se crean los datos del registro de canastillas
+            const dataRegistro = await InventariosService.crearRegistroInventarioCanastillas({
+                destino: "65c27f3870dd4b7f03ed9857",
+                origen: datos.predio,
+                observaciones: "ingreso lote maquila",
+                fecha: datos.fecha_estimada_llegada,
+                canastillas: dataCanastillas.canastillasPropias,
+                canastillasPrestadas: dataCanastillas.canastillasPrestadas,
+                accion: "ingreso",
+                user
             })
-            const { data } = req.data;
+            await registrarPasoLog(log._id, "InventariosService.crearRegistroInventarioCanastillas", "Completado");
+
+            let lote
+            await session.withTransaction(async () => {
+
+                lote = await LotesRepository.addLoteMaquila(query, user, { session });
+                await registrarPasoLog(log._id, "LotesRepository.addLoteMaquila", "Completado");
+
+                // await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
+                await InventariosHistorialRepository.put_inventarioSimple(
+                    { _id: inventarioID },
+                    { $push: { inventarioMaquila: { lote: lote._id, canastillas: Number(lote.canastillas) } }, $inc: { __v: 1 } },
+                    { session, user: user._id, action: "ingreso_lote", operation: "ingreso", skipAudit: false }
+                );
+                await registrarPasoLog(log._id, "VariablesDelSistema.ingresarInventario", "Completado");
+
+                await InventariosService
+                    .ajustarCanastillasProveedorCliente(datos.predio, -Number(dataCanastillas.canastillasPropias), user, session)
+                await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+
+                await InventariosService
+                    .ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", Number(dataCanastillas.canastillasPropias), user, session)
+                await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+
+                await CanastillasRepository.post_registro(dataRegistro, user, { session })
+                await registrarPasoLog(log._id, "CanastillasRepository.post_registro", "Completado");
+
+                await dataRepository.incrementar_ef10_serial(session)
+                await registrarPasoLog(log._id, "dataService.incrementar_ef10_serial", "Completado");
+
+            }, {
+                readConcern: { level: "snapshot" },
+                writeConcern: { w: 1 },
+                maxTimeMS: 10000
+            })
+
+            await VariablesDelSistema
+                .modificar_canastillas_inventario(dataCanastillas.canastillasPrestadas, "canastillasPrestadas")
+            await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");
+
+            procesoEventEmitter.emit("server_event", {
+                action: "add_lote",
+            });
+
+        } catch (err) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            await ErrorInventarioLogicHandlers(err, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
+        }
+    }
+    static async post_inventarios_EF8(req) {
+        const { user } = req;
+        const { data, action } = req.data;
+
+        let log
+        const session = await db.Lotes.db.startSession();
+
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
+
+        try {
+
             InventariosValidations.post_inventarios_EF8().parse(data)
             await registrarPasoLog(log._id, "InventariosValidations.post_inventarios_EF8", "Completado");
 
-            const [EF8, tipoFruta] = await Promise.all([
-                dataService.get_ef8_serial(data.fecha_ingreso_inventario, log._id),
-                ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(data.tipoFruta, log._id)
-            ])
+            await session.withTransaction(async () => {
+                const [EF8, tipoFruta] = await Promise.all([
+                    dataService.get_ef8_serial(data.fecha_ingreso_inventario, log._id, session),
+                    ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(data.tipoFruta, log._id, session)
+                ])
 
-            const { precioId, } = await InventariosService.obtenerPrecioProveedor(data.predio, tipoFruta[0].tipoFruta);
-            await registrarPasoLog(log._id, "InventariosService.obtenerPrecioProveedor", "Completado");
+                const { precioId, } = await InventariosService.obtenerPrecioProveedor(data.predio, tipoFruta[0].tipoFruta, session);
+                await registrarPasoLog(log._id, "InventariosService.obtenerPrecioProveedor", "Completado");
 
-            const { loteEF8, } = await InventariosService.construir_ef8_lote(data, EF8, precioId, user);
-            await registrarPasoLog(log._id, "InventariosService.construir_ef8_lote", "Completado");
+                const { loteEF8, } = await InventariosService.construir_ef8_lote(data, EF8, precioId, user);
+                await registrarPasoLog(log._id, "InventariosService.construir_ef8_lote", "Completado");
 
-            const registroCanastillas = await InventariosService.ingresarCanasillas(data, user);
-            await registrarPasoLog(log._id, "InventariosService.ingresarCanasillas", "Completado");
+                const registroCanastillas = await InventariosService.ingresarCanasillas(data, user);
+                await registrarPasoLog(log._id, "InventariosService.ingresarCanasillas", "Completado");
 
-            await LotesRepository.crear_lote_EF8({ ...loteEF8, registroCanastillas: registroCanastillas._id }, user, log._id);
-            await registrarPasoLog(log._id, "LotesRepository.crear_lote_EF8", "Completado");
+                const registroEF8 = await LotesRepository.crear_lote_EF8({ ...loteEF8, registroCanastillas: registroCanastillas._id }, user, log._id);
+                await registrarPasoLog(log._id, "LotesRepository.crear_lote_EF8", "Completado");
 
-            await InventariosService.ingresarDescarteEf8(loteEF8, tipoFruta[0].tipoFruta, log._id)
-            await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
+                await InventariosService.ingresarDescarteEf8(registroEF8, tipoFruta[0], log._id)
+                await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
 
-            await dataRepository.incrementar_ef8_serial()
-            await registrarPasoLog(log._id, "dataService.incrementar_ef8_serial", "Completado");
+                await dataRepository.incrementar_ef8_serial()
+                await registrarPasoLog(log._id, "dataService.incrementar_ef8_serial", "Completado");
+            })
 
             procesoEventEmitter.emit("server_event", {
                 action: "descarte_change",
@@ -2224,6 +2295,7 @@ export class InventariosRepository {
             Object.keys(data).forEach(key => {
                 query.$set[`infoContenedor.${key}`] = data[key];
             })
+
             await ContenedoresRepository.actualizar_contenedor(
                 { _id: idContenedor },
                 query,
@@ -2322,18 +2394,43 @@ export class InventariosRepository {
         }
     }
     //endregion
-
     //#region inventarios historiales
     static async snapshot_inventario_descartes() {
         try {
-            const inventario = await this.get_inventarios_frutaDescarte_fruta()
-            const ingresos = await RedisRepository.get_inventarioDescarte_dia_ingreso();
-            const salidas = await RedisRepository.get_inventarioDescarte_dia_salida();
 
-            await InventariosHistorialRepository.crearInventarioDescarte({ inventario, kilos_ingreso: ingresos, kilos_salida: salidas })
+            const itemsDescartes = await InventariosHistorialRepository.get_inventario_descarte({
+                query: {
+                    estado: "ACTIVO",
+                    loteType: "lote"
+                },
+            })
+            const inventario = {}
+            for (const item of itemsDescartes) {
+                if (!inventario[item.tipoFruta]) {
+                    inventario[item.tipoFruta] = {}
+                }
+                if (!inventario[item.tipoFruta][item.area]) {
+                    inventario[item.tipoFruta][item.area] = {}
+                }
+                if (!inventario[item.tipoFruta][item.area][item.calidad]) {
+                    inventario[item.tipoFruta][item.area][item.calidad] = 0
+                }
+                inventario[item.tipoFruta][item.area][item.calidad] += item.cantidad
+            }
 
-            await RedisRepository.reiniciarDescarteIngresos()
-            await RedisRepository.reiniciarDescarteSalidas()
+            await InventariosHistorialRepository.put_cardex_invetariosdescartes(
+                {},
+                {
+                    $set: {
+                        inventario: inventario,
+                    },
+                },
+                {
+                    sort: { fecha: -1 },
+                    new: true,
+                }
+            );
+
 
         } catch (err) {
             if (err.status === 500) {
@@ -2342,5 +2439,16 @@ export class InventariosRepository {
             throw new InventariosLogicError(500, `Error al crear el snapshot del inventario: ${err.message}`)
         }
     }
+    static async crear_snapshot_inventario_descartes() {
+        try {
+            await InventariosHistorialRepository.crearInventarioDescarte()
+        } catch (err) {
+            if (err.status === 500) {
+                throw err
+            }
+            throw new InventariosLogicError(500, `Error al crear el snapshot del inventario: ${err.message}`)
+        }
+    }
+
     //#endregion
 }

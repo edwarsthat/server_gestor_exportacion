@@ -10,6 +10,7 @@ import { getColombiaDate } from "../api/utils/fechas.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { parseMultTipoCaja } from "./helpers/contenedores.js";
 import { IndicadoresAPIRepository } from "../api/IndicadoresAPI.js";
+import { LotesHelper } from "../helper/lotes.js";
 
 
 class ProcesoService {
@@ -34,17 +35,16 @@ class ProcesoService {
             throw new ProcessError(404, `No se encontró el contenedor con ID: ${ContenedorID}`);
         }
 
-
         //se obtiene el lote
-        const lotes = await LotesRepository.getLotes2({
-            ids: [loteID]
-        }, { session });
+        const lotes = await LotesHelper.obtener_lote_helper(
+            { ids: [loteID] },
+            { session }
+        );
 
         // Validar que se encontró el lote
         if (!lotes || lotes.length === 0) {
             throw new ProcessError(404, `No se encontró el lote con ID: ${loteID}`);
         }
-
         return { contenedor, lotes };
     }
     static async modificarLoteListaEmpaqueAddItem(item, kilos, _id, logData, session) {
@@ -64,11 +64,12 @@ class ProcesoService {
             $addToSet: { "salidaExportacion.contenedores": _id }
         }
 
-        await LotesRepository.actualizar_lote(
+        await LotesHelper.actualizar_lotes_helper(
             { _id: lote },
             query,
             { user: logData.user._id, action: logData.action, session }
-        );
+        )
+
         await registrarPasoLog(logData.logId, "ProcesoService.modificarLoteListaEmpaqueAddItem", "Completado");
         return true
     }
@@ -123,10 +124,8 @@ class ProcesoService {
 
     }
     static async restar_kilos_lote(items, logContext, session) {
-
         const lotesIds = [...new Set(items.map(item => item.lote._id.toString()))];
-        const lotes = await LotesRepository.getLotes2({ ids: lotesIds }, { session });
-
+        const lotes = await LotesHelper.obtener_lote_helper({ ids: lotesIds }, { session });
         for (let i = 0; i < items.length; i++) {
 
             const loteDocument = lotes.find(l => l._id.toString() === items[i].lote._id.toString())
@@ -149,16 +148,16 @@ class ProcesoService {
                 },
             }
 
-            await LotesRepository.actualizar_lote(
+            await LotesHelper.actualizar_lotes_helper(
                 { _id: loteDocument._id },
                 query,
                 {
-                    new: true,
                     user: logContext.user,
                     action: logContext.action,
                     session: session
                 }
             );
+
         }
 
         await registrarPasoLog(logContext.logId, "restar_kilos_lote", "Completado");
@@ -239,7 +238,7 @@ class ProcesoService {
 
         // Actualizar contenedor con pallets modificados
         await ContenedoresRepository.actualizar_contenedor(
-            { _id: itemPallet.contenedor },
+            { _id: itemPallet[0].contenedor._id },
             {
                 $inc: { totalCajas: -cajas, totalKilos: -kilos }
             },
@@ -252,7 +251,7 @@ class ProcesoService {
     }
     static async restarItem_lote(itemPallet, kilos, cajas, logContext, session) {
 
-        const lote = await LotesRepository.getLotes2({ ids: [itemPallet.lote] }, { session });
+        const lote = await LotesHelper.obtener_lote_helper({ ids: [itemPallet.lote] }, { session });
         if (checkFinalizadoLote(lote[0])) {
             throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
         }
@@ -270,12 +269,11 @@ class ProcesoService {
                 [`salidaExportacion.porCalibre.${calibre}.cajas`]: Number(-cajas)
             },
         }
-        await LotesRepository.actualizar_lote(
+        await LotesHelper.actualizar_lotes_helper(
             { _id: lote[0]._id },
             query,
             {
-                new: true,
-                user: logContext._id,
+                user: logContext.user,
                 action: logContext.action,
                 session: session
             }
@@ -323,10 +321,18 @@ class ProcesoService {
         const { user } = logData
         // Actualizar contenedor con pallets modificados
         const { cajas } = item
+        let tipoLote = ""
+        console.log("lotes agregar item", lotes.length)
+        if (lotes[0].enf.startsWith("EF1-")) {
+            tipoLote = "Lote"
+        } else if (lotes[0].enf.startsWith("EF10-")) {
+            tipoLote = "loteMaquila"
+        }
 
         const itemnuevo = {
             ...item,
             user: user._id,
+            loteType: tipoLote,
             pallet: pallet,
             kilos: kilos,
             contenedor: _id,
@@ -548,7 +554,7 @@ class ProcesoService {
                 { user: user._id, action: action, session }
             )
 
-            await LotesRepository.actualizar_lote(
+            await LotesHelper.actualizar_lotes_helper(
                 { _id: itemsPallet[i].lote },
                 updateLote,
                 { user: user._id, action: action, session },
@@ -564,73 +570,6 @@ class ProcesoService {
         return newItemsPallet
 
     }
-    // static async modificarLotesModificarItemsListaEmpaque(
-    //     itemPallet, data, logID = null, session
-    // ) {
-
-
-    //     const updates = [];
-
-    //     for (const sel of seleccion) {
-    //         const oldItem = copiaPallet?.[pallet]?.EF1?.[sel];
-    //         const newItem = palletsModificados?.[pallet]?.EF1?.[sel];
-    //         if (!oldItem || !newItem) continue;
-
-
-
-    //         const oldKg = (oldItem.cajas || 0) * parseMult(oldItem.tipoCaja);
-    //         const newKg = (newItem.cajas || 0) * parseMult(newItem.tipoCaja);
-    //         const delta = newKg - oldKg;
-    //         if (!delta) continue;
-
-    //         const query = { $inc: {} };
-
-    //         if (oldItem.calidad !== newItem.calidad) {
-    //             query.$inc[`exportacion.${contId}.${oldItem.calidad}`] = -oldKg;
-    //             query.$inc[`exportacion.${contId}.${newItem.calidad}`] = newKg;
-    //         } else {
-    //             query.$inc[`exportacion.${contId}.${oldItem.calidad}`] = delta;
-    //         }
-
-    //         const loteDoc = lotesById.get(String(oldItem.lote));
-    //         if (loteDoc && have_lote_GGN_export(loteDoc, contenedor[0], oldItem)) {
-    //             query.$inc.kilosGGN = (query.$inc.kilosGGN || 0) + delta;
-    //         }
-
-    //         updates.push(
-    //             LotesRepository.actualizar_lote(
-    //                 { _id: oldItem.lote },
-    //                 query,
-    //                 { user: logID && logID.user, action: logID && logID.action },
-    //                 { session }
-    //             )
-    //         );
-    //     }
-
-    //     if (updates.length === 0) {
-    //         if (logID) {
-    //             await registrarPasoLog(
-    //                 logID.logId,
-    //                 "modificarLotesModificarItemsListaEmpaque",
-    //                 "Sin cambios",
-    //                 `No hubo deltas en el pallet ${pallet}`
-    //             );
-    //         }
-    //         return;
-    //     }
-
-    //     // Corre todos los updates en paralelo; para ≤10 está perfecto
-    //     await Promise.all(updates);
-
-    //     if (logID) {
-    //         await registrarPasoLog(
-    //             logID.logId,
-    //             "modificarLotesModificarItemsListaEmpaque",
-    //             "Completado",
-    //             `Se modificaron ${updates.length} item(s) del pallet ${pallet}`
-    //         );
-    //     }
-    // }
 
     static async modificarIndicadorExportacion(newItemsPallet, oldItemsPallet, logID = null, session) {
 
@@ -676,20 +615,20 @@ class ProcesoService {
         }
 
     }
-    static async modificarLotedescartes(_id, query, user, action, session) {
-        const lote = await LotesRepository.getLotes2({ ids: [_id] })
-        const result = checkFinalizadoLote(lote)
-        if (result) {
-            throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
-        }
 
-        const loteModificado = await LotesRepository.actualizar_lote(
+    static async modificarLotedescartes(_id, query, user, action, session) {
+
+        const lote = await LotesHelper.actualizar_lotes_helper(
             { _id: _id },
             query,
             { user: user._id, action: action, session: session }
         )
 
-        return loteModificado;
+        const result = checkFinalizadoLote(lote)
+        if (result) {
+            throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
+        }
+        return lote;
     }
     static async restar_mover_modificar_contenedor(
         contenedores, index1, index2, contenedor1, contenedor2,
@@ -946,26 +885,6 @@ class ProcesoService {
 
             await registrarPasoLog(logId, "modificarIndicadoresFecha", "Completado", `se modificaron ${kilos} kilos de la fruta ${tipoFruta} con calidad ${calidad} y calibre ${calibre}`);
 
-        }
-    }
-    static async obtenerUsuariosRegistrosTrazabilidadEf1(registros) {
-        const usuariosIds = new Set();
-
-        for (const registro of registros) {
-            if (registro.usuario) {
-                usuariosIds.add(registro.usuario.toString());
-            }
-        }
-        const usuarios = await UsuariosRepository.get_users({
-            ids: Array.from(usuariosIds),
-            limit: 'all'
-        })
-        for (const registro of registros) {
-            if (registro.user) {
-                const usuario = usuarios.find(u => u._id.toString() === registro.user.toString());
-                registro.user = usuario.usuario || registro.user;
-
-            }
         }
     }
 }

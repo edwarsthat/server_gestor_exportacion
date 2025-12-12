@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { fileTypeFromBuffer } from 'file-type'; // ✅ Así es como lo debes hacer
 import { registrarPasoLog } from '../api/helper/logs.js';
+import { CalidadServiceError } from '../../Error/ServiceError.js';
 
 
 const MAX_FILE_SIZE_MB = 10; // 10 megas
@@ -45,7 +46,7 @@ export class CalidadService {
             "calidad.calidadInterna.user": user._id
         }
     }
-    static async obtenerExportacionContenedores(itemPallets, _id, logData) {
+    static async obtenerExportacionContenedores(itemPallets, _id) {
         let exportacion = 0;
         let kilosGGN = 0;
 
@@ -53,7 +54,6 @@ export class CalidadService {
 
         for (let i = 0; i < numeroCont; i++) {
             const item = itemPallets[i]
-            console.log(item)
             if (item.lote._id.toString() === _id) {
                 exportacion += item.kilos;
                 if (item.GGN) {
@@ -63,8 +63,27 @@ export class CalidadService {
 
 
         }
-        await registrarPasoLog(logData.logId, "CalidadService.obtenerExportacionContenedores", "Completado");
         return { exportacion, kilosGGN };
 
+    }
+    static async verificarDescarteMaquila(loteMaquila) {
+
+        try {
+            const descarteProceso = [...loteMaquila.get("descartes").values()].reduce((a, b) => a + b, 0);
+
+            const descarteRegistrado =
+                [...loteMaquila.get("descartesDevueltos").values()].reduce((a, b) => a + b, 0) +
+                [...loteMaquila.get("descartesComprados").values()].reduce((a, b) => a + b, 0)
+
+            console.log(descarteProceso, descarteRegistrado)
+
+            if (descarteProceso !== descarteRegistrado) {
+                throw new CalidadServiceError("Aprobación no permitida: existe fruta pendientes de salida en el inventario de maquila.")
+            }
+
+            return true
+        } catch (err) {
+            throw new CalidadServiceError(err.message)
+        }
     }
 }

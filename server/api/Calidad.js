@@ -1,4 +1,5 @@
 import { CalidadLogicError } from "../../Error/logicLayerError.js";
+import mongoose from 'mongoose';
 import { procesoEventEmitter } from "../../events/eventos.js";
 import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
 import { ContenedoresRepository } from "../Class/Contenedores.js";
@@ -17,6 +18,8 @@ import { CalidadService } from "../services/calidad.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { ErrorCalidadLogicHandlers } from "./utils/errorsHandlers.js";
+import { LotesHelper } from "../helper/lotes.js";
+import { populate } from "dotenv";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -145,40 +148,22 @@ export class CalidadRepository {
                 skip: (page - 1) * resultsPerPage,
                 select: {
                     enf: 1,
-                    tipoFruta: 1,
                     calidad: 1,
-                    __v: 1,
+                    tipoFruta: 1,
                     deshidratacion: 1,
                     kilos: 1,
-                    contenedores: 1,
                     canastillas: 1,
-                    descarteEncerado: 1,
-                    descarteLavado: 1,
-                    directoNacional: 1,
-                    frutaNacional: 1,
-                    fechaIngreso: 1,
-                    fecha_ingreso_patio: 1,
-                    fecha_salida_patio: 1,
                     fecha_ingreso_inventario: 1,
                     fecha_creacion: 1,
-                    fecha_estimada_llegada: 1,
-                    precio: 1,
                     aprobacionComercial: 1,
                     aprobacionProduccion: 1,
-                    numeroRemision: 1,
-                    observaciones: 1,
-                    flag_is_favorita: 1,
-                    flag_balin_free: 1,
                     fecha_finalizado_proceso: 1,
                     fecha_aprobacion_comercial: 1,
-                    salidaExportacion: 1,
 
                 },
                 limit: resultsPerPage,
                 populate: [
                     { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' },
-                    { path: 'precio', select: 'exportacion frutaNacional descarte' },
-                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
                     { path: 'tipoFruta' },
                 ]
 
@@ -186,6 +171,33 @@ export class CalidadRepository {
             return lotes
         } catch (err) {
             if (err.status === 522) {
+                throw err
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_calidad_informe_lote_detalle(req) {
+        try {
+            const { _id } = req.data
+
+            const lote = await LotesRepository.getLotes2({
+                ids: [_id],
+                populate: [
+                    { path: 'predio', select: 'PREDIO GGN ICA' },
+                    { path: 'tipoFruta', select: 'tipoFruta' },
+                    { path: "user", select: "usuario nombre apellido" },
+                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
+                    { path: 'precio', select: 'exportacion frutaNacional descarte' },
+                ]
+            });
+
+            if (!lote || lote.length === 0) {
+                throw new CalidadLogicError(404, "Lote no encontrado.");
+            }
+
+            return lote[0]
+        } catch (err) {
+            if (err.status === 524) {
                 throw err
             }
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
@@ -205,17 +217,6 @@ export class CalidadRepository {
         }
 
     }
-    static async get_calidad_informes_observacionesCalidad() {
-        try {
-            const response = await VariablesDelSistema.obtener_observaciones_calidad();
-            return response
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async get_calidad_informes_contenedoresLote(req) {
         try {
             const { data: datos } = req
@@ -231,7 +232,7 @@ export class CalidadRepository {
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_calidad_informes_informeProveedor_numeroElementos() {
+    static async get_calidad_informes_informeProveedor_numeroElementos(req) {
         try {
             const filtro = {
                 enf: { $regex: '^E', $options: 'i' },
@@ -272,7 +273,6 @@ export class CalidadRepository {
 
                 await registrarPasoLog(logData.logId, "getLotes2 AND get_Contenedores_sin_lotes", "Completado");
                 const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id, logData);
-                console.log({ exportacion, kilosGGN })
                 if (lote[0].salidaExportacion.totalKilos !== exportacion) {
                     throw new CalidadLogicError(400, `La suma de kilos en los contenedores (${exportacion} kg) no coincide con los kilos del lote (${lote[0].salidaExportacion.totalKilos} kg). Verifique por favor.`);
                 }
@@ -281,7 +281,6 @@ export class CalidadRepository {
                 }
 
             }
-            console.log(query)
             await LotesRepository.actualizar_lote(
                 { _id },
                 query,
@@ -355,14 +354,222 @@ export class CalidadRepository {
                     action: action
                 }
             )
-
-
         } catch (err) {
-            console.log(err)
             if (err.status === 523 || err.status === 522) {
                 throw err
             }
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_calidad_informes_lotesMaquila(req) {
+        try {
+
+            const { page } = req.data
+            const resultsPerPage = 50;
+
+            const lotes = await LotesRepository.getLotesMaquila({
+                skip: (page - 1) * resultsPerPage,
+                select: {
+                    enf: 1,
+                    calidad: 1,
+                    tipoFruta: 1,
+                    deshidratacion: 1,
+                    kilos: 1,
+                    canastillas: 1,
+                    fecha_ingreso_inventario: 1,
+                    fecha_creacion: 1,
+                    aprobacionComercial: 1,
+                    aprobacionProduccion: 1,
+                    fecha_finalizado_proceso: 1,
+                    fecha_aprobacion_comercial: 1,
+                },
+                limit: resultsPerPage,
+                skip: (page - 1) * resultsPerPage,
+                populate: [
+                    { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' },
+                    { path: 'precio', select: 'exportacion frutaNacional descarte' },
+                    { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
+                    { path: 'tipoFruta' },
+                ]
+
+            })
+            return lotes
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_calidad_informes_informeMaquila_numeroElementos(req) {
+        try {
+            const { filtro = {} } = req.data
+            const numeroContenedores = await LotesRepository.get_numero_lotes_maquila(filtro)
+            return numeroContenedores
+
+        } catch (err) {
+            if (err.status === 524) {
+                throw err
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_calidad_informe_loteMaquila_detalle(req) {
+        try {
+            const { _id } = req.data
+
+            const pipeline = [
+                {
+                    '$match': {
+                        'lote': new mongoose.Types.ObjectId(_id)
+                    }
+                }, {
+                    '$group': {
+                        '_id': {
+                            'contenedor': '$contenedor',
+                            'calidad': '$calidad'
+                        },
+                        'totalKilos': {
+                            '$sum': '$kilos'
+                        },
+                        'count': {
+                            '$sum': 1
+                        }
+                    }
+                }, {
+                    '$project': {
+                        '_id': 0,
+                        'contenedor': '$_id.contenedor',
+                        'calidad': '$_id.calidad',
+                        'totalKilos': 1,
+                        'documentosAgrupados': '$count'
+                    }
+                }
+            ];
+
+            const populateOptions = [
+                { path: 'calidad', select: 'nombre descripcion' },
+                { path: 'contenedor', select: 'numeroContenedor infoContenedor.maquila' }
+            ];
+
+
+            const [lote, itemsExp] = await Promise.all([
+                LotesRepository.getLotesMaquila({
+                    ids: [_id],
+                    populate: [
+                        { path: 'predio', select: 'PREDIO GGN ICA' },
+                        { path: 'tipoFruta', select: 'tipoFruta' },
+                        { path: 'cliente', select: 'CLIENTE' },
+                        { path: "user", select: "usuario nombre apellido" },
+                        { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
+                        { path: 'precio', select: 'exportacion frutaNacional descarte' },
+
+                    ]
+                }),
+                ContenedoresRepository.aggregateAndPopulate(pipeline, populateOptions)
+            ])
+
+            if (!lote || lote.length === 0) {
+                throw new CalidadLogicError(404, "Lote no encontrado.");
+            }
+
+            return { lote: lote[0], itemsPallets: itemsExp }
+        } catch (err) {
+            if (err.status === 524) {
+                throw err
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async put_calidad_informesMaquila_aprobacionProduccion(req) {
+        const { user } = req;
+        const { action, _id } = req.data
+        let log
+        try {
+            log = await LogsRepository.create({
+                user: user._id,
+                action: action,
+                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+            })
+            const logData = { logId: log._id, user: user, action: action }
+
+            let update = {
+                aprobacionProduccion: true,
+                fecha_finalizado_proceso: new Date()
+            }
+            const lote = await LotesRepository.getLotesMaquila({ ids: [_id] })
+            if (lote[0].salidaExportacion && lote[0].salidaExportacion.totalKilos > 0) {
+
+                const itemPallets = await ContenedoresRepository.getItemsPallets({
+                    query: { contenedor: { $in: lote[0].salidaExportacion.contenedores } }
+                })
+                await registrarPasoLog(logData.logId, "getLotes2 AND get_Contenedores_sin_lotes", "Completado");
+
+                const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id);
+                await registrarPasoLog(logData.logId, "CalidadService.obtenerExportacionContenedores", "Completado");
+
+                if (lote[0].salidaExportacion.totalKilos !== exportacion) {
+                    throw new CalidadLogicError(400, `La suma de kilos en los contenedores (${exportacion} kg) no coincide con los kilos del lote (${lote[0].salidaExportacion.totalKilos} kg). Verifique por favor.`);
+                }
+                if (kilosGGN > 0) {
+                    update['salidaExportacion.kilosGGN'] = kilosGGN;
+                }
+            }
+
+            await CalidadService.verificarDescarteMaquila(lote[0])
+
+            await LotesRepository.actualizar_lote_Maquila(
+                { _id },
+                update,
+                { new: true, user: user._id, action: "put_calidad_informes_loteFinalizarInforme" }
+            );
+            await registrarPasoLog(logData.logId, "LotesRepository.actualizar_lote", "Completado");
+
+        } catch (err) {
+            await registrarPasoLog(log._id, "put_calidad_informes_loteFinalizarInforme", "Error", `${err.message}`);
+            if (err.status === 523 || err.status === 522) {
+                throw err
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await registrarPasoLog(log._id, "put_calidad_informes_loteFinalizarInforme", "Completado");
+        }
+    }
+    static async put_calidad_informesMaquila_aprobacionComercial(req) {
+        try {
+            const { data, user } = req;
+            const { _id, action } = data;
+
+            const lote = await LotesRepository.getLotesMaquila({ ids: [_id] })
+
+            if (!lote || lote.length === 0) {
+                throw new CalidadLogicError(404, "Lote maquilado no encontrado.");
+            }
+
+            const newLote = lote[0].toObject();
+            newLote.aprobacionComercial = true
+            newLote.fecha_aprobacion_comercial = new Date()
+            // Actualizar contenedor con pallets modificados
+            await LotesRepository.actualizar_lote_Maquila(
+                { _id },
+                {
+                    $set: {
+                        aprobacionComercial: true,
+                        fecha_aprobacion_comercial: new Date()
+                    }
+                },
+                { new: true, user: user._id, action: action }
+            );
+
+            return true
+
+        } catch (err) {
+            if (err.status === 523 || err.status === 522) {
+                throw err
+            }
+            const mensaje = err && err.message ? err.message : JSON.stringify(err);
+            throw new CalidadLogicError(471, `Error al aprobar comercialmente: ${mensaje}`);
+
         }
     }
     //#endregion
@@ -376,13 +583,15 @@ export class CalidadRepository {
                 enf: { $regex: '^E', $options: 'i' },
                 $or: [
                     { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
-                    { fechaIngreso: { $gte: new Date(haceUnMes) } }
+                    { fecha_ingreso: { $gte: new Date(haceUnMes) } }
                 ]
 
             }
-            const select = { enf: 1, calidad: 1, tipoFruta: 1, __v: 1 }
+            const select = { enf: 1, calidad: 1, tipoFruta: 1, fecha_creacion: 1, __v: 1 }
             const lotes = await LotesRepository.getLotes({ query: query, select: select })
-            return lotes
+            const lotesMaquila = await LotesRepository.getLotesMaquila({ query: query, select: select })
+            const result = [...lotes, ...lotesMaquila].sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion));
+            return result
         } catch (err) {
             if (err.status === 522) {
                 throw err
@@ -393,17 +602,15 @@ export class CalidadRepository {
     static async put_calidad_ingresos_clasificacionDescarte(req) {
         try {
             CalidadValidationsRepository.put_calidad_ingresos_clasificacionDescarte().parse(req.data);
-            const user = req.user;
+            const { user } = req;
             const { action, data, _id } = req.data;
-            const query = {
+            const update = {
                 ...data,
-                'calidad.clasificacionCalidad.fecha': new Date()
+                'calidad.clasificacionCalidad.fecha': new Date(),
+                'calidad.clasificacionCalidad.user': user._id
             }
-            await LotesRepository.actualizar_lote(
-                { _id: _id },
-                query,
-                { new: true, user: user, action: action }
-            );
+            await LotesHelper.actualizar_lotes_helper(_id, update, { user, action });
+
         } catch (err) {
             if (err.status === 523 || err.status === 522) {
                 throw err
@@ -424,12 +631,17 @@ export class CalidadRepository {
                 enf: { $regex: '^E', $options: 'i' },
                 $or: [
                     { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
-                    { fechaIngreso: { $gte: new Date(haceUnMes) } }
+                    { fecha_ingreso: { $gte: new Date(haceUnMes) } }
                 ]
             }
-            const select = { enf: 1, calidad: 1, tipoFruta: 1, __v: 1 }
+            const select = { enf: 1, calidad: 1, tipoFruta: 1, fecha_creacion: 1, __v: 1 }
             const lotes = await LotesRepository.getLotes2({ query: query, select: select })
-            return lotes
+            const lotesMaquila = await LotesRepository.getLotesMaquila({ query: query, select: select })
+            const result = [...lotes, ...lotesMaquila].sort(
+                (a, b) =>
+                    new Date(b.fecha_creacion) - new Date(a.fecha_creacion)
+            );
+            return result
         } catch (err) {
             if (err.status === 522) {
                 throw err
@@ -451,18 +663,10 @@ export class CalidadRepository {
             CalidadValidationsRepository.put_calidad_ingresos_calidadInterna().parse(data);
             await registrarPasoLog(log._id, "Validación de datos completada", "Completado");
 
-            const query = await CalidadService.crear_query_calidad_interna(data, user);
+            const update = await CalidadService.crear_query_calidad_interna(data, user);
             await registrarPasoLog(log._id, "CalidadService.crear_query_calidad_interna", "Completado");
 
-            await LotesRepository.actualizar_lote(
-                { _id: _id },
-                query,
-                {
-                    new: true,
-                    user: user._id,
-                    action: action
-                }
-            );
+            await LotesHelper.actualizar_lotes_helper(_id, update, { user, action });
             await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado");
 
             procesoEventEmitter.emit("server_event", {

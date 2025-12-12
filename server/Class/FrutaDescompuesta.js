@@ -3,23 +3,13 @@ import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
 
 
 export class FrutaDescompuestaRepository {
-    /**
-     * Crea un nuevo registro de fruta descompuesta en la base de datos.
-     * 
-     * @param {Object} data - Datos del registro de fruta descompuesta
-     * @param {string} data.tipo_fruta - Tipo de fruta que se descompuso
-     * @param {number} data.kilos_total - Total de kilos de fruta descompuesta
-     * @param {Object} data.user - Información del usuario que registra
-     * @param {string} user_id - ID del usuario que crea el registro
-     * 
-     * @returns {Promise<Object>} El registro guardado de fruta descompuesta
-     * @throws {ConnectionDBError} Error 521 si hay problemas al crear el registro en la base de datos
-     */
-    static async post_fruta_descompuesta(data, user_id) {
+
+    static async post_fruta_descompuesta(data, user_id, opts = {}) {
+        const { session } = opts;
         try {
             const registro = new db.frutaDescompuesta({ ...data, user: user_id });
             registro._user = user_id;
-            const saveregistro = await registro.save();
+            const saveregistro = await registro.save({ session });
             return saveregistro
         } catch (err) {
             throw new ConnectionDBError(521, `Error creando el registro de fruta descompuesta ${err.message}`);
@@ -32,7 +22,11 @@ export class FrutaDescompuestaRepository {
             query = {},
             select = {},
             sort = { createdAt: -1 },
-            limit = 50,
+            limit = 0,
+            populate = [
+                { path: 'tipoFruta', select: "tipoFruta" },
+                { path: 'user', select: "usuario" },
+            ],
             skip = 0,
         } = options;
         try {
@@ -47,6 +41,7 @@ export class FrutaDescompuestaRepository {
                 .sort(sort)
                 .limit(limit)
                 .skip(skip)
+                .populate(populate)
                 .exec();
 
             return registros
@@ -89,16 +84,16 @@ export class FrutaDescompuestaRepository {
         }
     }
 
-/**
-* Función genérica para actualizar documentos en MongoDB usando Mongoose
-*
-* @param {Model} model - Modelo Mongoose (db.Lotes, etc.)
-* @param {Object} filter - Objeto de filtrado para encontrar el documento
-* @param {Object} update - Objeto con los campos a actualizar
-* @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
-* @param {ClientSession} session - Sesión de transacción (opcional)
-* @returns Documento actualizado
-*/
+    /**
+    * Función genérica para actualizar documentos en MongoDB usando Mongoose
+    *
+    * @param {Model} model - Modelo Mongoose (db.Lotes, etc.)
+    * @param {Object} filter - Objeto de filtrado para encontrar el documento
+    * @param {Object} update - Objeto con los campos a actualizar
+    * @param {Object} options - Opciones adicionales de findOneAndUpdate (opcional)
+    * @param {ClientSession} session - Sesión de transacción (opcional)
+    * @returns Documento actualizado
+    */
     static async actualizar_registro(filter, update, options = {}, session = null, user = '', action = '') {
         const defaultOptions = { new: true }; // retorna el documento actualizado
         const finalOptions = session

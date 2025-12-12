@@ -8,22 +8,18 @@ import { InventariosRepository } from '../../server/api/inventarios.js';
 
 export function initCronJobs() {
 
-    cron.schedule('1 5 * * *', async () => {
-        await IndicadoresAPIRepository.post_indicadores_eficiencia_operativa_registro();
-    });
-
-    //Kilos procesados al finalizar el dia
-    cron.schedule('0 5 * * *', async () => {
-        await IndicadoresAPIRepository.reiniciarValores_proceso();
-    });
-
-    //snapshot del inventario descarte del dia
-    cron.schedule('5 5 * * *', async () => {
+    //terminacion de turno
+    cron.schedule('59 4 * * *', async () => {
         await InventariosRepository.snapshot_inventario_descartes();
+        await IndicadoresAPIRepository.reiniciarValores_proceso();
 
     });
 
-    cron.schedule("10 5 * * *", async () => {
+    //nuevos datos diarios
+    cron.schedule('1 5 * * *', async () => {
+        await InventariosRepository.crear_snapshot_inventario_descartes();
+        await IndicadoresAPIRepository.post_indicadores_eficiencia_operativa_registro();
+
         const inicio = new Date().setHours(0, 0, 0, 0);
         const fin = new Date().setHours(23, 59, 59, 59);
         const codigo = await VariablesDelSistema.generar_codigo_informe_calidad()
@@ -32,7 +28,6 @@ export function initCronJobs() {
             codigo, inicio, fin
         )
         await VariablesDelSistema.incrementar_codigo_informes_calidad();
-
     });
 
 }

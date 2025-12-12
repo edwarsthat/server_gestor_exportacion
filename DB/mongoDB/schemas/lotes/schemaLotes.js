@@ -1,34 +1,7 @@
-/**
- * @file Esquema y modelo de datos para los lotes de fruta en MongoDB (Celifrut).
- *
- * @summary
- * Este módulo define el modelo de datos de los lotes, centralizando toda la información relevante para la trazabilidad,
- * control de calidad, descartes, fechas, contenedores, aprobaciones y parámetros de procesamiento de cada lote.
- *
- * @description
- * Incluye subesquemas para calidad interna, inspección, descartes, desverdizado, exportación detallada y más.
- * El modelo resultante permite registrar, consultar y auditar el ciclo de vida completo de un lote desde su ingreso hasta su salida.
- *
- * @module DB/mongoDB/schemas/lotes/schemaLotes
- */
 
 import mongoose from "mongoose";
 import { makeAuditPlugin } from "../utils/auditPLug.js";
 const { Schema } = mongoose;
-
-/**
- * Define el modelo de datos para los lotes en el sistema.
- *
- * Este esquema centraliza toda la información relevante de un lote, incluyendo calidad, descartes, fechas, contenedores asociados,
- * aprobaciones, parámetros de desverdizado, exportación detallada, historial y más. Permite el registro y trazabilidad completa
- * de cada lote desde su ingreso hasta su procesamiento y salida.
- *
- * @param {Object} conn - Conexión activa de Mongoose donde se registrará el modelo.
- * @returns {Object} Modelo de Lote registrado en la conexión proporcionada.
- *
- * @see https://mongoosejs.com/docs/models.html
- */
-
 
 export const defineLotes = async (conn, AuditLog) => {
 
@@ -38,7 +11,7 @@ export const defineLotes = async (conn, AuditLog) => {
     ratio: Number,
     peso: Number,
     zumo: Number,
-    user: String,
+    user: { type: Schema.Types.ObjectId, ref: 'usuario' },
     semillas: Boolean,
     calidad: { type: Schema.Types.ObjectId, ref: 'calidades' },
     fecha: { type: Date, default: Date.now }
@@ -49,7 +22,8 @@ export const defineLotes = async (conn, AuditLog) => {
       type: Map,
       of: String
     },
-    fecha: { type: Date, default: Date.now }
+    fecha: { type: Date, default: Date.now },
+    user: { type: Schema.Types.ObjectId, ref: 'usuario' },
 
   }, { _id: false, strict: false });
 
@@ -78,26 +52,6 @@ export const defineLotes = async (conn, AuditLog) => {
     fotosCalidad: fotosCalidadSchema,
 
   }, { _id: false });
-
-  const descarteLavadoSchema = new Schema({
-    descarteGeneral: { type: Number, default: 0 },
-    pareja: { type: Number, default: 0 },
-    balin: { type: Number, default: 0 },
-    descompuesta: { type: Number, default: 0 },
-    piel: { type: Number, default: 0 },
-    hojas: { type: Number, default: 0 },
-  }, { _id: false });
-
-
-  const descarteEnceradoSchema = new Schema({
-    descarteGeneral: { type: Number, default: 0 },
-    pareja: { type: Number, default: 0 },
-    balin: { type: Number, default: 0 },
-    extra: { type: Number, default: 0 },
-    descompuesta: { type: Number, default: 0 },
-    suelo: { type: Number, default: 0 },
-  }, { _id: false });
-
 
   const salidaDirectoNacionalSchema = new Schema({
     placa: String,
@@ -161,8 +115,7 @@ export const defineLotes = async (conn, AuditLog) => {
     canastillas: { type: Number, default: 0 },
     canastillas_estimadas: Number,
     contenedores: [String],
-    descarteEncerado: descarteEnceradoSchema,
-    descarteLavado: descarteLavadoSchema,
+    descartes: { type: Map, of: Number, default: {} },
     deshidratacion: { type: Number, default: 100 },
     desverdizado: desverdizadoSchema,
     directoNacional: { type: Number, default: 0 },
@@ -201,14 +154,14 @@ export const defineLotes = async (conn, AuditLog) => {
     salidaExportacion: salidaExportacionSchema,
     rendimiento: { type: Number, default: 0 },
     tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas' },
-    user: String,
+    user: { type: Schema.Types.ObjectId, ref: 'usuario' },
 
   }, { versionKey: '__v' });
 
   // Hook de lógica de negocio: modificar aprobacionProduccion según la acción
   dataSchema.pre('findOneAndUpdate', async function (next) {
     const update = this.getUpdate();
-    
+
     // Lista de acciones que NO deben resetear aprobacionProduccion
     const accionesExcluidas = [
       "put_calidad_informes_aprobacionComercial",
@@ -220,7 +173,7 @@ export const defineLotes = async (conn, AuditLog) => {
       "put_calidad_informe_noPagarBalinLote",
       "system:recalc_desh_rend"
     ];
-    
+
     if (!accionesExcluidas.includes(this.options.action)) {
       console.log("Resetting aprobacionProduccion due to action:", this.options.action);
       if (!update.$set) {
@@ -228,14 +181,14 @@ export const defineLotes = async (conn, AuditLog) => {
       }
       update.$set.aprobacionProduccion = false;
     }
-    
+
     next();
   });
 
   // Aplicar plugin de auditoría
-  dataSchema.plugin(makeAuditPlugin({ 
-    collectionName: 'Lote', 
-    AuditLogs: AuditLog 
+  dataSchema.plugin(makeAuditPlugin({
+    collectionName: 'Lote',
+    AuditLogs: AuditLog
   }));
 
   const Lotes = conn.model("Lote", dataSchema);

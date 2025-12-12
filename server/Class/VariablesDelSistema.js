@@ -16,7 +16,6 @@ const pathIDs = path.join(__dirname, '..', '..', 'inventory', 'seriales.json');
 const inventarioPath = path.join(__dirname, '..', '..', 'inventory', 'inventario.json');
 const inventarioDesverdizadoPath = path.join(__dirname, '..', '..', 'inventory', 'inventarioDesverdizado.json');
 const ordenVaceoPath = path.join(__dirname, '..', '..', 'inventory', 'OrdenDeVaceo.json');
-const observacionesCalidadPath = path.join(__dirname, '..', '..', 'constants', 'observacionesCalidad.json');
 const canastillasPath = path.join(__dirname, '..', '..', 'inventory', 'canastillas.json');
 
 
@@ -73,50 +72,6 @@ export class VariablesDelSistema {
     }
   }
 
-  static async procesarEF1(lote, logId) {
-    try {
-      const cliente = await getRedisClient();
-
-      await this.modificar_predio_proceso(lote, cliente);
-      await this.modificar_predio_proceso_descartes(lote, cliente);
-      // await this.modificar_predio_proceso_listaEmpaque(lote, cliente);
-
-    } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis ${err.name}`)
-    } finally {
-      await registrarPasoLog(logId, "procesarEF1.procesarEF1", "Completado");
-    }
-  }
-  static async obtenerEF1proceso() {
-    /**
-   * Obtiene los datos del predio procesando desde Redis.
-   *
-   * @returns {Promise<Object>} - Promesa que resuelve con los datos del predio procesando descartes.
-   * @throws {ConnectRedisError} - Lanza un error si ocurre un problema al conectarse a Redis.
-   */
-    try {
-      const cliente = await getRedisClient();
-      const predioData = await cliente.hGetAll("predioProcesando");
-      return predioData
-    } catch (err) {
-      throw new ConnectRedisError(531, `Error con la conexion con redis ${err.name}`)
-    }
-  }
-  static async obtenerEF1Descartes() {
-    /**
-   * Obtiene los datos de descartes del predio procesando desde Redis.
-   *
-   * @returns {Promise<Object>} - Promesa que resuelve con los datos del predio procesando descartes.
-   * @throws {ConnectRedisError} - Lanza un error si ocurre un problema al conectarse a Redis.
-   */
-    try {
-      const cliente = await getRedisClient();
-      const predioData = await cliente.hGetAll("predioProcesandoDescartes");
-      return predioData
-    } catch (err) {
-      throw new ConnectRedisError(531, `Error obtenerEF1 descartes ${err.type}`)
-    }
-  }
   static async obtener_EF1_listaDeEmpaque() {
     /**
 * Obtiene los datos de lista de empaque del predio procesando desde Redis.
@@ -134,25 +89,6 @@ export class VariablesDelSistema {
   }
 
 
-  static async incrementar_codigo_celifrut() {
-    /**
-   * Funcion que aumenta en 1 el serial del codigo idCelifrut que esta almacenado en el archivo json
-   *  en inventario  seriales.json
-   * 
-   * @throws - Devuelve un error si hay algun error abriendo y guardadndo el archivo
-   * @return {void} - no devuelve nada
-   */
-    try {
-      const idsJSON = fs.readFileSync(pathIDs);
-      const ids = JSON.parse(idsJSON);
-      ids.idCelifrut += 1;
-      const newidsJSON = JSON.stringify(ids);
-      fs.writeFileSync(pathIDs, newidsJSON);
-    } catch (err) {
-      throw new ProcessError(511, `Error incrementando el serial celifrut ${err.message}`)
-    }
-
-  }
   static modificar_predio_proceso = async (lote, cliente) => {
     /**
    * Función que modifica la información del predio en proceso en Redis.
@@ -175,48 +111,7 @@ export class VariablesDelSistema {
 
     }
   }
-  static modificar_predio_proceso_descartes = async (lote, cliente) => {
-    /**
-   * Función que modifica la información del predio en proceso descartes en Redis.
-   *
-   * @param {Object} lote - El lote con la información a actualizar.
-   * @param {Object} cliente - El cliente de Redis.
-   * @returns {Promise<void>} - Promesa que se resuelve cuando la modificación ha terminado.
-   * @throws {ConnectRedisError} - Lanza un error si ocurre un problema con la conexión a Redis.
-   */
-    try {
-      cliente = await getRedisClient();
 
-      await cliente.hSet("predioProcesandoDescartes", {
-        _id: lote._id.toString(),
-        enf: lote.enf,
-        predio: lote.predio._id.toString(),
-        nombrePredio: lote.predio.PREDIO,
-        tipoFruta: lote?.tipoFruta?._id?.toString() ?? lote.tipoFruta.toString(),
-      });
-
-    } catch (err) {
-      throw new ConnectRedisError(532, `Error con la conexion con redis predio descarte: ${err.name}`)
-    }
-  }
-
-  static async generar_codigo_celifrut() {
-    /**
-     * Se genera el codigo celifrut , es un codigo que se asigna a un lote que se crea 
-     * cuando se reprocesan los descartes de varios predios
-     * 
-     * @throws - Devuelve un error si hay algun error abriendo y guardadndo el archivo
-     * @return {string}  - El string con el codigo Celifrut- mas el consecutivo
-     */
-    try {
-      const idsJSON = fs.readFileSync(pathIDs);
-      const ids = JSON.parse(idsJSON);
-
-      return 'Celifrut-' + ids.idCelifrut;
-    } catch (err) {
-      throw new ProcessError(506, `Error creando el codigo celifrut: ${err.message}`)
-    }
-  }
   static async generar_codigo_informe_calidad() {
     /**
  * Se genera el codigo calidad del sistema, el codigo se genera sienfo CA- los primero caracteres
@@ -511,43 +406,6 @@ export class VariablesDelSistema {
 
     } catch (err) {
       throw new ProcessError(418, `Error modificando las variables del sistema: ${err.name}`)
-    }
-  }
-  /**
-     * Función que reprocesa un lote de tipo celifrutm lo envia a las aplicacion de descarte y lista de empaque.
-     *
-     * @param {Object} lote - El lote a reprocesar.
-     * @param {number} kilosTotal - La cantidad total de kilos a reprocesar.
-     * @returns {Promise<void>} - Promesa que se resuelve cuando el reprocesamiento ha terminado.
-     * @throws {ProcessError} - Lanza un error si ocurre un problema durante el reprocesamiento.
-     */
-  static async reprocesar_predio_celifrut(lote, kilosTotal) {
-    try {
-      const cliente = await getRedisClient();
-      const kilosReprocesadorExist = await cliente.exists("kilosReprocesadorHoy");
-      if (kilosReprocesadorExist !== 1) {
-        await cliente.set("kilosReprocesadorHoy", 0);
-      }
-      let kilosReprocesadosHoy = await cliente.get("kilosReprocesadorHoy");
-
-      if (isNaN(kilosReprocesadosHoy)) {
-        kilosReprocesadosHoy = 0;
-      }
-      const kilosReprocesadosRedis = Number(kilosReprocesadosHoy) + Number(kilosTotal);
-
-      await cliente.set("kilosReprocesadorHoy", kilosReprocesadosRedis);
-      await cliente.set("descarteLavado", 0);
-      await cliente.set("descarteEncerado", 0);
-      await cliente.hSet("predioProcesandoDescartes", {
-        _id: String(lote._id),
-        enf: String(lote.enf ?? ''),
-        predio: String(lote.predio),     // aquí ya es un ObjectId plano → conviértelo directo
-        nombrePredio: "Celifrut",
-        tipoFruta: String(lote.tipoFruta), // igual, puede ser ObjectId
-      });
-
-    } catch (err) {
-      throw new ProcessError(518, `Error modificando las variables del sistema: ${err.name}`)
     }
   }
   // #region Datos del proceso
@@ -1065,17 +923,6 @@ export class VariablesDelSistema {
     }
   }
   //#region Constantes
-  static async obtener_observaciones_calidad() {
-    try {
-
-      const observacionesJSON = fs.readFileSync(observacionesCalidadPath);
-      const observaciones = JSON.parse(observacionesJSON);
-
-      return observaciones;
-    } catch (err) {
-      throw new ProcessError(522, `Error Obteniendo observaciones calidad ${err.name}`)
-    }
-  }
   //canastillas
   static async obtener_canastillas_inventario() {
     try {
