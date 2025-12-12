@@ -83,7 +83,7 @@ import { defineLoteMaquila } from '../schemas/lotes/schemaLoteMaquila.js';
 import { defineFrutaProcesada } from '../schemas/lotes/schemaFrutaProcesada.js';
 import { defineInventarioActualDescarte } from '../schemas/inventarios/SchemaInventarioActualDescarte.js';
 import { defineInventarioMovimientosDescarte } from '../schemas/inventarios/SchemaMovimientoInventarioDescartes.js';
-import { defineHabilitarEstancia } from '../schemas/proceso/HabilitarEstancaisSchema.js';
+import { defineHabilitarEstancia } from '../schemas/proceso/HabilitarEstanciasSchema.js';
 
 export const db = {};
 export const connections = {};

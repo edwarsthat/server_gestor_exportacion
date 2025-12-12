@@ -27,8 +27,7 @@ export const defineHabilitarEstancia = async (conn) => {
 
     const HabilitarEstancia = conn.model(
         "habilitarInstancias", 
-        HabilitarEstanciaSchema, 
-        "habilitarestancias"
+        HabilitarEstanciaSchema 
     );
 
     return HabilitarEstancia;
