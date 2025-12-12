@@ -42,6 +42,13 @@ export const apiSocketSistema = {
         const response = await SistemaRepository.put_sistema_habilitarInstancias_habilitarPredio(data);
         return successResponseRoutes(response)
     },
+//nuevo registro en habilitar instancias Jp
+    get_sistema_habilitarInstancias_registros: async () => {
+    const registros = await SistemaRepository.get_sistema_habilitarInstancias_registros();
+    return successResponseRoutes(registros);
+    },
+
+
     put_sistema_reiniciar_orden_vaceo: async () => {
         const response = await SistemaRepository.put_sistema_reiniciar_orden_vaceo();
         return successResponseRoutes(response)

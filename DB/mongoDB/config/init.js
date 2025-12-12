@@ -413,7 +413,7 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("✅ Seriales definidos");
 
         console.log("⚡ Definiendo Habilitar Instancia...");
-        db.HabilitarInstancia = await defineHabilitarEstancia(sysConn);
+        db.HabilitarEstancia = await defineHabilitarEstancia(sysConn); //es HabilitarEstancia no HabilitarInstancia
         console.log("✅ Habilitar Instancia definido");
 
         console.log("🎉 Todos los schemas de proceso han sido definidos correctamente.")
@@ -442,13 +442,13 @@ const defineSchemasSistema = async (sysConn) => {
         // db.Cargo = await defineCargo(sysConn);
         // console.log("✅ Cargo definido");
 
-        // console.log("⚡ Definiendo recordCargo...");
-        // db.recordCargo = await defineRecordcargo(sysConn);
-        // console.log("✅ recordCargo definido");
+        console.log("⚡ Definiendo recordCargo...");
+        db.recordCargo = await defineRecordcargo(sysConn);
+        console.log("✅ recordCargo definido");
 
-        // console.log("⚡ Definiendo Usuarios...");
-        // db.Usuarios = await defineUser(sysConn);
-        // console.log("✅ Usuarios definido");
+        console.log("⚡ Definiendo Usuarios...");
+        db.Usuarios = await defineUser(sysConn);
+        console.log("✅ Usuarios definido");
 
 
         console.log("⚡ Definiendo Logs...");
