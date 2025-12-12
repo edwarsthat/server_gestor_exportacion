@@ -10,11 +10,8 @@ export const defineSchemaPersonal = async (conn) => {
         identificacion: { type: String, required: true },
         tipoIdentificacion: { type: String, required: true },
         foto: { type: String },
-        fechaVencimiento: { type: Date, required: true },
         tipoSangre: { type: String },
-        linkQr: { type: String },
-        estado: { type: Boolean, default: true },
-        accessToken: { type: String, required: true, unique: true },
+        carnet: { type: Schema.Types.ObjectId, ref: 'carnet' },
     })
 
     personalSchema.index(
@@ -22,8 +19,8 @@ export const defineSchemaPersonal = async (conn) => {
         { name: 'idx_sku_cargo' }
     );
     personalSchema.index(
-        { accessToken: 1, estado: 1 },
-        { name: 'idx_accessToken_estado' }
+        { carnet: 1 },
+        { name: 'idx_carnet' }
     );
 
     const Personal = conn.model("personal", personalSchema);

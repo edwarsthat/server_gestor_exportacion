@@ -45,6 +45,7 @@ const permisos_generales = new Set([
     "get_contabilidad_informes_calidad_numeroElementos",
     "get_calidad_informes_informeMaquila_numeroElementos",
     "get_contabilidad_informesMaquila_calidad_numeroElementos",
+    "get_talentoHumano_cargos_numeroRegistros",
     //obteniendo constantes
     "get_inventarios_cuartosFrios_listaEmpaque",
     "get_inventarios_cuartosFrios_detalles",
@@ -65,6 +66,7 @@ const permisos_generales = new Set([
     "get_data_cuartosFrios",
     "get_data_tipoFruta2",
     "get_data_areasAcceso",
+    "get_data_cargosPersonal",
 
     "get_proceso_aplicaciones_listaEmpaque_pallets",
     "get_proceso_aplicaciones_listaEmpaque_itemsPallet",

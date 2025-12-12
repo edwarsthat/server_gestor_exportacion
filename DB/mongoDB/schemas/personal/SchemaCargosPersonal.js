@@ -1,12 +1,17 @@
 import mongoose from "mongoose";
+import { makeAuditPlugin } from "../utils/auditPLug.js";
 const { Schema } = mongoose;
 
-export const defineSchemaCargosPersonal = async (conn,) => {
+export const defineSchemaCargosPersonal = async (conn, auditLog) => {
+
+    const auditPlugin = makeAuditPlugin({ collectionName: 'cargosPersonal', AuditLogs: auditLog });
 
     const cargosPersonalSchema = new Schema({
         nombre: { type: String, required: true, unique: true },
         areasAcceso: [{ type: Schema.Types.ObjectId, ref: 'areasFisicas' }],
     })
+
+    cargosPersonalSchema.plugin(auditPlugin);
 
     const CargosPersonal = conn.model("cargosPersonal", cargosPersonalSchema);
 

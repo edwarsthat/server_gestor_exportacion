@@ -43,4 +43,35 @@ export class CargosPersonalRepository {
             throw new BadGetwayError(501, `Error obteniendo cargos ${err.message}`);
         }
     }
+    static async get_numero_registros_cargos(filter) {
+        try {
+            const numeroRegistros = await db.CargosPersonal.countDocuments(filter)
+            return numeroRegistros
+        } catch (err) {
+            throw new BadGetwayError(501, `Error obteniendo numero de registros de cargos ${err.message}`);
+        }
+    }
+    static async actualizar_cargo(filter, update, options = {}) {
+        const { session, arrayFilters, ...restOptions } = options;
+
+        const finalOptions = {
+            new: true,
+            ...restOptions,
+            ...(session && { session }),
+            ...(arrayFilters && { arrayFilters })
+        };
+
+        try {
+            let documento = await db.CargosPersonal.findOneAndUpdate(filter, update, { ...finalOptions });
+            if (!documento) {
+                if (softNotFound) return null;
+                throw new Error('Cargo no encontrado');
+            }
+
+            return documento;
+
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+        }
+    }
 }

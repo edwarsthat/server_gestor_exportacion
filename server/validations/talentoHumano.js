@@ -15,4 +15,13 @@ export class TalentoHumanoValidations {
             areasAcceso: z.array(z.string()).min(1, "Al menos una área de acceso es obligatoria"),
         })
     }
+    static post_talentoHumano_personal_ingresoPersonal() {
+        return z.object({
+            nombre: z.string().min(1, "El nombre es obligatorio"),
+            identificacion: z.string().min(1, "La identificación es obligatoria"),
+            tipoIdentificacion: z.string().min(1, "El tipo de identificación es obligatorio"),
+            tipoSangre: z.string().min(1, "El tipo de sangre es obligatorio"),
+            cargo: z.string().min(1, "El cargo es obligatorio"),
+        })
+    }
 }
