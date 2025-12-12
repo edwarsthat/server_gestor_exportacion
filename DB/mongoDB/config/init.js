@@ -59,9 +59,7 @@ import { defineLoteMaquila } from '../schemas/lotes/schemaLoteMaquila.js';
 import { defineFrutaProcesada } from '../schemas/lotes/schemaFrutaProcesada.js';
 import { defineInventarioActualDescarte } from '../schemas/inventarios/SchemaInventarioActualDescarte.js';
 import { defineInventarioMovimientosDescarte } from '../schemas/inventarios/SchemaMovimientoInventarioDescartes.js';
-import { defineHabilitarEstancia } from '../schemas/proceso/HabilitarEstancaisSchema.js';
-import { defineSchemaPersonal } from '../schemas/personal/SchemaPersonal.js';
-import { defineSchemaCargosPersonal } from '../schemas/personal/SchemaCargosPersonal.js';
+import { defineHabilitarEstancia } from '../schemas/proceso/HabilitarEstanciasSchema.js';
 
 export const db = {};
 export const connections = {};
@@ -381,7 +379,7 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("✅ Seriales definidos");
 
         console.log("⚡ Definiendo Habilitar Instancia...");
-        db.HabilitarInstancia = await defineHabilitarEstancia(sysConn);
+        db.HabilitarEstancia = await defineHabilitarEstancia(sysConn); //es HabilitarEstancia no HabilitarInstancia
         console.log("✅ Habilitar Instancia definido");
 
         //#region Personal
@@ -419,13 +417,13 @@ const defineSchemasSistema = async (sysConn) => {
         // db.Cargo = await defineCargo(sysConn);
         // console.log("✅ Cargo definido");
 
-        // console.log("⚡ Definiendo recordCargo...");
-        // db.recordCargo = await defineRecordcargo(sysConn);
-        // console.log("✅ recordCargo definido");
+        console.log("⚡ Definiendo recordCargo...");
+        db.recordCargo = await defineRecordcargo(sysConn);
+        console.log("✅ recordCargo definido");
 
-        // console.log("⚡ Definiendo Usuarios...");
-        // db.Usuarios = await defineUser(sysConn);
-        // console.log("✅ Usuarios definido");
+        console.log("⚡ Definiendo Usuarios...");
+        db.Usuarios = await defineUser(sysConn);
+        console.log("✅ Usuarios definido");
 
 
         console.log("⚡ Definiendo Logs...");

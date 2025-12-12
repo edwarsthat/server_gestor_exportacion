@@ -23,6 +23,11 @@ import { registrarPasoLog } from './helper/logs.js';
 import { FrutaProcesada } from '../Class/frutaProcesada.js';
 import { LotesHelper } from '../helper/lotes.js';
 
+import { SistemaProcesoClass } from "../Class/sistema/ProcesoClass.js";
+//import { SistemaLogicError } from "../../Error/ConnectionErrors.js";
+
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -197,6 +202,7 @@ export class SistemaRepository {
             throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
+//-----------------------------------------------------------------------------------------
     static async put_sistema_habilitarInstancias_habilitarPredio(req) {
         const { user } = req
         const { data } = req.data
@@ -206,20 +212,25 @@ export class SistemaRepository {
             user: user._id,
             action: "habilitarPredio",
             acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-        })
+        });
 
         try {
 
             await session.withTransaction(async () => {
+
+                // 1. ACTUALIZAR LOTE.Jp
                 const lote = await LotesHelper.actualizar_lotes_helper(
-                    { _id: data },
+                    { _id: data.loteId }, //esto se le agrego.loteId para que tome el id del lote.Jp
                     { finalizado: false },
                     { action: "habilitarPredio", user: user, session }
                 );
                 if (!lote) {
                     throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
                 }
-                const loteType = lote.enf.startsWith("EF10-") ? "LoteMaquila" : "Lote"
+                //Determinar el tipo de lote para el registro correcto. Jp
+                const loteType = lote.enf.startsWith("EF10-") ? "loteMaquila" : "Lote";
+
+                // 2. GUARDAR REGISTRO EN frutaProcesada
                 const newRegistro = {
                     loteId: lote._id,
                     predio: lote.predio,
@@ -230,8 +241,21 @@ export class SistemaRepository {
                     user: user._id,
                     proceso: 'Habilitar'
                 }
-                await FrutaProcesada.addFrutaProcesada(newRegistro, user, session)
-            })
+                await FrutaProcesada.addFrutaProcesada(newRegistro, user, session);
+
+                // 3. 🔥 NUEVO: REGISTRAR EN habilitarestancias
+                await SistemaProcesoClass.addRegistroHabilitarEstancia(
+                    {
+                        user: user._id,
+                        lote: lote._id,
+                        loteType: loteType,
+                        motivo: data.motivo,
+                        justificacion: data.justificacion
+                    },
+                    user._id,
+                    { session }
+                );
+            });
 
 
         } catch (err) {
@@ -241,6 +265,41 @@ export class SistemaRepository {
             throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
+//-----------------------------------------------------------------------------------------
+static async get_sistema_habilitarInstancias_registros() {
+    try {
+        const registros = await SistemaProcesoClass.getRegistrosHabiliarInstancia({
+            populate: [
+                { path: 'user', select: 'nombre correo', model: 'usuario' },
+                { path: 'lote', select: '_id enf predio loteID codigoPropio calidad' }
+            ],
+            sort: { createdAt: -1 }
+        });
+
+        return registros.map(r => ({
+                _id: r._id,
+                fecha: r.createdAt,
+                usuario: r.user?.nombre ?? 'Sin nombre',
+            // Manejar variación de campos ENTRE tipos de lote
+                lote: 
+                    r.lote?.enf ?? 
+                    r.lote?.loteID ?? 
+                    r.lote?.codigoPropio ??
+                    'Sin lote',
+                motivo: r.motivo,
+                justificacion: r.justificacion
+            }));
+
+    } catch (err) {
+        throw new SistemaLogicError(
+            500,
+            `Error obteniendo registros: ${err.message}`
+        );
+    }
+}
+
+//-----------------------------------------------------------------------------------------------
+
     static async put_sistema_reiniciar_orden_vaceo() {
         try {
             await VariablesDelSistema.put_inventario_inventarios_orden_vaceo_modificar([])

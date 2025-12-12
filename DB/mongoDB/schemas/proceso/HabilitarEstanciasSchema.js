@@ -5,7 +5,7 @@ export const defineHabilitarEstancia = async (conn) => {
 
     const HabilitarEstanciaSchema = new Schema({
         createdAt: { type: Date, default: () => new Date() },
-        user: { type: mongoose.Schema.Types.ObjectId, ref: "usuarios" },
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "usuario" },
         lote: {
             type: Schema.Types.ObjectId,
             required: true,
@@ -23,9 +23,12 @@ export const defineHabilitarEstancia = async (conn) => {
         },
         motivo: { type: String, required: true },
         justificacion: { type: String, required: true },
-    })
+    });
 
-    const habilidateEstancia = conn.model("habilitarEstancia", HabilitarEstanciaSchema);
-    return habilidateEstancia;
+    const HabilitarEstancia = conn.model(
+        "habilitarInstancias", 
+        HabilitarEstanciaSchema 
+    );
+
+    return HabilitarEstancia;
 }
-
