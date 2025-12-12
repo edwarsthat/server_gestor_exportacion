@@ -48,5 +48,33 @@ export class PersonalControllerRepository {
             await registrarPasoLog(log._id, "Fin de la función", "completado")
         }
     }
+    static async get_talentoHumano_personal_registros(req) {
+        try {
+            const { page } = req.data
+            const resultsPerPage = 25;
+
+            const data = await PersonalRepository.get_personal({
+                skip: (page - 1) * resultsPerPage,
+                limit: resultsPerPage,
+                populate: {
+                    path: "cargo",
+                    select: "nombre"
+                }
+            })
+            return data
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorTalentHumanoLogicHandlers(error)
+        }
+    }
+    static async get_talentoHumano_personal_numeroRegistros() {
+        try {
+            const data = await PersonalRepository.get_numero_registros_personal({})
+            return data
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorTalentHumanoLogicHandlers(error)
+        }
+    }
 }
 

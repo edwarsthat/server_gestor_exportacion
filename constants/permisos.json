@@ -538,6 +538,16 @@
                     "Modificar Orden Vaceo": "put_sistema_reiniciar_orden_vaceo"
                 }
             }
+        },
+        "Registros": {
+            "Registro Habilitar Instancias": {
+                "_id": {
+                    "$oid": "6932fa57a880d2c37115d624"
+                },
+                "permisos": {
+                    "obtener_registro_instancias": "get_sistema_habilitarInstancias_registros"
+                }
+            }
         }
     },
     "Indicadores": {
@@ -799,7 +809,6 @@
             }
         }
     },
-    "Rol": 0,
     "Transporte": {
         "Registros": {
             "Registros exportación": {
@@ -972,6 +981,41 @@
                     "Ingreso personal": "post_talentoHumano_personal_ingresoPersonal"
                 }
             }
+        },
+        "Cargos personal": {
+            "Ingresar Cargo": {
+                "titulo": "Se agrega un nuevo cargo del personal",
+                "_id": {
+                    "$oid": "693afd7f1a12c4744aa95f47"
+                },
+                "permisos": {
+                    "Agregar nuevo cargo": "post_talentoHumano_cargos_ingresoCargo"
+                }
+            },
+            "Cargos Personal": {
+                "titulo": "Se ven y modifican los cargos actuales",
+                "permisos": {
+                    "Obtener cargos": "get_talentoHumano_cargos_registros",
+                    "Modificar Cargo": "put_talentoHumano_cargos_modificarCargo"
+                },
+                "_id": {
+                    "$oid": "693c42ccbb3a96d4fcc36edb"
+                }
+            }
+        },
+        "Dotación": {
+            "Carnets": {
+                "Crear Carnet": {
+                    "titulo": "Se crean los carnet",
+                    "_id": {
+                        "$oid": "693c3eb9bb3a96d4fcc36eda"
+                    },
+                    "permisos": {
+                        "Obtener Empleados": "get_talentoHumano_dotacion_obtenerEmpleados"
+                    }
+                }
+            }
         }
-    }
+    },
+    "Rol": 0
 }
