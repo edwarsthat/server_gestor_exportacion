@@ -29,6 +29,7 @@ import { FrutaProcesada } from "../Class/frutaProcesada.js";
 import { InventariosHistorialRepository } from "../Class/Inventarios.js";
 import { LotesHelper } from "../helper/lotes.js";
 import { DescartesRepository } from "../Class/Descartes.js";
+import { populate } from "dotenv";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1357,9 +1358,11 @@ export class ProcesoRepository {
             const query = {
                 documentId: lote[0]._id
             }
-            const registros = await RecordLotesRepository.getAuditLogsEf1({ query: query })
+            const registros = await RecordLotesRepository.getAuditLogsEf1({
+                query: query,
+                populate: [{ path: 'user', select: 'usuario' }]
+            })
 
-            await ProcesoService.obtenerUsuariosRegistrosTrazabilidadEf1(registros)
             return registros
         } catch (error) {
             if (

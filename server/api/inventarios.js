@@ -994,7 +994,7 @@ export class InventariosRepository {
                 await InventariosService.eliminarKilos_inventario_descarte(registros, data, log, user, session);
                 await InventariosService.modificar_lotes_inventario_descarteMaquila(data, _id, remision, tipoSalidaSeleccionado, log, user, session);
                 if (tipoSalidaSeleccionado === 'Comprar') {
-
+                    console.log(registros)
                     await InventariosService.ingresarFrutaDescarteMaquilaDescarteProceso(data, registros[0], _id, log, session);
                     const kilosTotales = Object.values(data).reduce((acc, curr) => acc + Number(curr || 0), 0);
                     await InventariosHistorialRepository.put_cardex_invetariosdescartes(
@@ -1002,9 +1002,9 @@ export class InventariosRepository {
                         {
                             $inc: {
                                 [`kilos_ingreso.
-                                    ${registros[0].tipoFruta._id.toString()}
+                                    ${registros[0].tipoFruta.toString()}
                                     .${registros[0].area}
-                                    .${registros[0].descarte._id.toString()}`]: kilosTotales,
+                                    .${registros[0].tipoDescarte.toString()}`]: kilosTotales,
                             },
                         },
                         {
@@ -2026,7 +2026,7 @@ export class InventariosRepository {
             let lote
             await session.withTransaction(async () => {
 
-                lote = await LotesRepository.addLote(query, user, { session });
+                lote = await LotesRepository.addLote(query, { session, user: user._id, action: action });
                 await registrarPasoLog(log._id, "LotesRepository.addLote", "Completado");
 
                 // await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));

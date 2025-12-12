@@ -107,7 +107,8 @@ export class RecordLotesRepository {
             query = {},
             select = {},
             sort = { createdAt: -1 },
-            limit = "all",
+            populate = [],
+            limit = 0,
             skip = 0,
 
         } = options;
@@ -118,17 +119,13 @@ export class RecordLotesRepository {
                 lotesQuery._id = { $in: ids };
             }
 
-            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
-
-
             const lotes = await db.AuditLog.find(lotesQuery)
                 .select(select)
                 .sort(sort)
-                .limit(limitToUse)
+                .limit(limit)
                 .skip(skip)
+                .populate(populate)
                 .exec();
-
-
 
             return lotes
 
