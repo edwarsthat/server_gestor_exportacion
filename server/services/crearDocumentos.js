@@ -14,7 +14,6 @@ import Docxtemplater from "docxtemplater";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-
 const imagePath = path.resolve(
     __dirname,
     '..',
@@ -40,7 +39,6 @@ export class CrearDocumentosRepository {
             let row1Cells;
             let row2cells;
             let row3Cells;
-
 
             if (cont.infoContenedor.clienteInfo._id === "659dbd9a347a42d89929340e") {
                 row1Cells = [
@@ -117,7 +115,6 @@ export class CrearDocumentosRepository {
             const worksheet = workbook.addWorksheet("Lista empaque")
 
 
-
             worksheet.getRow(1).height = 80
             for (let i = 1; i <= 12; i++) {
                 worksheet.getColumn(i).width = 20.33
@@ -132,7 +129,6 @@ export class CrearDocumentosRepository {
 
             logo.border = styleNormalCell
             logo.alignment = { horizontal: 'center', vertical: 'middle' }
-
 
             const imageId = workbook.addImage({
                 filename: imagePath,
@@ -219,7 +215,6 @@ export class CrearDocumentosRepository {
             }
             let totalCajas = 0
             let row = 5
-
 
             for (const item of itemsPallet) {
                 if (cont.infoContenedor.clienteInfo._id === "659dbd9a347a42d89929340e") {
@@ -390,7 +385,6 @@ export class CrearDocumentosRepository {
                     }
                     cell.border = styleNormalCell
                 }
-
 
                 row += 2;
                 worksheet.getRow(row).height = alto_celda
@@ -599,7 +593,6 @@ Fecha: 17 Oct 2020`
 
 
 
-
             const buffer = await workbook.xlsx.writeBuffer();
             return buffer;
         } catch (error) {
@@ -627,7 +620,7 @@ Fecha: 17 Oct 2020`
                 linebreaks: true,
             });
 
-            const date = new Date()
+            const date = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }));
 
             // console.log(date.getDate())
             // Renderizar el documento directamente con los datos
@@ -679,7 +672,7 @@ Fecha: 17 Oct 2020`
             //cuerpo
             const body = [
                 { cell: 'B3', value: "Fecha despacho", font: 12, bold: false },
-                { cell: 'C3', value: new Date().toLocaleDateString(), font: 12, bold: false },
+                { cell: 'C3', value: new Date().toLocaleDateString('es-ES', { timeZone: 'America/Bogota' }), font: 12, bold: false },
                 { cell: 'B4', value: "Transportadora", font: 12, bold: false },
                 { cell: 'C4', value: registro.transportadora, font: 12, bold: false },
                 { cell: 'B5', value: "Placa Vehiculo", font: 12, bold: false },
@@ -757,7 +750,6 @@ Fecha: 17 Oct 2020`
             worksheet.mergeCells(`D2:E5`);
             worksheet.mergeCells(`B22:D24`);
 
-
             //cuerpo
             const body = [
                 { cell: 'B3', value: "MARCA", font: 12, bold: true },
@@ -766,7 +758,7 @@ Fecha: 17 Oct 2020`
                 { cell: 'C4', value: "U-2", font: 12, bold: false },
                 { cell: 'B5', value: "DATALOGGER ID", font: 12, bold: true },
                 { cell: 'C5', value: registro.datalogger_id.toUpperCase(), font: 12, bold: false },
-                { cell: 'B6', value: "UBICACIÓN  DATA LOGGER:", font: 12, bold: true },
+                { cell: 'B6', value: "UBICACIÓN DATA LOGGER:", font: 12, bold: true },
                 { cell: 'C6', value: "PALLET No 10", font: 12, bold: false },
                 { cell: 'B7', value: "TEMPERATURA:", font: 12, bold: true },
                 { cell: 'C7', value: registro.temperatura, font: 12, bold: false },
@@ -789,7 +781,7 @@ Fecha: 17 Oct 2020`
                 { cell: 'D11', value: "HORA INICIO:", font: 12, bold: false },
                 { cell: 'E11', value: "", font: 12, bold: false },
                 { cell: 'B12', value: "FECHA SALIDA:", font: 12, bold: true },
-                { cell: 'C12', value: new Date().toLocaleDateString(), font: 12, bold: false },
+                { cell: 'C12', value: new Date().toLocaleDateString('es-ES', { timeZone: 'America/Bogota' }), font: 12, bold: false },
                 { cell: 'D12', value: "HORA FINAL:", font: 12, bold: false },
                 { cell: 'E12', value: "", font: 12, bold: false },
                 { cell: 'B13', value: "EMPRESA TRANSPORTADORA: ", font: 12, bold: true },
@@ -852,7 +844,6 @@ Fecha: 17 Oct 2020`
             const total_kilos = cont.totalKilos
             const peso_bruto = (total_cajas * 0.85) + total_kilos;
 
-
             // Leer el contenido del archivo de template
             const content = fs.readFileSync(pathRelative, 'binary');
             const zip = new PizZip(content);
@@ -863,7 +854,7 @@ Fecha: 17 Oct 2020`
                 linebreaks: true,
             });
 
-            const date = new Date()
+            const date = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }));
 
             // console.log(date.getDate())
             // Renderizar el documento directamente con los datos
@@ -877,7 +868,7 @@ Fecha: 17 Oct 2020`
                 total_cajas: total_kilos.toFixed(2),
                 total_cajas_net: peso_bruto.toFixed(2),
                 temperatura: registro.temperatura,
-            //para que salga el numero de contedor . Jp
+                //para que salga el numero de contedor . Jp
                 numeroContenedor: registro?.contenedor?.numeroContenedor || "N/A",
                 nit: registro.nit,
                 fecha_dia_escrito: numeroALetras(date.getDate()),
@@ -910,10 +901,8 @@ Fecha: 17 Oct 2020`
                 'carta_responsabilidad.docx'
             );
 
-
             const { infoContenedor, numeroContenedor, infoExportacion } = cont;
             const total_kilos = cont.totalKilos;
-
 
             // Leer el contenido del archivo de template
             const content = fs.readFileSync(pathRelative, 'binary');
