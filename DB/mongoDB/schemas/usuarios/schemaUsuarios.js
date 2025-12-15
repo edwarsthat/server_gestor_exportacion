@@ -23,8 +23,6 @@ export const defineUser = async (conn) => {
 
     const Usuarios = conn.model("usuario", usuariosSchema);
 
-    console.log("se creo user")
-
     return Usuarios
 
 }

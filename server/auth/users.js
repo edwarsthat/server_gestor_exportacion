@@ -18,7 +18,7 @@ const permisos_generales = new Set([
     "get_info_formulario_inspeccion_fruta",
     "get_contabilidad_informeMaquila_loteMaquila_detalle",
     "get_contabilidad_informe_lote_detalle",
-
+    "get_talentoHumano_cargosPersonal_ingresoPersonal",
     //numero de elementos
     "get_inventarios_historiales_numeroRegistros_cuartosFrios",
     "get_inventarios_historiales_listasDeEmpaque_numeroRegistros",
@@ -45,6 +45,8 @@ const permisos_generales = new Set([
     "get_contabilidad_informes_calidad_numeroElementos",
     "get_calidad_informes_informeMaquila_numeroElementos",
     "get_contabilidad_informesMaquila_calidad_numeroElementos",
+    "get_talentoHumano_cargos_numeroRegistros",
+    "get_talentoHumano_personal_numeroRegistros",
     //obteniendo constantes
     "get_inventarios_cuartosFrios_listaEmpaque",
     "get_inventarios_cuartosFrios_detalles",
@@ -64,6 +66,8 @@ const permisos_generales = new Set([
     "get_data_proveedores",
     "get_data_cuartosFrios",
     "get_data_tipoFruta2",
+    "get_data_areasAcceso",
+    "get_data_cargosPersonal",
 
     "get_proceso_aplicaciones_listaEmpaque_pallets",
     "get_proceso_aplicaciones_listaEmpaque_itemsPallet",

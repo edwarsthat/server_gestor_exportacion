@@ -59,7 +59,12 @@ import { defineLoteMaquila } from '../schemas/lotes/schemaLoteMaquila.js';
 import { defineFrutaProcesada } from '../schemas/lotes/schemaFrutaProcesada.js';
 import { defineInventarioActualDescarte } from '../schemas/inventarios/SchemaInventarioActualDescarte.js';
 import { defineInventarioMovimientosDescarte } from '../schemas/inventarios/SchemaMovimientoInventarioDescartes.js';
-import { defineHabilitarEstancia } from '../schemas/proceso/HabilitarEstanciasSchema.js';
+import { defineHabilitarEstancia } from '../schemas/proceso/HabilitarEstancaisSchema.js';
+import { defineSchemaPersonal } from '../schemas/personal/SchemaPersonal.js';
+import { defineSchemaCargosPersonal } from '../schemas/personal/SchemaCargosPersonal.js';
+import { defineSchemaAreasFisicas } from '../schemas/catalogs/schemaAreasFisicas.js';
+import { defineSchemaCarnets } from '../schemas/personal/dotaciones/SchemaCarnets.js';
+import { defineAuditCargosPersonal } from '../schemas/audit/AuditCargosPersonal.js';
 
 export const db = {};
 export const connections = {};
@@ -204,7 +209,7 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("🔍 Iniciando definición de schemas proceso...");
 
         // 1. Primero definimos el esquema de auditoría ya que otros lo necesitan
-
+        //#region Audit
         console.log("⚡ Definiendo AuditLog...");
         const AuditLog = await defineAuditLogs(sysConn)
         db.AuditLog = AuditLog;
@@ -219,6 +224,8 @@ const defineSchemasProceso = async (sysConn) => {
         db.AuditRegistroExportacionContenedor = AuditRegistroExportacionContenedor;
         const AuditLotesMaquila = await defineAuditLoteMaquila(sysConn);
         db.AuditLotesMaquila = AuditLotesMaquila;
+        const AuditCargosPersonal = await defineAuditCargosPersonal(sysConn);
+        db.AuditCargosPersonal = AuditCargosPersonal;
 
         console.log("⚡ Definiendo Cargo...");
         db.Cargo = await defineCargo(sysConn);
@@ -234,6 +241,8 @@ const defineSchemasProceso = async (sysConn) => {
 
 
         console.log("✅ AuditLog definido");
+        //#endregion
+        //#region Areas fisicas
         // inventarios
         console.log("⚡ Definiendo Cuartos Frios...");
         db.CuartosFrios = await defineCuartosFrios(sysConn, AuditCuartosFrios);
@@ -241,7 +250,9 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Inventarios Simples...");
         db.InventariosSimples = await defineInventarioSimple(sysConn, AuditInventariosSimples);
         console.log("✅ Inventarios Simples definidos");
-
+        db.AreasFisicas = await defineSchemaAreasFisicas(sysConn);
+        console.log("✅ Areas Fisicas definidos");
+        //#endregion
 
 
         // Esquemas relacionados con clientes (base para otras dependencias)
@@ -383,12 +394,16 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("✅ Habilitar Instancia definido");
 
         //#region Personal
+
         console.log("⚡ Definiendo Cargos Personal...");
-        db.CargosPersonal = await defineSchemaCargosPersonal(sysConn);
+        db.CargosPersonal = await defineSchemaCargosPersonal(sysConn, AuditCargosPersonal);
         console.log("✅ Cargos Personal definido");
         console.log("⚡ Definiendo Personal...");
         db.Personal = await defineSchemaPersonal(sysConn);
         console.log("✅ Personal definido");
+        console.log("⚡ Definiendo Carnets...");
+        db.Carnet = await defineSchemaCarnets(sysConn);
+        console.log("✅ Carnets definido");
         //#endregion
 
         console.log("🎉 Todos los schemas de proceso han sido definidos correctamente.")

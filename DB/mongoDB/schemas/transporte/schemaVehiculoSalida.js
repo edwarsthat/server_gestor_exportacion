@@ -32,6 +32,7 @@ export const defineVehiculoSalida = async (conn, audit) => {
         temperatura: String,
         datalogger_id: String,
         marca: String,
+        observaciones: String,
         contenedor: { type: Schema.Types.ObjectId, ref: "Contenedor", required: false },
         fecha: { type: Date, default: () => new Date() },
         entregaPrecinto: entregaPrecintoSchema

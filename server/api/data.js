@@ -4,6 +4,8 @@ import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { ProveedoresRepository } from "../Class/Proveedores.js";
 import { Seriales } from "../Class/Seriales.js";
+import { AreasAccesoRepository } from "../Class/systemData/AreasAcceso.js";
+import { CargosPersonalRepository } from "../Class/talentoHumano/CargosPersonal.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { dataService } from "../services/data.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
@@ -277,6 +279,28 @@ export class dataRepository {
                 {},
                 session
             )
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_data_areasAcceso() {
+        try {
+            const areasAcceso = await AreasAccesoRepository.getAreasAcceso()
+            return areasAcceso
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_data_cargosPersonal() {
+        try {
+            const cargosPersonal = await CargosPersonalRepository.get_cargosPersonal()
+            return cargosPersonal
         } catch (err) {
             if (err.status === 522) {
                 throw err

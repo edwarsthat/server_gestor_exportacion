@@ -67,7 +67,14 @@ class ProcesoLogicError extends Error {
         this.message = message
     }
 }
-
+class TalentoHumanoLogicError extends Error {
+    constructor(code, message) {
+        super();
+        this.name = "Logica talento humano error"
+        this.status = code
+        this.message = message
+    }
+}
 
 export {
     InventariosLogicError,
@@ -77,5 +84,6 @@ export {
     DataLogicError,
     GestionCuentasLogicError,
     ContabilidadLogicError,
-    ProcesoLogicError
+    ProcesoLogicError,
+    TalentoHumanoLogicError
 }
