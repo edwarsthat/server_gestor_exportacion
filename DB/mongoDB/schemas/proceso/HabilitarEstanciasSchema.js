@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-export const defineHabilitarEstancia = async (conn) => {
+export const defineHabilitarEstancias = async (conn) => {
 
-    const HabilitarEstanciaSchema = new Schema({
+    const HabilitarEstanciasSchema = new Schema({
         createdAt: { type: Date, default: () => new Date() },
         user: { type: mongoose.Schema.Types.ObjectId, ref: "usuario" },
         lote: {
@@ -26,8 +26,8 @@ export const defineHabilitarEstancia = async (conn) => {
     });
 
     const HabilitarEstancia = conn.model(
-        "habilitarInstancias", 
-        HabilitarEstanciaSchema 
+        "habilitarInstancias",
+        HabilitarEstanciaSchema
     );
 
     return HabilitarEstancia;

@@ -59,7 +59,7 @@ import { defineLoteMaquila } from '../schemas/lotes/schemaLoteMaquila.js';
 import { defineFrutaProcesada } from '../schemas/lotes/schemaFrutaProcesada.js';
 import { defineInventarioActualDescarte } from '../schemas/inventarios/SchemaInventarioActualDescarte.js';
 import { defineInventarioMovimientosDescarte } from '../schemas/inventarios/SchemaMovimientoInventarioDescartes.js';
-import { defineHabilitarEstancia } from '../schemas/proceso/HabilitarEstancaisSchema.js';
+import { defineHabilitarEstancias } from '../schemas/proceso/HabilitarEstanciasSchema.js';
 import { defineSchemaPersonal } from '../schemas/personal/SchemaPersonal.js';
 import { defineSchemaCargosPersonal } from '../schemas/personal/SchemaCargosPersonal.js';
 import { defineSchemaAreasFisicas } from '../schemas/catalogs/schemaAreasFisicas.js';
@@ -390,7 +390,7 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("✅ Seriales definidos");
 
         console.log("⚡ Definiendo Habilitar Instancia...");
-        db.HabilitarEstancia = await defineHabilitarEstancia(sysConn); //es HabilitarEstancia no HabilitarInstancia
+        db.HabilitarEstancia = await defineHabilitarEstancias(sysConn); //es HabilitarEstancia no HabilitarInstancia
         console.log("✅ Habilitar Instancia definido");
 
         //#region Personal
