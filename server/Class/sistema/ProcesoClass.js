@@ -7,7 +7,7 @@ export class SistemaProcesoClass {
     static async addRegistroHabilitarEstancia(data, user, opts = {}) {
         try {
             const { session } = opts;
-            const newDoc = new db.HabilitarInstancia(data);
+            const newDoc = new db.HabilitarEstancia(data);
             newDoc._user = user;
 
             const saved = await newDoc.save({ session });
@@ -33,7 +33,7 @@ export class SistemaProcesoClass {
                 lotesQuery._id = { $in: ids };
             }
 
-            const lotes = await db.HabilitarInstancia.find(lotesQuery)
+            const lotes = await db.HabilitarEstancia.find(lotesQuery)
                 .select(select)
                 .sort(sort)
                 .limit(limit)
