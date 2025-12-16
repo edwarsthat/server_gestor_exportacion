@@ -78,17 +78,37 @@ export async function ErrorTransporteLogicHandlers(error, log) {
     throw new TransporteError(472, `Error ${error?.type ?? 'Desconocido'}: ${error?.message ?? 'Sin mensaje'}`)
 }
 export async function ErrorTalentHumanoLogicHandlers(error, log = null) {
+
+    const normalizedError = error instanceof Error
+        ? error
+        : new Error('Error desconocido en Talento Humano');
+
     try {
-        // Log del error
         if (log && log._id) {
-            await registrarPasoLog(log?._id, "Error", "Fallido", error.message);
+            await registrarPasoLog(
+                log._id,
+                "Error",
+                "Fallido",
+                normalizedError.message
+            );
         }
     } catch (logError) {
-        console.error('CRÍTICO: Fallo al registrar el log del error principal.', logError);
-        console.error('Error original que no se pudo registrar:', error);
+        console.error(
+            'CRÍTICO: Fallo al registrar el log del error principal.',
+            logError
+        );
+        console.error(
+            'Error original que no se pudo registrar:',
+            normalizedError
+        );
     }
-    if (error?.status >= 500) {
-        throw error
+
+    if (normalizedError.status >= 500) {
+        throw normalizedError;
     }
-    throw new TalentoHumanoLogicError(472, `Error ${error?.type ?? 'Desconocido'}: ${error?.message ?? 'Sin mensaje'}`)
+
+    throw new TalentoHumanoLogicError(
+        472,
+        `Error ${normalizedError.type ?? 'Desconocido'}: ${normalizedError.message}`
+    );
 }
