@@ -92,7 +92,7 @@ export class PersonalControllerRepository {
 
                     fileToSave = { path: filePath, buffer: buffer };
 
-                    data.urlIdentificacion = "../../../../uploads/personal/identificacion/" + fileName;
+                    data.urlIdentificacion = "/uploads/personal/identificacion/" + fileName;
 
                 }
 
