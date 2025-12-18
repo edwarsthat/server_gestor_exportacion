@@ -12,6 +12,7 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { cleanForRust } from "../../routes/sockets/utils/cleanData.js";
 import { rustRcpClient } from "../../../config/grpcRust.js";
+import crypto from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -130,6 +131,103 @@ export class PersonalControllerRepository {
             await ErrorTalentHumanoLogicHandlers(error, log)
         } finally {
             await session.endSession();
+            await registrarPasoLog(log._id, "Fin de la función", "completado")
+        }
+    }
+    static async post_talentoHumano_personal_cargarCedula(req) {
+        console.log(req)
+        const { user } = req
+        const { action, cedula } = req.data
+        let log
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
+        const session = await db.Personal.db.startSession();
+
+        try {
+
+            if (!cedula) {
+                throw new Error('El documento de identificación es obligatorio.');
+            }
+
+            if (typeof cedula !== 'string') {
+                throw new Error('El documento de identificación debe enviarse como string en base64.');
+            }
+
+            const cedulaBase64 = cedula.replace(/^data:.*;base64,/, '').trim();
+
+            if (!cedulaBase64) {
+                throw new Error('El documento de identificación está vacío o inválido.');
+            }
+
+            // Validar tamaño del archivo (simulando limits de multer)
+            const fileSize = Buffer.byteLength(cedulaBase64, 'base64');
+            if (fileSize > 5 * 1024 * 1024) { // 5MB
+                throw new Error('El archivo excede el tamaño máximo permitido (5MB).');
+            }
+
+            // Validar tipo de archivo real (magic numbers)
+            const buffer = Buffer.from(cedulaBase64, 'base64');
+            const fileType = await fileTypeFromBuffer(buffer);
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+
+            const isPdf = buffer.slice(0, 5).toString() === '%PDF-';
+            const mime = fileType?.mime ?? (isPdf ? 'application/pdf' : null);
+
+            if (!mime || !allowedTypes.includes(mime)) {
+                throw new Error('Tipo de archivo no permitido. Solo se permiten imágenes (JPEG, PNG, WEBP) y PDF.');
+            }
+
+            await registrarPasoLog(log._id, "Validación de datos", "completado")
+
+            const urlPath = path.join(
+                __dirname,
+                "..",
+                "..",
+                "..",
+                "..",
+                "uploads",
+                "personal",
+                "identificacion",
+            );
+
+            await fs.mkdir(urlPath, { recursive: true });
+            await registrarPasoLog(log._id, "Crear directorio", "completado")
+
+            let fileToSave = null;
+            let filePath = null;
+            if (fileType) {
+
+                const tempId = crypto.randomUUID();
+                const fileName = `cedula_tmp_${Date.now()}_${tempId}.${fileType.ext}`;
+                filePath = path.join(urlPath, fileName);
+
+                fileToSave = { path: filePath, buffer: buffer };
+
+            }
+
+            if (fileToSave) {
+                await fs.writeFile(fileToSave.path, fileToSave.buffer);
+            }
+
+            const payload = {
+                data: JSON.stringify(cleanForRust(filePath)),
+                server: "python",
+                action: "validar_cedula"
+            };
+
+            const responseStr = await rustRcpClient.sendData(payload);
+            const response = JSON.parse(responseStr);
+
+
+            return response
+
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorTalentHumanoLogicHandlers(error, log)
+        } finally {
             await registrarPasoLog(log._id, "Fin de la función", "completado")
         }
     }
