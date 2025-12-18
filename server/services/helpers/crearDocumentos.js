@@ -59,23 +59,13 @@ export const mostrarKilose = (item) => {
         return "N/A";
     }
 
-    // if (peso >= 18) return "40LB";
-    // if (peso >= 17) return "37LB";
-    // if (peso >= 15) return "35LB";
-    // if (peso >= 13) return "30LB";
-    // if (peso > 4 && peso < 5) return "4,5Kg";
+    if (pesoKg <= 5) return "10LB";
+    if (pesoKg >= 13 && pesoKg < 15) return "30LB";
+    if (pesoKg >= 15 && pesoKg < 16) return "35LB";
+    if (pesoKg >= 16 && pesoKg < 17) return "37LB";
+    if (pesoKg >= 17 && pesoKg < 18) return "40LB";
 
-    // return "N/A"; // Valor por defecto si no coincide ninguna condición
-
-// Conversión real a libras según regla ICA.Jp
-    const libras = (pesoKg * 1000) / 454;
-
-    const entero = Math.floor(libras);
-    const decimal = libras - entero;
-
-    const resultado = decimal >= 0.5 ? entero + 1 : entero;
-
-    return resultado + "LB";
+    return pesoKg + "Kg";
 }
 export function numeroALetras(num) {
     const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
