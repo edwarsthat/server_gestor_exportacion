@@ -13,14 +13,19 @@ import { fileURLToPath } from 'url';
 import { cleanForRust } from "../../routes/sockets/utils/cleanData.js";
 import { rustRcpClient } from "../../../config/grpcRust.js";
 import crypto from "crypto";
+import { PersonalTalentoHumanoService } from "../../services/talentoHumano/Personal.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export class PersonalControllerRepository {
+
+
+
+
     static async post_talentoHumano_personal_ingresoPersonal(req) {
         const { user } = req
-        const { action, data, cedula } = req.data
+        const { action, data, cedulaPath } = req.data
         let log
         log = await LogsRepository.create({
             user: user._id,
@@ -32,70 +37,13 @@ export class PersonalControllerRepository {
         try {
             TalentoHumanoValidations.post_talentoHumano_personal_ingresoPersonal().parse(data)
 
-            if (!cedula) {
+            if (!cedulaPath) {
                 throw new Error('El documento de identificación es obligatorio.');
             }
-
-            if (typeof cedula !== 'string') {
-                throw new Error('El documento de identificación debe enviarse como string en base64.');
-            }
-
-            const cedulaBase64 = cedula.replace(/^data:.*;base64,/, '').trim();
-
-            if (!cedulaBase64) {
-                throw new Error('El documento de identificación está vacío o inválido.');
-            }
-
-            // Validar tamaño del archivo (simulando limits de multer)
-            const fileSize = Buffer.byteLength(cedulaBase64, 'base64');
-            if (fileSize > 5 * 1024 * 1024) { // 5MB
-                throw new Error('El archivo excede el tamaño máximo permitido (5MB).');
-            }
-
-            // Validar tipo de archivo real (magic numbers)
-            const buffer = Buffer.from(cedulaBase64, 'base64');
-            const fileType = await fileTypeFromBuffer(buffer);
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-
-            const isPdf = buffer.slice(0, 5).toString() === '%PDF-';
-            const mime = fileType?.mime ?? (isPdf ? 'application/pdf' : null);
-
-            if (!mime || !allowedTypes.includes(mime)) {
-                throw new Error('Tipo de archivo no permitido. Solo se permiten imágenes (JPEG, PNG, WEBP) y PDF.');
-            }
-
 
             await registrarPasoLog(log._id, "Validación de datos", "completado")
 
             await session.withTransaction(async () => {
-
-                const urlPath = path.join(
-                    __dirname,
-                    "..",
-                    "..",
-                    "..",
-                    "..",
-                    "uploads",
-                    "personal",
-                    "identificacion",
-                );
-
-                await fs.mkdir(urlPath, { recursive: true });
-                await registrarPasoLog(log._id, "Crear directorio", "completado")
-
-                let fileToSave = null;
-
-                const fileType = await fileTypeFromBuffer(buffer);
-
-                if (fileType) {
-                    const fileName = `${data.identificacion}.${fileType.ext}`;
-                    const filePath = path.join(urlPath, fileName);
-
-                    fileToSave = { path: filePath, buffer: buffer };
-
-                    data.urlIdentificacion = "/uploads/personal/identificacion/" + fileName;
-
-                }
 
                 const skuResult = await Seriales.get_seriales("SKU", session)
                 if (!skuResult || skuResult.length === 0) {
@@ -103,6 +51,7 @@ export class PersonalControllerRepository {
                 }
                 const sku = skuResult[0]
                 data.SKU = sku.serial
+                data.urlIdentificacion = cedulaPath
 
                 await PersonalRepository.addPersonal(data, { user: user._id, action: action, session })
                 await registrarPasoLog(log._id, "Agregar personal", "completado")
@@ -110,19 +59,6 @@ export class PersonalControllerRepository {
                 await Seriales.modificar_seriales({ name: "SKU" }, { $inc: { serial: 1 } }, { session })
                 await registrarPasoLog(log._id, "Actualizar serial", "completado")
 
-                if (fileToSave) {
-                    await fs.writeFile(fileToSave.path, fileToSave.buffer);
-                }
-
-                const payload = {
-                    data: JSON.stringify(cleanForRust(data)),
-                    server: "python",
-                    action: "post_talentoHumano_personal_ingresoPersonal"
-                };
-
-                const responseStr = await rustRcpClient.sendData(payload);
-                const response = JSON.parse(responseStr);
-                console.log(response)
             })
 
 
@@ -135,7 +71,6 @@ export class PersonalControllerRepository {
         }
     }
     static async post_talentoHumano_personal_cargarCedula(req) {
-        console.log(req)
         const { user } = req
         const { action, cedula } = req.data
         let log
@@ -196,16 +131,17 @@ export class PersonalControllerRepository {
             await fs.mkdir(urlPath, { recursive: true });
             await registrarPasoLog(log._id, "Crear directorio", "completado")
 
+            const extension = fileType?.ext || (isPdf ? 'pdf' : null);
             let fileToSave = null;
             let filePath = null;
-            if (fileType) {
 
+            if (extension) {
                 const tempId = crypto.randomUUID();
-                const fileName = `cedula_tmp_${Date.now()}_${tempId}.${fileType.ext}`;
+                const fileName = `cedula_tmp_${Date.now()}_${tempId}.${extension}.enc`;
                 filePath = path.join(urlPath, fileName);
 
-                fileToSave = { path: filePath, buffer: buffer };
-
+                const encryptedBuffer = PersonalTalentoHumanoService.encryptBuffer(buffer);
+                fileToSave = { path: filePath, buffer: encryptedBuffer };
             }
 
             if (fileToSave) {
@@ -220,7 +156,6 @@ export class PersonalControllerRepository {
 
             const responseStr = await rustRcpClient.sendData(payload);
             const response = JSON.parse(responseStr);
-
 
             return response
 
@@ -253,6 +188,16 @@ export class PersonalControllerRepository {
     static async get_talentoHumano_personal_numeroRegistros() {
         try {
             const data = await PersonalRepository.get_numero_registros_personal({})
+            return data
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorTalentHumanoLogicHandlers(error)
+        }
+    }
+    static async get_talentoHumano_personal_cedulaImg(req) {
+        try {
+            const { _id } = req.data
+            const data = await PersonalRepository.get_personal({ _id })
             return data
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
