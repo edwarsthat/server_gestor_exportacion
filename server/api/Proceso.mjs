@@ -30,6 +30,7 @@ import { InventariosHistorialRepository } from "../Class/Inventarios.js";
 import { LotesHelper } from "../helper/lotes.js";
 import { DescartesRepository } from "../Class/Descartes.js";
 import { populate } from "dotenv";
+import { ArchiveLoteMaquila } from "../archive/ArchiveLoteMaquila.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1351,17 +1352,40 @@ export class ProcesoRepository {
             const { data } = req
             const { filtro } = data
             const { EF } = filtro
-            const lote = await LotesRepository.getLotes({ query: { enf: EF } })
+            let lote
+
+            if (EF.startsWith("EF10-")) {
+                lote = await LotesRepository.getLotesMaquila({ query: { enf: EF } })
+            } else if (EF.startsWith("EF1-")) {
+                lote = await LotesRepository.getLotes({ query: { enf: EF } })
+
+            } else {
+                throw new ProcessError(400, "No se encontro el lote")
+            }
+
             if (lote.length === 0) {
                 throw new ProcessError(400, "No se encontro el lote")
             }
+
             const query = {
                 documentId: lote[0]._id
             }
-            const registros = await RecordLotesRepository.getAuditLogsEf1({
-                query: query,
-                populate: [{ path: 'user', select: 'usuario' }]
-            })
+
+            let registros
+
+            if (EF.startsWith("EF10-")) {
+                registros = await ArchiveLoteMaquila.get_logs_lotes_maquila({
+                    query: query,
+                    populate: [{ path: 'user', select: 'usuario' }]
+                })
+            } else if (EF.startsWith("EF1-")) {
+                registros = await RecordLotesRepository.getAuditLogsEf1({
+                    query: query,
+                    populate: [{ path: 'user', select: 'usuario' }]
+                })
+            } else {
+                throw new ProcessError(400, "No se encontro el lote")
+            }
 
             return registros
         } catch (error) {
