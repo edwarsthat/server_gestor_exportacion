@@ -280,7 +280,7 @@ static async get_sistema_habilitarInstancias_registros() {
                 _id: r._id,
                 fecha: r.createdAt,
                 usuario: r.user?.nombre ?? 'Sin nombre',
-            // Manejar variación de campos ENTRE tipos de lote
+            // Manejar variación de campos ENTRE tipos de lote Jp
                 lote: 
                     r.lote?.enf ?? 
                     r.lote?.loteID ?? 
