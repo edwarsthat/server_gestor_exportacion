@@ -212,11 +212,13 @@ export class ProcesoRepository {
                 await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, log._id, session);
                 if (lote.enf.startsWith("EF1-")) {
 
+
+
                     await InventariosHistorialRepository.put_cardex_invetariosdescartes(
                         {},
                         {
                             $inc: {
-                                [`kilos_ingreso.${lote.tipoFruta._id.toString()}.${tipo}.${descarte._id.toString()}`]: kilosTotales,
+                                [`kilos_ingreso.${lote.tipoFruta._id.toString()}.${tipo}.${descarte}`]: kilosTotales,
                             },
                         },
                         {
