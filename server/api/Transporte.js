@@ -39,7 +39,7 @@ export class TransporteRepository {
                     infoContenedor: 1,
                     registrosSalidas: 1,
                 },
-                sort: { 'infoExportacion.fechaCreacion': -1 },
+                sort: { 'infoExportacion.fecha': -1 },
                 populate: {
                     path: "registrosSalidas",
                     select: "codigo tipoVehiculo placa trailer pesoEstimado fecha transportadora",
@@ -145,8 +145,12 @@ export class TransporteRepository {
 
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: {
-
-                    infoExportacion: { $exists: true }
+                    $and: [
+                        {
+                            'infoContenedor.fechaCreacion': { $gte: inicioDeMes },
+                        },
+                        { infoExportacion: { $exists: false } },
+                    ],
                 },
                 select: {
                     numeroContenedor: 1,
