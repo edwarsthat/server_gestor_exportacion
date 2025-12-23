@@ -149,7 +149,7 @@ export class TransporteRepository {
                         {
                             'infoContenedor.fechaCreacion': { $gte: inicioDeMes },
                         },
-                        { infoExportacion: { $exists: false } },
+                        { infoExportacion: { $exists: true } },
                     ],
                 },
                 select: {
