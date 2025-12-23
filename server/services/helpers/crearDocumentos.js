@@ -59,11 +59,11 @@ export const mostrarKilose = (item) => {
         return "N/A";
     }
 
-    if (pesoKg <= 5) return "10LB";
+    if (pesoKg >= 4 && pesoKg <= 5) return "10LB";
     if (pesoKg >= 13 && pesoKg < 15) return "30LB";
     if (pesoKg >= 15 && pesoKg < 16) return "35LB";
-    if (pesoKg >= 16 && pesoKg < 17) return "37LB";
-    if (pesoKg >= 17 && pesoKg < 18) return "40LB";
+    if (pesoKg >= 16 && pesoKg <= 17) return "37LB";
+    if (pesoKg > 17 && pesoKg <= 18) return "40LB";
 
     return pesoKg + "Kg";
 }
