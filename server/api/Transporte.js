@@ -146,9 +146,7 @@ export class TransporteRepository {
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: {
                     $and: [
-                        {
-                            'infoContenedor.fechaCreacion': { $gte: inicioDeMes },
-                        },
+
                         { infoExportacion: { $exists: true } },
                     ],
                 },
