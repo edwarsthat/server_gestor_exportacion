@@ -153,12 +153,12 @@ export class gestionCuentasRepository {
 
                 query = {
                     skip: (page - 1) * resultsPerPage,
-                    query: filter
+                    query: filter,
+                    limit: resultsPerPage
                 }
             }
             const usuarios = await UsuariosRepository.get_users(query);
-
-            const resultado = usuarios.filter(usuario => usuario.cargo.Rol > cargo[0].Rol)
+            const resultado = usuarios.filter(usuario => usuario?.cargo?.Rol > cargo[0]?.Rol)
 
             return resultado
         } catch (err) {

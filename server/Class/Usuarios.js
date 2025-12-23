@@ -40,7 +40,7 @@ export class UsuariosRepository {
             select = {},
             sort = { createdAt: -1 },
             populate = { path: 'cargo' },
-            limit = 50,
+            limit = 0,
             skip = 0,
         } = options;
         try {
@@ -50,13 +50,12 @@ export class UsuariosRepository {
                 usuariosQuery._id = { $in: ids };
             }
 
-            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
 
             // Construimos la query base
             let usuarios = db.Usuarios.find(usuariosQuery)
                 .select(select)
                 .sort(sort)
-                .limit(limitToUse)
+                .limit(limit)
                 .populate(populate)
                 .skip(skip)
                 .exec();
