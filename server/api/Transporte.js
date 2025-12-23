@@ -145,10 +145,8 @@ export class TransporteRepository {
 
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 query: {
-                    $and: [
 
-                        { infoExportacion: { $exists: true } },
-                    ],
+                    infoExportacion: { $exists: true }
                 },
                 select: {
                     numeroContenedor: 1,
