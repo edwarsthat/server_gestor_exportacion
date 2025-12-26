@@ -8,7 +8,7 @@ export const defineSchemaPersonal = async (conn) => {
         nombre: { type: String, required: true },
         cargo: { type: Schema.Types.ObjectId, ref: 'cargosPersonal' },
         identificacion: { type: String, required: true },
-        tipoIdentificacion: { type: String, required: true },
+        tipoDocumento: { type: String, required: true },
         foto: { type: String },
         tipoSangre: { type: String },
         carnet: { type: Schema.Types.ObjectId, ref: 'carnet' },

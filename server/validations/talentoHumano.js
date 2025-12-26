@@ -20,7 +20,7 @@ export class TalentoHumanoValidations {
         return z.object({
             nombre: z.string().min(1, "El nombre es obligatorio"),
             identificacion: z.string().min(1, "La identificación es obligatoria"),
-            tipoIdentificacion: z.string().min(1, "El tipo de identificación es obligatorio"),
+            tipoDocumento: z.string().min(1, "El tipo de documento es obligatorio"),
             tipoSangre: z.string().min(1, "El tipo de sangre es obligatorio"),
             cargo: z.string().min(1, "El cargo es obligatorio"),
         })

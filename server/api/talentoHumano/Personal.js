@@ -41,7 +41,7 @@ export class PersonalControllerRepository {
                 throw new Error('El documento de identificación es obligatorio.');
             }
 
-            const fotoBase64 = foto.replace(/^data:.*;base64,/, '').trim();
+            const fotoBase64 = foto.base64.replace(/^data:image\/\w+;base64,/, '').trim();
 
             if (!fotoBase64) {
                 throw new Error('La foto está vacía o inválida.');
