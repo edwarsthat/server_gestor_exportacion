@@ -102,7 +102,7 @@ export class ComercialValidationsRepository {
             }
         });
 
-        if(typeof data.tipo_fruta !== 'object'){
+        if (typeof data.tipo_fruta !== 'object') {
             throw new Error(`El campo tipoFruta debe ser un arreglo.`);
         }
 
@@ -204,7 +204,7 @@ export class ComercialValidationsRepository {
             responsable: z.string().min(1, "Responsable es requerido"),
             Cargo: z.string().min(1, "Cargo es requerido"),
             telefono: z.string().optional(), // You could add regex if you want to validate phone numbers
-            cliente: z.string().min(1, "Cliente es requerido"),
+            git: z.string().min(1, "Cliente es requerido"),
             fechaArribo: z.string().refine(val => !isNaN(Date.parse(val)), "Fecha Arribo inválida"),
             contenedor: z.string().optional(),
             correo: z.string().email("Correo inválido"),
@@ -227,7 +227,7 @@ export class ComercialValidationsRepository {
     }
     static post_comercial_contenedor() {
         return z.object({
-            cliente: z.string().min(1, "El cliente es obligatorio"),
+            clienteInfo: z.string().min(1, "El cliente es obligatorio"),
             numeroContenedor: z.string().min(1, "El número de contenedor es obligatorio")
                 .refine(val => !isNaN(Number(val)) && Number(val) > 0, "El número de contenedor debe ser un número válido mayor a cero"),
             tipoFruta: z.array(z.string()).min(1, "Debe seleccionar al menos un tipo de fruta"),
