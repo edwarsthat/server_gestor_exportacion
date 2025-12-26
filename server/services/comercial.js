@@ -5,7 +5,7 @@ export class ComercialService {
         return {
             numeroContenedor: Number(data.numeroContenedor),
             infoContenedor: {
-                clienteInfo: data.cliente,
+                clienteInfo: data.clienteInfo,
                 tipoFruta: data.tipoFruta,
                 fechaCreacion: new Date(),
                 fechaEstimadaCargue: new Date(data.fechaEstimadaCargue),
