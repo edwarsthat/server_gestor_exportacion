@@ -25,7 +25,7 @@ export class PersonalControllerRepository {
 
     static async post_talentoHumano_personal_ingresoPersonal(req) {
         const { user } = req
-        const { action, data, cedulaPath } = req.data
+        const { action, data, cedulaPath, foto } = req.data
         let log
         log = await LogsRepository.create({
             user: user._id,
@@ -41,7 +41,47 @@ export class PersonalControllerRepository {
                 throw new Error('El documento de identificación es obligatorio.');
             }
 
-            await registrarPasoLog(log._id, "Validación de datos", "completado")
+            const fotoBase64 = foto.replace(/^data:.*;base64,/, '').trim();
+
+            if (!fotoBase64) {
+                throw new Error('La foto está vacía o inválida.');
+            }
+
+            const fileSize = Buffer.byteLength(fotoBase64, 'base64');
+            if (fileSize > 5 * 1024 * 1024) {
+                throw new Error('El archivo de la foto excede el tamaño máximo permitido (5MB).');
+            }
+
+            const buffer = Buffer.from(fotoBase64, 'base64');
+            const fileType = await fileTypeFromBuffer(buffer);
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+            if (!fileType || !allowedTypes.includes(fileType.mime)) {
+                throw new Error('Tipo de archivo no permitido para la foto. Solo se permiten imágenes (JPEG, PNG, WEBP).');
+            }
+
+            await registrarPasoLog(log._id, "Validación de datos foto", "completado")
+
+            const urlPath = path.join(
+                __dirname,
+                "..",
+                "..",
+                "..",
+                "..",
+                "uploads",
+                "personal",
+                "fotoCarnet",
+            );
+
+            await fs.mkdir(urlPath, { recursive: true });
+
+            const fileName = `${crypto.randomUUID()}.${fileType.ext}`;
+            const filePath = path.join(urlPath, fileName);
+
+            await fs.writeFile(filePath, buffer);
+
+            data.foto = filePath;
+
 
             await session.withTransaction(async () => {
 
@@ -79,7 +119,6 @@ export class PersonalControllerRepository {
             action: action,
             acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
         })
-        const session = await db.Personal.db.startSession();
 
         try {
 

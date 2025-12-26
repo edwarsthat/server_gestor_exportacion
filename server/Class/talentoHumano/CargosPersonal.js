@@ -1,5 +1,5 @@
 import { db } from "../../../DB/mongoDB/config/init.js";
-import { BadGetwayError } from "../../../Error/ConnectionErrors.js";
+import { BadGetwayError, PostError } from "../../../Error/ConnectionErrors.js";
 
 export class CargosPersonalRepository {
     static async addCargosPersonal(data, opts = {}) {
