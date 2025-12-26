@@ -184,7 +184,7 @@ export class CalidadRepository {
                 ids: [_id],
                 populate: [
                     { path: 'predio', select: 'PREDIO GGN ICA' },
-                    { path: 'tipoFruta', select: 'tipoFruta' },
+                    { path: 'tipoFruta' },
                     { path: "user", select: "usuario nombre apellido" },
                     { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
                     { path: 'precio', select: 'exportacion frutaNacional descarte' },
@@ -458,7 +458,7 @@ export class CalidadRepository {
                     ids: [_id],
                     populate: [
                         { path: 'predio', select: 'PREDIO GGN ICA' },
-                        { path: 'tipoFruta', select: 'tipoFruta' },
+                        { path: 'tipoFruta' },
                         { path: 'cliente', select: 'CLIENTE' },
                         { path: "user", select: "usuario nombre apellido" },
                         { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
