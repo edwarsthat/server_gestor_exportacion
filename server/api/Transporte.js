@@ -39,7 +39,7 @@ export class TransporteRepository {
                     infoContenedor: 1,
                     registrosSalidas: 1,
                 },
-                sort: { 'infoExportacion.fechaCreacion': -1 },
+                sort: { 'infoExportacion.fecha': -1 },
                 populate: {
                     path: "registrosSalidas",
                     select: "codigo tipoVehiculo placa trailer pesoEstimado fecha transportadora",
