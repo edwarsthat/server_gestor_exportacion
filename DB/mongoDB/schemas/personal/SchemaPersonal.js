@@ -13,6 +13,7 @@ export const defineSchemaPersonal = async (conn) => {
         tipoSangre: { type: String },
         carnet: { type: Schema.Types.ObjectId, ref: 'carnet' },
         urlIdentificacion: { type: String, required: true },
+        urlFotoCarnet: { type: String, required: true },
     })
 
     personalSchema.index(

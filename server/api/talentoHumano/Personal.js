@@ -20,9 +20,6 @@ const __dirname = dirname(__filename);
 
 export class PersonalControllerRepository {
 
-
-
-
     static async post_talentoHumano_personal_ingresoPersonal(req) {
         const { user } = req
         const { action, data, cedulaPath, foto } = req.data
@@ -93,6 +90,21 @@ export class PersonalControllerRepository {
                 data.SKU = sku.serial
                 data.urlIdentificacion = cedulaPath
 
+                const payload = {
+                    data: JSON.stringify(cleanForRust(filePath)),
+                    server: "python",
+                    action: "talentoHumano_procesamiento_imagen"
+                };
+
+                const responseStr = await rustRcpClient.sendData(payload);
+                const response = JSON.parse(responseStr);
+
+                if (!response.success) {
+                    throw new Error(response.message)
+                }
+
+                data.urlFotoCarnet = response.path
+
                 await PersonalRepository.addPersonal(data, { user: user._id, action: action, session })
                 await registrarPasoLog(log._id, "Agregar personal", "completado")
 
@@ -131,7 +143,7 @@ export class PersonalControllerRepository {
             }
 
             const cedulaBase64 = cedula.replace(/^data:.*;base64,/, '').trim();
-
+            console.log("cedulaBase64")
             if (!cedulaBase64) {
                 throw new Error('El documento de identificación está vacío o inválido.');
             }
@@ -141,7 +153,7 @@ export class PersonalControllerRepository {
             if (fileSize > 5 * 1024 * 1024) { // 5MB
                 throw new Error('El archivo excede el tamaño máximo permitido (5MB).');
             }
-
+            console.log("fileSize")
             // Validar tipo de archivo real (magic numbers)
             const buffer = Buffer.from(cedulaBase64, 'base64');
             const fileType = await fileTypeFromBuffer(buffer);
@@ -155,7 +167,7 @@ export class PersonalControllerRepository {
             }
 
             await registrarPasoLog(log._id, "Validación de datos", "completado")
-
+            console.log("mime")
             const urlPath = path.join(
                 __dirname,
                 "..",
@@ -169,7 +181,7 @@ export class PersonalControllerRepository {
 
             await fs.mkdir(urlPath, { recursive: true });
             await registrarPasoLog(log._id, "Crear directorio", "completado")
-
+            console.log("mime")
             const extension = fileType?.ext || (isPdf ? 'pdf' : null);
             let fileToSave = null;
             let filePath = null;
@@ -182,19 +194,23 @@ export class PersonalControllerRepository {
                 const encryptedBuffer = PersonalTalentoHumanoService.encryptBuffer(buffer);
                 fileToSave = { path: filePath, buffer: encryptedBuffer };
             }
-
+            console.log("mime")
             if (fileToSave) {
                 await fs.writeFile(fileToSave.path, fileToSave.buffer);
             }
-
+            console.log("mime")
             const payload = {
                 data: JSON.stringify(cleanForRust(filePath)),
                 server: "python",
                 action: "validar_cedula"
             };
 
+            console.log("Se envian los datos a python")
+
             const responseStr = await rustRcpClient.sendData(payload);
             const response = JSON.parse(responseStr);
+
+            console.log("Se reciben los datos de python")
 
             return response
 
