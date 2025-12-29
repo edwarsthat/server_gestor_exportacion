@@ -65,6 +65,7 @@ import { defineSchemaCargosPersonal } from '../schemas/personal/SchemaCargosPers
 import { defineSchemaAreasFisicas } from '../schemas/catalogs/schemaAreasFisicas.js';
 import { defineSchemaCarnets } from '../schemas/personal/dotaciones/SchemaCarnets.js';
 import { defineAuditCargosPersonal } from '../schemas/audit/AuditCargosPersonal.js';
+import { defineAuditPersonal } from '../schemas/audit/AuditPersonal.js';
 
 export const db = {};
 export const connections = {};
@@ -226,6 +227,8 @@ const defineSchemasProceso = async (sysConn) => {
         db.AuditLotesMaquila = AuditLotesMaquila;
         const AuditCargosPersonal = await defineAuditCargosPersonal(sysConn);
         db.AuditCargosPersonal = AuditCargosPersonal;
+        const AuditPersonal = await defineAuditPersonal(sysConn);
+        db.AuditPersonal = AuditPersonal;
 
         console.log("⚡ Definiendo Cargo...");
         db.Cargo = await defineCargo(sysConn);
@@ -399,7 +402,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.CargosPersonal = await defineSchemaCargosPersonal(sysConn, AuditCargosPersonal);
         console.log("✅ Cargos Personal definido");
         console.log("⚡ Definiendo Personal...");
-        db.Personal = await defineSchemaPersonal(sysConn);
+        db.Personal = await defineSchemaPersonal(sysConn, AuditPersonal);
         console.log("✅ Personal definido");
         console.log("⚡ Definiendo Carnets...");
         db.Carnet = await defineSchemaCarnets(sysConn);

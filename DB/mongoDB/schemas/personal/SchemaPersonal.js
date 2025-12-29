@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
+import { makeAuditPlugin } from "../utils/auditPLug.js";
 const { Schema } = mongoose;
 
-export const defineSchemaPersonal = async (conn) => {
+export const defineSchemaPersonal = async (conn, auditLog) => {
+
+    const auditPlugin = makeAuditPlugin({ collectionName: 'personal', AuditLogs: auditLog });
 
     const personalSchema = new Schema({
         SKU: { type: String, required: true, unique: true },
@@ -14,7 +17,7 @@ export const defineSchemaPersonal = async (conn) => {
         carnet: { type: Schema.Types.ObjectId, ref: 'carnet' },
         urlIdentificacion: { type: String, required: true },
         urlFotoCarnet: { type: String, required: true },
-        estado: { type: String, required: true },
+        estado: { type: Boolean, required: true },
     })
 
     personalSchema.index(
@@ -25,6 +28,8 @@ export const defineSchemaPersonal = async (conn) => {
         { carnet: 1 },
         { name: 'idx_carnet' }
     );
+
+    personalSchema.plugin(auditPlugin);
 
     const Personal = conn.model("personal", personalSchema);
 

@@ -31,8 +31,8 @@ export const apiSocketTalentoHumano = {
         const data = await PersonalControllerRepository.get_talentoHumano_personal_registros(req)
         return successResponseRoutes(data)
     },
-    get_talentoHumano_personal_numeroRegistros: async () => {
-        const data = await PersonalControllerRepository.get_talentoHumano_personal_numeroRegistros()
+    get_talentoHumano_personal_numeroRegistros: async (req) => {
+        const data = await PersonalControllerRepository.get_talentoHumano_personal_numeroRegistros(req)
         return successResponseRoutes(data)
     },
     get_talentoHumano_personal_Imgs: async (req) => {

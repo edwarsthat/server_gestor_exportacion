@@ -51,4 +51,27 @@ export class PersonalRepository {
             throw new BadGetwayError(501, `Error obteniendo numero de registros de personal ${err.message}`);
         }
     }
+    static async actualizar_personal(filter, update, options = {}) {
+        const { session, arrayFilters, ...restOptions } = options;
+
+        const finalOptions = {
+            new: true,
+            ...restOptions,
+            ...(session && { session }),
+            ...(arrayFilters && { arrayFilters })
+        };
+
+        try {
+            let documento = await db.Personal.findOneAndUpdate(filter, update, { ...finalOptions });
+            if (!documento) {
+                if (softNotFound) return null;
+                throw new Error('Personal no encontrado');
+            }
+
+            return documento;
+
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+        }
+    }
 }

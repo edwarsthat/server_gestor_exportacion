@@ -214,16 +214,19 @@ export class PersonalControllerRepository {
     }
     static async get_talentoHumano_personal_registros(req) {
         try {
-            const { page } = req.data
+            const { page, filtro } = req.data
             const resultsPerPage = 25;
+            const query = { estado: filtro.activo }
 
+            console.log(query)
             const data = await PersonalRepository.get_personal({
+                query: query,
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
                 populate: {
                     path: "cargo",
                     select: "nombre"
-                }
+                },
             })
             return data
         } catch (error) {
@@ -231,9 +234,12 @@ export class PersonalControllerRepository {
             await ErrorTalentHumanoLogicHandlers(error)
         }
     }
-    static async get_talentoHumano_personal_numeroRegistros() {
+    static async get_talentoHumano_personal_numeroRegistros(req) {
         try {
-            const data = await PersonalRepository.get_numero_registros_personal({})
+            const { filtro } = req.data
+            const query = { estado: filtro.activo }
+
+            const data = await PersonalRepository.get_numero_registros_personal(query)
             return data
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
@@ -299,7 +305,8 @@ export class PersonalControllerRepository {
             const { user } = req
             const { _id, data } = req.data
 
-
+            const updatedPersonal = await PersonalRepository.actualizar_personal({ _id }, data, { user })
+            return updatedPersonal
 
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
