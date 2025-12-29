@@ -56,7 +56,9 @@ import { initCronCache } from './src/cron/cache.js';
         initRustRcp().catch(() => {
             console.warn('⚠️ No se pudo conectar al servidor Rust inicialmente. Se intentará reconectar en segundo plano.');
         });
-        const io = new Server(server);
+        const io = new Server(server, {
+            maxHttpBufferSize: 5e6 // 5 MB
+        });
         initSockets(io);
         initCronJobs();
         initCronCache();

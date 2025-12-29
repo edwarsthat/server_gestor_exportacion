@@ -143,7 +143,6 @@ export class PersonalControllerRepository {
             }
 
             const cedulaBase64 = cedula.replace(/^data:.*;base64,/, '').trim();
-            console.log("cedulaBase64")
             if (!cedulaBase64) {
                 throw new Error('El documento de identificación está vacío o inválido.');
             }
@@ -153,7 +152,6 @@ export class PersonalControllerRepository {
             if (fileSize > 5 * 1024 * 1024) { // 5MB
                 throw new Error('El archivo excede el tamaño máximo permitido (5MB).');
             }
-            console.log("fileSize")
             // Validar tipo de archivo real (magic numbers)
             const buffer = Buffer.from(cedulaBase64, 'base64');
             const fileType = await fileTypeFromBuffer(buffer);
@@ -167,7 +165,6 @@ export class PersonalControllerRepository {
             }
 
             await registrarPasoLog(log._id, "Validación de datos", "completado")
-            console.log("mime")
             const urlPath = path.join(
                 __dirname,
                 "..",
@@ -181,7 +178,6 @@ export class PersonalControllerRepository {
 
             await fs.mkdir(urlPath, { recursive: true });
             await registrarPasoLog(log._id, "Crear directorio", "completado")
-            console.log("mime")
             const extension = fileType?.ext || (isPdf ? 'pdf' : null);
             let fileToSave = null;
             let filePath = null;
@@ -194,23 +190,18 @@ export class PersonalControllerRepository {
                 const encryptedBuffer = PersonalTalentoHumanoService.encryptBuffer(buffer);
                 fileToSave = { path: filePath, buffer: encryptedBuffer };
             }
-            console.log("mime")
             if (fileToSave) {
                 await fs.writeFile(fileToSave.path, fileToSave.buffer);
             }
-            console.log("mime")
             const payload = {
                 data: JSON.stringify(cleanForRust(filePath)),
                 server: "python",
                 action: "validar_cedula"
             };
 
-            console.log("Se envian los datos a python")
-
             const responseStr = await rustRcpClient.sendData(payload);
             const response = JSON.parse(responseStr);
 
-            console.log("Se reciben los datos de python")
 
             return response
 
@@ -249,11 +240,67 @@ export class PersonalControllerRepository {
             await ErrorTalentHumanoLogicHandlers(error)
         }
     }
-    static async get_talentoHumano_personal_cedulaImg(req) {
+    static async get_talentoHumano_personal_Imgs(req) {
         try {
             const { _id } = req.data
             const data = await PersonalRepository.get_personal({ _id })
+
+            if (data && data.length > 0) {
+                // Convertir a objeto plano Mongoose si es necesario para poder agregar propiedades
+                if (typeof data[0].toObject === 'function') {
+                    data[0] = data[0].toObject();
+                }
+
+                // 1. Procesar Foto Rostro (Pública / No Encriptada)
+                if (data[0].urlFotoCarnet) {
+                    try {
+                        const filePath = data[0].urlFotoCarnet;
+                        const fileBuffer = await fs.readFile(filePath);
+                        const fileType = await fileTypeFromBuffer(fileBuffer);
+                        const mime = fileType ? fileType.mime : 'image/jpeg';
+                        const base64 = fileBuffer.toString('base64');
+                        data[0].imgFoto = `data:${mime};base64,${base64}`;
+                    } catch (error) {
+                        console.error("Error al leer la imagen de rostro:", error);
+                    }
+                }
+
+                // 2. Procesar Identificación (Encriptada PDF/Imagen)
+                if (data[0].urlIdentificacion) {
+                    try {
+                        const idPath = data[0].urlIdentificacion;
+                        const encryptedBuffer = await fs.readFile(idPath);
+
+                        // Desencriptar
+                        const decryptedBuffer = PersonalTalentoHumanoService.decryptBuffer(encryptedBuffer);
+
+                        // Detectar tipo real del archivo desencriptado
+                        const fileType = await fileTypeFromBuffer(decryptedBuffer);
+                        // Si no detecta tipo (ej. PDF a veces no lo detecta bien si es parcial, pero file-type suele funcionar), asumir pdf si falla o basarse en magic bytes
+                        // Nota: file-type funciona bien con PDFs.
+                        const mime = fileType ? fileType.mime : 'application/pdf';
+
+                        const base64 = decryptedBuffer.toString('base64');
+                        data[0].pdfDocumento = `data:${mime};base64,${base64}`;
+
+                    } catch (error) {
+                        console.error("Error al leer/desencriptar identificación:", error);
+                    }
+                }
+            }
             return data
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorTalentHumanoLogicHandlers(error)
+        }
+    }
+    static async put_talentoHumano_personal(req) {
+        try {
+            const { user } = req
+            const { _id, data } = req.data
+
+
+
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
             await ErrorTalentHumanoLogicHandlers(error)

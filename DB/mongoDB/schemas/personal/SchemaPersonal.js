@@ -14,6 +14,7 @@ export const defineSchemaPersonal = async (conn) => {
         carnet: { type: Schema.Types.ObjectId, ref: 'carnet' },
         urlIdentificacion: { type: String, required: true },
         urlFotoCarnet: { type: String, required: true },
+        estado: { type: String, required: true },
     })
 
     personalSchema.index(

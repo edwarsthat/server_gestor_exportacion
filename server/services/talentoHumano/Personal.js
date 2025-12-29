@@ -19,4 +19,20 @@ export class PersonalTalentoHumanoService {
         // Retorna IV + datos encriptados
         return Buffer.concat([iv, encrypted]);
     }
+
+    static decryptBuffer(encryptedBuffer) {
+        // Extraer el IV (primeros 16 bytes)
+        const iv = encryptedBuffer.subarray(0, IV_LENGTH);
+        // Extraer el contenido encriptado
+        const encryptedContent = encryptedBuffer.subarray(IV_LENGTH);
+
+        const decipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+
+        const decrypted = Buffer.concat([
+            decipher.update(encryptedContent),
+            decipher.final()
+        ]);
+
+        return decrypted;
+    }
 }
