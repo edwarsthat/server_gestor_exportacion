@@ -2435,24 +2435,24 @@ export class InventariosRepository {
     static async snapshot_inventario_descartes() {
         try {
 
-            const itemsDescartes = await InventariosHistorialRepository.get_inventario_descarte({
+            const itemsDescartes = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
                 query: {
                     estado: "ACTIVO",
-                    loteType: "lote"
+                    loteType: "Lote"
                 },
             })
             const inventario = {}
             for (const item of itemsDescartes) {
-                if (!inventario[item.tipoFruta]) {
-                    inventario[item.tipoFruta] = {}
+                if (!inventario[item.tipoFruta.toString()]) {
+                    inventario[item.tipoFruta.toString()] = {}
                 }
-                if (!inventario[item.tipoFruta][item.area]) {
-                    inventario[item.tipoFruta][item.area] = {}
+                if (!inventario[item.tipoFruta.toString()][item.area]) {
+                    inventario[item.tipoFruta.toString()][item.area] = {}
                 }
-                if (!inventario[item.tipoFruta][item.area][item.calidad]) {
-                    inventario[item.tipoFruta][item.area][item.calidad] = 0
+                if (!inventario[item.tipoFruta.toString()][item.area][item.tipoDescarte.toString()]) {
+                    inventario[item.tipoFruta.toString()][item.area][item.tipoDescarte.toString()] = 0
                 }
-                inventario[item.tipoFruta][item.area][item.calidad] += item.cantidad
+                inventario[item.tipoFruta.toString()][item.area][item.tipoDescarte.toString()] += item.kilosActuales
             }
 
             await InventariosHistorialRepository.put_cardex_invetariosdescartes(

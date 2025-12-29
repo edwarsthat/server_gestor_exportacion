@@ -538,16 +538,6 @@
                     "Modificar Orden Vaceo": "put_sistema_reiniciar_orden_vaceo"
                 }
             }
-        },
-        "Registros": {
-            "Registro Habilitar Instancias": {
-                "_id": {
-                    "$oid": "6932fa57a880d2c37115d624"
-                },
-                "permisos": {
-                    "obtener_registro_instancias": "get_sistema_habilitarInstancias_registros"
-                }
-            }
         }
     },
     "Indicadores": {
@@ -809,6 +799,7 @@
             }
         }
     },
+    "Rol": 0,
     "Transporte": {
         "Registros": {
             "Registros exportación": {
@@ -980,6 +971,17 @@
                 "permisos": {
                     "Ingreso personal": "post_talentoHumano_personal_ingresoPersonal"
                 }
+            },
+            "Personal": {
+                "titulo": "Donde se ve y se modifica el personal",
+                "_id": {
+                    "$oid": "693c7d76bb3a96d4fcc36edf"
+                },
+                "permisos": {
+                    "Obtener Personal": "get_talentoHumano_personal_registros",
+                    "Obtener documentos": "get_talentoHumano_personal_Imgs",
+                    "Modificar Personal": "put_talentoHumano_personal"
+                }
             }
         },
         "Cargos personal": {
@@ -1016,6 +1018,5 @@
                 }
             }
         }
-    },
-    "Rol": 0
+    }
 }
