@@ -42,6 +42,7 @@ import { initCronJobs } from './src/cron/jobs.js';
 import { initRustRcp } from './config/grpcRust.js';
 import { tipoFrutaCache } from './server/cache/tipoFruta.js';
 import { initCronCache } from './src/cron/cache.js';
+import { descarteCache } from './server/cache/descartes.js';
 
 
 (async () => {
@@ -52,6 +53,7 @@ import { initCronCache } from './src/cron/cache.js';
          */
         await initMongoDB();
         await tipoFrutaCache.cargar(5, 1000);
+        await descarteCache.cargar(5, 1000);
 
         initRustRcp().catch(() => {
             console.warn('⚠️ No se pudo conectar al servidor Rust inicialmente. Se intentará reconectar en segundo plano.');

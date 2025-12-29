@@ -34,6 +34,8 @@ import { LotesHelper } from "../helper/lotes.js";
 import { InventarioSimpleHelper } from "../helper/inventarioSimple.js";
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
 import { HistorialInventariosService } from "../services/inventarios/historialInventarios.js";
+import { descarteCache } from "../cache/descartes.js";
+import { tipoFrutaCache } from "../cache/tipoFruta.js";
 
 
 export class InventariosRepository {
@@ -1648,13 +1650,48 @@ export class InventariosRepository {
     static async get_inventarios_historiales_registros_inventarioDescartes(req) {
         try {
             const { data } = req
-            const { page, resultsPerPage } = data;
+            const { page } = data;
+            const resultsPerPage = 50;
 
             const historial = await InventariosHistorialRepository.getInventariosDescarte({
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
+                lean: true
             });
-            return historial;
+
+            const out = []
+
+            for (const item of historial) {
+                const newObj = {}
+                for (const [kilosKeys, valueKilos] of Object.entries(item)) {
+                    if (kilosKeys === "_id" || kilosKeys === "fecha") {
+                        newObj[kilosKeys] = valueKilos;
+                        continue;
+                    }
+                    newObj[kilosKeys] = {}
+                    for (const [frutasKeys, value] of Object.entries(valueKilos)) {
+                        const fruta = tipoFrutaCache.getTipoFruta(frutasKeys) ? tipoFrutaCache.getTipoFruta(frutasKeys).tipoFruta : ""
+                        if (!fruta) continue;
+                        newObj[kilosKeys][fruta] = {}
+
+
+                        for (const [areaKey, valueArea] of Object.entries(value)) {
+                            newObj[kilosKeys][fruta][areaKey] = {}
+
+                            for (const [keyDescarte, valueDescarte] of Object.entries(valueArea)) {
+                                const nombreDescarte = descarteCache.getDescarte(keyDescarte) ? descarteCache.getDescarte(keyDescarte).nombre : ""
+
+                                newObj[kilosKeys][fruta][areaKey][nombreDescarte] = valueDescarte
+                            }
+                        }
+
+
+                    }
+                }
+                out.push(newObj)
+            }
+
+            return out;
 
         } catch (err) {
             const erroresPermitidos = new Set([518, 523, 419]);
