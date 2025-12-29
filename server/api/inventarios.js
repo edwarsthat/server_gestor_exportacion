@@ -34,6 +34,8 @@ import { LotesHelper } from "../helper/lotes.js";
 import { InventarioSimpleHelper } from "../helper/inventarioSimple.js";
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
 import { HistorialInventariosService } from "../services/inventarios/historialInventarios.js";
+import { descarteCache } from "../cache/descartes.js";
+import { tipoFrutaCache } from "../cache/tipoFruta.js";
 
 
 export class InventariosRepository {
@@ -1648,13 +1650,48 @@ export class InventariosRepository {
     static async get_inventarios_historiales_registros_inventarioDescartes(req) {
         try {
             const { data } = req
-            const { page, resultsPerPage } = data;
+            const { page } = data;
+            const resultsPerPage = 50;
 
             const historial = await InventariosHistorialRepository.getInventariosDescarte({
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
+                lean: true
             });
-            return historial;
+
+            const out = []
+
+            for (const item of historial) {
+                const newObj = {}
+                for (const [kilosKeys, valueKilos] of Object.entries(item)) {
+                    if (kilosKeys === "_id" || kilosKeys === "fecha") {
+                        newObj[kilosKeys] = valueKilos;
+                        continue;
+                    }
+                    newObj[kilosKeys] = {}
+                    for (const [frutasKeys, value] of Object.entries(valueKilos)) {
+                        const fruta = tipoFrutaCache.getTipoFruta(frutasKeys) ? tipoFrutaCache.getTipoFruta(frutasKeys).tipoFruta : ""
+                        if (!fruta) continue;
+                        newObj[kilosKeys][fruta] = {}
+
+
+                        for (const [areaKey, valueArea] of Object.entries(value)) {
+                            newObj[kilosKeys][fruta][areaKey] = {}
+
+                            for (const [keyDescarte, valueDescarte] of Object.entries(valueArea)) {
+                                const nombreDescarte = descarteCache.getDescarte(keyDescarte) ? descarteCache.getDescarte(keyDescarte).nombre : ""
+
+                                newObj[kilosKeys][fruta][areaKey][nombreDescarte] = valueDescarte
+                            }
+                        }
+
+
+                    }
+                }
+                out.push(newObj)
+            }
+
+            return out;
 
         } catch (err) {
             const erroresPermitidos = new Set([518, 523, 419]);
@@ -2398,24 +2435,24 @@ export class InventariosRepository {
     static async snapshot_inventario_descartes() {
         try {
 
-            const itemsDescartes = await InventariosHistorialRepository.get_inventario_descarte({
+            const itemsDescartes = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
                 query: {
                     estado: "ACTIVO",
-                    loteType: "lote"
+                    loteType: "Lote"
                 },
             })
             const inventario = {}
             for (const item of itemsDescartes) {
-                if (!inventario[item.tipoFruta]) {
-                    inventario[item.tipoFruta] = {}
+                if (!inventario[item.tipoFruta.toString()]) {
+                    inventario[item.tipoFruta.toString()] = {}
                 }
-                if (!inventario[item.tipoFruta][item.area]) {
-                    inventario[item.tipoFruta][item.area] = {}
+                if (!inventario[item.tipoFruta.toString()][item.area]) {
+                    inventario[item.tipoFruta.toString()][item.area] = {}
                 }
-                if (!inventario[item.tipoFruta][item.area][item.calidad]) {
-                    inventario[item.tipoFruta][item.area][item.calidad] = 0
+                if (!inventario[item.tipoFruta.toString()][item.area][item.tipoDescarte.toString()]) {
+                    inventario[item.tipoFruta.toString()][item.area][item.tipoDescarte.toString()] = 0
                 }
-                inventario[item.tipoFruta][item.area][item.calidad] += item.cantidad
+                inventario[item.tipoFruta.toString()][item.area][item.tipoDescarte.toString()] += item.kilosActuales
             }
 
             await InventariosHistorialRepository.put_cardex_invetariosdescartes(

@@ -45,6 +45,7 @@ export class InventariosHistorialRepository {
             sort = { fecha: -1 },
             limit = 0,
             skip = 0,
+            lean = false,
         } = options;
         try {
             let registroQuery = { ...query };
@@ -53,13 +54,18 @@ export class InventariosHistorialRepository {
                 registroQuery._id = { $in: ids };
             }
 
-
-            const registro = await db.InventarioDescarte.find(registroQuery)
+            let queryBuilder = db.InventarioDescarte.find(registroQuery)
                 .select(select)
                 .sort(sort)
                 .limit(limit)
-                .skip(skip)
-                .exec();
+                .skip(skip);
+
+            // Aplicar lean() solo si la opción está activada
+            if (lean) {
+                queryBuilder = queryBuilder.lean();
+            }
+
+            const registro = await queryBuilder.exec();
 
             return registro;
 

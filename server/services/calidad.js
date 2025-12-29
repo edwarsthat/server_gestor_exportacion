@@ -50,6 +50,7 @@ export class CalidadService {
         let exportacion = 0;
         let kilosGGN = 0;
 
+        console.log(itemPallets.length)
         const numeroCont = itemPallets.length;
 
         for (let i = 0; i < numeroCont; i++) {
