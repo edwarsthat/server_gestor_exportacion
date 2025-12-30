@@ -555,7 +555,7 @@ class ProcesoService {
             )
 
             await LotesHelper.actualizar_lotes_helper(
-                { _id: itemsPallet[i].lote },
+                { _id: itemsPallet[i].lote._id },
                 updateLote,
                 { user: user._id, action: action, session },
             )
