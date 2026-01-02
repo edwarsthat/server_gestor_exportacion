@@ -919,7 +919,7 @@ export class InventariosRepository {
                     }
                 };
 
-                await LotesRepository.actualizar_lote(
+                const lote = await LotesRepository.actualizar_lote(
                     { _id: loteId },
                     queryLote,
                     { new: true, user: user, action: action, session: session }
@@ -927,7 +927,7 @@ export class InventariosRepository {
                 await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Lote ${loteId} actualizado con directoNacional: ${lote.promedio * data.canastillas}`);
 
                 const descripcion = `Directo Nacional - Canastillas decrementadas: ${data.canastillas}`
-                await InventariosService.modificarRestarInventarioFrutaSinProocesar(data.canastillas, user, action, loteId, log, session, descripcion);
+                await InventariosService.modificarRestarInventarioFrutaSinProocesar(data.canastillas, user, action, lote, log, session, descripcion);
             });
 
             procesoEventEmitter.emit("server_event", {
