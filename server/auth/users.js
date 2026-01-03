@@ -55,6 +55,7 @@ const permisos_generales = new Set([
     "get_constantes_sistema_tipo_frutas",
     "get_constantes_sistema_paises_GGN",
     "get_comercial_clientesNacionales",
+    "get_data_bootstrap",
     //se obtiene datos del sistema
     "Get_info_update_app_desktop",
 

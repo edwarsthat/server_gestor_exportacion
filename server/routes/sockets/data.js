@@ -54,5 +54,9 @@ export const apiSocketData = {
     get_data_cargosPersonal: async () => {
         const response = await dataRepository.get_data_cargosPersonal()
         return successResponseRoutes(response)
+    },
+    get_data_bootstrap: async () => {
+        const response = await dataRepository.get_data_bootstrap()
+        return successResponseRoutes(response)
     }
 }

@@ -10,6 +10,7 @@ import { UsuariosRepository } from "../Class/Usuarios.js";
 import { dataService } from "../services/data.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
 import { CuartosFrios } from "../store/CuartosFrios.js";
+import { ErrorDataLogicHandlers } from "./utils/errorsHandlers.js";
 
 
 export class dataRepository {
@@ -48,23 +49,6 @@ export class dataRepository {
                 throw err
             }
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_data_tipoFruta() {
-        try {
-            const tipoFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas()
-            return tipoFrutas
-        } catch (err) {
-            if (
-                err.status === 522
-            ) {
-                throw err
-            }
-
-            const type = err?.type || "desconocido";
-            const message = err?.message || "Error inesperado";
-
-            throw new DataLogicError(480, `Error ${type}: ${message}`);
         }
     }
     static async get_data_tipoFruta2() {
@@ -306,6 +290,18 @@ export class dataRepository {
                 throw err
             }
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_data_bootstrap() {
+        try {
+            const tipoFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2()
+            const calidadesExport = await ConstantesDelSistema.get_constantes_sistema_calidades()
+            const descartes = await ConstantesDelSistema.get_constantes_sistema_descartes()
+
+            return { tipoFrutas, calidadesExport, descartes }
+        } catch (err) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, err);
+            await ErrorDataLogicHandlers(err, log)
         }
     }
 }

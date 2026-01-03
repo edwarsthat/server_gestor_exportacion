@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { CARNET_STATUSES, CARNET_TYPES } from "../../../../../constants/personal.js";
 const { Schema } = mongoose;
 
 export const defineSchemaCarnets = async (conn) => {
@@ -6,13 +7,13 @@ export const defineSchemaCarnets = async (conn) => {
     const carnetSchema = new Schema({
         type: {
             type: String,
-            enum: ["temp", "final"],
+            enum: CARNET_TYPES,
             required: true,
             index: true,
         },
         status: {
             type: String,
-            enum: ["stock", "active", "revoked", "lost", "expired"],
+            enum: CARNET_STATUSES,
             required: true,
             default: "stock",
             index: true,
