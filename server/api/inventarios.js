@@ -919,7 +919,7 @@ export class InventariosRepository {
                     }
                 };
 
-                const lote = await LotesRepository.actualizar_lote(
+                await LotesRepository.actualizar_lote(
                     { _id: loteId },
                     queryLote,
                     { new: true, user: user, action: action, session: session }
