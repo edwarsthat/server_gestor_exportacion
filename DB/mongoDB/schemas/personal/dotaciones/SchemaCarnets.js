@@ -26,14 +26,20 @@ export const defineSchemaCarnets = async (conn) => {
         },
         tokenHash: {
             type: String,
+            required: false,
+            select: false,
+            default: null,
+        },
+        serialNumber: {
+            type: Number,
             required: true,
-            select: false, // por defecto no lo devuelve en queries
+            select: true,
         },
 
         issuedAt: { type: Date, default: null, index: true },
         expiresAt: { type: Date, default: null, index: true },
 
-        createdBy: { type: Schema.Types.ObjectId, ref: "usuario", default: null },
+        user: { type: Schema.Types.ObjectId, ref: "usuario", default: null },
         assignedBy: { type: Schema.Types.ObjectId, ref: "usuario", default: null },
 
         notes: { type: String, default: "" },
@@ -47,7 +53,11 @@ export const defineSchemaCarnets = async (conn) => {
         }
     );
     carnetSchema.index(
-        { tokenSelector: 1 }, { unique: true }
+        { tokenHash: 1 },
+        {
+            unique: true,
+            partialFilterExpression: { tokenHash: { $type: "string" } },
+        }
     );
 
     const Carnet = conn.model("carnet", carnetSchema);

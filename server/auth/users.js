@@ -48,6 +48,7 @@ const permisos_generales = new Set([
     "get_contabilidad_informesMaquila_calidad_numeroElementos",
     "get_talentoHumano_cargos_numeroRegistros",
     "get_talentoHumano_personal_numeroRegistros",
+    "get_talentoHumano_dotacion_carnets_count",
     //obteniendo constantes
     "get_inventarios_cuartosFrios_listaEmpaque",
     "get_inventarios_cuartosFrios_detalles",

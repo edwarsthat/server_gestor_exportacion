@@ -297,8 +297,9 @@ export class dataRepository {
             const tipoFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2()
             const calidadesExport = await ConstantesDelSistema.get_constantes_sistema_calidades()
             const descartes = await ConstantesDelSistema.get_constantes_sistema_descartes()
+            const carnet = await ConstantesDelSistema.get_constantes_carnets()
 
-            return { tipoFrutas, calidadesExport, descartes }
+            return { tipoFrutas, calidadesExport, descartes, carnet }
         } catch (err) {
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
             await ErrorDataLogicHandlers(err, log)
