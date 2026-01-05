@@ -553,7 +553,7 @@ export class InventariosHistorialRepository {
             if (ids.length > 0) {
                 registroQuery._id = { $in: ids };
             }
-
+            const t0 = performance.now();
             const registros = await db.InventarioActualDescarte.find(registroQuery)
                 .select(select)
                 .sort(sort)
@@ -562,6 +562,10 @@ export class InventariosHistorialRepository {
                 .populate(populate)
                 .session(session)
                 .exec();
+
+            const t1 = performance.now();
+            console.log(`DB InventarioActualDescarte.find ${(t1 - t0).toFixed(2)} `)
+
             return registros;
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo registros ${err.message}`);
@@ -578,6 +582,14 @@ export class InventariosHistorialRepository {
             return res;
         } catch (err) {
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+        }
+    }
+    static async get_numero_inventario_descarte(filtro = {}) {
+        try {
+            const count = await db.InventarioActualDescarte.countDocuments(filtro);
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(524, `Error obteniendo cantidad inventario descarte ${filtro} -- - ${err.message}`);
         }
     }
     // #endregion

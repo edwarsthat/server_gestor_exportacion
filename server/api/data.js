@@ -53,9 +53,11 @@ export class dataRepository {
     }
     static async get_data_tipoFruta2() {
         try {
-            const tipoFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2()
-            const calidadesExport = await ConstantesDelSistema.get_constantes_sistema_calidades()
-            const descartes = await ConstantesDelSistema.get_constantes_sistema_descartes()
+            const [tipoFrutas, calidadesExport, descartes] = await Promise.all([
+                ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(),
+                ConstantesDelSistema.get_constantes_sistema_calidades(),
+                ConstantesDelSistema.get_constantes_sistema_descartes()
+            ]);
             return { tipoFrutas, calidadesExport, descartes }
         } catch (err) {
             if (
@@ -294,12 +296,15 @@ export class dataRepository {
     }
     static async get_data_bootstrap() {
         try {
-            const tipoFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2()
-            const calidadesExport = await ConstantesDelSistema.get_constantes_sistema_calidades()
-            const descartes = await ConstantesDelSistema.get_constantes_sistema_descartes()
-            const carnet = await ConstantesDelSistema.get_constantes_carnets()
+            const [tipoFrutas, calidadesExport, descartes, carnet, areasSeleccion] = await Promise.all([
+                ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(),
+                ConstantesDelSistema.get_constantes_sistema_calidades(),
+                ConstantesDelSistema.get_constantes_sistema_descartes(),
+                ConstantesDelSistema.get_constantes_carnets(),
+                ConstantesDelSistema.get_constantes_sistema_areasSeleccion()
+            ]);
 
-            return { tipoFrutas, calidadesExport, descartes, carnet }
+            return { tipoFrutas, calidadesExport, descartes, carnet, areasSeleccion }
         } catch (err) {
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
             await ErrorDataLogicHandlers(err, log)

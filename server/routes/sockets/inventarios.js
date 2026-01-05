@@ -1,6 +1,7 @@
 import { CalidadRepository } from "../../api/Calidad.js";
 import { ComercialRepository } from "../../api/Comercial.js";
 import { InventariosRepository } from "../../api/inventarios.js";
+import { InventarioDescarteController } from "../../api/inventarios/inventarioDescarte.js";
 import { ModificarRepository } from "../../api/ModificarData.js";
 import { ProcesoRepository } from "../../api/Proceso.mjs";
 import { successResponseRoutes } from "../helpers/responses.js";
@@ -127,7 +128,7 @@ export const apiSocketInventarios = {
         const response = await InventariosRepository.get_inventarios_descarteMaquila(data)
         return successResponseRoutes(response)
     },
-    put_inventarios_salida_descarteMaquila:  async (data) => {
+    put_inventarios_salida_descarteMaquila: async (data) => {
         await InventariosRepository.put_inventarios_salida_descarteMaquila(data)
         return successResponseRoutes()
     },
@@ -235,6 +236,10 @@ export const apiSocketInventarios = {
     },
     get_inventarios_historiales_listaDeEmpaque_crearDocumento: async (data) => {
         const response = await InventariosRepository.get_inventarios_historiales_listaDeEmpaque_crearDocumento(data)
+        return successResponseRoutes(response)
+    },
+    get_inventarios_historiales_registros_ingresosDescartes: async (data) => {
+        const response = await InventarioDescarteController.get_inventarios_historiales_registros_ingresosDescartes(data)
         return successResponseRoutes(response)
     },
     //#endregion

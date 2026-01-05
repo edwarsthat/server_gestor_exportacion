@@ -1116,7 +1116,7 @@ export class InventariosRepository {
                     InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar(req.data)
                     await registrarPasoLog(log._id, "InventariosValidations.put_inventarios_historiales_ingresoFruta_modificar", "Completado");
 
-                    const newPromedio = Math.round(data.kilos / data.canastillas)
+                    const newPromedio = Math.round((data.kilos / data.canastillas) * 100000000) / 100000000
 
                     const queryLote = {
                         ...data,

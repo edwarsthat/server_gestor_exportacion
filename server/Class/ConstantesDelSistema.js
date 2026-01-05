@@ -5,6 +5,7 @@ import { ProcessError } from '../../Error/ProcessError.js';
 import { db } from '../../DB/mongoDB/config/init.js';
 import { registrarPasoLog } from '../api/helper/logs.js';
 import { CARNET_ENUMS } from '../../constants/personal.js';
+import { AREAS_SELECCION } from '../../constants/AreasProceso.js';
 // La magia para tener __dirname:
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -105,6 +106,13 @@ export class ConstantesDelSistema {
     static async get_constantes_carnets() {
         try {
             return CARNET_ENUMS;
+        } catch (err) {
+            throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`)
+        }
+    }
+    static async get_constantes_sistema_areasSeleccion() {
+        try {
+            return AREAS_SELECCION;
         } catch (err) {
             throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`)
         }
