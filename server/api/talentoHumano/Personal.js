@@ -218,7 +218,6 @@ export class PersonalControllerRepository {
             const resultsPerPage = 25;
             const query = { estado: filtro.activo }
 
-            console.log(query)
             const data = await PersonalRepository.get_personal({
                 query: query,
                 skip: (page - 1) * resultsPerPage,

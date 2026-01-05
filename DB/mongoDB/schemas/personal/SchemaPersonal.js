@@ -14,10 +14,10 @@ export const defineSchemaPersonal = async (conn, auditLog) => {
         tipoDocumento: { type: String, required: true },
         foto: { type: String },
         tipoSangre: { type: String },
-        carnet: { type: Schema.Types.ObjectId, ref: 'carnet' },
         urlIdentificacion: { type: String, required: true },
         urlFotoCarnet: { type: String, required: true },
-        estado: { type: Boolean, required: true },
+        estado: { type: Boolean, required: true, default: true },
+        carnet: { type: Schema.Types.ObjectId, ref: 'carnet', default: null },
     })
 
     personalSchema.index(

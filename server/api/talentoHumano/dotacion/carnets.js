@@ -100,4 +100,26 @@ export class DotacionCarnetsControllerRepository {
             await ErrorTalentHumanoLogicHandlers(error)
         }
     }
+    static async get_talentoHumano_dotacion_carnets_empleados() {
+        try {
+
+            const data = await PersonalRepository.get_personal({
+                query: {
+                    estado: true,
+                    carnet: null
+                },
+                select: {
+                    SKU: 1, nombre: 1, identificacion: 1, cargo: 1
+                },
+                populate: {
+                    path: 'cargo',
+                    select: 'nombre color'
+                }
+            })
+            return data
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorTalentHumanoLogicHandlers(error)
+        }
+    }
 }
