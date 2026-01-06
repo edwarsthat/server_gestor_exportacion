@@ -3,7 +3,6 @@ const { Schema } = mongoose;
 
 export const defineInventarioMovimientosDescarte = async (conn) => {
 
-
     const InventarioActualDescarteMovimientoSchema = new Schema({
         fecha: { type: Date, default: () => new Date() },
         registroDescarte: { type: Schema.Types.ObjectId, ref: "inventarioActualDescarte", required: true },

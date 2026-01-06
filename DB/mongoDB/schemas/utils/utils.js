@@ -58,6 +58,13 @@ function toComparable(val) {
 
     if (isObjectId(val)) return String(val);             // <- ¡clave!
     if (val instanceof Date) return val.toISOString();   // estabilidad
+    if (val instanceof Map) {
+        const out = {};
+        for (const [k, v] of val.entries()) {
+            out[k] = toComparable(v);
+        }
+        return out;
+    }
     if (Buffer?.isBuffer?.(val)) return { __type: 'Buffer', base64: val.toString('base64') };
 
     if (Array.isArray(val)) return val.map(toComparable);

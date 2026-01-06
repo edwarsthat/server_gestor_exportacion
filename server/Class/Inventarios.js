@@ -592,5 +592,28 @@ export class InventariosHistorialRepository {
             throw new ConnectionDBError(524, `Error obteniendo cantidad inventario descarte ${filtro} -- - ${err.message}`);
         }
     }
+    static async actualizar_ingreso_descarte(filter, update, options = {}) {
+        const { session, arrayFilters, ...restOptions } = options;
+
+        const finalOptions = {
+            new: true,
+            ...restOptions,
+            ...(session && { session }),
+            ...(arrayFilters && { arrayFilters })
+        };
+
+        try {
+            let documento = await db.InventarioActualDescarte.findOneAndUpdate(filter, update, { ...finalOptions });
+            if (!documento) {
+                if (softNotFound) return null;
+                throw new Error('Ingreso descarte no encontrado');
+            }
+
+            return documento;
+
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+        }
+    }
     // #endregion
 }

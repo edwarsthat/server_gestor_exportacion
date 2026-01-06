@@ -242,6 +242,10 @@ export const apiSocketInventarios = {
         const response = await InventarioDescarteController.get_inventarios_historiales_registros_ingresosDescartes(data)
         return successResponseRoutes(response)
     },
+    put_inventarios_inventarioDescarte_modificar_ingreso: async (data) => {
+        await InventarioDescarteController.put_inventarios_inventarioDescarte_modificar_ingreso(data)
+        return successResponseRoutes()
+    },
     //#endregion
     //#region ingresoInventario
     get_inventarios_ingresos_ef: async () => {
