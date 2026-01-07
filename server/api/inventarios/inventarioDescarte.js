@@ -17,7 +17,8 @@ export class InventarioDescarteController {
     static async get_inventarios_historiales_registros_ingresosDescartes(req) {
         try {
             const { data } = req
-            const { fechaInicio, fechaFin, tipoFruta, EF, areaSeleccion, descarte } = data.filtro
+            console.log(data.filtro)
+            const { fechaInicio, fechaFin, tipoFruta, buscar, areaSeleccion, descarte } = data.filtro
             let lote
             let query = {
                 estado: 'ACTIVO',
@@ -29,16 +30,18 @@ export class InventarioDescarteController {
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fechaIngreso')
 
-            if (EF !== "") {
+            console.log(buscar)
+            if (buscar !== "") {
                 lote = await LotesRepository.getLotes2({
                     query: {
-                        enf: EF,
+                        enf: buscar,
                     },
                     select: { enf: 1 }
                 })
 
+                console.log(lote)
                 if (lote.length === 0) {
-                    throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+                    throw new InventariosLogicError(470, `No se encontró el lote ${EF}`)
                 } else {
                     query.lote = lote[0]._id
                 }
@@ -77,6 +80,13 @@ export class InventarioDescarteController {
 
         try {
             await session.withTransaction(async () => {
+                const oldValue = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
+                    query: { _id: _id },
+                    select: "kilosIniciales kilosActuales"
+                })
+
+                const diffKilosIniciales = kilosIniciales - oldValue[0].kilosIniciales
+
                 const itemModificado = await InventariosHistorialRepository.actualizar_ingreso_descarte(
                     { _id: _id },
                     { kilosIniciales: kilosIniciales, kilosActuales: kilosIniciales },
@@ -88,18 +98,22 @@ export class InventarioDescarteController {
                     registroDescarte: itemModificado._id,
                     tipoMovimiento: 'MODIFICACION',
                     tipoRegistro: itemModificado.loteType,
-                    kilos: itemModificado.kilosIniciales,
-                    kilosRestantes: itemModificado.kilosActuales,
+                    kilos: diffKilosIniciales,
                     fechaMovimiento: new Date(),
                     user: user,
                     destino: `INVENTARIO_${itemModificado.area}`
                 }], { session });
                 await registrarPasoLog(log?._id, "db.InventarioMovimientoDescarte.create", `Se creó el movimiento de MODIFICACION adicional para el descarte ${_id}`);
 
-                console.log(itemModificado)
                 await LotesHelper.actualizar_lotes_helper(
                     itemModificado.lote,
-                    { [`descartes.${itemModificado.tipoDescarte._id}`]: itemModificado.kilosActuales },
+                    {
+                        [`descartes.${itemModificado.tipoDescarte._id}`]: itemModificado.kilosActuales,
+                        $inc: {
+                            kilosProcesados: diffKilosIniciales,
+                        }
+
+                    },
                     session
                 )
                 await registrarPasoLog(log?._id, "LotesHelper.actualizar_lotes_helper", `Se actualizó el lote ${itemModificado.lote}`);
@@ -132,7 +146,7 @@ export class InventarioDescarteController {
                 const tipoFruta = inventario.tipoFruta;
                 delete inventario.tipoFruta;
 
-                const totalKilos = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
+                await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
                 await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
                 const newDespacho = {
                     ...data,

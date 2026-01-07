@@ -30,8 +30,6 @@ export class ContabilidadRepository {
                     aprobacionProduccion: 1,
                     fecha_finalizado_proceso: 1,
                     fecha_aprobacion_comercial: 1,
-                    aprobacionProduccion: 1,
-                    aprobacionComercial: 1,
 
                 },
                 limit: resultsPerPage,
@@ -125,11 +123,8 @@ export class ContabilidadRepository {
                     aprobacionProduccion: 1,
                     fecha_finalizado_proceso: 1,
                     fecha_aprobacion_comercial: 1,
-                    aprobacionProduccion: 1,
-                    aprobacionComercial: 1,
                 },
                 limit: resultsPerPage,
-                skip: (page - 1) * resultsPerPage,
                 populate: [
                     { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' },
                     { path: 'precio', select: 'exportacion frutaNacional descarte' },

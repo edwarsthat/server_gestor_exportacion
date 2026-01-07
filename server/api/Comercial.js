@@ -19,7 +19,7 @@ import { registrarPasoLog } from "./helper/logs.js";
 import { db } from "../../DB/mongoDB/config/init.js";
 import { Seriales } from "../Class/Seriales.js";
 import { dataRepository } from "./data.js";
-import { ErrorComercialLogicHandlers } from "./utils/errorsHandlers.js";
+import { ErrorComercialLogicHandlers, ErrorProcesoLogicHandlers } from "./utils/errorsHandlers.js";
 import mongoose from "mongoose";
 import { LotesHelper } from "../helper/lotes.js";
 const { EMAIL, PASSWORD_EMAIL } = config;

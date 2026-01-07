@@ -307,7 +307,7 @@ export class dataRepository {
             return { tipoFrutas, calidadesExport, descartes, carnet, areasSeleccion }
         } catch (err) {
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            await ErrorDataLogicHandlers(err, log)
+            await ErrorDataLogicHandlers(err)
         }
     }
 }

@@ -11,7 +11,6 @@ import { ProcessError } from '../../Error/ProcessError.js';
 import { VariablesDelSistema } from '../Class/VariablesDelSistema.js';
 import { SistemaLogicError } from '../../Error/logicLayerError.js';
 import { filtroFechaInicioFin } from './utils/filtros.js';
-import { RecordLotesRepository } from '../archive/ArchiveLotes.js';
 import { LotesRepository } from '../Class/Lotes.js';
 import { procesoEventEmitter } from '../../events/eventos.js';
 import { db } from '../../DB/mongoDB/config/init.js';
@@ -202,7 +201,7 @@ export class SistemaRepository {
             throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
-//-----------------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------------------------
     static async put_sistema_habilitarInstancias_habilitarPredio(req) {
         const { user } = req
         const { data } = req.data
@@ -224,8 +223,9 @@ export class SistemaRepository {
                     { finalizado: false },
                     { action: "habilitarPredio", user: user, session }
                 );
+                await registrarPasoLog(log, "Lote actualizado", "Iniciado", new Date());
                 if (!lote) {
-                    throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
+                    throw new SistemaLogicError(471, `Error al actualizar el lote`)
                 }
                 //Determinar el tipo de lote para el registro correcto. Jp
                 const loteType = lote.enf.startsWith("EF10-") ? "loteMaquila" : "Lote";
@@ -242,6 +242,7 @@ export class SistemaRepository {
                     proceso: 'Habilitar'
                 }
                 await FrutaProcesada.addFrutaProcesada(newRegistro, user, session);
+                await registrarPasoLog(log, "Fruta procesada guardada", "Iniciado", new Date());
 
                 // 3. 🔥 NUEVO: REGISTRAR EN habilitarestancias
                 await SistemaProcesoClass.addRegistroHabilitarEstancia(
@@ -255,6 +256,7 @@ export class SistemaRepository {
                     user._id,
                     { session }
                 );
+                await registrarPasoLog(log, "Registro guardado", "Iniciado", new Date());
             });
 
 
@@ -262,43 +264,47 @@ export class SistemaRepository {
             if (err.status === 531) {
                 throw err
             }
+            await registrarPasoLog(log, "Error", "Fallido", err.message);
             throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log, "Finalizo la funcion", "Completado");
         }
     }
-//-----------------------------------------------------------------------------------------
-static async get_sistema_habilitarInstancias_registros() {
-    try {
-        const registros = await SistemaProcesoClass.getRegistrosHabiliarInstancia({
-            populate: [
-                { path: 'user', select: 'nombre correo', model: 'usuario' },
-                { path: 'lote', select: '_id enf predio loteID codigoPropio calidad' }
-            ],
-            sort: { createdAt: -1 }
-        });
+    //-----------------------------------------------------------------------------------------
+    static async get_sistema_habilitarInstancias_registros() {
+        try {
+            const registros = await SistemaProcesoClass.getRegistrosHabiliarInstancia({
+                populate: [
+                    { path: 'user', select: 'nombre correo', model: 'usuario' },
+                    { path: 'lote', select: '_id enf predio loteID codigoPropio calidad' }
+                ],
+                sort: { createdAt: -1 }
+            });
 
-        return registros.map(r => ({
+            return registros.map(r => ({
                 _id: r._id,
                 fecha: r.createdAt,
                 usuario: r.user?.nombre ?? 'Sin nombre',
-            // Manejar variación de campos ENTRE tipos de lote Jp
-                lote: 
-                    r.lote?.enf ?? 
-                    r.lote?.loteID ?? 
+                // Manejar variación de campos ENTRE tipos de lote Jp
+                lote:
+                    r.lote?.enf ??
+                    r.lote?.loteID ??
                     r.lote?.codigoPropio ??
                     'Sin lote',
                 motivo: r.motivo,
                 justificacion: r.justificacion
             }));
 
-    } catch (err) {
-        throw new SistemaLogicError(
-            500,
-            `Error obteniendo registros: ${err.message}`
-        );
+        } catch (err) {
+            throw new SistemaLogicError(
+                500,
+                `Error obteniendo registros: ${err.message}`
+            );
+        }
     }
-}
 
-//-----------------------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------------------------------
 
     static async put_sistema_reiniciar_orden_vaceo() {
         try {

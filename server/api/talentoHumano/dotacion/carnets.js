@@ -4,6 +4,7 @@ import { registrarPasoLog } from "../../helper/logs.js";
 import { ErrorTalentHumanoLogicHandlers } from "../../utils/errorsHandlers.js";
 import { db } from "../../../../DB/mongoDB/config/init.js";
 import { Seriales } from "../../../Class/Seriales.js";
+import { PersonalRepository } from "../../../Class/talentoHumano/Personal.js";
 
 export class DotacionCarnetsControllerRepository {
     static async post_talentoHumano_dotacion_carnets(req) {

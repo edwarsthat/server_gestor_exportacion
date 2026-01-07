@@ -617,7 +617,6 @@ export class InventariosHistorialRepository {
         try {
             let documento = await db.InventarioActualDescarte.findOneAndUpdate(filter, update, { ...finalOptions });
             if (!documento) {
-                if (softNotFound) return null;
                 throw new Error('Ingreso descarte no encontrado');
             }
 

@@ -1,5 +1,5 @@
 import { db } from "../../../../DB/mongoDB/config/init.js";
-import { PostError } from "../../../../Error/ConnectionErrors.js";
+import { BadGetwayError, PostError } from "../../../../Error/ConnectionErrors.js";
 
 export class TalentoHumanoDotacionCarnetsRepository {
     static async post_data(data, opts = {}) {

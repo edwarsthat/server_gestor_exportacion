@@ -1,5 +1,5 @@
 import { db } from "../../../DB/mongoDB/config/init.js";
-import { PostError } from "../../../Error/ConnectionErrors.js";
+import { BadGetwayError, ConnectionDBError, PostError } from "../../../Error/ConnectionErrors.js";
 
 export class PersonalRepository {
     static async addPersonal(data, opts = {}) {
@@ -64,7 +64,6 @@ export class PersonalRepository {
         try {
             let documento = await db.Personal.findOneAndUpdate(filter, update, { ...finalOptions });
             if (!documento) {
-                if (softNotFound) return null;
                 throw new Error('Personal no encontrado');
             }
 

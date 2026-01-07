@@ -102,6 +102,7 @@ async function main() {
                 return DEFAULT_USER_ID;
             } catch (error) {
                 // En caso de cualquier error, usar el default
+                console.error('❌ Error al convertir user a ObjectId:', error.message);
                 return DEFAULT_USER_ID;
             }
         };

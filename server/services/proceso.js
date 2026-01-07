@@ -7,7 +7,6 @@ import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
 import { getColombiaDate } from "../api/utils/fechas.js";
-import { UsuariosRepository } from "../Class/Usuarios.js";
 import { parseMultTipoCaja } from "./helpers/contenedores.js";
 import { IndicadoresAPIRepository } from "../api/IndicadoresAPI.js";
 import { LotesHelper } from "../helper/lotes.js";

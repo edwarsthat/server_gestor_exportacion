@@ -1,6 +1,6 @@
 import { HandleErrors } from "../../Error/recordErrors.js";
 
-async function middleWareHandleErrors(err, req, res, next) {
+async function middleWareHandleErrors(err, req, res) {
     console.error("Error capturado:", err);
     const status = err.status || 500;
     const message = err.message || 'Error interno del servidor';

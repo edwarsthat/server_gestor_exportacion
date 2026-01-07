@@ -1,5 +1,5 @@
 import { db } from "../../../DB/mongoDB/config/init.js";
-import { BadGetwayError, PostError } from "../../../Error/ConnectionErrors.js";
+import { BadGetwayError, ConnectionDBError, PostError } from "../../../Error/ConnectionErrors.js";
 
 export class CargosPersonalRepository {
     static async addCargosPersonal(data, opts = {}) {
@@ -64,7 +64,6 @@ export class CargosPersonalRepository {
         try {
             let documento = await db.CargosPersonal.findOneAndUpdate(filter, update, { ...finalOptions });
             if (!documento) {
-                if (softNotFound) return null;
                 throw new Error('Cargo no encontrado');
             }
 

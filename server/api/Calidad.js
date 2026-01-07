@@ -19,7 +19,6 @@ import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { ErrorCalidadLogicHandlers } from "./utils/errorsHandlers.js";
 import { LotesHelper } from "../helper/lotes.js";
-import { populate } from "dotenv";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -232,7 +231,7 @@ export class CalidadRepository {
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_calidad_informes_informeProveedor_numeroElementos(req) {
+    static async get_calidad_informes_informeProveedor_numeroElementos() {
         try {
             const filtro = {
                 enf: { $regex: '^E', $options: 'i' },
@@ -384,7 +383,6 @@ export class CalidadRepository {
                     fecha_aprobacion_comercial: 1,
                 },
                 limit: resultsPerPage,
-                skip: (page - 1) * resultsPerPage,
                 populate: [
                     { path: 'predio', select: 'PREDIO ICA DEPARTAMENTO GGN precio' },
                     { path: 'precio', select: 'exportacion frutaNacional descarte' },

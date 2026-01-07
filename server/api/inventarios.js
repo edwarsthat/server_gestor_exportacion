@@ -1866,7 +1866,7 @@ export class InventariosRepository {
                 await HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte(_id, inventario, newRegistro, user, session)
                 await registrarPasoLog(log._id, "HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte", "Completado");
                 //actualizar salida del cardex inventario descarte
-                const response = await HistorialInventariosService.modificar_cardex_modificar_registro_despacho(oldRegistro[0], data.tipoFruta, inventario, user, session)
+                await HistorialInventariosService.modificar_cardex_modificar_registro_despacho(oldRegistro[0], data.tipoFruta, inventario, user, session)
                 await registrarPasoLog(log._id, "HistorialInventariosService.modificar_cardex_modificar_registro_despacho", "Completado");
 
             });
@@ -1884,7 +1884,7 @@ export class InventariosRepository {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
-    static async put_inventarios_registros_fruta_descompuesta(req) {
+    static async put_inventarios_registros_fruta_descompuesta(data) {
         try {
             // let { user } = req
             // const { action, data, _id } = req.data

@@ -29,7 +29,6 @@ import { FrutaProcesada } from "../Class/frutaProcesada.js";
 import { InventariosHistorialRepository } from "../Class/Inventarios.js";
 import { LotesHelper } from "../helper/lotes.js";
 import { DescartesRepository } from "../Class/Descartes.js";
-import { populate } from "dotenv";
 import { ArchiveLoteMaquila } from "../archive/ArchiveLoteMaquila.js";
 
 const __filename = fileURLToPath(import.meta.url);

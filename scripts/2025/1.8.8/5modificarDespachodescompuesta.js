@@ -186,7 +186,8 @@ async function main() {
                 conCambios++;
             }
         }
-
+        console.log(`📝 Se prepararon ${procesados} operaciones de actualización.`);
+        console.log(`📝 Se prepararon ${conCambios} operaciones de actualización.`);
         console.log(`📝 Se prepararon ${bulkOps.length} operaciones de actualización.`);
 
         if (bulkOps.length > 0) {

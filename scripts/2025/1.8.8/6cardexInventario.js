@@ -3,7 +3,7 @@
  * @description Convierte la estructura anidada de kilos_salida y kilos_ingreso a un Map plano de ObjectId -> Kilogramos
  */
 
-import { MongoClient, ObjectId } from 'mongodb';
+import { MongoClient } from 'mongodb';
 import config from '../../../src/config/index.js';
 
 const { MONGODB_PROCESO } = config;
@@ -181,10 +181,11 @@ async function main() {
                 });
                 conCambios++;
             }
+
         }
-
         console.log(`📝 Se prepararon ${bulkOps.length} operaciones de actualización.`);
-
+        console.log(`📝 Se prepararon ${conCambios} operaciones de actualización.`);
+        console.log(`📝 Se prepararon ${procesados} operaciones de actualización.`);
         if (bulkOps.length > 0) {
             console.log('🚀 Ejecutando bulkWrite...');
             // ERROR CORREGIDO: Usar 'collection' en lugar de 'descompuestaCollection'

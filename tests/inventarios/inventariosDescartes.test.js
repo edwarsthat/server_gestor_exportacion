@@ -1,5 +1,5 @@
+/* eslint-disable security/detect-non-literal-fs-filename */
 import 'dotenv/config';
-
 import config from '../../src/config';
 const { HOST, PORT, USUARIO_PRUEBA, PASSWORD_PRUEBA } = config
 import { describe, test, expect } from '@jest/globals';
@@ -20,7 +20,7 @@ describe("Prueba integración inventarios Descartes", () => {
 
     test("Pruebas completas de inventarios de descartes", async () => {
         console.log('🎯 Ejecutando todas las pruebas en un solo test para evitar condiciones de carrera...');
-        
+
         // ===============================================
         // PASO 1: LOGIN
         // ===============================================
@@ -34,16 +34,16 @@ describe("Prueba integración inventarios Descartes", () => {
                 user: USUARIO_PRUEBA,
                 password: PASSWORD_PRUEBA
             });
-            
+
         console.log('📥 Respuesta del login:', {
             status: loginResponse.status,
             bodyKeys: Object.keys(loginResponse.body),
             tokenPresent: !!loginResponse.body.accesToken
         });
-        
+
         TEST_TOKEN = loginResponse.body.accesToken
         console.log('🎫 Token obtenido:', TEST_TOKEN ? 'Sí' : 'No');
-        
+
         expect(loginResponse.status).toBe(200);
         expect(TEST_TOKEN).toBeDefined();
 
@@ -51,7 +51,7 @@ describe("Prueba integración inventarios Descartes", () => {
         // PASO 2: VERIFICAR ESTRUCTURA DEL INVENTARIO
         // ===============================================
         console.log('\n📦 PASO 2: Verificando estructura del inventario...');
-        
+
         const estructuraResponse = await request(`http://${HOST}:${PORT}`)
             .get("/inventarios/get_inventarios_frutaDescarte_fruta")
             .set("Authorization", `${TEST_TOKEN}`);
@@ -64,7 +64,7 @@ describe("Prueba integración inventarios Descartes", () => {
         const estructuraData = estructuraResponse.body
         expect(estructuraData.status).toBe(200);
         expect(Object.keys(estructuraData.data)).toEqual(expect.arrayContaining(tipoFrutas));
-        
+
         Object.values(estructuraData.data).forEach((item, index) => {
             console.log(`📋 Verificando estructura del item ${index}:`, Object.keys(item));
             expect(Object.keys(item)).toEqual(expect.arrayContaining(["descarteLavado", "descarteEncerado"]))
@@ -74,7 +74,7 @@ describe("Prueba integración inventarios Descartes", () => {
         // PASO 3: REINICIAR INVENTARIO
         // ===============================================
         console.log('\n🔄 PASO 3: Reiniciando inventario...');
-        
+
         const reinicioResponse = await request(`http://${HOST}:${PORT}`)
             .patch("/inventarios/sys_reiniciar_inventario_descarte")
             .set("Authorization", `${TEST_TOKEN}`);
@@ -96,7 +96,7 @@ describe("Prueba integración inventarios Descartes", () => {
         // PASO 4: AGREGAR ELEMENTOS AL INVENTARIO
         // ===============================================
         console.log('\n➕ PASO 4: Agregando elementos al inventario...');
-        
+
         const inventarioInicial = {
             "descarteLavado:descarteGeneral": 100,
             "descarteLavado:pareja": 200,
@@ -140,7 +140,7 @@ describe("Prueba integración inventarios Descartes", () => {
         // PASO 5: PRUEBA DE REPROCESO
         // ===============================================
         console.log('\n🔄 PASO 5: Probando reproceso de descarte...');
-        
+
         const dataReproceso = {
             tipoFruta: "Limon",
             "descarteLavado:descarteGeneral": "5",
@@ -170,7 +170,7 @@ describe("Prueba integración inventarios Descartes", () => {
         // PASO 6: REINICIAR PARA DESPACHO
         // ===============================================
         console.log('\n🔄 PASO 6: Reiniciando para pruebas de despacho...');
-        
+
         await request(`http://${HOST}:${PORT}`)
             .patch("/inventarios/sys_reiniciar_inventario_descarte")
             .set("Authorization", `${TEST_TOKEN}`);
@@ -243,7 +243,7 @@ describe("Prueba integración inventarios Descartes", () => {
         // PASO 8: REINICIAR PARA FRUTA DESCOMPUESTA
         // ===============================================
         console.log('\n🔄 PASO 8: Reiniciando para pruebas de fruta descompuesta...');
-        
+
         await request(`http://${HOST}:${PORT}`)
             .patch("/inventarios/sys_reiniciar_inventario_descarte")
             .set("Authorization", `${TEST_TOKEN}`);

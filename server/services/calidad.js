@@ -1,6 +1,5 @@
 import fs from 'fs';
 import { fileTypeFromBuffer } from 'file-type'; // ✅ Así es como lo debes hacer
-import { registrarPasoLog } from '../api/helper/logs.js';
 import { CalidadServiceError } from '../../Error/ServiceError.js';
 
 
