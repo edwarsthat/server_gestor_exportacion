@@ -238,7 +238,7 @@ export class InventariosService {
             __v
         )
     }
-    static async procesar_formulario_inventario_descarte(data, tipoFruta, session) {
+    static async procesar_formulario_inventario_descarte(data, tipoFruta, session, user) {
         let totalKilos = 0;
 
         for (const [key, value] of Object.entries(data)) {
@@ -273,13 +273,13 @@ export class InventariosService {
                     await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
                         { _id: registro._id },
                         { $set: { kilosActuales: kilosRestantes } },
-                        { user: null, action: 'Actualizar inventario descarte reproceso predio', session }
+                        { user: user._id, action: 'Actualizar inventario descarte reproceso predio', session }
                     )
                 } else {
                     await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
                         { _id: registro._id },
                         { $set: { kilosActuales: 0, estado: "AGOTADO" } },
-                        { user: null, action: 'Actualizar inventario descarte reproceso predio', session }
+                        { user: user._id, action: 'Actualizar inventario descarte reproceso predio', session }
                     )
                 }
 

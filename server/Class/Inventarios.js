@@ -578,7 +578,19 @@ export class InventariosHistorialRepository {
             ...options,
         };
         try {
-            const res = await db.InventarioActualDescarte.updateOne(filter, update, finalOptions);
+            const res = await db.InventarioActualDescarte.findOneAndUpdate(filter, update, finalOptions);
+
+            // Crear movimiento de SALIDA
+            await db.InventarioMovimientoDescarte.create([{
+                registroDescarte: res._id,
+                tipoMovimiento: 'SALIDA',
+                tipoRegistro: res.loteType,
+                kilos: res.kilosIniciales,
+                fechaMovimiento: new Date(),
+                user: options?.user,
+                destino: `INVENTARIO_${res.area}`
+            }], { session: options?.session || null });
+
             return res;
         } catch (err) {
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
