@@ -89,17 +89,17 @@ export class UserRepository {
     static async validate_password(user) {
         /**
        * Valida los valores de la contraseña sean validos
-       * 
+       *
        * @param {{user:string, password:string}} useer - Un objeto que contiene la informacion de inicio de sesion
        * @throws {TypeError} - Retorna un error de tipo si no cumple con alguna de las condiciones
        * @return {void}
        */
         if (typeof user.password !== "string") throw new ValidationUserError(402, "El password debe ser texto")
-        if (user.password < 3) throw new ValidationUserError(402, "La constraseña debe tener mas de 3 caracteres de largo")
+        if (user.password.length < 8) throw new ValidationUserError(402, "La contraseña debe tener al menos 8 caracteres")
     }
     static async validate_userName(user) {
         if (typeof user.user !== "string") throw new ValidationUserError(401, "El usuario debe ser texto")
-        if (user.user < 3) throw new ValidationUserError(401, "El usuario debe tener mas de 3 letras")
+        if (user.user.length < 3) throw new ValidationUserError(401, "El usuario debe tener al menos 3 caracteres")
     }
     static generateAccessToken(data) {
         return jwt.sign(data, process.env.ACCES_TOKEN, { expiresIn: '8h' })

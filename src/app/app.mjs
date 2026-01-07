@@ -117,7 +117,7 @@ app.post('/login2', loginLimiter, async (req, res, next) => {
     try {
 
         const user = { user: req.body.user, password: req.body.password }
-        console.log(user)
+        // No registrar credenciales en logs por seguridad
 
         const dataUser = await SistemaRepository.login2(user)
         const accesToken = UserRepository.generateAccessToken({
