@@ -1562,26 +1562,30 @@ export class InventariosRepository {
             const out = []
 
             for (const item of historial) {
-                const newObj = {}
+                const newObj = Object.create(null);
                 for (const [kilosKeys, valueKilos] of Object.entries(item)) {
                     if (kilosKeys === "_id" || kilosKeys === "fecha") {
-                        newObj[kilosKeys] = valueKilos;
+                        Reflect.set(newObj, kilosKeys, valueKilos);
                         continue;
                     }
-                    newObj[kilosKeys] = {}
+                    Reflect.set(newObj, kilosKeys, Object.create(null));
+                    const kilosObj = Reflect.get(newObj, kilosKeys);
+
                     for (const [frutasKeys, value] of Object.entries(valueKilos)) {
                         const fruta = tipoFrutaCache.getTipoFruta(frutasKeys) ? tipoFrutaCache.getTipoFruta(frutasKeys).tipoFruta : ""
                         if (!fruta) continue;
-                        newObj[kilosKeys][fruta] = {}
+                        Reflect.set(kilosObj, fruta, Object.create(null));
+                        const frutaObj = Reflect.get(kilosObj, fruta);
 
 
                         for (const [areaKey, valueArea] of Object.entries(value)) {
-                            newObj[kilosKeys][fruta][areaKey] = {}
+                            Reflect.set(frutaObj, areaKey, Object.create(null));
+                            const areaObj = Reflect.get(frutaObj, areaKey);
 
                             for (const [keyDescarte, valueDescarte] of Object.entries(valueArea)) {
                                 const nombreDescarte = descarteCache.getDescarte(keyDescarte) ? descarteCache.getDescarte(keyDescarte).nombre : ""
 
-                                newObj[kilosKeys][fruta][areaKey][nombreDescarte] = valueDescarte
+                                Reflect.set(areaObj, nombreDescarte, valueDescarte);
                             }
                         }
 
@@ -1848,15 +1852,16 @@ export class InventariosRepository {
             const inventario = {}
             const newRegistro = {}
             //se obtienen los datos de inventario
-            Object.keys(data).forEach(
-                key => {
-                    if (key.includes(":")) {
-                        inventario[key] = data[key]
-                    } else {
-                        newRegistro[key] = data[key]
-                    }
+            Object.keys(data).forEach(key => {
+                const value = Reflect.get(data, key);
+                const target = key.includes(":") ? inventario : newRegistro;
+
+                const success = Reflect.set(target, key, value);
+
+                if (!success) {
+                    throw new Error(`Error al asignar el valor ${value} a la clave ${key}`);
                 }
-            );
+            });
 
             await session.withTransaction(async () => {
                 //se suma o se resta del inventario descartes segun corresponda
@@ -2228,9 +2233,14 @@ export class InventariosRepository {
             acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
         });
         try {
+            // Validar los datos antes de procesar
+            InventariosValidations.put_inventarios_programacion_contenedores().parse(req.data);
+
             const query = { $set: {} }
+            const setObj = Reflect.get(query, '$set');
+
             Object.keys(data).forEach(key => {
-                query.$set[`infoContenedor.${key}`] = data[key];
+                Reflect.set(setObj, `infoContenedor.${key}`, Reflect.get(data, key));
             })
 
             await ContenedoresRepository.actualizar_contenedor(

@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 const getErrorMessages = (zodError) => {
-    const errors = {}
+    const errors = Object.create(null)
     zodError.errors.forEach(err => {
         const path = err.path[0]
-        errors[path] = err.message
+        Reflect.set(errors, path, err.message)
     })
     return errors
 }

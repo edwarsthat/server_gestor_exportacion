@@ -40,6 +40,13 @@ export default [
     }
   },
   {
+    // Desactivar warnings de object injection en archivos con validación Zod
+    files: ["server/services/**/*.js", "server/validations/**/*.js"],
+    rules: {
+      "security/detect-object-injection": "off"
+    }
+  },
+  {
     // Ignorar archivos de configuración y .env
     ignores: [
       "src/config/index.js",

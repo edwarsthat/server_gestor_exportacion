@@ -651,12 +651,12 @@ export class ComercialRepository {
             await registrarPasoLog(log._id, "ComercialValidationsRepository.val_post_comercial_precios_add_precio", "Completado");
 
             await session.withTransaction(async () => {
-                const exportacion = {};
+                const exportacion = Object.create(null);
                 for (const key in data) {
                     if (key.startsWith("exportacion.")) {
                         const subKey = key.split(".")[1];
-                        exportacion[subKey] = Number(data[key]);
-                        delete data[key];
+                        Reflect.set(exportacion, subKey, Number(Reflect.get(data, key)));
+                        Reflect.deleteProperty(data, key);
                     }
                 }
 
@@ -769,12 +769,12 @@ export class ComercialRepository {
 
                 ComercialValidationsRepository.val_post_comercial_precios_add_precio_lote(data);
 
-                const exportacion = {};
+                const exportacion = Object.create(null);
                 for (const key in data) {
                     if (key.startsWith("exportacion.")) {
                         const subKey = key.split(".")[1];
-                        exportacion[subKey] = Number(data[key]);
-                        delete data[key];
+                        Reflect.set(exportacion, subKey, Number(Reflect.get(data, key)));
+                        Reflect.deleteProperty(data, key);
                     }
                 }
 

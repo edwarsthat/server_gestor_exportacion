@@ -108,7 +108,8 @@ formsAPI.post("/reclamaciones_calidad", formLimiter, upload.array('documentos'),
         for (const file of files) {
             const fileType = await fileTypeFromFile(file.path);
             if (!fileType || !allowedTypes.includes(fileType.mime)) {
-                // Borra el archivo peligroso
+                // Borra el archivo peligroso (ruta generada por Multer, no por usuario)
+                // eslint-disable-next-line security/detect-non-literal-fs-filename
                 await fs.unlink(file.path);
                 throw new Error('Archivo no permitido por su contenido real');
             }
@@ -122,6 +123,7 @@ formsAPI.post("/reclamaciones_calidad", formLimiter, upload.array('documentos'),
         if (req.files) {
             for (const file of req.files) {
                 try {
+                    // eslint-disable-next-line security/detect-non-literal-fs-filename
                     await fs.unlink(file.path);
                 } catch (err) {
                     console.error('Error al eliminar archivo:', file.path, err);

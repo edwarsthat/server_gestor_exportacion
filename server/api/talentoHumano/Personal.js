@@ -75,6 +75,14 @@ export class PersonalControllerRepository {
             const fileName = `${crypto.randomUUID()}.${fileType.ext}`;
             const filePath = path.join(urlPath, fileName);
 
+            // Validación: asegurar que la ruta esté dentro del directorio esperado
+            const resolvedPath = path.resolve(filePath);
+            const resolvedBase = path.resolve(urlPath);
+            if (!resolvedPath.startsWith(resolvedBase)) {
+                throw new Error('Ruta de archivo no permitida');
+            }
+
+            // eslint-disable-next-line security/detect-non-literal-fs-filename
             await fs.writeFile(filePath, buffer);
 
             data.foto = filePath;
@@ -187,10 +195,18 @@ export class PersonalControllerRepository {
                 const fileName = `cedula_tmp_${Date.now()}_${tempId}.${extension}.enc`;
                 filePath = path.join(urlPath, fileName);
 
+                // Validación: asegurar que la ruta esté dentro del directorio esperado
+                const resolvedPath = path.resolve(filePath);
+                const resolvedBase = path.resolve(urlPath);
+                if (!resolvedPath.startsWith(resolvedBase)) {
+                    throw new Error('Ruta de archivo no permitida');
+                }
+
                 const encryptedBuffer = PersonalTalentoHumanoService.encryptBuffer(buffer);
                 fileToSave = { path: filePath, buffer: encryptedBuffer };
             }
             if (fileToSave) {
+                // eslint-disable-next-line security/detect-non-literal-fs-filename
                 await fs.writeFile(fileToSave.path, fileToSave.buffer);
             }
             const payload = {
@@ -260,6 +276,15 @@ export class PersonalControllerRepository {
                 if (data[0].urlFotoCarnet) {
                     try {
                         const filePath = data[0].urlFotoCarnet;
+
+                        // Validación: asegurar que la ruta esté dentro del directorio uploads/personal
+                        const expectedDir = path.resolve(__dirname, '..', '..', '..', '..', 'uploads', 'personal');
+                        const resolvedPath = path.resolve(filePath);
+                        if (!resolvedPath.startsWith(expectedDir)) {
+                            throw new Error('Ruta de archivo no permitida');
+                        }
+
+                        // eslint-disable-next-line security/detect-non-literal-fs-filename
                         const fileBuffer = await fs.readFile(filePath);
                         const fileType = await fileTypeFromBuffer(fileBuffer);
                         const mime = fileType ? fileType.mime : 'image/jpeg';
@@ -274,6 +299,15 @@ export class PersonalControllerRepository {
                 if (data[0].urlIdentificacion) {
                     try {
                         const idPath = data[0].urlIdentificacion;
+
+                        // Validación: asegurar que la ruta esté dentro del directorio uploads/personal
+                        const expectedDir = path.resolve(__dirname, '..', '..', '..', '..', 'uploads', 'personal');
+                        const resolvedPath = path.resolve(idPath);
+                        if (!resolvedPath.startsWith(expectedDir)) {
+                            throw new Error('Ruta de archivo no permitida');
+                        }
+
+                        // eslint-disable-next-line security/detect-non-literal-fs-filename
                         const encryptedBuffer = await fs.readFile(idPath);
 
                         // Desencriptar

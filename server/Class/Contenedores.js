@@ -1,7 +1,6 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PutError } from "../../Error/ConnectionErrors.js";
 import { ProcessError } from "../../Error/ProcessError.js";
-import { oobtener_datos_lotes_to_listaEmpaque } from "../mobile/utils/contenedoresLotes.js";
 import fs from 'fs';
 import path from 'path';
 import { registrarPasoLog } from "../api/helper/logs.js";
@@ -143,7 +142,7 @@ export class ContenedoresRepository {
             query = {},
             select = {},
             sort = { 'infoContenedor.fechaCreacion': -1 },
-            limit = 50,
+            limit = 0,
             skip = 0,
             populate = [
                 {
@@ -166,19 +165,17 @@ export class ContenedoresRepository {
                 contenedorQuery._id = { $in: ids };
             }
 
-            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
 
             const contenedores = await db.Contenedores.find(contenedorQuery)
                 .select(select)
                 .populate(populate)
                 .sort(sort)
-                .limit(limitToUse)
+                .limit(limit)
                 .skip(skip)
                 .session(session || null)
                 .exec();
 
-            const new_conts = contenedores.map(contenedor => contenedor.toObject());
-            const response = await oobtener_datos_lotes_to_listaEmpaque(new_conts);
+            const response = contenedores.map(contenedor => contenedor.toObject());
             return response
 
         } catch (err) {

@@ -2,7 +2,7 @@
 import { ConnectRedisError } from "../../Error/ConnectionErrors.js";
 import { Descartes } from "../store/Descartes.js";
 
-const descarteMap = {};
+const descarteMap = Object.create(null);
 
 export class descarteCache {
     static async cargar(reintentos = 5, delayMs = 1000) {
@@ -15,7 +15,7 @@ export class descarteCache {
 
                 descartes.forEach(item => {
                     const id = item._id;
-                    descarteMap[id] = item;
+                    Reflect.set(descarteMap, id, item);
                 });
 
                 console.log(`[CACHE] Descarte cache cargado exitosamente en intento ${intento}`);

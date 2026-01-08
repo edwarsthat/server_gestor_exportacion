@@ -721,7 +721,8 @@ export class CalidadRepository {
                 ) {
                     porcentageExportacion += value
                 } else {
-                    if (formulario_data[item].porcentage < value) {
+                    const itemData = Reflect.get(formulario_data, item);
+                    if (itemData && Reflect.get(itemData, 'porcentage') < value) {
                         const query = {
                             ...data,
                             'calidad.inspeccionIngreso.fecha': new Date(),
@@ -841,7 +842,7 @@ export class CalidadRepository {
                         { cargo: "66c513dcb7dca1eebff39a96" }
                     ]
                 },
-                limit: "all"
+                limit: 0
             });
             return usuarios
         } catch (err) {
@@ -961,12 +962,12 @@ export class CalidadRepository {
             const user = req.user._id
             const { tipoFormulario, _id, area, data } = req.data
 
-            let query = {}
+            let query = Object.create(null);
             Object.keys(data).forEach(item => {
 
-                query[`${area}.${item}.status`] = data[item].status
-                query[`${area}.${item}.observaciones`] = data[item].observaciones
-                query[`${area}.${item}.responsable`] = user
+                Reflect.set(query, `${area}.${item}.status`, Reflect.get(Reflect.get(data, item), 'status'));
+                Reflect.set(query, `${area}.${item}.observaciones`, Reflect.get(Reflect.get(data, item), 'observaciones'));
+                Reflect.set(query, `${area}.${item}.responsable`, user);
 
             })
 

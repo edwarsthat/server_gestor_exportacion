@@ -342,7 +342,8 @@ export class InventariosValidations {
             data: z.object({
                 temperatura: z.string()
                     .min(1, "Temperatura es requerida")
-                    .refine(val => /^-?\d+(\.\d+)?$/.test(val), {
+                    // eslint-disable-next-line security/detect-unsafe-regex
+                    .refine(val => /^-?[0-9]+(?:\.[0-9]+)?$/.test(val), {
                         message: "Debe ser un número válido"
                     })
                     .refine(val => Math.abs(parseFloat(val)) <= 1_000_000, {
@@ -351,7 +352,8 @@ export class InventariosValidations {
 
                 etileno: z.string()
                     .min(1, "Etileno es requerido")
-                    .refine(val => /^-?\d+(\.\d+)?$/.test(val), {
+                    // eslint-disable-next-line security/detect-unsafe-regex
+                    .refine(val => /^-?[0-9]+(?:\.[0-9]+)?$/.test(val), {
                         message: "Debe ser un número válido"
                     })
                     .refine(val => Math.abs(parseFloat(val)) <= 1_000_000, {
@@ -360,7 +362,8 @@ export class InventariosValidations {
 
                 carbono: z.string()
                     .min(1, "Dióxido es requerido")
-                    .refine(val => /^-?\d+(\.\d+)?$/.test(val), {
+                    // eslint-disable-next-line security/detect-unsafe-regex
+                    .refine(val => /^-?[0-9]+(?:\.[0-9]+)?$/.test(val), {
                         message: "Debe ser un número válido"
                     })
                     .refine(val => Math.abs(parseFloat(val)) <= 1_000_000, {
@@ -369,7 +372,8 @@ export class InventariosValidations {
 
                 humedad: z.string()
                     .min(1, "Humedad es requerida")
-                    .refine(val => /^-?\d+(\.\d+)?$/.test(val), {
+                    // eslint-disable-next-line security/detect-unsafe-regex
+                    .refine(val => /^-?[0-9]+(?:\.[0-9]+)?$/.test(val), {
                         message: "Debe ser un número válido"
                     })
                     .refine(val => Math.abs(parseFloat(val)) <= 1_000_000, {
@@ -494,5 +498,29 @@ export class InventariosValidations {
             seleccion: z.array(z.string().min(1)),
             cuartoFrio: z.string().min(1)
         })
+    }
+    static put_inventarios_programacion_contenedores() {
+        // Campos válidos de infoContenedor según el schema de MongoDB
+        const camposValidos = [
+            'clienteInfo', 'fechaCreacion', 'fechaInicio', 'fechaInicioReal',
+            'fechaFinalizado', 'fechaEstimadaCargue', 'fechaSalida', 'ultimaModificacion',
+            'tipoFruta', 'tipoCaja', 'calidad', 'sombra', 'defecto', 'mancha',
+            'verdeManzana', 'cerrado', 'observaciones', 'desverdizado', 'calibres',
+            'urlInforme', 'cajasTotal', 'RrtoEstimado', 'maquila'
+        ];
+
+        return z.object({
+            action: z.string(),
+            idContenedor: z.string().regex(/^[0-9a-fA-F]{24}$/, "El idContenedor debe ser un ObjectId válido"),
+            data: z.record(z.any()).refine(
+                (data) => {
+                    const keys = Object.keys(data);
+                    return keys.every(key => camposValidos.includes(key));
+                },
+                {
+                    message: `Solo se permiten los siguientes campos: ${camposValidos.join(', ')}`
+                }
+            )
+        });
     }
 }

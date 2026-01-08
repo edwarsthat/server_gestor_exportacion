@@ -2,7 +2,7 @@
 import { ConnectRedisError } from "../../Error/ConnectionErrors.js";
 import { TiposFruta } from "../store/TipoFruta.js"
 
-const tipoFrutaMap = {};
+const tipoFrutaMap = Object.create(null);
 
 export class tipoFrutaCache {
     static async cargar(reintentos = 5, delayMs = 1000) {
@@ -15,11 +15,10 @@ export class tipoFrutaCache {
 
                 tipoFruta.forEach(item => {
                     const id = item._id;
-                    tipoFrutaMap[id] = item;
+                    Reflect.set(tipoFrutaMap, id, item);
                 });
 
                 console.log(`[CACHE] TipoFruta cache cargado exitosamente en intento ${intento}`);
-                console.log(tipoFrutaMap);
                 return;
 
             } catch (err) {

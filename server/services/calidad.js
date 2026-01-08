@@ -12,11 +12,13 @@ export class CalidadService {
             throw new Error('Ruta inválida');
         }
 
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
         const stats = fs.statSync(url);
         if (stats.size > MAX_FILE_SIZE) {
             throw new Error(`Archivo demasiado grande (${(stats.size / 1024 / 1024).toFixed(2)} MB), máximo permitido: ${MAX_FILE_SIZE_MB} MB`);
         }
 
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
         const data = fs.readFileSync(url);
 
         // Detecta el tipo de archivo real, no solo la extensión

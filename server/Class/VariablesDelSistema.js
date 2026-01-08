@@ -5,7 +5,6 @@ import { ProcessError } from '../../Error/ProcessError.js';
 import { getRedisClient } from '../../DB/redis/init.js';
 import { ConnectRedisError } from '../../Error/ConnectionErrors.js';
 import { TurnoDatarepository } from './TurnoData.js';
-import { RedisRepository } from './RedisData.js';
 import { registrarPasoLog } from '../api/helper/logs.js';
 
 // 🪄 Magia para __dirname y __filename:
@@ -14,14 +13,12 @@ const __dirname = path.dirname(__filename);
 
 const pathIDs = path.join(__dirname, '..', '..', 'inventory', 'seriales.json');
 const inventarioPath = path.join(__dirname, '..', '..', 'inventory', 'inventario.json');
-const inventarioDesverdizadoPath = path.join(__dirname, '..', '..', 'inventory', 'inventarioDesverdizado.json');
 const ordenVaceoPath = path.join(__dirname, '..', '..', 'inventory', 'OrdenDeVaceo.json');
 const canastillasPath = path.join(__dirname, '..', '..', 'inventory', 'canastillas.json');
 
 
 
 let inventarioFleg = false; // bandera que indica que el inventario se esta escribiendo
-let inventarioDesFleg = false; // bandera que indica que el inventarioDesverdizado se esta escribiendo
 let ordenVaceoFlag = false; //bandera que indica que la orden de vaceo se esta escribiendo
 
 
@@ -69,46 +66,6 @@ export class VariablesDelSistema {
       fs.writeFileSync(pathIDs, newidsJSON);
     } catch (err) {
       throw new ProcessError(523, `Error modificando el ${key} ${err.message}`)
-    }
-  }
-
-  static async obtener_EF1_listaDeEmpaque() {
-    /**
-* Obtiene los datos de lista de empaque del predio procesando desde Redis.
-*
-* @returns {Promise<Object>} - Promesa que resuelve con los datos del predio procesando descartes.
-* @throws {ConnectRedisError} - Lanza un error si ocurre un problema al conectarse a Redis.
-*/
-    try {
-      const cliente = await getRedisClient();
-      const predioData = await cliente.hGetAll("predioProcesandoListaEmpaque");
-      return predioData
-    } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis ${err.name}`)
-    }
-  }
-
-
-  static modificar_predio_proceso = async (lote, cliente) => {
-    /**
-   * Función que modifica la información del predio en proceso en Redis.
-   *
-   * @param {Object} lote - El lote con la información a actualizar.
-   * @param {Object} cliente - El cliente de Redis.
-   * @returns {Promise<void>} - Promesa que se resuelve cuando la modificación ha terminado.
-   * @throws {ConnectRedisError} - Lanza un error si ocurre un problema con la conexión a Redis.
-   */
-    try {
-      await cliente.hSet("predioProcesando", {
-        _id: lote._id.toString(),
-        enf: lote.enf,
-        predio: lote.predio._id.toString(),
-        nombrePredio: lote.predio.PREDIO,
-        tipoFruta: lote.tipoFruta._id.toString(),
-      });
-    } catch (err) {
-      throw new ConnectRedisError(419, `Error con la conexion con redis predio proceso: ${err.name}`)
-
     }
   }
 
@@ -286,39 +243,7 @@ export class VariablesDelSistema {
   }
 
 
-  static async modificarInventario_desverdizado(_id, canastillas) {
-    /**
-     * 
-     * Funcion que modifica el inventario restando las canastillas que entran 
-     * y si el resultado es 0 o menos, se borra el elemento
-     * 
-     * @param {string} _id - String con el _id del lote
-     * @param {number} canastillas - numero de canastillas a borrar
-     */
-    if (inventarioDesFleg) throw new ProcessError(413, "Error el archivo se esta escribiendo")
-    try {
-      inventarioDesFleg = true
-      const inventarioJSON = fs.readFileSync(inventarioDesverdizadoPath);
-      const inventario = JSON.parse(inventarioJSON);
 
-      if (!(_id in inventario)) {
-        inventario[_id] = 0;
-      }
-
-      inventario[_id] = inventario[_id] - canastillas
-
-      if (inventario[_id] <= 0) {
-        delete inventario[_id]
-      }
-      const newInventarioJSON = JSON.stringify(inventario);
-      fs.writeFileSync(inventarioDesverdizadoPath, newInventarioJSON);
-
-    } catch (err) {
-      throw new ProcessError(418, `Error modificando datos del inventario desverdizado json ${err.name}`)
-    } finally {
-      inventarioDesFleg = false
-    }
-  }
   static async getOrdenVaceo() {
     /**
      * Funcion que obtiene los datos de la orden de vaceo desde un archivo JSON.
@@ -374,40 +299,6 @@ export class VariablesDelSistema {
 
   // #region inventario descartes
 
-  static async reprocesar_predio(lote, kilosTotal) {
-    try {
-      /**
-     * Función que reprocesa un lote en el inventario y actualiza diversas variables del sistema relacionadas con el reprocesamiento.
-     *
-     * @param {Object} lote - El lote a reprocesar.
-     * @param {number} kilosTotal - La cantidad total de kilos a reprocesar.
-     * @returns {Promise<void>} - Promesa que se resuelve cuando el reprocesamiento ha terminado.
-     * @throws {ProcessError} - Lanza un error si ocurre un problema durante el reprocesamiento.
-     */
-      const cliente = await getRedisClient();
-      const kilosReprocesadorExist = await cliente.exists("kilosReprocesadorHoy");
-      if (kilosReprocesadorExist !== 1) {
-        await cliente.set("kilosReprocesadorHoy", 0);
-      }
-
-      let kilosReprocesadosHoy = await cliente.get("kilosReprocesadorHoy");
-
-      if (isNaN(kilosReprocesadosHoy)) {
-        kilosReprocesadosHoy = 0;
-      }
-      const kilosReprocesadosRedis = Number(kilosReprocesadosHoy) + Number(kilosTotal);
-
-      await cliente.set("kilosReprocesadorHoy", kilosReprocesadosRedis);
-      await cliente.set("descarteLavado", 0);
-      await cliente.set("descarteEncerado", 0);
-      await this.modificar_predio_proceso(lote, cliente)
-      await this.modificar_predio_proceso_descartes(lote, cliente)
-      // await this.modificar_predio_proceso_listaEmpaque(lote, cliente)
-
-    } catch (err) {
-      throw new ProcessError(418, `Error modificando las variables del sistema: ${err.name}`)
-    }
-  }
   // #region Datos del proceso
   static async get_kilos_procesados_hoy() {
     let cliente
@@ -504,38 +395,8 @@ export class VariablesDelSistema {
       );
     }
   }
-  static sumarMetricaSimpleDirect(tipoMetrica, tipoFruta, value, multi) {
-    if (!multi) throw new Error("Se requiere pipeline para este método");
 
-    let incremento = parseFloat(value);
-    if (isNaN(incremento)) {
-      throw new Error(`Valor inválido para incremento: ${value}`);
-    }
 
-    incremento = Math.round(incremento * 100) / 100;
-
-    multi.hIncrByFloat(tipoMetrica, tipoFruta, incremento);
-  }
-  static async sumarMetricaSimpleAsync(tipoMetrica, tipoFruta, value, logID = null) {
-    try {
-      const cliente = await RedisRepository.getClient();
-
-      let incremento = parseFloat(value);
-      if (isNaN(incremento)) {
-        throw new Error(`Valor inválido para incremento: ${value}`);
-      }
-
-      incremento = Math.round(incremento * 100) / 100;
-
-      await cliente.hIncrByFloat(tipoMetrica, tipoFruta, incremento);
-
-      if (logID) {
-        await registrarPasoLog(logID, "VariablesDelSistema.sumarMetricaSimpleAsync", "Completado", `Se sumó ${value} a ${tipoFruta} en ${tipoMetrica}`);
-      }
-    } catch (err) {
-      throw new ConnectRedisError(502, `Error ingresando descarte ${err}`);
-    }
-  }
   static async ingresar_exportacion(kilos, tipoFruta) {
     let cliente
 
@@ -861,18 +722,7 @@ export class VariablesDelSistema {
       throw new ConnectRedisError(532, `Error redis set hora inicio : ${err.message}`);
     }
   }
-  static async get_metrica_hash(key) {
-    let cliente
-    try {
-      cliente = await getRedisClient();
 
-      const inventario = await cliente.hGetAll(key);
-      return inventario
-
-    } catch (err) {
-      throw new ConnectRedisError(502, `Error ingresando descarte ${err}`)
-    }
-  }
 
   static async get_kilos_exportacion_hoy2() {
     let cliente;

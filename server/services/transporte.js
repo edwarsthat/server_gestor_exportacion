@@ -57,7 +57,15 @@ export class TransporteService {
             const filename = `${uuidv4()}.${type.ext}`;
             const filePath = path.join(urlPath, filename);
 
-            // Guarda el archivo
+            // Validación adicional: verifica que el archivo esté dentro del directorio permitido
+            const resolvedPath = path.resolve(filePath);
+            const resolvedBase = path.resolve(urlPath);
+            if (!resolvedPath.startsWith(resolvedBase)) {
+                throw new Error('Ruta de archivo no permitida');
+            }
+
+            // Guarda el archivo (ruta validada contra path traversal)
+            // eslint-disable-next-line security/detect-non-literal-fs-filename
             await fs.writeFile(filePath, buffer);
 
             // Puedes guardar la ruta relativa para devolver al frontend o para guardar en la base de datos:
@@ -81,9 +89,18 @@ export class TransporteService {
                     throw new Error("Ruta no permitida: " + relativeUrl);
                 }
                 const fullPath = path.join(baseDir, relativeUrl);
+
+                // Validación adicional: verifica que el archivo esté dentro del directorio base
+                const resolvedPath = path.resolve(fullPath);
+                const resolvedBase = path.resolve(baseDir);
+                if (!resolvedPath.startsWith(resolvedBase)) {
+                    throw new Error("Ruta no permitida: " + relativeUrl);
+                }
+
                 await fs.access(fullPath); // Verifica que exista
                 const ext = path.extname(fullPath).toLowerCase();
                 const mime = ext === ".png" ? "image/png" : "image/jpeg";
+                // eslint-disable-next-line security/detect-non-literal-fs-filename
                 const fileBuffer = await fs.readFile(fullPath);
                 return { img: `data:${mime};base64,${fileBuffer.toString("base64")}` };
             })
@@ -170,8 +187,8 @@ export class TransporteService {
                 registroSalida: data,
                 contenedorDestino: newContenedor[0].numeroContenedor,
             },
-            { 
-                accion: action, 
+            {
+                accion: action,
                 registroId: oldregistro[0]._id,
                 cambiosRealizados: data,
                 contenedorAnterior: oldContenedor[0].numeroContenedor,

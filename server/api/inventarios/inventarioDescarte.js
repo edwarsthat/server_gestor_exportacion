@@ -41,7 +41,7 @@ export class InventarioDescarteController {
 
                 console.log(lote)
                 if (lote.length === 0) {
-                    throw new InventariosLogicError(470, `No se encontró el lote ${EF}`)
+                    throw new InventariosLogicError(470, `No se encontró el lote ${buscar}`)
                 } else {
                     query.lote = lote[0]._id
                 }
@@ -87,12 +87,15 @@ export class InventarioDescarteController {
 
                 const diffKilosIniciales = kilosIniciales - oldValue[0].kilosIniciales
 
+                console.log(diffKilosIniciales)
+                console.log(kilosIniciales)
+
                 const itemModificado = await InventariosHistorialRepository.actualizar_ingreso_descarte(
                     { _id: _id },
                     { kilosIniciales: kilosIniciales, kilosActuales: kilosIniciales },
                     { session }
                 )
-                await registrarPasoLog(log?._id, "InventariosHistorialRepository.actualizar_ingreso_descarte", `Se actualizó el ingreso del descarte ${_id}`);
+                await registrarPasoLog(log?._id, "InventariosHistorialRepository.actualizar_ingreso_descarte", `completado`);
                 // Crear movimiento de MODIFICACION adicional
                 await db.InventarioMovimientoDescarte.create([{
                     registroDescarte: itemModificado._id,
@@ -103,20 +106,20 @@ export class InventarioDescarteController {
                     user: user,
                     destino: `INVENTARIO_${itemModificado.area}`
                 }], { session });
-                await registrarPasoLog(log?._id, "db.InventarioMovimientoDescarte.create", `Se creó el movimiento de MODIFICACION adicional para el descarte ${_id}`);
+                await registrarPasoLog(log?._id, "db.InventarioMovimientoDescarte.create", `completado`);
 
                 await LotesHelper.actualizar_lotes_helper(
                     itemModificado.lote,
                     {
-                        [`descartes.${itemModificado.tipoDescarte._id}`]: itemModificado.kilosActuales,
                         $inc: {
+                            [`descartes.${itemModificado.tipoDescarte._id}`]: diffKilosIniciales,
                             kilosProcesados: diffKilosIniciales,
                         }
 
                     },
                     session
                 )
-                await registrarPasoLog(log?._id, "LotesHelper.actualizar_lotes_helper", `Se actualizó el lote ${itemModificado.lote}`);
+                await registrarPasoLog(log?._id, "LotesHelper.actualizar_lotes_helper", `completado`);
             })
 
         } catch (error) {

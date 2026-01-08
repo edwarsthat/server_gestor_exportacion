@@ -19,7 +19,6 @@ import { ProcesoService } from "../services/proceso.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { checkFinalizadoLote } from "./utils/lotesFunctions.js";
-import { getColombiaDate } from "./utils/fechas.js";
 import { db } from "../../DB/mongoDB/config/init.js";
 import { IndicadoresAPIRepository } from "./IndicadoresAPI.js";
 import { ErrorProcesoLogicHandlers } from "./utils/errorsHandlers.js";
@@ -43,6 +42,16 @@ export class ProcesoRepository {
             const { user } = req
             const { foto, fotoName, _id } = req.data;
 
+            // Validar _id (ObjectId válido)
+            if (!/^[0-9a-fA-F]{24}$/.test(_id)) {
+                throw new ProcessError(400, 'ID de lote inválido');
+            }
+
+            // Validar fotoName (solo caracteres alfanuméricos y guiones)
+            if (!/^[a-zA-Z0-9_-]+$/.test(fotoName)) {
+                throw new ProcessError(400, 'Nombre de foto inválido');
+            }
+
             // Construir el nombre del archivo
             const fileName = `${_id}_${fotoName}.png`;
 
@@ -55,9 +64,17 @@ export class ProcesoRepository {
                 fileName
             );
 
+            // Validación adicional: verificar que esté en el directorio correcto
+            const resolvedPath = path.resolve(fotoPath);
+            const resolvedBase = path.resolve(__dirname, '..', '..', 'fotos_frutas');
+            if (!resolvedPath.startsWith(resolvedBase)) {
+                throw new ProcessError(400, 'Ruta de archivo no permitida');
+            }
+
             // Eliminar el encabezado de datos URI si está presente
             const base64Data = foto.replace(/^data:image\/\w+;base64,/, "");
 
+            // eslint-disable-next-line security/detect-non-literal-fs-filename
             fs.writeFileSync(fotoPath, base64Data, { encoding: "base64" }, err => {
                 if (err) {
                     throw new ProcessError(422, `Error guardando fotos ${err.message}`)
@@ -419,155 +436,6 @@ export class ProcesoRepository {
                 action: "lista_empaque_update",
             });
             procesoEventEmitter.emit("listaempaque_update");
-
-        } catch (error) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, error);
-            await ErrorProcesoLogicHandlers(error, log)
-        } finally {
-            await session.endSession();
-            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-        }
-    }
-    static async put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop(req) {
-        const { user } = req;
-        const { _id, pallet, seleccion, data, action } = req.data
-
-        let log
-
-        const session = await db.Contenedores.db.startSession();
-
-        log = await LogsRepository.create({
-            user: user._id,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-        })
-
-        try {
-
-            const logData = { logId: log._id, user: user, action: "put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop" }
-            ProcesoValidations.put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop().parse(req.data)
-            await registrarPasoLog(log._id, "Validación de datos completada", "Completado");
-
-            const { calidad, calibre, cajas, tipoCaja } = data
-
-            await session.withTransaction(async () => {
-
-                const { contenedor, lote } = await ProcesoService.obtenerContenedorLote(_id, pallet, seleccion, session);
-                await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLote", "Completado", `Contenedor: ${_id}, Pallet: ${pallet}, Selección: ${seleccion} - Lote: ${lote._id}`);
-
-                const palletSeleccionadoComp = contenedor[0].pallets[pallet].EF1[seleccion];
-
-                if (palletSeleccionadoComp.tipoCaja !== tipoCaja || palletSeleccionadoComp.calidad !== calidad || palletSeleccionadoComp.cajas !== cajas) {
-                    if (checkFinalizadoLote(lote[0])) {
-                        throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
-                    }
-                }
-
-                const { palletsModificados, copiaPallet } = await ProcesoService.crearCopiaProfundaPallets(contenedor[0]);
-                await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
-
-                const GGN = have_lote_GGN_export(lote, contenedor[0])
-
-                const oldData = copiaPallet[pallet].EF1[seleccion];
-                const itemSeleccionadoOld = copiaPallet[pallet].EF1[seleccion];
-                const oldKilos = itemSeleccionadoOld.cajas * Number(itemSeleccionadoOld.tipoCaja.split("-")[1].replace(",", "."));
-                const palletSeleccionado = palletsModificados[pallet].EF1[seleccion];
-                const newKilos = Number(tipoCaja.split('-')[1].replace(",", ".")) * cajas
-
-                await ProcesoService.modificarContenedorModificarItemListaEmpaque(palletsModificados, palletSeleccionado, itemSeleccionadoOld, copiaPallet, req.data, logData, session)
-                await ProcesoService.modificarLoteModificarItemListaEmpaque(_id, oldKilos, newKilos, oldData.calidad, calidad, lote[0], GGN, logData, session)
-
-                //se mira si es fruta de hoy para restar de las variables del proceso
-                const fechaSeleccionada = getColombiaDate(palletSeleccionado.fecha)
-                const hoy = getColombiaDate();
-
-                // Ajustamos la fecha seleccionada restando 5 horas:
-                fechaSeleccionada.setHours(fechaSeleccionada.getHours() - 5);
-                // Ahora comparamos solo día, mes y año:
-                if (
-                    fechaSeleccionada.getFullYear() === hoy.getFullYear() &&
-                    fechaSeleccionada.getMonth() === hoy.getMonth() &&
-                    fechaSeleccionada.getDate() === hoy.getDate()
-                ) {
-
-                    await ProcesoService.ingresarDataExportacionDiaria(palletSeleccionado.tipoFruta, oldData.calidad, oldData.calibre, -oldKilos, logData, session)
-                    await ProcesoService.ingresarDataExportacionDiaria(palletSeleccionado.tipoFruta, calidad, calibre, newKilos, logData, session)
-
-                }
-
-            })
-
-            procesoEventEmitter.emit("server_event", {
-                action: "lista_empaque_update",
-            });
-
-        } catch (error) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, error);
-            await ErrorProcesoLogicHandlers(error, log)
-        } finally {
-            await session.endSession();
-            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-        }
-    }
-    static async put_proceso_aplicaciones_listaEmpaque_eliminarItem_desktop(req) {
-        const { user } = req;
-        const { _id, pallet, seleccion, action } = req.data
-
-        let log
-
-        const session = await db.Contenedores.db.startSession();
-
-        log = await LogsRepository.create({
-            user: user._id,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-        })
-        try {
-
-            await session.withTransaction(async () => {
-                const { contenedor, lote } = await ProcesoService.obtenerContenedorLote(_id, pallet, seleccion, session);
-                await registrarPasoLog(log._id, "ProcesoService.obtenerContenedorLote", "Completado", `Contenedor: ${_id}, Pallet: ${pallet}, Selección: ${seleccion} - Lote: ${lote._id}`);
-
-                if (checkFinalizadoLote(lote[0])) {
-                    throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
-                }
-
-                const { palletsModificados, copiaPallet } = await ProcesoService.crearCopiaProfundaPallets(contenedor[0]);
-                await registrarPasoLog(log._id, "ProcesoService.crearCopiaProfundaPallets", "Completado");
-
-                const GGN = have_lote_GGN_export(lote[0], contenedor[0])
-
-                const palletSeleccionado = palletsModificados[pallet].EF1[seleccion];
-                const copiaPalletSeleccionado = copiaPallet[pallet].EF1[seleccion];
-                const kilos = Number(palletSeleccionado.tipoCaja.split('-')[1].replace(",", ".")) * palletSeleccionado.cajas
-                palletsModificados[pallet].EF1.splice(seleccion, 1);
-                const update = {
-                    pallets: palletsModificados,
-                    $inc: {
-                        totalKilos: -kilos,
-                        totalCajas: -palletSeleccionado.cajas,
-                    }
-                }
-
-                await ContenedoresRepository.actualizar_contenedor({ _id }, update, { session }, log._id)
-                await RecordModificacionesRepository.post_record_contenedor_modification(
-                    action,
-                    user,
-                    { modelo: "Contenedor", documentoId: _id, descripcion: `Se eliminó el item ${seleccion} en el pallet ${pallet}`, },
-                    copiaPallet[pallet],
-                    palletsModificados[pallet],
-                    { pallet, seleccion },
-                    { session }
-                )
-                await ProcesoService.modificarLoteEliminarItemdesktopListaEmpaque(_id, palletSeleccionado, lote[0], kilos, GGN, user, log._id, session)
-                await ProcesoService.modificarIndicadoresFecha(copiaPalletSeleccionado, -kilos, log._id, session)
-            });
-
-            await registrarPasoLog(log._id, "Promise.all", "Completado");
-
-            procesoEventEmitter.emit("server_event", {
-                action: "lista_empaque_update",
-            });
 
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
@@ -1084,7 +952,7 @@ export class ProcesoRepository {
             if (lote) {
                 return {
                     ...lote.toObject(),
-                    inventario: inventario[id]
+                    inventario: Reflect.get(inventario, id)
                 }
             }
             return null
@@ -1196,6 +1064,30 @@ export class ProcesoRepository {
         return resultado
     }
     static async obtener_foto_calidad(url) {
+        // Validar que la URL sea una ruta válida
+        if (!url || typeof url !== 'string') {
+            throw new ProcessError(400, 'URL inválida');
+        }
+
+        // Rechazar path traversal
+        if (url.includes('..')) {
+            throw new ProcessError(400, 'URL no permitida');
+        }
+
+        // Validación adicional: verificar que esté dentro del directorio permitido
+        const resolvedPath = path.resolve(url);
+        const resolvedBase = path.resolve(__dirname, '..', '..', 'fotos_frutas');
+        if (!resolvedPath.startsWith(resolvedBase)) {
+            throw new ProcessError(400, 'Ruta de archivo no permitida');
+        }
+
+        // Solo permitir archivos de imagen
+        const ext = path.extname(url).toLowerCase();
+        if (!['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) {
+            throw new ProcessError(400, 'Tipo de archivo no permitido');
+        }
+
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
         const data = fs.readFileSync(url)
         const base64Image = data.toString('base64');
         return base64Image

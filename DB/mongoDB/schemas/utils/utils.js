@@ -41,7 +41,14 @@ export function deepDiff(before = {}, after = {}, path = "") {
             out.push({ field: full, before: a, after: b });
         }
     }
-    return out;
+    // Filtrar cambios de _id de subdocumentos (Mongoose los regenera automáticamente)
+    return out.filter(change => {
+        // Ignorar campos que terminan en ._id (subdocumentos)
+        if (change.field.endsWith('._id')) return false;
+        // Ignorar campos tipo array[n]._id
+        if (/\[\d+\]\._id$/.test(change.field)) return false;
+        return true;
+    });
 }
 
 // const isObject = (v) => v && typeof v === "object" && !Array.isArray(v);
@@ -53,25 +60,67 @@ const isObjectId = (v) =>
         v._bsontype === 'ObjectID' || v._bsontype === 'ObjectId' // bson
     );
 
-function toComparable(val) {
+function toComparable(val, seen = new WeakSet()) {
+    // Primitivos y null/undefined primero
     if (val == null) return val;
+    if (typeof val !== 'object') return val;
 
-    if (isObjectId(val)) return String(val);             // <- ¡clave!
-    if (val instanceof Date) return val.toISOString();   // estabilidad
+    // Tipos especiales ANTES de verificar circularidad
+    // ObjectId tiene estructura interna que causa recursión
+    if (isObjectId(val)) {
+        try {
+            return val.toHexString ? val.toHexString() : String(val);
+        } catch {
+            return '[ObjectId]';
+        }
+    }
+
+    if (val instanceof Date) return val.toISOString();
+    if (Buffer?.isBuffer?.(val)) return { __type: 'Buffer', base64: val.toString('base64') };
+
+    // Ahora verificar circularidad para objetos complejos
+    if (seen.has(val)) {
+        return '[Circular]';
+    }
+    seen.add(val);
+
+    // Documentos de Mongoose - convertir a objeto plano
+    if (typeof val.toObject === 'function') {
+        try {
+            return toComparable(val.toObject(), seen);
+        } catch {
+            return '[MongooseDoc]';
+        }
+    }
+
     if (val instanceof Map) {
         const out = {};
         for (const [k, v] of val.entries()) {
-            out[k] = toComparable(v);
+            out[k] = toComparable(v, seen);
         }
         return out;
     }
-    if (Buffer?.isBuffer?.(val)) return { __type: 'Buffer', base64: val.toString('base64') };
 
-    if (Array.isArray(val)) return val.map(toComparable);
+    if (Array.isArray(val)) {
+        return val.map(item => toComparable(item, seen));
+    }
+
     if (isPlainObject(val)) {
         const out = {};
-        for (const k of Object.keys(val)) out[k] = toComparable(val[k]);
+        for (const k of Object.keys(val)) {
+            try {
+                out[k] = toComparable(val[k], seen);
+            } catch {
+                out[k] = '[Error]';
+            }
+        }
         return out;
     }
-    return val;
+
+    // Otros objetos (RegExp, Error, etc.) - convertir a string
+    try {
+        return String(val);
+    } catch {
+        return '[Unknown]';
+    }
 }

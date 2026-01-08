@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 
@@ -34,8 +33,12 @@ const __dirname = dirname(__filename);
 const app = express();
 
 app.use((req, res, next) => {
-    console.log('IP detectada:', req.ip);
-    console.log('URL:', req.url);
+    const isPublic = req.url.startsWith('/public') || /\.(html|css|js|png|jpg|jpeg|gif|ico|svg|json|yml|yaml|woff2?|ttf|otf)$/i.test(req.url);
+    if (isPublic) {
+        console.log(`[ARCHIVO PÚBLICO] URL: ${req.url} - IP: ${req.ip}`);
+    } else {
+        console.log(`[PETICIÓN] ${req.method} URL: ${req.url} - IP: ${req.ip}`);
+    }
     next();
 });
 
@@ -142,30 +145,7 @@ app.post('/login2', loginLimiter, async (req, res, next) => {
     }
 });
 
-app.use('/public', express.static(path.join(__dirname, 'public')));
-
-
-
-//Envia los archivos para actualizar la aplicacion de escritorio 
-app.get('/:filename', async (req, res, next) => {
-    try {
-        let { filename } = req.params;
-        filename = path.basename(filename);
-        const filePath = path.join(__dirname, '..', '..', 'updates', 'desktop', filename);
-
-        // Verificar si el archivo existe
-        if (!fs.existsSync(filePath)) {
-            // Puedes enviar un 404 directamente o lanzar un error controlado
-            return res.status(404).send("Archivo no encontrado");
-        }
-
-        const file = fs.readFileSync(filePath);
-        res.setHeader('Content-Type', 'application/octet-stream');
-        res.end(file);
-    } catch (err) {
-        next(err);
-    }
-})
+app.use('/public', express.static(path.join(__dirname, '..', '..', 'public')));
 
 app.use((err, req, res, next) => middleWareHandleErrors(err, req, res, next))
 

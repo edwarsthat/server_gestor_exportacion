@@ -7,16 +7,18 @@ function filtroFechaInicioFin(fechaInicio, fechaFin, filter = {}, fecha) {
         throw new UtilError(601, "filtroFechaInicioFin: filtro debe ser un objeto")
 
     if (fechaInicio || fechaFin) {
-        filter[fecha] = {}
+        Reflect.set(filter, fecha, {});
+        const fechaObj = Reflect.get(filter, fecha);
+
         if (fechaInicio) {
             const fechaInicioUTC = new Date(fechaInicio);
             if (isNaN(fechaInicioUTC.getTime()))
                 throw new UtilError(601, "filtroFechaInicioFin: Fecha inicio no valida")
 
             fechaInicioUTC.setHours(fechaInicioUTC.getHours() + 5);
-            filter[fecha].$gte = fechaInicioUTC;
+            fechaObj.$gte = fechaInicioUTC;
         } else {
-            filter[fecha].$gte = new Date(0);
+            fechaObj.$gte = new Date(0);
         }
         if (fechaFin) {
             const fechaFinUTC = new Date(fechaFin)
@@ -25,9 +27,9 @@ function filtroFechaInicioFin(fechaInicio, fechaFin, filter = {}, fecha) {
 
             fechaFinUTC.setDate(fechaFinUTC.getDate() + 1);
             fechaFinUTC.setHours(fechaFinUTC.getHours() + 5);
-            filter[fecha].$lt = fechaFinUTC;
+            fechaObj.$lt = fechaFinUTC;
         } else {
-            filter[fecha].$lt = new Date();
+            fechaObj.$lt = new Date();
         }
     }
 

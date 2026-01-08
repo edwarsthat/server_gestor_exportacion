@@ -45,14 +45,6 @@ export const apiSocketProceso = {
         const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_addSettings(data);
         return successResponseRoutes(response)
     },
-    put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop: async (data) => {
-        const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop(data);
-        return successResponseRoutes(response)
-    },
-    put_proceso_aplicaciones_listaEmpaque_eliminarItem_desktop: async (data) => {
-        const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_eliminarItem_desktop(data);
-        return successResponseRoutes(response)
-    },
     put_proceso_aplicaciones_listaEmpaque_Cerrar: async (data) => {
         await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_Cerrar(data);
         return successResponseRoutes()

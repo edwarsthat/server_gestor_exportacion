@@ -69,8 +69,15 @@ docs/generated/
 # Inventario
 inventory/
 
-# Actualizaciones
+# Actualizaciones (ubicación antigua - mantener por si acaso)
 updates/
+
+# Actualizaciones de aplicaciones (nueva ubicación en public)
+# Ignora todo el contenido EXCEPTO .gitkeep
+public/updates/desktop/*
+!public/updates/desktop/.gitkeep
+public/updates/mobile/*
+!public/updates/mobile/.gitkeep
 
 # Fotos de frutas
 fotos_frutas/

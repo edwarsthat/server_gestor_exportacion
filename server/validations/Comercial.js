@@ -84,15 +84,17 @@ export class ComercialValidationsRepository {
         ];
 
         requiredFields.forEach((field) => {
-            if (!data[field] || data[field] === "") {
+            const fieldValue = Reflect.get(data, field)
+            if (!fieldValue || fieldValue === "") {
                 throw new Error(`El campo ${field} es obligatorio.`)
             }
 
             if (field === "CODIGO INTERNO") {
-                data[field] = Number(data[field])
-                if (isNaN(data[field])) {
+                const numValue = Number(Reflect.get(data, field))
+                if (isNaN(numValue)) {
                     throw new Error(`El campo ${field} debe ser un numero.`)
                 }
+                Reflect.set(data, field, numValue)
             }
         });
 
@@ -164,12 +166,14 @@ export class ComercialValidationsRepository {
             }
 
             if (key === "tipoFruta2") {
-                if (typeof data[key] !== "string") {
+                const value = Reflect.get(data, key)
+                if (typeof value !== "string") {
                     throw new Error(`El filtro ${key} debe ser de tipo string`)
                 }
             }
             if (key === "fechaInicio" || key === "fechaFin") {
-                if (typeof data[key] !== "string") {
+                const value = Reflect.get(data, key)
+                if (typeof value !== "string") {
                     throw new Error(`El filtro ${key} debe ser una fecha válida en formato string`);
                 }
             }

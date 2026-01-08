@@ -398,14 +398,37 @@ export class SistemaRepository {
     //#endregion
 
     static async check_mobile_version() {
-        const apkLatest = path.join(__dirname, '..', '..', 'updates', 'mobile', 'latest.yml');
+        const apkLatest = path.join(__dirname, '..', '..', 'public', 'updates', 'mobile', 'latest.yml');
         const fileContents = fs.readFileSync(apkLatest, 'utf8');
         const latest = yaml.load(fileContents);
         return latest;
     }
     static async download_mobilApp(data) {
-        const apkPath = path.join(__dirname, '..', '..', 'updates', 'mobile', data);
-        // Verificar si el archivo existe
+        // Validar que el nombre sea seguro (solo nombre de archivo, sin paths)
+        if (!data || typeof data !== 'string') {
+            throw { status: 400, message: 'Invalid filename' };
+        }
+
+        // Rechazar path traversal y caracteres peligrosos
+        if (data.includes('..') || data.includes('/') || data.includes('\\')) {
+            throw { status: 400, message: 'Invalid filename' };
+        }
+
+        // Solo permitir archivos .apk
+        if (!data.endsWith('.apk')) {
+            throw { status: 400, message: 'Only APK files are allowed' };
+        }
+
+        const apkPath = path.join(__dirname, '..', '..', 'public', 'updates', 'mobile', data);
+
+        // Validación adicional: verificar que esté en el directorio correcto
+        const resolvedPath = path.resolve(apkPath);
+        const resolvedBase = path.resolve(__dirname, '..', '..', 'public', 'updates', 'mobile');
+        if (!resolvedPath.startsWith(resolvedBase)) {
+            throw { status: 400, message: 'Invalid path' };
+        }
+
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
         if (!fs.existsSync(apkPath)) {
             throw { status: 404, message: 'File not found' };
         }
@@ -435,13 +458,8 @@ export class SistemaRepository {
         return codigo
     }
     static async isNewVersion() {
-        const apkLatest = path.join(__dirname, '..', '..', 'updates', 'desktop', 'latest.yml');
+        const apkLatest = path.join(__dirname, '..', '..', 'public', 'updates', 'desktop', 'latest.yml');
         const fileContents = fs.readFileSync(apkLatest, 'utf8');
-        return fileContents
-    }
-    static async getCelifrutAppFile(filename) {
-        const filePath = path.join(__dirname, '..', '..', 'updates', 'desktop', filename);
-        const fileContents = fs.readFileSync(filePath);
         return fileContents
     }
     static async obtener_info_mi_cuenta(user) {

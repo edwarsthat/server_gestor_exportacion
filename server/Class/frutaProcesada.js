@@ -33,7 +33,7 @@ export class FrutaProcesada {
             limit = 0,
             skip = 0,
             populate = [
-                { path: 'loteId', select: 'enf' },
+                { path: 'loteId', select: 'enf GGN' },
                 { path: 'tipoFruta', select: "tipoFruta" },
                 { path: 'predio', select: 'PREDIO' },
                 { path: "user", select: "usuario nombre apellido" }
