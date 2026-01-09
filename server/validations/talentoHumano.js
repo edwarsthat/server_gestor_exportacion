@@ -17,4 +17,10 @@ export class TalentoHumanoValidations {
             cargo: z.string().min(1, "El cargo es obligatorio"),
         })
     }
+    static put_talentoHumano_dotacion_carnets_generar_temporal() {
+        return z.object({
+            data: z.string().regex(/^[0-9a-fA-F]{24}$/, "ID de carnet no válido"),
+            action: z.string().min(1, "La acción es obligatoria"),
+        })
+    }
 }

@@ -211,9 +211,8 @@ export class IndicadoresAPIRepository {
                 query.tipoFruta = tipoFruta;
             }
 
-            const lotes = await LotesRepository.getLotes2({
+            const lotes = await LotesRepository.getLotes({
                 query: query,
-                limit: 'all',
                 select: { 
                     _id: 1,
                     enf: 1,

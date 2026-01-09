@@ -16,7 +16,7 @@ routerAPI.get("/get_data_lotes", async (req, res) => {
         //     res.json({ status: 401, message: "Error con las credenciales" })
         // }
 
-        const lotes = await LotesRepository.getLotes({ limit: 'all' })
+        const lotes = await LotesRepository.getLotes()
         res.send({ status: 200, message: 'Ok', data: lotes })
     } catch (err) {
         console.log(`Code ${err.status}: ${err.message}`)

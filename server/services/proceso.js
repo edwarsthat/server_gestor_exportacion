@@ -779,7 +779,7 @@ class ProcesoService {
         const palletsModificados = contenedor[0].pallets;
         const palletSeleccionado = palletsModificados[pallet].EF1[seleccion];
 
-        const lote = await LotesRepository.getLotes2({
+        const lote = await LotesRepository.getLotes({
             ids: [palletSeleccionado.lote],
         }, { session });
 
@@ -816,8 +816,7 @@ class ProcesoService {
 
         //se obtiene el lote
         const lotes = await LotesRepository.getLotes({
-            ids: lotesArrIds,
-            limite: 'all'
+            ids: lotesArrIds
         }, { session })
 
         return {

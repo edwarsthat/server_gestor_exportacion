@@ -634,17 +634,20 @@ export class InventariosService {
         }
 
         const [EF1, EF10] = await Promise.all([
-            LotesRepository.getLotes({ ids: [predioVaciando._id] }),
-            LotesRepository.getLotesMaquila({ ids: [predioVaciando._id] })
+            LotesRepository.getLotes({ ids: [predioVaciando.loteId._id] }),
+            LotesRepository.getLotesMaquila({ ids: [predioVaciando.loteId._id] })
         ])
         const lote = EF1.length > 0 ? EF1[0] : (EF10.length > 0 ? EF10[0] : null);
+
+        console.log("predioVaciando ###################", lote)
+
         if (!lote) {
             return "No vaceo"
         }
 
         // Cargos con vía rápida
-        const PERM_1 = "66c75d2daa4aa86aef8ff013";
-        const PERM_2 = "66c79242f9cbdcf56b82dc58";
+        const PERM_1 = config.COORDINADOR_PRODUCCION;
+        const PERM_2 = config.DIR_OPERACIONES;
 
         // Pueden saltarse la validación si:
         // - Rol > 0  O  - Cargo está en la lista permitida
@@ -751,9 +754,8 @@ export class InventariosService {
             query.tipoFruta = tipoFruta;
         }
 
-        const lotes = await LotesRepository.getLotes2({
+        const lotes = await LotesRepository.getLotes({
             query: query,
-            limit: 'all',
             sort: { fecha_estimada_llegada: -1 }
         });
 

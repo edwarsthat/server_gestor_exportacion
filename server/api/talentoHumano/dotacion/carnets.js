@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { TalentoHumanoDotacionCarnetsRepository } from "../../../Class/talentoHumano/dotacion/Carnets.js";
 import { LogsRepository } from "../../../Class/LogsSistema.js";
 import { registrarPasoLog } from "../../helper/logs.js";
@@ -5,6 +6,10 @@ import { ErrorTalentHumanoLogicHandlers } from "../../utils/errorsHandlers.js";
 import { db } from "../../../../DB/mongoDB/config/init.js";
 import { Seriales } from "../../../Class/Seriales.js";
 import { PersonalRepository } from "../../../Class/talentoHumano/Personal.js";
+import { FileService } from "../../../services/helpers/FileService.js";
+import { HtmlToImage } from '../../../services/helpers/HtmlToImage.js';
+import config from '../../../../src/config/index.js';
+import { TalentoHumanoValidations } from '../../../validations/talentoHumano.js';
 
 export class DotacionCarnetsControllerRepository {
     static async post_talentoHumano_dotacion_carnets(req) {
@@ -121,6 +126,65 @@ export class DotacionCarnetsControllerRepository {
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
             await ErrorTalentHumanoLogicHandlers(error)
+        }
+    }
+    static async put_talentoHumano_dotacion_carnets_generar_temporal(req) {
+
+        const { user } = req
+        const { data, action } = req.data
+
+        let log
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
+
+        try {
+            TalentoHumanoValidations.put_talentoHumano_dotacion_carnets_generar_temporal().parse(req.data)
+
+            // Generar el AccessToken único
+            const tokenGenerado = crypto.randomUUID();
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Token generado exitosamente");
+            const tokenHash = crypto.createHash('sha256')
+                .update(tokenGenerado)
+                .digest('hex');
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Token hash generado exitosamente");
+            // Actualizar el carnet con el tokenHash
+            const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_carnet({ _id: data }, { tokenHash }, { user })
+            if (!carnetActualizado) {
+                throw new Error("No se encontró el carnet para actualizar");
+            }
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Carnet actualizado exitosamente");
+            const urlSegura = `${config.URL_CELIFRUT}/verify#${tokenGenerado}`;
+            //Cargar el template HTML
+            let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnet.html');
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Template HTML cargado exitosamente");
+            const qrDataEncoded = encodeURIComponent(urlSegura);
+
+            htmlTemplate = htmlTemplate.replace('PLACEHOLDER', qrDataEncoded);
+            await registrarPasoLog(log._id, "Éxito", "Completado", "QR Data codificado exitosamente");
+
+            const templateDir = await FileService.getTemplateDir('talentoHumano/carnet/carnet.html');
+            const base64 = await HtmlToImage.convertToBase64(htmlTemplate, { baseUrl: templateDir });
+
+            if (!base64 || typeof base64 !== 'string' || !base64.startsWith('data:image/')) {
+                throw new Error("Fallo crítico: El carnet se generó pero la imagen resultante no es válida.");
+            }
+
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Base64 generado exitosamente");
+
+            return {
+                status: "success",
+                message: "Token generado y template cargado",
+                data: base64
+            };
+
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorTalentHumanoLogicHandlers(error, log)
+        } finally {
+            await registrarPasoLog(log._id, "Finalizado", "Completado", "Función completada exitosamente");
         }
     }
 }

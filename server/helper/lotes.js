@@ -19,7 +19,7 @@ export class LotesHelper {
     }
     static async obtener_lote_helper(filter = {}, options = {}) {
         const [r1, r2] = await Promise.allSettled([
-            LotesRepository.getLotes2(filter, options),
+            LotesRepository.getLotes(filter, options),
             LotesRepository.getLotesMaquila(filter, options)
         ]);
 

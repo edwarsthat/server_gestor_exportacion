@@ -1,5 +1,5 @@
 import { db } from "../../../../DB/mongoDB/config/init.js";
-import { BadGetwayError, PostError } from "../../../../Error/ConnectionErrors.js";
+import { BadGetwayError, ConnectionDBError, PostError } from "../../../../Error/ConnectionErrors.js";
 
 export class TalentoHumanoDotacionCarnetsRepository {
     static async post_data(data, opts = {}) {
@@ -50,5 +50,28 @@ export class TalentoHumanoDotacionCarnetsRepository {
         } catch (err) {
             throw new BadGetwayError(501, `Error obteniendo numero de registros de carnet ${err.message}`);
         }
+    }
+    static async actualizar_carnet(filter, update, options = {}) {
+        const { session, arrayFilters, ...restOptions } = options;
+
+        const finalOptions = {
+            new: true,
+            ...restOptions,
+            ...(session && { session }),
+            ...(arrayFilters && { arrayFilters })
+        };
+
+        try {
+            let documento = await db.Carnet.findOneAndUpdate(filter, update, { ...finalOptions });
+            if (!documento) {
+                throw new Error('Carnet no encontrado');
+            }
+
+            return documento;
+
+        } catch (err) {
+            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+        }
+
     }
 }

@@ -21,4 +21,7 @@ export default {
     INVENTARIO_ORDEN_VACEO: process.env.INVENTARIO_ORDEN_VACEO || "68d1c0410f282bcb84388dd3",
     ID_CELIFRUT: process.env.ID_CELIFRUT || "65c27f3870dd4b7f03ed9857",
     ENCRYPTION_KEY: process.env.ENCRYPTION_KEY || "encryption_key",
+    URL_CELIFRUT: process.env.URL_CELIFRUT || "https://www.celifrut.com",
+    DIR_OPERACIONES: process.env.DIR_OPERACIONES || "",
+    COORDINADOR_PRODUCCION: process.env.COORDINADOR_PRODUCCION || ""
 };

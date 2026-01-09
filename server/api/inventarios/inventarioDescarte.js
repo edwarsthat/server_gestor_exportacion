@@ -32,7 +32,7 @@ export class InventarioDescarteController {
 
             console.log(buscar)
             if (buscar !== "") {
-                lote = await LotesRepository.getLotes2({
+                lote = await LotesRepository.getLotes({
                     query: {
                         enf: buscar,
                     },

@@ -747,7 +747,7 @@ export class ComercialRepository {
                 lotesQuery.enf = data.enf
                 let lotes
                 if (data.enf.startsWith("EF1-")) {
-                    lotes = await LotesRepository.getLotes2({
+                    lotes = await LotesRepository.getLotes({
                         query: lotesQuery,
                         select: { predio: 1, precio: 1, tipoFruta: 1, fecha_ingreso_inventario: 1 }
                     }, { session })

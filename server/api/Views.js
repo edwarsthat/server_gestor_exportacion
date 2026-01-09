@@ -78,7 +78,7 @@ export class ViewsRepository {
 
             const lotes = await LotesRepository.getLotes({
                 query: query,
-                limit: todosLosDatos ? 99999999999 : cantidad,
+                ...(todosLosDatos ? {} : { limit: cantidad }),
                 sort: sort
             });
             const contenedoresArr = []

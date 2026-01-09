@@ -14,7 +14,7 @@ export class ContabilidadRepository {
                 aprobacionComercial: true,
                 aprobacionProduccion: true,
             }
-            const lotes = await LotesRepository.getLotes2({
+            const lotes = await LotesRepository.getLotes({
                 query: query,
                 skip: (page - 1) * resultsPerPage,
                 select: {
@@ -67,7 +67,7 @@ export class ContabilidadRepository {
             const { _id } = req.data
 
             const [lote, itemsExp] = await Promise.all([
-                LotesRepository.getLotes2({
+                LotesRepository.getLotes({
                     ids: [_id],
                     populate: [
                         { path: 'predio', select: 'PREDIO GGN ICA' },

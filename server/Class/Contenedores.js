@@ -388,6 +388,7 @@ export class ContenedoresRepository {
     }
     static async obtener_archivos_contenedores(url) {
         try {
+            // eslint-disable-next-line security/detect-non-literal-fs-filename
             const data = fs.readFileSync(url)
             const extension = path.extname(url).toLowerCase();
 

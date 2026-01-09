@@ -1,5 +1,5 @@
 import { db } from "../../DB/mongoDB/config/init.js";
-import { PostError, PutError, ConnectionDBError } from "../../Error/ConnectionErrors.js";
+import { PostError, ConnectionDBError } from "../../Error/ConnectionErrors.js";
 import { ProcessError } from "../../Error/ProcessError.js";
 import fs from 'fs';
 import { registrarPasoLog } from "../api/helper/logs.js";
@@ -17,183 +17,13 @@ export class LotesRepository {
             throw new PostError(409, `Error agregando lote ${err.message}`);
         }
     }
-    static async crear_lote(data, user, otherInfo = {}) {
-        try {
-            const lote = new db.Lotes(data);
-            const new_lote = await lote.save();
-            let record = new db.recordLotes({
-                operacionRealizada: 'crear lote celifrut',
-                user: user,
-                documento: { ...new_lote, otherInfo: otherInfo }
-            })
-            await record.save();
-            return new_lote;
-        } catch (err) {
-            throw new PostError(521, `Error creando lote ${err.message}`);
-        }
-    }
     static async getLotes(options = {}, { session = null } = {}) {
         const {
             ids = [],
             query = {},
             select = {},
             sort = { fecha_creacion: -1, fechaIngreso: -1 },
-            limit = 50,
-            skip = 0,
-            populate = [{ path: 'predio', select: 'PREDIO ICA GGN SISPAP' }, { path: 'tipoFruta' }]
-        } = options;
-        try {
-            let lotesQuery = { ...query };
-
-            if (ids.length > 0) {
-                lotesQuery._id = { $in: ids };
-            }
-
-            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
-
-
-            const lotes = await db.Lotes.find(lotesQuery)
-                .select(select)
-                .sort(sort)
-                .limit(limitToUse)
-                .skip(skip)
-                .populate(populate)
-                .session(session)
-                .exec();
-
-            return lotes
-
-        } catch (err) {
-            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
-        }
-    }
-    static async get_Lotes_strict(options = {}) {
-        const {
-            ids = [],
-            query = {},
-            select = {},
-            sort = { fecha_creacion: -1, fechaIngreso: -1 },
-            limit = 50,
-            skip = 0,
-            populate = { path: 'predio', select: 'PREDIO ICA GGN SISPAP' }
-        } = options;
-        try {
-            let lotesQuery = { ...query };
-
-            if (ids.length > 0) {
-                lotesQuery._id = { $in: ids };
-            }
-
-            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
-
-            const lotes = await db.Lotes.find(lotesQuery)
-                .select(select)
-                .sort(sort)
-                .limit(limitToUse)
-                .skip(skip)
-                .populate(populate)
-                .lean()
-                .exec();
-
-
-            return lotes
-
-        } catch (err) {
-            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
-        }
-    }
-    static async modificar_lote(id, update, options = {}, session = null) {
-        try {
-            const finalOptions = {
-                new: true,
-                ...options,
-                ...(session && { session })
-            };
-
-            const lote = await db.Lotes.findOneAndUpdate({ _id: id }, update, finalOptions);
-            const lote_obj = new Object(lote.toObject());
-
-            let record = new db.recordLotes({ operacionRealizada: options.action, user: options.user, documento: { ...update, _id: id } })
-            await record.save({ session });
-            return lote_obj;
-        } catch (err) {
-            throw new PutError(523, `Error ${err.name} -- ${id} - ${update}`);
-        }
-    }
-    static async modificar_lote_proceso(id, query, action, user, session = null) {
-        try {
-            const lote = await db.Lotes.findOneAndUpdate({ _id: id, }, query, { new: true, session });
-
-            const lote_obj = new Object(lote.toObject());
-            let record = new db.recordLotes({ operacionRealizada: action, user: user, documento: { ...query, _id: id } })
-            await record.save({ session });
-            return lote_obj;
-        } catch (err) {
-            throw new PutError(523, `Error  ${err.name}`);
-        }
-    }
-    static async obtener_imagen_lote_calidad(url) {
-        try {
-            const data = fs.readFileSync(url)
-            const base64Image = data.toString('base64');
-            return base64Image
-        } catch (err) {
-            throw new ProcessError(525, `Error obteniendo la imagen ${err.message}`);
-        }
-    }
-    static async eliminar_lote(id, user, action) {
-        try {
-            const lote = await db.Lotes.deleteOne({ id: id })
-            let record = new db.recordLotes({
-                operacionRealizada: action,
-                user: user,
-                documento: lote
-            })
-            await record.save();
-        } catch (err) {
-            throw new ProcessError(416, `Error eliminando lote ${err.message}`);
-
-        }
-    }
-    static async get_numero_lotes(filtro = {}) {
-        try {
-            const count = await db.Lotes.countDocuments(filtro);
-            return count;
-        } catch (err) {
-            throw new ConnectionDBError(524, `Error obteniendo cantidad lotes ${filtro} --- ${err.message}`);
-        }
-    }
-    static async bulkWrite(operations) {
-        try {
-            const result = await db.Lotes.bulkWrite(operations)
-            return result;
-        } catch (error) {
-            throw new ConnectionDBError(523, `Error performing bulkWrite ${error.message} `);
-        }
-    }
-    static descarteTotal(descarte) {
-        /**
-         * Funcion que suma los descartes 
-         * 
-         * @param {descarteObject} descarte - objeto de los descartes, ya sead escarte lavado o descarte encerado
-         * @return {numeric} - el total del tipo de descarte
-         */
-        try {
-            const sum = Object.values(descarte).reduce((acu, descarte) => acu += descarte, 0);
-            return sum;
-        } catch (err) {
-            throw new ProcessError(416, `Error sumando los descartes ${err.message}`);
-        }
-    }
-
-
-    static async getLotes2(options = {}, { session = null } = {}) {
-        const {
-            ids = [],
-            query = {},
-            select = {},
-            sort = { fecha_creacion: -1, fechaIngreso: -1 },
-            limit = 50,
+            limit = 0,
             skip = 0,
             populate = [
                 { path: 'predio', select: 'PREDIO ICA GGN SISPAP' },
@@ -209,20 +39,38 @@ export class LotesRepository {
                 lotesQuery._id = { $in: ids };
             }
 
-            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
-
             const lotes = await db.Lotes.find(lotesQuery)
                 .select(select)
                 .sort(sort)
-                .limit(limitToUse)
+                .limit(limit)
                 .skip(skip)
                 .populate(populate)
                 .lean()
                 .session(session)
                 .exec();
+
             return lotes
+
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
+        }
+    }
+    static async obtener_imagen_lote_calidad(url) {
+        try {
+            // eslint-disable-next-line security/detect-non-literal-fs-filename
+            const data = fs.readFileSync(url)
+            const base64Image = data.toString('base64');
+            return base64Image
+        } catch (err) {
+            throw new ProcessError(525, `Error obteniendo la imagen ${err.message}`);
+        }
+    }
+    static async get_numero_lotes(filtro = {}) {
+        try {
+            const count = await db.Lotes.countDocuments(filtro);
+            return count;
+        } catch (err) {
+            throw new ConnectionDBError(524, `Error obteniendo cantidad lotes ${filtro} --- ${err.message}`);
         }
     }
     static async actualizar_lote(filter, update, options = {}) {
@@ -263,7 +111,7 @@ export class LotesRepository {
 
             if (calculateFields) {
                 // 2. Calcula los campos mágicos
-                const get = (campo) => documento[campo] ?? 0;
+                const get = (campo) => Reflect.get(documento, campo) ?? 0;
 
                 const kilosProcesados = get('kilosProcesados');
                 const kilos = get('kilos');
@@ -305,23 +153,6 @@ export class LotesRepository {
 
         } catch (err) {
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
-        }
-    }
-    static async sumar_elemento(filter, elements) {
-        try {
-
-            const addArray = elements.map(c => ({ $ifNull: [`$${c}`, 0] }));
-
-            const result = await db.Lotes.aggregate([
-                { $match: filter },
-                { $project: { sumaElementos: { $add: addArray } } },
-                { $group: { _id: null, totalKilos: { $sum: '$sumaElementos' } } }
-            ])
-
-            return result[0]?.totalKilos || 0;
-
-        } catch (err) {
-            throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
         }
     }
 
@@ -413,7 +244,7 @@ export class LotesRepository {
 
             if (calculateFields) {
                 // 2. Calcula los campos mágicos
-                const get = (campo) => documento[campo] ?? 0;
+                const get = (campo) => Reflect.get(documento, campo) ?? 0;
 
                 const kilosProcesados = get('kilosProcesados');
                 const kilos = get('kilos');

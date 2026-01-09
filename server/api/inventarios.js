@@ -542,9 +542,13 @@ export class InventariosRepository {
 
 
 
-                if (!loteAnterior === "No vaceo") {
+                if (loteAnterior !== "No vaceo") {
                     if (loteAnterior.enf.startsWith("EF1-")) {
-                        await LotesRepository.modificar_lote(loteAnterior._id, { finalizado: true }, { user: user, action: "finalizado", session });
+                        await LotesRepository.actualizar_lote(
+                            { _id: loteAnterior._id },
+                            { finalizado: true },
+                            { user: user, action: "finalizado", session }
+                        );
                     } else {
                         await LotesRepository.actualizar_lote_Maquila(
                             { _id: loteAnterior._id },
@@ -1457,9 +1461,9 @@ export class InventariosRepository {
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, tipoFecha)
 
-            const lotes = await LotesRepository.getLotes2({
+            const lotes = await LotesRepository.getLotes({
                 query: query,
-                limit: all ? 0 : 50,
+                ...(all ? {} : { limit: 50 }),
                 sort: sort,
                 populate: [
                     { path: 'predio', select: 'PREDIO ICA GGN SISPAP' },
@@ -1470,7 +1474,7 @@ export class InventariosRepository {
             });
             const lotesMaquila = await LotesRepository.getLotesMaquila({
                 query: query,
-                limit: all ? 0 : 50,
+                ...(all ? {} : { limit: 50 }),
                 sort: sort,
                 populate: [
                     { path: 'predio', select: 'PREDIO ICA GGN SISPAP' },

@@ -80,7 +80,7 @@ export class dataRepository {
             }
 
             const requestProv = data.map(prov => prov._id);
-            const lotes = await LotesRepository.get_Lotes_strict({
+            const lotes = await LotesRepository.getLotes({
                 query: {
                     predio: {
                         $in: requestProv
@@ -90,8 +90,7 @@ export class dataRepository {
                     calidad1: 1, calidad2: 1, calidad15: 1, kilos: 1,
                     contenedores: 1, descarteLavado: 1, descarteEncerado: 1,
                     deshidratacion: 1, fecha_creacion: 1, tipoFruta: 1, predio: 1
-                },
-                limit: "all"
+                }
             })
 
             return {

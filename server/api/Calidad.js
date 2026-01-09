@@ -142,7 +142,7 @@ export class CalidadRepository {
             const query = {
                 enf: { $regex: '^E', $options: 'i' }
             }
-            const lotes = await LotesRepository.getLotes2({
+            const lotes = await LotesRepository.getLotes({
                 query: query,
                 skip: (page - 1) * resultsPerPage,
                 select: {
@@ -179,7 +179,7 @@ export class CalidadRepository {
         try {
             const { _id } = req.data
 
-            const lote = await LotesRepository.getLotes2({
+            const lote = await LotesRepository.getLotes({
                 ids: [_id],
                 populate: [
                     { path: 'predio', select: 'PREDIO GGN ICA' },
@@ -263,14 +263,14 @@ export class CalidadRepository {
                 aprobacionProduccion: true,
                 fecha_finalizado_proceso: new Date()
             }
-            const lote = await LotesRepository.getLotes2({ ids: [_id] })
+            const lote = await LotesRepository.getLotes({ ids: [_id] })
             if (lote[0].salidaExportacion && lote[0].salidaExportacion.totalKilos > 0) {
 
                 const itemPallets = await ContenedoresRepository.getItemsPallets({
                     query: { contenedor: { $in: lote[0].salidaExportacion.contenedores } }
                 })
 
-                await registrarPasoLog(logData.logId, "getLotes2 AND get_Contenedores_sin_lotes", "Completado");
+                await registrarPasoLog(logData.logId, "getLotes AND get_Contenedores_sin_lotes", "Completado");
                 const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id, logData);
                 if (lote[0].salidaExportacion.totalKilos !== exportacion) {
                     throw new CalidadLogicError(400, `La suma de kilos en los contenedores (${exportacion} kg) no coincide con los kilos del lote (${lote[0].salidaExportacion.totalKilos} kg). Verifique por favor.`);
@@ -309,10 +309,6 @@ export class CalidadRepository {
                 throw new CalidadLogicError(404, "Lote no encontrado.");
             }
 
-            const newLote = lote[0].toObject();
-            newLote.aprobacionComercial = true
-            newLote.fecha_aprobacion_comercial = new Date()
-            // Actualizar contenedor con pallets modificados
             await LotesRepository.actualizar_lote(
                 { _id },
                 {
@@ -501,7 +497,7 @@ export class CalidadRepository {
                 const itemPallets = await ContenedoresRepository.getItemsPallets({
                     query: { contenedor: { $in: lote[0].salidaExportacion.contenedores } }
                 })
-                await registrarPasoLog(logData.logId, "getLotes2 AND get_Contenedores_sin_lotes", "Completado");
+                await registrarPasoLog(logData.logId, "getLotes AND get_Contenedores_sin_lotes", "Completado");
 
                 const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id);
                 await registrarPasoLog(logData.logId, "CalidadService.obtenerExportacionContenedores", "Completado");
@@ -633,7 +629,7 @@ export class CalidadRepository {
                 ]
             }
             const select = { enf: 1, calidad: 1, tipoFruta: 1, fecha_creacion: 1, __v: 1 }
-            const lotes = await LotesRepository.getLotes2({ query: query, select: select })
+            const lotes = await LotesRepository.getLotes({ query: query, select: select })
             const lotesMaquila = await LotesRepository.getLotesMaquila({ query: query, select: select })
             const result = [...lotes, ...lotesMaquila].sort(
                 (a, b) =>

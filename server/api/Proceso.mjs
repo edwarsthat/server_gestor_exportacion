@@ -951,7 +951,7 @@ export class ProcesoRepository {
 
             if (lote) {
                 return {
-                    ...lote.toObject(),
+                    ...lote,
                     inventario: Reflect.get(inventario, id)
                 }
             }
@@ -1295,53 +1295,6 @@ export class ProcesoRepository {
     // #endregion
 
     // #region PUT
-    static async lote_recepcion_pendiente(req) {
-        const { user, data } = req
-
-        const { _id } = data
-        const query = {
-            fecha_ingreso_patio: new Date(),
-        }
-        await LotesRepository.modificar_lote_proceso(_id, query, 'lote_recepcion_pendiente', user)
-        procesoEventEmitter.emit("inventario_fruta_sin_procesar", {});
-    }
-    static async send_lote_to_inventario(req) {
-        const { user, data } = req
-
-        const { _id, data: datos } = data
-        const enf = await this.get_ef1()
-
-        const query = {
-            ...datos,
-            enf: enf,
-            fecha_salida_patio: new Date(),
-            fecha_ingreso_inventario: new Date(),
-        }
-        const lote = await LotesRepository.modificar_lote_proceso(_id, query, 'send_lote_to_inventario', user.user)
-
-        await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(datos.canastillas));
-        await VariablesDelSistema.incrementarEF1();
-
-        procesoEventEmitter.emit("inventario_fruta_sin_procesar", {});
-    }
-    static async modificar_historial_fechas_en_patio(data, user) {
-        try {
-            const { fecha_ingreso_patio, _id, __v, lote, action } = data
-            let query = {
-                "documento.fecha_ingreso_patio": new Date(fecha_ingreso_patio)
-            }
-
-            await RecordLotesRepository.modificarRecord(_id, query, __v)
-
-            query = {
-                fecha_ingreso_patio: new Date(fecha_ingreso_patio)
-            }
-            await LotesRepository.modificar_lote_proceso(lote, query, action, user.user)
-        } catch (err) {
-            throw new Error(`Error en modificar_historial_fechas_en_patio: ${err.message}`)
-        }
-
-    }
     static async modificar_historial_lote_ingreso_inventario(data, user) {
         try {
             const { query, lote, action } = data
