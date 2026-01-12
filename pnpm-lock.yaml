@@ -27,8 +27,8 @@ importers:
         specifier: 3.2.0
         version: 3.2.0(date-fns@4.1.0)
       docxtemplater:
-        specifier: 3.66.6
-        version: 3.66.6
+        specifier: 3.67.6
+        version: 3.67.6
       dotenv:
         specifier: 16.5.0
         version: 16.5.0
@@ -1228,8 +1228,8 @@ packages:
   dezalgo@1.0.4:
     resolution: {integrity: sha512-rXSP0bf+5n0Qonsb+SVVfNfIsimO4HEtmnIpPHY8Q1UCzKlQrDMfdobr8nJOOsRgWCyMRqeSBQzmWUMq7zvVig==}
 
-  docxtemplater@3.66.6:
-    resolution: {integrity: sha512-D82tInDEMGf6McKyNTPlMAy+bC5Gd4MymPGAvfQANq+2+BU60Xbg83jQXHyBgN+zKQHsrPzl4GmHyAYK1yOTtQ==}
+  docxtemplater@3.67.6:
+    resolution: {integrity: sha512-IvdTz9druTlQrsB0zlqvAqrImEydFgtvHp0uUnx+hQ9W4hmBsorrJIBJKCfkhK6QRz/jpJnA6BaTd6rEK6/Usw==}
     engines: {node: '>=0.10'}
 
   dotenv@16.5.0:
@@ -4084,7 +4084,7 @@ snapshots:
       asap: 2.0.6
       wrappy: 1.0.2
 
-  docxtemplater@3.66.6:
+  docxtemplater@3.67.6:
     dependencies:
       '@xmldom/xmldom': 0.9.8
 
