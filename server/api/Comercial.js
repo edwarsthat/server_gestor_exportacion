@@ -92,7 +92,7 @@ export class ComercialRepository {
                 }
             } else {
                 query = {
-                    limit: 'all'
+                    limit: 0
                 }
             }
 

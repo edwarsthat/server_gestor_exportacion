@@ -160,8 +160,18 @@ export class DotacionCarnetsControllerRepository {
             //Cargar el template HTML
             let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnet.html');
             await registrarPasoLog(log._id, "Éxito", "Completado", "Template HTML cargado exitosamente");
-            const qrDataEncoded = encodeURIComponent(urlSegura);
+            //Cargar la iamgen de fondo
+            const imgaBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/CREDENCIAL TEMPORAL.png');
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo cargada exitosamente");
 
+            //se reemplaza la imagen por la de base64 
+            htmlTemplate = htmlTemplate.replace(
+                "url('CREDENCIAL TEMPORAL.png')",
+                `url('${imgaBase64}')`
+            );
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo reemplazada exitosamente");
+
+            const qrDataEncoded = encodeURIComponent(urlSegura);
             htmlTemplate = htmlTemplate.replace('PLACEHOLDER', qrDataEncoded);
             await registrarPasoLog(log._id, "Éxito", "Completado", "QR Data codificado exitosamente");
 
