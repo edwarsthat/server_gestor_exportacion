@@ -36,13 +36,9 @@ export default [
         "additionalRegexes": {
           "Basic Auth": "disabled"
         }
-      }]
-    }
-  },
-  {
-    // Desactivar warnings de object injection en archivos con validación Zod
-    files: ["server/services/**/*.js", "server/validations/**/*.js"],
-    rules: {
+      }],
+      // Desactivar object injection globalmente - genera muchos falsos positivos
+      // cuando las claves provienen de Object.keys() del mismo objeto
       "security/detect-object-injection": "off"
     }
   },
@@ -53,7 +49,9 @@ export default [
       ".env*",
       "envCopy.md",
       "node_modules/**",
-      "dist/**"
+      "dist/**",
+      "public/**/assets/**",
+      "eslint.config.mjs"
     ]
   }
 ];

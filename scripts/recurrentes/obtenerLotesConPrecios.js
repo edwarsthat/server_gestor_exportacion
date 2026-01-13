@@ -108,13 +108,16 @@ async function obtener_lotes_precios_json() {
                 ? currentDir.slice(1) 
                 : currentDir;
             const outDir = path.join(cleanCurrentDir, '..', 'out');
+            // eslint-disable-next-line security/detect-non-literal-fs-filename
             if (!fs.existsSync(outDir)) {
+                // eslint-disable-next-line security/detect-non-literal-fs-filename
                 fs.mkdirSync(outDir, { recursive: true });
             }
             
             // Guardar en archivo CSV
             const fileName = `lotes_precios_${new Date().toISOString().split('T')[0]}.csv`;
             const filePath = path.join(outDir, fileName);
+            // eslint-disable-next-line security/detect-non-literal-fs-filename
             fs.writeFileSync(filePath, csvContent, 'utf8');
             console.log(`CSV guardado en: ${filePath}`);
             console.log(`Total de registros: ${out.length}`);

@@ -29,25 +29,25 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
             const session = q?.session || ctx.$locals?.session || null;
             return { ...auditData, session };
         };
-        function setByPath(obj, path, value) {
-            const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.');
-            let cur = obj;
-            for (let i = 0; i < parts.length - 1; i++) {
-                const p = parts[i];
-                if (!(p in cur) || typeof cur[p] !== 'object' || cur[p] === null) cur[p] = {};
-                cur = cur[p];
-            }
-            cur[parts[parts.length - 1]] = value;
-        }
-        function pickChanged(before, after, changes) {
-            const oldChanged = {};
-            const newChanged = {};
-            for (const c of changes) {
-                setByPath(oldChanged, c.field, c.before);
-                setByPath(newChanged, c.field, c.after);
-            }
-            return { oldChanged, newChanged };
-        }
+        // function setByPath(obj, path, value) {
+        //     const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.');
+        //     let cur = obj;
+        //     for (let i = 0; i < parts.length - 1; i++) {
+        //         const p = parts[i];
+        //         if (!(p in cur) || typeof cur[p] !== 'object' || cur[p] === null) cur[p] = {};
+        //         cur = cur[p];
+        //     }
+        //     cur[parts[parts.length - 1]] = value;
+        // }
+        // function pickChanged(before, after, changes) {
+        //     const oldChanged = {};
+        //     const newChanged = {};
+        //     for (const c of changes) {
+        //         setByPath(oldChanged, c.field, c.before);
+        //         setByPath(newChanged, c.field, c.after);
+        //     }
+        //     return { oldChanged, newChanged };
+        // }
 
         // ---------- SAVE (create/update con doc.save) ----------
         schema.pre("save", async function (next) {

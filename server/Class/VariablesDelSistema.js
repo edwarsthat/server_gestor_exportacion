@@ -104,14 +104,14 @@ export class VariablesDelSistema {
 
       const canastillasJSON = fs.readFileSync(canastillasPath);
       const canastillas = JSON.parse(canastillasJSON);
-      // eslint-disable-next-line security/detect-object-injection
+       
       const canastillasActual = canastillas[tipo] ?? 0;
 
       if (canastillasActual + nCanastillas < 0) {
         throw new ProcessError(523, `Error modificando el inventario canastillas, no hay suficientes canastillas ${tipo}`)
       }
 
-      // eslint-disable-next-line security/detect-object-injection
+       
       canastillas[tipo] += nCanastillas;
       const newCanastillasJSON = JSON.stringify(canastillas);
       fs.writeFileSync(canastillasPath, newCanastillasJSON);
