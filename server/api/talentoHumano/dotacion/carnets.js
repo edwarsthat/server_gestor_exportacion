@@ -58,7 +58,7 @@ export class DotacionCarnetsControllerRepository {
         const { page, filtro } = req.data
         const resultsPerPage = 25;
 
-        if (!filtro.tokenHash) {
+        if (filtro.tokenHash) {
             filtro.tokenHash = null
         } else {
             delete filtro.tokenHash

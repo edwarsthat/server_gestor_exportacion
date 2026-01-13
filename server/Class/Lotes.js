@@ -179,7 +179,7 @@ export class LotesRepository {
             limit = 0,
             skip = 0,
             populate = [
-                { path: 'predio', select: 'PREDIO' },
+                { path: 'predio', select: 'PREDIO ICA GGN SISPAP' },
                 { path: 'tipoFruta', select: 'tipoFruta' },
                 { path: 'cliente', select: 'CLIENTE' },
                 { path: "user", select: "usuario nombre apellido" }
