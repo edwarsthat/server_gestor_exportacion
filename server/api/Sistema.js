@@ -403,37 +403,6 @@ export class SistemaRepository {
         const latest = yaml.load(fileContents);
         return latest;
     }
-    static async download_mobilApp(data) {
-        // Validar que el nombre sea seguro (solo nombre de archivo, sin paths)
-        if (!data || typeof data !== 'string') {
-            throw { status: 400, message: 'Invalid filename' };
-        }
-
-        // Rechazar path traversal y caracteres peligrosos
-        if (data.includes('..') || data.includes('/') || data.includes('\\')) {
-            throw { status: 400, message: 'Invalid filename' };
-        }
-
-        // Solo permitir archivos .apk
-        if (!data.endsWith('.apk')) {
-            throw { status: 400, message: 'Only APK files are allowed' };
-        }
-
-        const apkPath = path.join(__dirname, '..', '..', 'public', 'updates', 'mobile', data);
-
-        // Validación adicional: verificar que esté en el directorio correcto
-        const resolvedPath = path.resolve(apkPath);
-        const resolvedBase = path.resolve(__dirname, '..', '..', 'public', 'updates', 'mobile');
-        if (!resolvedPath.startsWith(resolvedBase)) {
-            throw { status: 400, message: 'Invalid path' };
-        }
-
-        // eslint-disable-next-line security/detect-non-literal-fs-filename
-        if (!fs.existsSync(apkPath)) {
-            throw { status: 404, message: 'File not found' };
-        }
-        return apkPath;
-    }
     static async login2(data) {
         await UserRepository.validate_userName(data);
         await UserRepository.validate_password(data);

@@ -35,7 +35,7 @@ export class FrutaProcesada {
             populate = [
                 { path: 'loteId', select: 'enf GGN' },
                 { path: 'tipoFruta', select: "tipoFruta" },
-                { path: 'predio', select: 'PREDIO' },
+                { path: 'predio', select: 'PREDIO GGN' },
                 { path: "user", select: "usuario nombre apellido" }
             ]
         } = options;

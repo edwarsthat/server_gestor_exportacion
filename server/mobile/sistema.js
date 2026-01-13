@@ -21,25 +21,6 @@ routerSistema.get("/check_mobile_version", async (req, res) => {
         res.json({ status: err.status, message: err.message })
     }
 })
-routerSistema.get("/download_mobilApp/:name", async (req, res) => {
-    try {
-        const apk = await SistemaRepository.download_mobilApp(req.params.name);
-        res.sendFile(apk, (err) => {
-            if (err) {
-                if (!res.headersSent) {
-                    res.status(500).json({ status: 500, message: 'Error sending file' });
-                }
-            }
-        });
-    }
-    catch (err) {
-        console.log(`Code ${err.status}: ${err.message}`)
-        if (!res.headersSent) {
-            res.status(err.status || 500).json({ status: err.status || 500, message: err.message });
-        }
-    }
-})
-
 routerSistema.get("/check_desktopApp/:name", async (req, res) => {
     try {
         let out;
