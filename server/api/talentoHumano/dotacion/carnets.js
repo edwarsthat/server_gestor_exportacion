@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import { TalentoHumanoDotacionCarnetsRepository } from "../../../Class/talentoHumano/dotacion/Carnets.js";
 import { LogsRepository } from "../../../Class/LogsSistema.js";
 import { registrarPasoLog } from "../../helper/logs.js";
@@ -14,7 +15,7 @@ import { TalentoHumanoValidations } from '../../../validations/talentoHumano.js'
 export class DotacionCarnetsControllerRepository {
     static async post_talentoHumano_dotacion_carnets(req) {
         const { user } = req
-        const { action, tipo } = req.data
+        const { action, tipo, empleado } = req.data
         let log
 
         log = await LogsRepository.create({
@@ -37,7 +38,17 @@ export class DotacionCarnetsControllerRepository {
                 const carnet = serial[0]
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Serial encontrado");
 
-                await TalentoHumanoDotacionCarnetsRepository.post_data({ type: tipo, serialNumber: carnet.serial }, { user })
+                if (tipo === "temp") {
+                    await TalentoHumanoDotacionCarnetsRepository.post_data({ type: tipo, serialNumber: carnet.serial }, { user, session })
+                } else {
+                    if (!mongoose.Types.ObjectId.isValid(empleado)) {
+                        throw new Error("El ID del empleado no es un ObjectId válido")
+                    }
+                    const carnetIngresado = await TalentoHumanoDotacionCarnetsRepository.post_data({ type: tipo, serialNumber: carnet.serial, employeeId: empleado }, { user, session })
+                    await PersonalRepository.actualizar_personal({ _id: empleado }, { carnet: carnetIngresado._id }, { session })
+                    await registrarPasoLog(log._id, "Éxito", "Completado", "Empleado vinculado al carnet exitosamente");
+                }
+
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Dotación ingresar carnet completada exitosamente");
 
                 await Seriales.modificar_seriales({ _id: carnet._id }, { serial: carnet.serial + 1 }, { session })

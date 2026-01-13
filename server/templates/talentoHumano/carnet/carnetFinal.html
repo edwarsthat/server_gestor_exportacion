@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarjeta de Identificación</title>
+    <style>
+        /* 
+        ========================================
+        PERSONALIZACIÓN DE COLORES
+        ========================================
+        Para cambiar los colores de la tarjeta, modifica estos valores:
+        
+        --color-principal: Color naranja/amarillo (fondo superior y borde de foto)
+        --color-secundario: Color de fondo diagonal (generalmente gris claro o blanco)
+        
+        Ejemplos de colores:
+        - Naranja: #FFC107
+        - Azul: #2196F3
+        - Verde: #4CAF50
+        - Rojo: #F44336
+        ========================================
+        */
+
+        :root {
+            /* COLORES PRINCIPALES - Cambia estos valores para personalizar */
+            --color-principal: #FFC107;
+            --color-secundario: #F5F5F5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+
+        .card {
+            width: 450px;
+            height: 750px;
+            background: white;
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header {
+            background: var(--color-principal);
+            height: 370px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            padding-top: 40px;
+            border: none;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70%;
+            background: white;
+            clip-path: polygon(0 100%, 100% 15%, 100% 100%, 0 100%);
+            z-index: 0;
+            border: none;
+        }
+
+        .company-logo {
+            width: 250px;
+            height: auto;
+            position: relative;
+            z-index: 1;
+            margin: 0 auto;
+        }
+
+        .company-logo img {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.1));
+            mix-blend-mode: multiply;
+        }
+
+        .logo-placeholder {
+            width: 100%;
+            padding: 20px;
+            color: white;
+            font-size: 48px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .photo-container {
+            width: 250px;
+            height: 250px;
+            margin: -240px auto 30px;
+            border-radius: 50%;
+            border: 6px solid var(--color-principal);
+            /* Quitamos overflow hidden para permitir que el ::before sobresalga */
+            background: white;
+            position: relative;
+            z-index: 2;
+            padding: 4px;
+        }
+
+        .photo-container::before {
+            content: '';
+            position: absolute;
+            /* Estos valores negativos hacen que "sobresalga" */
+            top: -12px;
+            left: -12px;
+            right: -12px;
+            bottom: -12px;
+            border: 6px solid white;
+            border-radius: 50%;
+            z-index: -1;
+            /* Lo ponemos detrás del borde naranja */
+            pointer-events: none;
+        }
+
+        .photo-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #e0e0e0;
+        }
+
+        .photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .content {
+            padding: 0 40px 40px;
+            text-align: center;
+        }
+
+        .name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .position {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .info {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .info-label {
+            font-weight: bold;
+        }
+
+        .qr-container {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+            border: 3px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .qr-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .qr-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+            text-align: center;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="header">
+            <div class="company-logo">
+                <img id="logoImg" src="Captura_desde_2026-01-13_16-04-29-removebg-preview.png" alt="Logo">
+            </div>
+        </div>
+
+        <div class="photo-container">
+            <div class="photo-inner">
+                <img id="photoImg" src="" alt="Foto" style="display: none;">
+                <div class="photo-placeholder" id="photoPlaceholder">Foto del empleado</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="name" id="employeeName">Nombre Completo</div>
+            <div class="position" id="employeePosition">Cargo</div>
+            <div class="info">
+                <span class="info-label">CC</span> <span id="employeeCC">00.000.000</span> -
+                <span class="info-label">RH</span> <span id="employeeRH">O+</span>
+            </div>
+
+            <div class="qr-container">
+                <img id="qrImg" src="" alt="Código QR" style="display: none;">
+                <div class="qr-placeholder" id="qrPlaceholder">Código QR</div>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+
+</html>
