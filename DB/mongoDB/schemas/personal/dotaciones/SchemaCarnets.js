@@ -30,6 +30,11 @@ export const defineSchemaCarnets = async (conn) => {
             select: false,
             default: null,
         },
+        isGenerated: {
+            type: Boolean,
+            required: true,
+            default: false,
+        },
         serialNumber: {
             type: Number,
             required: true,

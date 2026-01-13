@@ -59,10 +59,9 @@ export class DotacionCarnetsControllerRepository {
         const resultsPerPage = 25;
 
         if (filtro.tokenHash) {
-            filtro.tokenHash = null
-        } else {
-            delete filtro.tokenHash
+            filtro.isGenerated = false
         }
+        delete filtro.tokenHash
 
         const query = { ...filtro }
         if (query.type === "TODOS") {
@@ -151,7 +150,11 @@ export class DotacionCarnetsControllerRepository {
                 .digest('hex');
             await registrarPasoLog(log._id, "Éxito", "Completado", "Token hash generado exitosamente");
             // Actualizar el carnet con el tokenHash
-            const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_carnet({ _id: data }, { tokenHash }, { user })
+            const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_carnet(
+                { _id: data },
+                { tokenHash, isGenerated: true },
+                { user }
+            )
             if (!carnetActualizado) {
                 throw new Error("No se encontró el carnet para actualizar");
             }

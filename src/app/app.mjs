@@ -32,6 +32,53 @@ const __dirname = dirname(__filename);
 
 const app = express();
 
+// Middleware para bloquear extensiones sospechosas (escaneos automatizados)
+const blockSuspiciousExtensions = (req, res, next) => {
+    const suspiciousPatterns = [
+        /\.php$/i,
+        /\.asp$/i,
+        /\.aspx$/i,
+        /\.jsp$/i,
+        /\.env$/i,
+        /\.git/i,
+        /\.htaccess$/i,
+        /\.htpasswd$/i,
+        /\.bak$/i,
+        /\.sql$/i,
+        /\.config$/i,
+        /wp-admin/i,
+        /wp-content/i,
+        /wp-includes/i,
+        /phpinfo/i,
+        /phpmyadmin/i,
+        /admin\.php/i,
+        /shell/i,
+        /eval-stdin/i
+    ];
+
+    if (suspiciousPatterns.some(pattern => pattern.test(req.url))) {
+        console.log(`[BLOQUEADO] Petición sospechosa: ${req.url} - IP: ${req.ip}`);
+        return res.status(404).send('Not Found');
+    }
+    next();
+};
+
+// Rate limit para archivos estáticos
+const staticLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minuto
+    max: 50, // 50 peticiones por minuto por IP
+    message: 'Demasiadas peticiones. Intenta más tarde.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+        const isStatic = /\.(html|css|js|png|jpg|jpeg|gif|ico|svg|woff2?|ttf|otf)$/i.test(req.url);
+        return !isStatic;
+    }
+});
+
+// Bloquear peticiones sospechosas primero
+app.use(blockSuspiciousExtensions);
+
 app.use((req, res, next) => {
     const isPublic = req.url.startsWith('/public') || /\.(html|css|js|png|jpg|jpeg|gif|ico|svg|json|yml|yaml|woff2?|ttf|otf)$/i.test(req.url);
     if (isPublic) {
@@ -51,6 +98,8 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.text());
 
+// Rate limit para archivos estáticos
+app.use(staticLimiter);
 
 app.use(express.static(path.join(__dirname, '..', '..', 'public')));
 
