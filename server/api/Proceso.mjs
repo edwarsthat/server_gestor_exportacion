@@ -228,8 +228,6 @@ export class ProcesoRepository {
                 await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, user._id, session);
                 if (lote.enf.startsWith("EF1-")) {
 
-
-
                     await InventariosHistorialRepository.put_cardex_invetariosdescartes(
                         {},
                         {

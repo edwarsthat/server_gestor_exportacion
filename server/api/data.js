@@ -295,15 +295,16 @@ export class dataRepository {
     }
     static async get_data_bootstrap() {
         try {
-            const [tipoFrutas, calidadesExport, descartes, carnet, areasSeleccion] = await Promise.all([
+            const [tipoFrutas, calidadesExport, descartes, carnet, areasSeleccion, paisesExpGGN] = await Promise.all([
                 ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(),
                 ConstantesDelSistema.get_constantes_sistema_calidades(),
                 ConstantesDelSistema.get_constantes_sistema_descartes(),
                 ConstantesDelSistema.get_constantes_carnets(),
-                ConstantesDelSistema.get_constantes_sistema_areasSeleccion()
+                ConstantesDelSistema.get_constantes_sistema_areasSeleccion(),
+                ConstantesDelSistema.get_constantes_sistema_paises_GGN()
             ]);
 
-            return { tipoFrutas, calidadesExport, descartes, carnet, areasSeleccion }
+            return { tipoFrutas, calidadesExport, descartes, carnet, areasSeleccion, paisesExpGGN }
         } catch (err) {
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
             await ErrorDataLogicHandlers(err)

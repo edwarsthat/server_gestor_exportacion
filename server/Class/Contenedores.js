@@ -1,10 +1,9 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PutError } from "../../Error/ConnectionErrors.js";
 import { ProcessError } from "../../Error/ProcessError.js";
-import fs from 'fs';
 import path from 'path';
 import { registrarPasoLog } from "../api/helper/logs.js";
-
+import { FileService } from "../services/helpers/FileService.js";
 
 
 export class ContenedoresRepository {
@@ -389,7 +388,7 @@ export class ContenedoresRepository {
     static async obtener_archivos_contenedores(url) {
         try {
             // eslint-disable-next-line security/detect-non-literal-fs-filename
-            const data = fs.readFileSync(url)
+            const data = await FileService.readFile(url, 'UPLOADS');
             const extension = path.extname(url).toLowerCase();
 
             // 3. Según la extensión, decide el mimeType

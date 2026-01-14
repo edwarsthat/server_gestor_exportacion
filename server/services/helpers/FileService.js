@@ -10,6 +10,7 @@ const STORAGE_LOCATIONS = {
     TEMPLATES: path.resolve(__dirname, '..', '..', 'templates'),
     // Desde: server/services/helpers/ → public (raíz del proyecto)
     PUBLIC: path.resolve(__dirname, '..', '..', '..', 'public'),
+    UPLOADS: path.resolve(__dirname, '..', '..', '..', '..', 'uploads'),
 };
 
 export class FileService {
@@ -109,5 +110,15 @@ export class FileService {
         const ext = path.extname(validation.resolvedPath).toLowerCase();
         const mime = ext === '.png' ? 'image/png' : (ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'application/octet-stream');
         return `data:${mime};base64,${buffer.toString('base64')}`;
+    }
+    static async readFile(filePath, location = 'TEMPLATES') {
+        const validation = await this.validateFilePath(filePath, location);
+
+        if (!validation.isValid) {
+            throw new Error(`Archivo no encontrado o inválido: ${validation.error}`);
+        }
+
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        return await fs.readFile(validation.resolvedPath);
     }
 }
