@@ -1,6 +1,6 @@
-import fs from 'fs';
 import { fileTypeFromBuffer } from 'file-type'; // ✅ Así es como lo debes hacer
 import { CalidadServiceError } from '../../Error/ServiceError.js';
+import { FileService } from './helpers/FileService.js';
 
 
 const MAX_FILE_SIZE_MB = 10; // 10 megas
@@ -12,14 +12,12 @@ export class CalidadService {
             throw new Error('Ruta inválida');
         }
 
-        // eslint-disable-next-line security/detect-non-literal-fs-filename
-        const stats = fs.statSync(url);
+        const stats = await FileService.getFileStats(url, 'UPLOADS');
         if (stats.size > MAX_FILE_SIZE) {
             throw new Error(`Archivo demasiado grande (${(stats.size / 1024 / 1024).toFixed(2)} MB), máximo permitido: ${MAX_FILE_SIZE_MB} MB`);
         }
 
-        // eslint-disable-next-line security/detect-non-literal-fs-filename
-        const data = fs.readFileSync(url);
+        const data = await FileService.readFile(url, 'UPLOADS');
 
         // Detecta el tipo de archivo real, no solo la extensión
         const fileTypeResult = await fileTypeFromBuffer(data);

@@ -577,7 +577,6 @@ export class TransporteRepository {
     static async get_transporte_registros_entregaPrecintos_fotos(req) {
         try {
             const { data } = req.data;
-            transporteValidations.get_transporte_registros_entregaPrecintos_fotos().parse(data);
             const response = await TransporteService.obtenerFotosEntregaPrecintoContenedor(data);
             return response
         } catch (err) {

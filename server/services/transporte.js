@@ -1,32 +1,17 @@
 
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
 import path from 'path';
-import fs from 'fs/promises';
-import { fileTypeFromBuffer } from 'file-type';
-import { v4 as uuidv4 } from 'uuid';
 import { ContenedoresRepository } from '../Class/Contenedores.js';
 import { TransporteError } from '../../Error/TransporteErrors.js';
 import { RecordModificacionesRepository } from '../archive/ArchivoModificaciones.js';
-
-
-const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { FileService } from './helpers/FileService.js';
 
 export class TransporteService {
     static async guardarFotosEntregaPrecintoContenedor(fotos) {
 
         const urlPath = path.join(
-            __dirname,
-            "..",
-            "..",
-            "uploads",
             "fotos",
             "entrega_precinto_contenedor"
         );
-
-        await fs.mkdir(urlPath, { recursive: true });
 
         const savedPaths = [];
 
@@ -35,74 +20,27 @@ export class TransporteService {
         }
 
         for (let fotoBase64 of fotos) {
-            // Quita el prefijo base64 y convierte a Buffer
-            const matches = fotoBase64.match(/^data:(image\/\w+);base64,(.+)$/);
-            if (!matches) {
-                throw new Error('Formato de imagen inválido');
-            }
 
-            const buffer = Buffer.from(matches[2], 'base64');
-
-            if (buffer.length > MAX_SIZE) {
-                throw new Error('Cada foto debe pesar máximo 5 MB.');
-            }
-
-            // Usa FileType para verificar tipo de archivo real
-            const type = await fileTypeFromBuffer(buffer);
-            if (!type || !['image/jpeg', 'image/png', 'image/webp'].includes(type.mime)) {
-                throw new Error('Tipo de imagen no permitido');
-            }
-
-            // Nombre seguro y extensión correcta
-            const filename = `${uuidv4()}.${type.ext}`;
-            const filePath = path.join(urlPath, filename);
-
-            // Validación adicional: verifica que el archivo esté dentro del directorio permitido
-            const resolvedPath = path.resolve(filePath);
-            const resolvedBase = path.resolve(urlPath);
-            if (!resolvedPath.startsWith(resolvedBase)) {
-                throw new Error('Ruta de archivo no permitida');
-            }
-
-            // Guarda el archivo (ruta validada contra path traversal)
-            // eslint-disable-next-line security/detect-non-literal-fs-filename
-            await fs.writeFile(filePath, buffer);
-
-            // Puedes guardar la ruta relativa para devolver al frontend o para guardar en la base de datos:
-            const relativePath = path.join("uploads", "fotos", "entrega_precinto_contenedor", filename);
+            const relativePath = await FileService.saveBase64Image(
+                fotoBase64,
+                urlPath,
+                'UPLOADS'
+            );
             savedPaths.push(relativePath);
         }
 
         return savedPaths;
     }
     static async obtenerFotosEntregaPrecintoContenedor(urlArr) {
-        const baseDir = path.join(
-            __dirname,
-            "..",
-            "..",
-        );
 
         try {
             const readPromises = urlArr.map(async (relativeUrl) => {
-                // Evita path traversal
-                if (relativeUrl.includes("..")) {
-                    throw new Error("Ruta no permitida: " + relativeUrl);
+                let finalPath = relativeUrl;
+                if (finalPath.startsWith('uploads')) {
+                    finalPath = finalPath.replace(/^uploads[\\/]/, '');
                 }
-                const fullPath = path.join(baseDir, relativeUrl);
-
-                // Validación adicional: verifica que el archivo esté dentro del directorio base
-                const resolvedPath = path.resolve(fullPath);
-                const resolvedBase = path.resolve(baseDir);
-                if (!resolvedPath.startsWith(resolvedBase)) {
-                    throw new Error("Ruta no permitida: " + relativeUrl);
-                }
-
-                await fs.access(fullPath); // Verifica que exista
-                const ext = path.extname(fullPath).toLowerCase();
-                const mime = ext === ".png" ? "image/png" : "image/jpeg";
-                // eslint-disable-next-line security/detect-non-literal-fs-filename
-                const fileBuffer = await fs.readFile(fullPath);
-                return { img: `data:${mime};base64,${fileBuffer.toString("base64")}` };
+                const fileBuffer = await FileService.readFileAsBase64(finalPath, 'UPLOADS');
+                return { img: fileBuffer };
             })
 
             // Espera todas las lecturas en paralelo
