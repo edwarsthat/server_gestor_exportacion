@@ -651,7 +651,7 @@ export class ComercialRepository {
             await registrarPasoLog(log._id, "ComercialValidationsRepository.val_post_comercial_precios_add_precio", "Completado");
 
             await session.withTransaction(async () => {
-                const exportacion = Object.create(null);
+                const exportacion = {};
                 for (const key in data) {
                     if (key.startsWith("exportacion.")) {
                         const subKey = key.split(".")[1];
@@ -769,7 +769,7 @@ export class ComercialRepository {
 
                 ComercialValidationsRepository.val_post_comercial_precios_add_precio_lote(data);
 
-                const exportacion = Object.create(null);
+                const exportacion = {};
                 for (const key in data) {
                     if (key.startsWith("exportacion.")) {
                         const subKey = key.split(".")[1];
