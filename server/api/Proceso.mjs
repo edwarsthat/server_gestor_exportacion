@@ -225,7 +225,7 @@ export class ProcesoRepository {
                     kilos: kilosTotales,
                     loteType: registroProceso[0].loteType
                 }
-                await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, log._id, session);
+                await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, user._id, session);
                 if (lote.enf.startsWith("EF1-")) {
 
 
