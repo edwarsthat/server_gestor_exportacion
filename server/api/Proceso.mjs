@@ -662,9 +662,9 @@ export class ProcesoRepository {
 
                 const kilos = cajas * Number(oldItemPallet[0].tipoCaja.split("-")[1].replace(",", "."));
 
-                if (checkFinalizadoLote(oldItemPallet[0].lote)) {
-                    throw new ProcessError(400, `El lote ${oldItemPallet[0].lote.enf} ya se encuentra finalizado, no se puede modificar`);
-                }
+                // if (checkFinalizadoLote(oldItemPallet[0].lote)) {
+                //     throw new ProcessError(400, `El lote ${oldItemPallet[0].lote.enf} ya se encuentra finalizado, no se puede modificar`);
+                // }
                 const GGN = have_lote_GGN_export(oldItemPallet[0].lote, contenedores[0])
 
                 if (cajas === oldItemPallet[0].cajas) {
