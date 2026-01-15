@@ -59,7 +59,7 @@
             height: 370px;
             text-align: center;
             position: relative;
-            overflow: hidden;
+            overflow: visible;
             padding-top: 40px;
             border: none;
         }
@@ -81,7 +81,7 @@
             width: 250px;
             height: auto;
             position: relative;
-            z-index: 1;
+            z-index: 10;
             margin: 0 auto;
         }
 
@@ -89,7 +89,7 @@
             width: 100%;
             height: auto;
             filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.1));
-            mix-blend-mode: multiply;
+            /* mix-blend-mode: multiply; - comentado porque puede causar problemas con base64 en Puppeteer */
         }
 
         .logo-placeholder {
@@ -218,28 +218,26 @@
     <div class="card">
         <div class="header">
             <div class="company-logo">
-                <img id="logoImg" src="Captura_desde_2026-01-13_16-04-29-removebg-preview.png" alt="Logo">
+                <img id="logoImg" src="{{LOGO_BASE64}}" alt="Logo">
             </div>
         </div>
 
         <div class="photo-container">
             <div class="photo-inner">
-                <img id="photoImg" src="" alt="Foto" style="display: none;">
-                <div class="photo-placeholder" id="photoPlaceholder">Foto del empleado</div>
+                <img id="photoImg" src="{{FOTO_BASE64}}" alt="Foto">
             </div>
         </div>
 
         <div class="content">
-            <div class="name" id="employeeName">Nombre Completo</div>
-            <div class="position" id="employeePosition">Cargo</div>
+            <div class="name" id="employeeName">{{NOMBRE}}</div>
+            <div class="position" id="employeePosition">{{CARGO}}</div>
             <div class="info">
-                <span class="info-label">CC</span> <span id="employeeCC">00.000.000</span> -
-                <span class="info-label">RH</span> <span id="employeeRH">O+</span>
+                <span class="info-label">CC</span> <span id="employeeCC">{{CEDULA}}</span> -
+                <span class="info-label">RH</span> <span id="employeeRH">{{RH}}</span>
             </div>
 
             <div class="qr-container">
-                <img id="qrImg" src="" alt="Código QR" style="display: none;">
-                <div class="qr-placeholder" id="qrPlaceholder">Código QR</div>
+                <img id="qrImg" src="{{QR_URL}}" alt="Código QR">
             </div>
         </div>
     </div>

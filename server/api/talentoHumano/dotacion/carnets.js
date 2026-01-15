@@ -228,22 +228,7 @@ export class DotacionCarnetsControllerRepository {
         try {
             TalentoHumanoValidations.put_talentoHumano_dotacion_carnets_generar_temporal().parse(req.data)
 
-            await session.withTransaction(async () => {
-
-                //se obtiene el documento del carnet
-                const carnetDoc = await TalentoHumanoDotacionCarnetsRepository.get_data({ _id: data })
-                if (!carnetDoc) {
-                    throw new Error("No se encontró el carnet para generar");
-                }
-                //se obtiene la info del empleado vinculado al carnet
-                const personalDoc = await PersonalRepository.get_personal({ ids: [carnetDoc.employeeId] })
-                if (!personalDoc) {
-                    throw new Error("No se encontró el personal para generar");
-                }
-
-                //se obtiene la imagen del carnet
-
-
+            const result = await session.withTransaction(async () => {
 
                 // Generar el AccessToken único
                 const tokenGenerado = crypto.randomUUID();
@@ -262,32 +247,57 @@ export class DotacionCarnetsControllerRepository {
                     throw new Error("No se encontró el carnet para generar");
                 }
 
-                const empleado = await PersonalRepository.get_personal({ ids: [carnetActualizado.personalId] })
-                if (!empleado) {
+                const empleado = await PersonalRepository.get_personal({
+                    ids: [carnetActualizado.employeeId],
+                    populate: [{ path: 'cargo', select: 'nombre' }]
+                })
+                if (!empleado || empleado.length === 0) {
                     throw new Error("No se encontró el empleado para generar");
                 }
-
+                const empleadoData = empleado[0];
 
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Carnet actualizado exitosamente");
                 const urlSegura = `${config.URL_CELIFRUT}/verify#${tokenGenerado}`;
+
                 //Cargar el template HTML
                 let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnetFinal.html');
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Template HTML cargado exitosamente");
 
-                //Cargar la iamgen de la foto
-                const imgaBase64 = await FileService.readFileAsBase64(carnetActualizado);
-                await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo cargada exitosamente");
+                //Cargar el logo de la empresa
+                const logoBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/Captura_desde_2026-01-13_16-04-29-removebg-preview.png');
+                htmlTemplate = htmlTemplate.replace('{{LOGO_BASE64}}', logoBase64);
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Logo cargado exitosamente");
 
-                //se reemplaza la imagen por la de base64 
-                htmlTemplate = htmlTemplate.replace(
-                    "url('CREDENCIAL TEMPORAL.png')",
-                    `url('${imgaBase64}')`
+                //Cargar la foto del empleado
+                const fotoBase64 = await FileService.readFileAsBase64(
+                    empleadoData.urlFotoCarnet,
+                    'STORAGE',
+                    { decrypt: empleadoData.urlFotoCarnet?.endsWith('.enc') }
                 );
-                await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo reemplazada exitosamente");
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Foto del empleado cargada exitosamente");
 
+                //Reemplazar el placeholder de la foto por la imagen en base64
+                htmlTemplate = htmlTemplate.replace(
+                    '<img id="photoImg" src="" alt="Foto" style="display: none;">\n                <div class="photo-placeholder" id="photoPlaceholder">Foto del empleado</div>',
+                    `<img id="photoImg" src="${fotoBase64}" alt="Foto">`
+                );
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Foto del empleado reemplazada exitosamente");
+
+                const nombreCompleto = (empleadoData.nombre || 'Sin nombre').toUpperCase();
+                htmlTemplate = htmlTemplate.replace('{{NOMBRE}}', nombreCompleto);
+
+                //Reemplazar datos del empleado
+                htmlTemplate = htmlTemplate.replace('{{CARGO}}', (empleadoData.cargo?.nombre || 'Sin cargo').toUpperCase());
+                htmlTemplate = htmlTemplate.replace('{{CEDULA}}', empleadoData.identificacion || 'N/A');
+                htmlTemplate = htmlTemplate.replace('{{RH}}', empleadoData.tipoSangre || 'O+');
+
+                //Generar QR
                 const qrDataEncoded = encodeURIComponent(urlSegura);
-                htmlTemplate = htmlTemplate.replace('PLACEHOLDER', qrDataEncoded);
-                await registrarPasoLog(log._id, "Éxito", "Completado", "QR Data codificado exitosamente");
+                htmlTemplate = htmlTemplate.replace(
+                    '<img id="qrImg" src="" alt="Código QR" style="display: none;">\n                <div class="qr-placeholder" id="qrPlaceholder">Código QR</div>',
+                    `<img id="qrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${qrDataEncoded}" alt="Código QR">`
+                );
+                await registrarPasoLog(log._id, "Éxito", "Completado", "QR generado exitosamente");
 
                 const templateDir = await FileService.getTemplateDir('talentoHumano/carnet/carnet.html');
                 const base64 = await HtmlToImage.convertToBase64(htmlTemplate, { baseUrl: templateDir });
@@ -306,10 +316,14 @@ export class DotacionCarnetsControllerRepository {
 
             })
 
+            // Devolver el resultado de la transacción
+            return result;
+
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
             await ErrorTalentHumanoLogicHandlers(error, log)
         } finally {
+            await session.endSession();
             await registrarPasoLog(log._id, "Finalizado", "Completado", "Función completada exitosamente");
         }
     }

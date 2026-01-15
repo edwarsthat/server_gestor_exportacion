@@ -112,15 +112,61 @@ export class FileService {
         }
         return path.dirname(validation.resolvedPath);
     }
-    static async readFileAsBase64(filePath, location = 'TEMPLATES') {
+    static async readFileAsBase64(filePath, location = 'TEMPLATES', options = {}) {
+        const {
+            decrypt = false,
+        } = options;
         const validation = await this.validateFilePath(filePath, location);
         if (!validation.isValid) {
             throw new Error(`Archivo no encontrado para base64: ${validation.error}`);
         }
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        const buffer = await fs.readFile(validation.resolvedPath);
-        const ext = path.extname(validation.resolvedPath).toLowerCase();
-        const mime = ext === '.png' ? 'image/png' : (ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'application/octet-stream');
+        let buffer = await fs.readFile(validation.resolvedPath);
+
+        if (decrypt) {
+            buffer = this.decryptBuffer(buffer);
+        }
+
+        // Mapa de extensiones a MIME types
+        const mimeTypes = {
+            // Imágenes
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.svg': 'image/svg+xml',
+            '.ico': 'image/x-icon',
+            '.bmp': 'image/bmp',
+            // Documentos
+            '.pdf': 'application/pdf',
+            '.doc': 'application/msword',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            '.xls': 'application/vnd.ms-excel',
+            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            '.ppt': 'application/vnd.ms-powerpoint',
+            '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            // Texto
+            '.txt': 'text/plain',
+            '.csv': 'text/csv',
+            '.json': 'application/json',
+            '.xml': 'application/xml',
+            '.html': 'text/html',
+            // Otros
+            '.zip': 'application/zip',
+            '.rar': 'application/x-rar-compressed',
+        };
+
+        // Obtener extensión, manejando archivos encriptados (.pdf.enc → .pdf)
+        let ext = path.extname(validation.resolvedPath).toLowerCase();
+        if (ext === '.enc') {
+            // Remover .enc y obtener la extensión real
+            const nameWithoutEnc = validation.resolvedPath.slice(0, -4);
+            ext = path.extname(nameWithoutEnc).toLowerCase();
+        }
+
+        const mime = mimeTypes[ext] || 'application/octet-stream';
+
         return `data:${mime};base64,${buffer.toString('base64')}`;
     }
     static async readFile(filePath, location = 'TEMPLATES', options = {}) {

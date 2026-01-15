@@ -42,7 +42,7 @@ export class PersonalControllerRepository {
             );
 
             const filePath = await FileService.saveBase64File(
-                foto.base64,
+                foto.url,
                 urlPath,
                 "STORAGE"
             )
@@ -191,20 +191,7 @@ export class PersonalControllerRepository {
                 if (data[0].urlFotoCarnet) {
                     try {
                         const filePath = data[0].urlFotoCarnet;
-
-                        // Validación: asegurar que la ruta esté dentro del directorio uploads/personal
-                        const expectedDir = path.resolve(__dirname, '..', '..', '..', '..', 'uploads', 'personal');
-                        const resolvedPath = path.resolve(filePath);
-                        if (!resolvedPath.startsWith(expectedDir)) {
-                            throw new Error('Ruta de archivo no permitida');
-                        }
-
-                        // eslint-disable-next-line security/detect-non-literal-fs-filename
-                        const fileBuffer = await fs.readFile(filePath);
-                        const fileType = await fileTypeFromBuffer(fileBuffer);
-                        const mime = fileType ? fileType.mime : 'image/jpeg';
-                        const base64 = fileBuffer.toString('base64');
-                        data[0].imgFoto = `data:${mime};base64,${base64}`;
+                        data[0].imgFoto = await FileService.readFileAsBase64(filePath, "STORAGE")
                     } catch (error) {
                         console.error("Error al leer la imagen de rostro:", error);
                     }
@@ -215,27 +202,7 @@ export class PersonalControllerRepository {
                     try {
                         const idPath = data[0].urlIdentificacion;
 
-                        // Validación: asegurar que la ruta esté dentro del directorio uploads/personal
-                        const expectedDir = path.resolve(__dirname, '..', '..', '..', '..', 'uploads', 'personal');
-                        const resolvedPath = path.resolve(idPath);
-                        if (!resolvedPath.startsWith(expectedDir)) {
-                            throw new Error('Ruta de archivo no permitida');
-                        }
-
-                        // eslint-disable-next-line security/detect-non-literal-fs-filename
-                        const encryptedBuffer = await fs.readFile(idPath);
-
-                        // Desencriptar
-                        // const decryptedBuffer = PersonalTalentoHumanoService.decryptBuffer(encryptedBuffer);
-
-                        // Detectar tipo real del archivo desencriptado
-                        const fileType = await fileTypeFromBuffer(decryptedBuffer);
-                        // Si no detecta tipo (ej. PDF a veces no lo detecta bien si es parcial, pero file-type suele funcionar), asumir pdf si falla o basarse en magic bytes
-                        // Nota: file-type funciona bien con PDFs.
-                        const mime = fileType ? fileType.mime : 'application/pdf';
-
-                        const base64 = decryptedBuffer.toString('base64');
-                        data[0].pdfDocumento = `data:${mime};base64,${base64}`;
+                        data[0].pdfDocumento = await FileService.readFileAsBase64(idPath, "STORAGE", { decrypt: true })
 
                     } catch (error) {
                         console.error("Error al leer/desencriptar identificación:", error);
