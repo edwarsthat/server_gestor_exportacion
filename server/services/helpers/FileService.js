@@ -3,6 +3,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { fileTypeFromBuffer } from 'file-type';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
+import config from '../../../src/config/index.js';
+
+const ENCRYPTION_KEY = Buffer.from(config.ENCRYPTION_KEY, 'hex');
+const IV_LENGTH = 16;
+const ALGORITHM = 'aes-256-cbc';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,8 +22,10 @@ const STORAGE_LOCATIONS = {
     // Desde: server/services/helpers/ → public (raíz del proyecto)
     UPLOADS: path.resolve(__dirname, '..', '..', '..', 'uploads'),
     // Desde: 
-    SHARED: path.resolve(__dirname, '..', '..', '..', '..', 'shared'),
+    STORAGE: path.resolve(__dirname, '..', '..', '..', '..', 'storage'),
 };
+
+
 
 export class FileService {
 
@@ -115,7 +123,11 @@ export class FileService {
         const mime = ext === '.png' ? 'image/png' : (ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'application/octet-stream');
         return `data:${mime};base64,${buffer.toString('base64')}`;
     }
-    static async readFile(filePath, location = 'TEMPLATES') {
+    static async readFile(filePath, location = 'TEMPLATES', options = {}) {
+        const {
+            decrypt = false,
+        } = options;
+
         const validation = await this.validateFilePath(filePath, location);
 
         if (!validation.isValid) {
@@ -123,7 +135,12 @@ export class FileService {
         }
 
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        return await fs.readFile(validation.resolvedPath);
+        const buffer = await fs.readFile(validation.resolvedPath);
+
+        if (decrypt) {
+            return this.decryptBuffer(buffer);
+        }
+        return buffer;
     }
     static async getFileStats(filePath, location = 'TEMPLATES') {
         const validation = await this.validateFilePath(filePath, location);
@@ -136,6 +153,34 @@ export class FileService {
         return await fs.stat(validation.resolvedPath);
     }
 
+    //encriptaciones
+    static encryptBuffer(buffer) {
+        const iv = crypto.randomBytes(IV_LENGTH);
+        const cipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+
+        const encrypted = Buffer.concat([
+            cipher.update(buffer),
+            cipher.final()
+        ]);
+
+        // Retorna IV + datos encriptados
+        return Buffer.concat([iv, encrypted]);
+    }
+    static decryptBuffer(encryptedBuffer) {
+        // Extraer el IV (primeros 16 bytes)
+        const iv = encryptedBuffer.subarray(0, IV_LENGTH);
+        // Extraer el contenido encriptado
+        const encryptedContent = encryptedBuffer.subarray(IV_LENGTH);
+
+        const decipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+
+        const decrypted = Buffer.concat([
+            decipher.update(encryptedContent),
+            decipher.final()
+        ]);
+
+        return decrypted;
+    }
 
     //Write
     static async makeDir(dirPath, location = 'TEMPLATES') {
@@ -146,25 +191,34 @@ export class FileService {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         return await fs.mkdir(validation.resolvedPath, { recursive: true });
     }
-    static async validateAndDecodeBase64(base64String, allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp']) {
+    static async validateAndDecodeBase64(
+        base64String,
+        allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+    ) {
+        try {
+            const matches = base64String.match(/^data:([^;]+);base64,(.+)$/);
+            if (!matches) {
+                throw new Error('Formato de archivo base64 inválido');
+            }
 
-        const matches = base64String.match(/^data:(image\/\w+);base64,(.+)$/);
-        if (!matches) {
-            throw new Error('Formato de imagen inválido');
+            const mimeType = matches[1];
+            const buffer = Buffer.from(matches[2], 'base64');
+            const type = await fileTypeFromBuffer(buffer);
+            const finalMime = type ? type.mime : mimeType;
+            const finalExt = type ? type.ext : (mimeType === 'application/pdf' ? 'pdf' : 'bin');
+
+            if (!allowedMimeTypes.includes(finalMime)) {
+                throw new Error(`Tipo de archivo no permitido: ${finalMime}`);
+            }
+
+            return {
+                buffer,
+                mimeType: finalMime,
+                extension: finalExt
+            };
+        } catch (error) {
+            throw new Error(`Error al validar archivo: ${error.message}`);
         }
-
-        const buffer = Buffer.from(matches[2], 'base64');
-
-        const type = await fileTypeFromBuffer(buffer);
-        if (!type || !allowedMimeTypes.includes(type.mime)) {
-            throw new Error('Tipo de archivo no permitido');
-        }
-
-        return {
-            buffer,
-            mimeType: type.mime,
-            extension: type.ext
-        };
     }
     static validateBufferSize(buffer, maxSize = MAX_SIZE) {
         if (buffer.length > maxSize) {
@@ -172,7 +226,24 @@ export class FileService {
         }
         return true;
     }
+    static estimateBase64Size(base64String) {
+        // Remover el prefijo data:...;base64, si existe
+        const base64Data = base64String.includes(',')
+            ? base64String.split(',')[1]
+            : base64String;
 
+        // El tamaño real es aproximadamente 75% del tamaño del string base64
+        // Fórmula: (length * 3) / 4 - padding
+        const padding = (base64Data.match(/=+$/) || [''])[0].length;
+        return Math.floor((base64Data.length * 3) / 4) - padding;
+    }
+    static validateEstimatedSize(base64String, maxSize = MAX_SIZE) {
+        const estimatedSize = this.estimateBase64Size(base64String);
+        if (estimatedSize > maxSize) {
+            throw new Error(`El archivo excede el tamaño máximo permitido de ${maxSize / (1024 * 1024)} MB.`);
+        }
+        return estimatedSize;
+    }
     static generateSecureFilename(extension) {
         return `${uuidv4()}.${extension}`;
     }
@@ -217,27 +288,50 @@ export class FileService {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         return await fs.writeFile(validation.resolvedPath, buffer);
     }
+    static async saveBase64File(
+        base64String,
+        dirPath,
+        location = 'TEMPLATES',
+        options = {}
+    ) {
+        const {
+            maxSize = MAX_SIZE,
+            encrypt = false,
+            allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+        } = options;
 
-    static async saveBase64Image(base64String, dirPath, location = 'TEMPLATES', maxSize = MAX_SIZE) {
-        // 1. Valida y decodifica
-        const { buffer, extension } = await this.validateAndDecodeBase64(base64String);
+        // Valida tamaño estimado antes de decodificar (ahorra memoria)
+        this.validateEstimatedSize(base64String, maxSize);
 
-        // 2. Valida tamaño
+        // Valida y decodifica
+        const { buffer, extension } = await this.validateAndDecodeBase64(base64String, allowedTypes);
+
+        // Valida tamaño real del buffer
         this.validateBufferSize(buffer, maxSize);
 
-        // 3. Genera nombre seguro
-        const filename = this.generateSecureFilename(extension);
+        // Variables para encriptación
+        let finalBuffer = buffer;
+        let finalExtension = extension;
 
-        // 4. Construye y valida ruta
+        // Si se debe encriptar
+        if (encrypt) {
+            finalBuffer = this.encryptBuffer(buffer);
+            finalExtension = `${extension}.enc`;
+        }
+
+        // Genera nombre seguro
+        const filename = this.generateSecureFilename(finalExtension);
+
+        // Construye y valida ruta
         // dirPath se trata como relativo a 'location'
         const fullFilePath = await this.buildAndValidateFilePath(dirPath, filename, location);
 
-        // 5. Guarda el archivo
+        // Guarda el archivo
         // Usamos fs.writeFile directamente sobre fullFilePath porque ya fue validado por buildAndValidateFilePath
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        await fs.writeFile(fullFilePath, buffer);
+        await fs.writeFile(fullFilePath, finalBuffer);
 
-        // 6. Retorna la ruta relativa para guardar en DB o responder al cliente
+        // Retorna la ruta relativa para guardar en DB o responder al cliente
         // Ejemplo: "fotos/entrega/archivo.jpg"
         return path.join(dirPath, filename);
     }

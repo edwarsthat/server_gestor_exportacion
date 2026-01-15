@@ -12,8 +12,7 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { cleanForRust } from "../../routes/sockets/utils/cleanData.js";
 import { rustRcpClient } from "../../../config/grpcRust.js";
-import crypto from "crypto";
-import { PersonalTalentoHumanoService } from "../../services/talentoHumano/Personal.js";
+import { FileService } from "../../services/helpers/FileService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,53 +36,16 @@ export class PersonalControllerRepository {
             if (!cedulaPath) {
                 throw new Error('El documento de identificación es obligatorio.');
             }
-
-            const fotoBase64 = foto.base64.replace(/^data:image\/\w+;base64,/, '').trim();
-
-            if (!fotoBase64) {
-                throw new Error('La foto está vacía o inválida.');
-            }
-
-            const fileSize = Buffer.byteLength(fotoBase64, 'base64');
-            if (fileSize > 5 * 1024 * 1024) {
-                throw new Error('El archivo de la foto excede el tamaño máximo permitido (5MB).');
-            }
-
-            const buffer = Buffer.from(fotoBase64, 'base64');
-            const fileType = await fileTypeFromBuffer(buffer);
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-
-            if (!fileType || !allowedTypes.includes(fileType.mime)) {
-                throw new Error('Tipo de archivo no permitido para la foto. Solo se permiten imágenes (JPEG, PNG, WEBP).');
-            }
-
-            await registrarPasoLog(log._id, "Validación de datos foto", "completado")
-
             const urlPath = path.join(
-                __dirname,
-                "..",
-                "..",
-                "..",
-                "..",
-                "uploads",
                 "personal",
                 "fotoCarnet",
             );
 
-            await fs.mkdir(urlPath, { recursive: true });
-
-            const fileName = `${crypto.randomUUID()}.${fileType.ext}`;
-            const filePath = path.join(urlPath, fileName);
-
-            // Validación: asegurar que la ruta esté dentro del directorio esperado
-            const resolvedPath = path.resolve(filePath);
-            const resolvedBase = path.resolve(urlPath);
-            if (!resolvedPath.startsWith(resolvedBase)) {
-                throw new Error('Ruta de archivo no permitida');
-            }
-
-            // eslint-disable-next-line security/detect-non-literal-fs-filename
-            await fs.writeFile(filePath, buffer);
+            const filePath = await FileService.saveBase64File(
+                foto.base64,
+                urlPath,
+                "STORAGE"
+            )
 
             data.foto = filePath;
 
@@ -150,65 +112,18 @@ export class PersonalControllerRepository {
                 throw new Error('El documento de identificación debe enviarse como string en base64.');
             }
 
-            const cedulaBase64 = cedula.replace(/^data:.*;base64,/, '').trim();
-            if (!cedulaBase64) {
-                throw new Error('El documento de identificación está vacío o inválido.');
-            }
-
-            // Validar tamaño del archivo (simulando limits de multer)
-            const fileSize = Buffer.byteLength(cedulaBase64, 'base64');
-            if (fileSize > 5 * 1024 * 1024) { // 5MB
-                throw new Error('El archivo excede el tamaño máximo permitido (5MB).');
-            }
-            // Validar tipo de archivo real (magic numbers)
-            const buffer = Buffer.from(cedulaBase64, 'base64');
-            const fileType = await fileTypeFromBuffer(buffer);
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-
-            const isPdf = buffer.slice(0, 5).toString() === '%PDF-';
-            const mime = fileType?.mime ?? (isPdf ? 'application/pdf' : null);
-
-            if (!mime || !allowedTypes.includes(mime)) {
-                throw new Error('Tipo de archivo no permitido. Solo se permiten imágenes (JPEG, PNG, WEBP) y PDF.');
-            }
-
-            await registrarPasoLog(log._id, "Validación de datos", "completado")
             const urlPath = path.join(
-                __dirname,
-                "..",
-                "..",
-                "..",
-                "..",
-                "uploads",
                 "personal",
                 "identificacion",
             );
 
-            await fs.mkdir(urlPath, { recursive: true });
-            await registrarPasoLog(log._id, "Crear directorio", "completado")
-            const extension = fileType?.ext || (isPdf ? 'pdf' : null);
-            let fileToSave = null;
-            let filePath = null;
+            const filePath = await FileService.saveBase64File(
+                cedula,
+                urlPath,
+                "STORAGE",
+                { encrypt: true }
+            )
 
-            if (extension) {
-                const tempId = crypto.randomUUID();
-                const fileName = `cedula_tmp_${Date.now()}_${tempId}.${extension}.enc`;
-                filePath = path.join(urlPath, fileName);
-
-                // Validación: asegurar que la ruta esté dentro del directorio esperado
-                const resolvedPath = path.resolve(filePath);
-                const resolvedBase = path.resolve(urlPath);
-                if (!resolvedPath.startsWith(resolvedBase)) {
-                    throw new Error('Ruta de archivo no permitida');
-                }
-
-                const encryptedBuffer = PersonalTalentoHumanoService.encryptBuffer(buffer);
-                fileToSave = { path: filePath, buffer: encryptedBuffer };
-            }
-            if (fileToSave) {
-                // eslint-disable-next-line security/detect-non-literal-fs-filename
-                await fs.writeFile(fileToSave.path, fileToSave.buffer);
-            }
             const payload = {
                 data: JSON.stringify(cleanForRust(filePath)),
                 server: "python",
@@ -311,7 +226,7 @@ export class PersonalControllerRepository {
                         const encryptedBuffer = await fs.readFile(idPath);
 
                         // Desencriptar
-                        const decryptedBuffer = PersonalTalentoHumanoService.decryptBuffer(encryptedBuffer);
+                        // const decryptedBuffer = PersonalTalentoHumanoService.decryptBuffer(encryptedBuffer);
 
                         // Detectar tipo real del archivo desencriptado
                         const fileType = await fileTypeFromBuffer(decryptedBuffer);

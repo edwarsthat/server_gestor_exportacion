@@ -582,9 +582,9 @@ export class ProcesoRepository {
 
                 for (const idItem of itemsPallet) {
 
-                    if (checkFinalizadoLote(idItem.lote)) {
-                        throw new ProcessError(400, `El lote ${idItem.lote.enf} ya se encuentra finalizado, no se puede modificar`);
-                    }
+                    // if (checkFinalizadoLote(idItem.lote)) {
+                    //     throw new ProcessError(400, `El lote ${idItem.lote.enf} ya se encuentra finalizado, no se puede modificar`);
+                    // }
                     const GGN = have_lote_GGN_export(idItem.lote, cont[0])
 
                     await ContenedoresRepository.actualizar_contenedor(

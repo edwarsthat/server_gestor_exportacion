@@ -21,7 +21,7 @@ export class TransporteService {
 
         for (let fotoBase64 of fotos) {
 
-            const relativePath = await FileService.saveBase64Image(
+            const relativePath = await FileService.saveBase64File(
                 fotoBase64,
                 urlPath,
                 'UPLOADS'
