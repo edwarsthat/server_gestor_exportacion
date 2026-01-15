@@ -211,4 +211,106 @@ export class DotacionCarnetsControllerRepository {
             await registrarPasoLog(log._id, "Finalizado", "Completado", "Función completada exitosamente");
         }
     }
+    static async put_talentoHumano_dotacion_carnets_generar_final(req) {
+        const { user } = req
+        const { data, action } = req.data
+
+        let log
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
+
+        const session = await db.Carnet.db.startSession();
+
+
+        try {
+            TalentoHumanoValidations.put_talentoHumano_dotacion_carnets_generar_temporal().parse(req.data)
+
+            await session.withTransaction(async () => {
+
+                //se obtiene el documento del carnet
+                const carnetDoc = await TalentoHumanoDotacionCarnetsRepository.get_data({ _id: data })
+                if (!carnetDoc) {
+                    throw new Error("No se encontró el carnet para generar");
+                }
+                //se obtiene la info del empleado vinculado al carnet
+                const personalDoc = await PersonalRepository.get_personal({ ids: [carnetDoc.employeeId] })
+                if (!personalDoc) {
+                    throw new Error("No se encontró el personal para generar");
+                }
+
+                //se obtiene la imagen del carnet
+
+
+
+                // Generar el AccessToken único
+                const tokenGenerado = crypto.randomUUID();
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Token generado exitosamente");
+                const tokenHash = crypto.createHash('sha256')
+                    .update(tokenGenerado)
+                    .digest('hex');
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Token hash generado exitosamente");
+                // Actualizar el carnet con el tokenHash
+                const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_carnet(
+                    { _id: data },
+                    { tokenHash, isGenerated: true },
+                    { user }
+                )
+                if (!carnetActualizado) {
+                    throw new Error("No se encontró el carnet para generar");
+                }
+
+                const empleado = await PersonalRepository.get_personal({ ids: [carnetActualizado.personalId] })
+                if (!empleado) {
+                    throw new Error("No se encontró el empleado para generar");
+                }
+
+
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Carnet actualizado exitosamente");
+                const urlSegura = `${config.URL_CELIFRUT}/verify#${tokenGenerado}`;
+                //Cargar el template HTML
+                let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnetFinal.html');
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Template HTML cargado exitosamente");
+
+                //Cargar la iamgen de la foto
+                const imgaBase64 = await FileService.readFileAsBase64(carnetActualizado);
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo cargada exitosamente");
+
+                //se reemplaza la imagen por la de base64 
+                htmlTemplate = htmlTemplate.replace(
+                    "url('CREDENCIAL TEMPORAL.png')",
+                    `url('${imgaBase64}')`
+                );
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo reemplazada exitosamente");
+
+                const qrDataEncoded = encodeURIComponent(urlSegura);
+                htmlTemplate = htmlTemplate.replace('PLACEHOLDER', qrDataEncoded);
+                await registrarPasoLog(log._id, "Éxito", "Completado", "QR Data codificado exitosamente");
+
+                const templateDir = await FileService.getTemplateDir('talentoHumano/carnet/carnet.html');
+                const base64 = await HtmlToImage.convertToBase64(htmlTemplate, { baseUrl: templateDir });
+
+                if (!base64 || typeof base64 !== 'string' || !base64.startsWith('data:image/')) {
+                    throw new Error("Fallo crítico: El carnet se generó pero la imagen resultante no es válida.");
+                }
+
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Base64 generado exitosamente");
+
+                return {
+                    status: "success",
+                    message: "Token generado y template cargado",
+                    data: base64
+                };
+
+            })
+
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorTalentHumanoLogicHandlers(error, log)
+        } finally {
+            await registrarPasoLog(log._id, "Finalizado", "Completado", "Función completada exitosamente");
+        }
+    }
 }

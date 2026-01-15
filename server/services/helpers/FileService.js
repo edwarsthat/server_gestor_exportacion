@@ -13,7 +13,10 @@ const STORAGE_LOCATIONS = {
     TEMPLATES: path.resolve(__dirname, '..', '..', 'templates'),
     // Desde: server/services/helpers/ → public (raíz del proyecto)
     PUBLIC: path.resolve(__dirname, '..', '..', '..', 'public'),
+    // Desde: server/services/helpers/ → public (raíz del proyecto)
     UPLOADS: path.resolve(__dirname, '..', '..', '..', 'uploads'),
+    // Desde: 
+    SHARED: path.resolve(__dirname, '..', '..', '..', '..', 'shared'),
 };
 
 export class FileService {
