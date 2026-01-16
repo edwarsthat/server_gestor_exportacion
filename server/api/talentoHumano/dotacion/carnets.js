@@ -11,6 +11,7 @@ import { FileService } from "../../../services/helpers/FileService.js";
 import { HtmlToImage } from '../../../services/helpers/HtmlToImage.js';
 import config from '../../../../src/config/index.js';
 import { TalentoHumanoValidations } from '../../../validations/talentoHumano.js';
+import { CargosPersonalRepository } from '../../../Class/talentoHumano/CargosPersonal.js';
 
 export class DotacionCarnetsControllerRepository {
     static async post_talentoHumano_dotacion_carnets(req) {
@@ -256,8 +257,13 @@ export class DotacionCarnetsControllerRepository {
                 }
                 const empleadoData = empleado[0];
 
+                const cargoArr = await CargosPersonalRepository.get_cargosPersonal({ ids: [empleadoData.cargo] })
+                if (!cargoArr || cargoArr.length === 0) {
+                    throw new Error("No se encontró el cargo para generar");
+                }
+                const cargoData = cargoArr[0];
+
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Carnet actualizado exitosamente");
-                const urlSegura = `${config.URL_CELIFRUT}/verify#${tokenGenerado}`;
 
                 //Cargar el template HTML
                 let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnetFinal.html');
@@ -277,30 +283,37 @@ export class DotacionCarnetsControllerRepository {
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Foto del empleado cargada exitosamente");
 
                 //Reemplazar el placeholder de la foto por la imagen en base64
-                htmlTemplate = htmlTemplate.replace(
-                    '<img id="photoImg" src="" alt="Foto" style="display: none;">\n                <div class="photo-placeholder" id="photoPlaceholder">Foto del empleado</div>',
-                    `<img id="photoImg" src="${fotoBase64}" alt="Foto">`
-                );
+                htmlTemplate = htmlTemplate.replace('{{FOTO_BASE64}}', fotoBase64);
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Foto del empleado reemplazada exitosamente");
 
-                const nombreCompleto = (empleadoData.nombre || 'Sin nombre').toUpperCase();
+                const nombreArray = empleadoData.nombre.split(' ');
+                const nombreCompleto = [nombreArray[2], nombreArray[0], nombreArray[1]]
+                    .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase())
+                    .join(' ');
+                const identificacionFormateada = Number(empleadoData.identificacion).toLocaleString('de-DE');
+
                 htmlTemplate = htmlTemplate.replace('{{NOMBRE}}', nombreCompleto);
 
                 //Reemplazar datos del empleado
-                htmlTemplate = htmlTemplate.replace('{{CARGO}}', (empleadoData.cargo?.nombre || 'Sin cargo').toUpperCase());
-                htmlTemplate = htmlTemplate.replace('{{CEDULA}}', empleadoData.identificacion || 'N/A');
+                htmlTemplate = htmlTemplate.replace('{{CARGO}}', (empleadoData.cargo?.nombre || 'Sin cargo'));
+                htmlTemplate = htmlTemplate.replace('{{CEDULA}}', identificacionFormateada || 'N/A');
                 htmlTemplate = htmlTemplate.replace('{{RH}}', empleadoData.tipoSangre || 'O+');
+                htmlTemplate = htmlTemplate.replace('{{COLOR_PRINCIPAL}}', cargoData.color || '#F3930D');
+
 
                 //Generar QR
+                const urlSegura = `${config.URL_CELIFRUT}/verify#${tokenGenerado}`;
                 const qrDataEncoded = encodeURIComponent(urlSegura);
-                htmlTemplate = htmlTemplate.replace(
-                    '<img id="qrImg" src="" alt="Código QR" style="display: none;">\n                <div class="qr-placeholder" id="qrPlaceholder">Código QR</div>',
-                    `<img id="qrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${qrDataEncoded}" alt="Código QR">`
-                );
+                htmlTemplate = htmlTemplate.replace('{{QR_URL}}', qrDataEncoded);
                 await registrarPasoLog(log._id, "Éxito", "Completado", "QR generado exitosamente");
 
                 const templateDir = await FileService.getTemplateDir('talentoHumano/carnet/carnet.html');
-                const base64 = await HtmlToImage.convertToBase64(htmlTemplate, { baseUrl: templateDir });
+                const base64 = await HtmlToImage.convertToBase64(htmlTemplate, {
+                    baseUrl: templateDir,
+                    width: 450,
+                    height: 750,
+                    waitFor: 'networkidle0'
+                });
 
                 if (!base64 || typeof base64 !== 'string' || !base64.startsWith('data:image/')) {
                     throw new Error("Fallo crítico: El carnet se generó pero la imagen resultante no es válida.");

@@ -24,8 +24,9 @@
         */
 
         :root {
+
             /* COLORES PRINCIPALES - Cambia estos valores para personalizar */
-            --color-principal: #FFC107;
+            --color-principal: {{COLOR_PRINCIPAL}};
             --color-secundario: #F5F5F5;
         }
 
@@ -36,13 +37,12 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f0f0f0;
-            padding: 20px;
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            display: block;
+            width: 450px;
+            height: 750px;
         }
 
         .card {
@@ -51,7 +51,10 @@
             background: white;
             border-radius: 0;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: none;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
         .header {
@@ -237,7 +240,8 @@
             </div>
 
             <div class="qr-container">
-                <img id="qrImg" src="{{QR_URL}}" alt="Código QR">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={{QR_URL}}" alt="QR Temporal">
+
             </div>
         </div>
     </div>
