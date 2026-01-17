@@ -7,7 +7,7 @@ import { colombiaToUTC } from "../api/utils/fechas.js";
 import { filtroFechaInicioFin } from "../api/utils/filtros.js";
 import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
 import { CanastillasRepository } from "../Class/CanastillasRegistros.js";
-import { ClientesRepository } from "../Class/Clientes.js";
+import { ClientesRepository, ClientesNacionalesRepository } from "../Class/Clientes.js";
 import { DespachoDescartesRepository } from "../Class/DespachoDescarte.js";
 import { FrutaDescompuestaRepository } from "../Class/FrutaDescompuesta.js";
 import { InventariosHistorialRepository } from "../Class/Inventarios.js";
@@ -151,7 +151,7 @@ export class InventariosService {
         const proveedores = await ProveedoresRepository.get_proveedores({
             ids: ids
         })
-        const clientes = await ClientesRepository.get_clientesNacionales({
+        const clientes = await ClientesNacionalesRepository.get_data({
             ids: ids
         })
 

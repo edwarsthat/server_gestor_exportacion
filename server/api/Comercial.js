@@ -2,7 +2,7 @@ import { ComercialLogicError } from "../../Error/logicLayerError.js";
 import { ProcessError } from "../../Error/ProcessError.js";
 import { RecordCreacionesRepository } from "../archive/ArchiveCreaciones.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
-import { ClientesRepository } from "../Class/Clientes.js";
+import { ClientesRepository, ClientesNacionalesRepository } from "../Class/Clientes.js";
 import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { PreciosRepository } from "../Class/Precios.js";
@@ -228,7 +228,7 @@ export class ComercialRepository {
     //#region clientes
     static async get_comercial_clientes() {
         try {
-            return await ClientesRepository.get_clientes();
+            return await ClientesRepository.get_data();
         } catch (err) {
             if (err.status === 522) {
                 throw err
@@ -265,7 +265,7 @@ export class ComercialRepository {
             const { user } = req
             const { _id, data, action } = req.data
             delete data._id
-            const clienteOld = await ClientesRepository.get_clientes({
+            const clienteOld = await ClientesRepository.get_data({
                 ids: [_id]
             })
 
@@ -301,7 +301,7 @@ export class ComercialRepository {
             const { user } = req
             const { _id, action } = req.data
 
-            const clienteOld = await ClientesRepository.get_clientes({
+            const clienteOld = await ClientesRepository.get_data({
                 ids: [_id]
             })
 
@@ -337,7 +337,7 @@ export class ComercialRepository {
     static async get_comercial_clientesNacionales() {
         try {
             const [clientes, numeroClientes] = await Promise.all([
-                ClientesRepository.get_clientesNacionales(),
+                ClientesNacionalesRepository.get_data(),
                 ClientesRepository.get_numero_clientesNacionales()
             ])
             return {
@@ -357,7 +357,7 @@ export class ComercialRepository {
             const { data, action } = req.data
 
             ComercialValidationsRepository.put_comercial_clientes_clienteNacional().parse(data)
-            const clienteOld = await ClientesRepository.get_clientesNacionales({
+            const clienteOld = await ClientesNacionalesRepository.get_data({
                 ids: [data._id]
             })
 
@@ -1073,7 +1073,7 @@ export class ComercialRepository {
 
     static async obtener_clientes_historial_contenedores() {
         try {
-            return await ClientesRepository.get_clientes({
+            return await ClientesRepository.get_data({
                 query: { activo: true },
                 select: { CLIENTE: 1 }
             });

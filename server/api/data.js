@@ -1,5 +1,5 @@
 import { DataLogicError } from "../../Error/logicLayerError.js";
-import { ClientesRepository } from "../Class/Clientes.js";
+import { ClientesRepository, ClientesNacionalesRepository } from "../Class/Clientes.js";
 import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { ProveedoresRepository } from "../Class/Proveedores.js";
@@ -16,7 +16,7 @@ import { ErrorDataLogicHandlers } from "./utils/errorsHandlers.js";
 export class dataRepository {
     static async get_data_clientes() {
         try {
-            const clientes = await ClientesRepository.get_clientes({
+            const clientes = await ClientesRepository.get_data({
                 select: { CLIENTE: 1, CODIGO: 1 }
             })
             return clientes
@@ -107,7 +107,7 @@ export class dataRepository {
     }
     static async get_data_clientesNacionales() {
         try {
-            const clientesNacionales = await ClientesRepository.get_clientesNacionales({
+            const clientesNacionales = await ClientesNacionalesRepository.get_data({
                 select: { cliente: 1, canastillas: 1 }
             })
             return clientesNacionales
