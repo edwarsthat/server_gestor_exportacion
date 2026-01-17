@@ -6,8 +6,6 @@ import { TalentoHumanoValidations } from "../../validations/talentoHumano.js";
 import { registrarPasoLog } from "../helper/logs.js";
 import { ErrorTalentHumanoLogicHandlers } from "../utils/errorsHandlers.js";
 import path from "path";
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { cleanForRust } from "../../routes/sockets/utils/cleanData.js";
 import { rustRcpClient } from "../../../config/grpcRust.js";
 import { FileService } from "../../services/helpers/FileService.js";
@@ -15,8 +13,6 @@ import { CarnetsService } from "../../services/talentoHumano/carnets.js";
 import { TalentoHumanoDotacionCarnetsRepository } from "../../Class/talentoHumano/dotacion/Carnets.js";
 import bcrypt from "bcrypt";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 export class PersonalControllerRepository {
 
@@ -76,7 +72,7 @@ export class PersonalControllerRepository {
 
                 data.urlFotoCarnet = response.path
 
-                await PersonalRepository.addPersonal(data, { user: user._id, action: action, session })
+                await PersonalRepository.post_data(data, { user: user._id, action: action, session })
                 await registrarPasoLog(log._id, "Agregar personal", "completado")
 
                 await Seriales.modificar_seriales({ name: "SKU" }, { $inc: { serial: 1 } }, { session })
@@ -150,7 +146,7 @@ export class PersonalControllerRepository {
             const resultsPerPage = 25;
             const query = { estado: filtro.activo }
 
-            const data = await PersonalRepository.get_personal({
+            const data = await PersonalRepository.get_data({
                 query: query,
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
@@ -170,7 +166,7 @@ export class PersonalControllerRepository {
             const { filtro } = req.data
             const query = { estado: filtro.activo }
 
-            const data = await PersonalRepository.get_numero_registros_personal(query)
+            const data = await PersonalRepository.get_numero_registros(query)
             return data
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
@@ -180,7 +176,7 @@ export class PersonalControllerRepository {
     static async get_talentoHumano_personal_Imgs(req) {
         try {
             const { _id } = req.data
-            const data = await PersonalRepository.get_personal({ _id })
+            const data = await PersonalRepository.get_data({ _id })
 
             if (data && data.length > 0) {
                 // Convertir a objeto plano Mongoose si es necesario para poder agregar propiedades
@@ -221,7 +217,7 @@ export class PersonalControllerRepository {
             const { user } = req
             const { _id, data } = req.data
 
-            const updatedPersonal = await PersonalRepository.actualizar_personal({ _id }, data, { user })
+            const updatedPersonal = await PersonalRepository.actualizar_data({ _id }, data, { user })
             return updatedPersonal
 
         } catch (error) {
@@ -247,7 +243,7 @@ export class PersonalControllerRepository {
 
             await session.withTransaction(async () => {
 
-                const personalDocArr = await PersonalRepository.get_personal({ ids: [personal] }, { session })
+                const personalDocArr = await PersonalRepository.get_data({ ids: [personal] }, { session })
                 const personalDoc = personalDocArr[0]
                 await registrarPasoLog(log._id, "Obtener personal", "completado")
                 if (!personalDoc) {
@@ -281,7 +277,7 @@ export class PersonalControllerRepository {
                 await registrarPasoLog(log._id, "Verificar carnet", "completado")
 
                 // Asignar el carnet al personal
-                await PersonalRepository.actualizar_personal(
+                await PersonalRepository.actualizar_data(
                     { _id: personal },
                     { carnet: carnetDoc._id },
                     { session, user: user._id, action }
@@ -289,7 +285,7 @@ export class PersonalControllerRepository {
                 await registrarPasoLog(log._id, "Carnet asignado al personal", "completado")
 
                 // Actualizar el carnet con el employeeId
-                await TalentoHumanoDotacionCarnetsRepository.actualizar_carnet(
+                await TalentoHumanoDotacionCarnetsRepository.actualizar_data(
                     { _id: carnetDoc._id },
                     { employeeId: personal, status: 'active', assignedBy: user._id },
                     { session, user: user._id }

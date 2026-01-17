@@ -284,7 +284,7 @@ export class dataRepository {
     }
     static async get_data_cargosPersonal() {
         try {
-            const cargosPersonal = await CargosPersonalRepository.get_cargosPersonal()
+            const cargosPersonal = await CargosPersonalRepository.get_data()
             return cargosPersonal
         } catch (err) {
             if (err.status === 522) {

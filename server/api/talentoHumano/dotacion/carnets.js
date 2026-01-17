@@ -47,7 +47,7 @@ export class DotacionCarnetsControllerRepository {
                         throw new Error("El ID del empleado no es un ObjectId válido")
                     }
                     const carnetIngresado = await TalentoHumanoDotacionCarnetsRepository.post_data({ type: tipo, serialNumber: carnet.serial, employeeId: empleado }, { user, session })
-                    await PersonalRepository.actualizar_personal({ _id: empleado }, { carnet: carnetIngresado._id }, { session })
+                    await PersonalRepository.actualizar_data({ _id: empleado }, { carnet: carnetIngresado._id }, { session })
                     await registrarPasoLog(log._id, "Éxito", "Completado", "Empleado vinculado al carnet exitosamente");
                 }
 
@@ -99,11 +99,11 @@ export class DotacionCarnetsControllerRepository {
         try {
             const filtro = req.data.filtro
 
-            if (!filtro.tokenHash) {
-                filtro.tokenHash = null
-            } else {
-                delete filtro.tokenHash
+            if (filtro.tokenHash) {
+                filtro.isGenerated = false
             }
+            delete filtro.tokenHash
+
             const query = { ...filtro }
             if (query.type === "TODOS") {
                 delete query.type
@@ -112,6 +112,7 @@ export class DotacionCarnetsControllerRepository {
                 delete query.status
             }
             const data = await TalentoHumanoDotacionCarnetsRepository.get_numero_registros(query)
+            console.log(data)
             return data
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
@@ -121,7 +122,7 @@ export class DotacionCarnetsControllerRepository {
     static async get_talentoHumano_dotacion_carnets_empleados() {
         try {
 
-            const data = await PersonalRepository.get_personal({
+            const data = await PersonalRepository.get_data({
                 query: {
                     estado: true,
                     carnet: null
@@ -161,7 +162,7 @@ export class DotacionCarnetsControllerRepository {
             const tokenHash = await bcrypt.hash(tokenGenerado, 10);
             await registrarPasoLog(log._id, "Éxito", "Completado", "Token hash generado exitosamente");
             // Actualizar el carnet con el tokenHash
-            const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_carnet(
+            const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_data(
                 { _id: data },
                 { tokenHash, isGenerated: true },
                 { user }
@@ -236,7 +237,7 @@ export class DotacionCarnetsControllerRepository {
                 const tokenHash = await bcrypt.hash(tokenGenerado, 10);
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Token hash generado exitosamente");
                 // Actualizar el carnet con el tokenHash
-                const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_carnet(
+                const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_data(
                     { _id: data },
                     { tokenHash, isGenerated: true },
                     { user }
@@ -245,7 +246,7 @@ export class DotacionCarnetsControllerRepository {
                     throw new Error("No se encontró el carnet para generar");
                 }
 
-                const empleado = await PersonalRepository.get_personal({
+                const empleado = await PersonalRepository.get_data({
                     ids: [carnetActualizado.employeeId],
                     populate: [{ path: 'cargo', select: 'nombre' }]
                 })
@@ -254,7 +255,7 @@ export class DotacionCarnetsControllerRepository {
                 }
                 const empleadoData = empleado[0];
 
-                const cargoArr = await CargosPersonalRepository.get_cargosPersonal({ ids: [empleadoData.cargo] })
+                const cargoArr = await CargosPersonalRepository.get_data({ ids: [empleadoData.cargo] })
                 if (!cargoArr || cargoArr.length === 0) {
                     throw new Error("No se encontró el cargo para generar");
                 }
