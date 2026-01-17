@@ -6,13 +6,14 @@ import { TalentoHumanoValidations } from "../../validations/talentoHumano.js";
 import { registrarPasoLog } from "../helper/logs.js";
 import { ErrorTalentHumanoLogicHandlers } from "../utils/errorsHandlers.js";
 import path from "path";
-import fs from "fs/promises";
-import { fileTypeFromBuffer } from "file-type";
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { cleanForRust } from "../../routes/sockets/utils/cleanData.js";
 import { rustRcpClient } from "../../../config/grpcRust.js";
 import { FileService } from "../../services/helpers/FileService.js";
+import { CarnetsService } from "../../services/talentoHumano/carnets.js";
+import { TalentoHumanoDotacionCarnetsRepository } from "../../Class/talentoHumano/dotacion/Carnets.js";
+import bcrypt from "bcrypt";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -123,16 +124,16 @@ export class PersonalControllerRepository {
                 "STORAGE",
                 { encrypt: true }
             )
-
+            await registrarPasoLog(log._id, "Cargar cedula", "completado")
             const payload = {
                 data: JSON.stringify(cleanForRust(filePath)),
                 server: "python",
                 action: "validar_cedula"
             };
-
+            await registrarPasoLog(log._id, "Procesar cedula", "completado")
             const responseStr = await rustRcpClient.sendData(payload);
             const response = JSON.parse(responseStr);
-
+            await registrarPasoLog(log._id, "Procesar cedula", "completado")
 
             return response
 
@@ -153,10 +154,10 @@ export class PersonalControllerRepository {
                 query: query,
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
-                populate: {
-                    path: "cargo",
-                    select: "nombre"
-                },
+                populate: [
+                    { path: "cargo", select: "nombre" },
+                    { path: "carnet", select: "serialNumber" }
+                ]
             })
             return data
         } catch (error) {
@@ -226,6 +227,110 @@ export class PersonalControllerRepository {
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
             await ErrorTalentHumanoLogicHandlers(error)
+        }
+    }
+    static async put_talentoHumano_personal_asignarCarnet(req) {
+        const { user } = req
+        const { personal, qr, action } = req.data
+
+        let log
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
+
+        const session = await db.Personal.db.startSession();
+
+
+        try {
+
+            await session.withTransaction(async () => {
+
+                const personalDocArr = await PersonalRepository.get_personal({ ids: [personal] }, { session })
+                const personalDoc = personalDocArr[0]
+                await registrarPasoLog(log._id, "Obtener personal", "completado")
+                if (!personalDoc) {
+                    throw new Error('Personal no encontrado');
+                }
+
+                const { serial, token } = CarnetsService.procesarQr(qr)
+                const carnetDocArr = await TalentoHumanoDotacionCarnetsRepository.get_data(
+                    {
+                        query: { serialNumber: serial },
+                        select: { tokenHash: 1, type: 1, employeeId: 1 }
+                    },
+                    { session }
+                )
+                const carnetDoc = carnetDocArr[0]
+                await registrarPasoLog(log._id, "Obtener carnet", "completado")
+                if (!carnetDoc) {
+                    throw new Error('Carnet no encontrado');
+                }
+
+                // Verificar si el token coincide con el tokenHash de la base de datos
+                const isValid = await bcrypt.compare(token, carnetDoc.tokenHash);
+                if (!isValid) {
+                    throw new Error('Token de carnet inválido');
+                }
+                await registrarPasoLog(log._id, "Token verificado", "completado")
+
+                if (carnetDoc.type === "final" && (carnetDoc.employeeId.toString() !== personalDoc._id.toString())) {
+                    throw new Error('El carnet no es del personal');
+                }
+                await registrarPasoLog(log._id, "Verificar carnet", "completado")
+
+                // Asignar el carnet al personal
+                await PersonalRepository.actualizar_personal(
+                    { _id: personal },
+                    { carnet: carnetDoc._id },
+                    { session, user: user._id, action }
+                );
+                await registrarPasoLog(log._id, "Carnet asignado al personal", "completado")
+
+                // Actualizar el carnet con el employeeId
+                await TalentoHumanoDotacionCarnetsRepository.actualizar_carnet(
+                    { _id: carnetDoc._id },
+                    { employeeId: personal, status: 'active', assignedBy: user._id },
+                    { session, user: user._id }
+                );
+                await registrarPasoLog(log._id, "Carnet actualizado con employeeId", "completado")
+
+            })
+
+
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorTalentHumanoLogicHandlers(error, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Fin de la función", "completado")
+        }
+    }
+    static async put_talentoHumano_personal_modificar_carnet(req) {
+        const { user } = req
+        const { status, _id, action } = req.data
+
+        let log
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
+
+        const session = await db.Personal.db.startSession();
+
+        try {
+            await session.withTransaction(async () => {
+
+            })
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await registrarPasoLog(log._id, "Error", "error")
+            await ErrorTalentHumanoLogicHandlers(error, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Fin de la función", "completado")
         }
     }
 }

@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
 import { TalentoHumanoDotacionCarnetsRepository } from "../../../Class/talentoHumano/dotacion/Carnets.js";
 import { LogsRepository } from "../../../Class/LogsSistema.js";
@@ -157,9 +158,7 @@ export class DotacionCarnetsControllerRepository {
             // Generar el AccessToken único
             const tokenGenerado = crypto.randomUUID();
             await registrarPasoLog(log._id, "Éxito", "Completado", "Token generado exitosamente");
-            const tokenHash = crypto.createHash('sha256')
-                .update(tokenGenerado)
-                .digest('hex');
+            const tokenHash = await bcrypt.hash(tokenGenerado, 10);
             await registrarPasoLog(log._id, "Éxito", "Completado", "Token hash generado exitosamente");
             // Actualizar el carnet con el tokenHash
             const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_carnet(
@@ -171,7 +170,7 @@ export class DotacionCarnetsControllerRepository {
                 throw new Error("No se encontró el carnet para actualizar");
             }
             await registrarPasoLog(log._id, "Éxito", "Completado", "Carnet actualizado exitosamente");
-            const urlSegura = `${config.URL_CELIFRUT}/verify#${tokenGenerado}`;
+            const urlSegura = `${config.URL_CELIFRUT}/verify?serial=${carnetActualizado.serialNumber}#${tokenGenerado}`;
             //Cargar el template HTML
             let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnet.html');
             await registrarPasoLog(log._id, "Éxito", "Completado", "Template HTML cargado exitosamente");
@@ -234,9 +233,7 @@ export class DotacionCarnetsControllerRepository {
                 // Generar el AccessToken único
                 const tokenGenerado = crypto.randomUUID();
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Token generado exitosamente");
-                const tokenHash = crypto.createHash('sha256')
-                    .update(tokenGenerado)
-                    .digest('hex');
+                const tokenHash = await bcrypt.hash(tokenGenerado, 10);
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Token hash generado exitosamente");
                 // Actualizar el carnet con el tokenHash
                 const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_carnet(
@@ -287,9 +284,16 @@ export class DotacionCarnetsControllerRepository {
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Foto del empleado reemplazada exitosamente");
 
                 const nombreArray = empleadoData.nombre.split(' ');
-                const nombreCompleto = [nombreArray[2], nombreArray[0], nombreArray[1]]
-                    .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase())
-                    .join(' ');
+                let nombreCompleto = '';
+                if (nombreArray.length > 3) {
+                    nombreCompleto = [nombreArray[0], nombreArray[1], nombreArray[2]]
+                        .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase())
+                        .join(' ');
+                } else {
+                    nombreCompleto = [nombreArray[0], nombreArray[1]]
+                        .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase())
+                        .join(' ');
+                }
                 const identificacionFormateada = Number(empleadoData.identificacion).toLocaleString('de-DE');
 
                 htmlTemplate = htmlTemplate.replace('{{NOMBRE}}', nombreCompleto);
@@ -302,7 +306,7 @@ export class DotacionCarnetsControllerRepository {
 
 
                 //Generar QR
-                const urlSegura = `${config.URL_CELIFRUT}/verify#${tokenGenerado}`;
+                const urlSegura = `${config.URL_CELIFRUT}/verify?serial=${carnetActualizado.serialNumber}#${tokenGenerado}`;
                 const qrDataEncoded = encodeURIComponent(urlSegura);
                 htmlTemplate = htmlTemplate.replace('{{QR_URL}}', qrDataEncoded);
                 await registrarPasoLog(log._id, "Éxito", "Completado", "QR generado exitosamente");

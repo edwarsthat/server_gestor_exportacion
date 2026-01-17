@@ -105,9 +105,10 @@ async function convertUserField(collection, collectionName) {
             // Convertir a ObjectId
             const userObjectId = new ObjectId(userId);
 
-            // Actualizar el documento
+            // Actualizar el documento (sanitizamos _id para evitar NoSQL injection)
+            const sanitizedId = new ObjectId(doc._id);
             const resultado = await collection.updateOne(
-                { _id: doc._id },
+                { _id: sanitizedId },
                 { $set: { user: userObjectId } }
             );
 
