@@ -86,7 +86,14 @@ export class DotacionCarnetsControllerRepository {
 
         try {
             const data = await TalentoHumanoDotacionCarnetsRepository.get_data(
-                { query, limit: resultsPerPage, skip: (page - 1) * resultsPerPage },
+                {
+                    query,
+                    limit: resultsPerPage, skip: (page - 1) * resultsPerPage,
+                    populate: [
+                        { path: "employeeId", select: "nombre identificacion" }
+                    ]
+                },
+
             )
             return data
         } catch (err) {
@@ -224,7 +231,6 @@ export class DotacionCarnetsControllerRepository {
         })
 
         const session = await db.Carnet.db.startSession();
-
 
         try {
             TalentoHumanoValidations.put_talentoHumano_dotacion_carnets_generar_temporal().parse(req.data)

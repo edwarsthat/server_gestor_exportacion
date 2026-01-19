@@ -1,0 +1,10 @@
+### Verificar carnet de personal
+### Endpoint protegido con rate limiting (15 req/min)
+
+POST http://localhost:3010/talentoHumano/get_talentoHumano_personal_registro
+Content-Type: application/json
+
+{
+    "serial": "7",
+    "token": "4f6cd61e-edf7-4892-b128-653512a61293"
+}

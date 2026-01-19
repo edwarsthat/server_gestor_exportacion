@@ -629,8 +629,8 @@ export class InventariosService {
     }
     static async probar_deshidratacion_loteProcesando(user) {
         const predioVaciando = await FrutaProcesada.obtener_ultimaEntrada();
-        if (!predioVaciando) {
-            return "No vaceo"
+        if (!predioVaciando || predioVaciando.length === 0 || predioVaciando.loteId === null) {
+            return null
         }
 
         const [EF1, EF10] = await Promise.all([
@@ -639,10 +639,8 @@ export class InventariosService {
         ])
         const lote = EF1.length > 0 ? EF1[0] : (EF10.length > 0 ? EF10[0] : null);
 
-        console.log("predioVaciando ###################", lote)
-
         if (!lote) {
-            return "No vaceo"
+            return null
         }
 
         // Cargos con vía rápida
@@ -650,7 +648,7 @@ export class InventariosService {
         const PERM_2 = config.DIR_OPERACIONES;
 
         // Pueden saltarse la validación si:
-        // - Rol > 0  O  - Cargo está en la lista permitida
+        // - Rol = 0  O  - Cargo está en la lista permitida
         const puedeOmitirValidacion =
             Number(user?.Rol) === 0 || [PERM_1, PERM_2].includes(user?.cargo);
 

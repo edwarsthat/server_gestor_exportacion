@@ -242,16 +242,57 @@ export class FileService {
         allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
     ) {
         try {
+            //validar formato basico
             const matches = base64String.match(/^data:([^;]+);base64,(.+)$/);
             if (!matches) {
                 throw new Error('Formato de archivo base64 inválido');
             }
 
             const mimeType = matches[1];
-            const buffer = Buffer.from(matches[2], 'base64');
+            const base64Data = matches[2];
+
+            // Rechazar null bytes en el base64 (null byte injection)
+            if (base64Data.includes('\0')) {
+                throw new Error('Contenido base64 inválido: caracteres nulos detectados');
+            }
+
+            // Validar que sea base64 válido(solo caracteres permitidos)
+            const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+            if (!base64Regex.test(base64Data)) {
+                throw new Error('Contenido base64 inválido: caracteres no permitidos');
+            }
+
+            const buffer = Buffer.from(base64Data, 'base64');
+
+            // Detectar contenido de texto peligroso (PHP, HTML, JS)
+            // Revisar los primeros bytes del archivo
+            const textPreview = buffer.slice(0, 256).toString('utf-8').toLowerCase();
+            const dangerousPatterns = [
+                '<?php',           // PHP
+                '<?=',             // PHP short tag
+                '<script',         // JavaScript
+                '<html',           // HTML
+                '<!doctype',       // HTML
+                '<svg',            // SVG (puede contener JS)
+                '#!/',             // Shebang (scripts Unix)
+            ];
+
+            for (const pattern of dangerousPatterns) {
+                if (textPreview.includes(pattern)) {
+                    throw new Error('Tipo de archivo no permitido: contenido ejecutable detectado');
+                }
+            }
+
+            // Usar file-type para detectar el tipo real
             const type = await fileTypeFromBuffer(buffer);
             const finalMime = type ? type.mime : mimeType;
             const finalExt = type ? type.ext : (mimeType === 'application/pdf' ? 'pdf' : 'bin');
+
+            // Si file-type no detecta el tipo, es probablemente texto plano
+            // Solo permitir si explícitamente está en allowedMimeTypes
+            if (!type && !allowedMimeTypes.includes(mimeType)) {
+                throw new Error('Tipo de archivo no permitido: formato no reconocido');
+            }
 
             if (!allowedMimeTypes.includes(finalMime)) {
                 throw new Error(`Tipo de archivo no permitido: ${finalMime}`);
@@ -295,23 +336,42 @@ export class FileService {
     }
     static async buildAndValidateFilePath(baseDir, filename, location = 'TEMPLATES') {
 
-        // 1. Obtener la ubicación raíz configurada (ej: D:\trabajo\Celifrut\uploads)
+        // Obtener la ubicación raíz configurada (ej: D:\trabajo\Celifrut\uploads)
         const storageRoot = STORAGE_LOCATIONS[location];
         if (!storageRoot) {
             throw new Error(`Ubicación no válida: ${location}`);
         }
 
-        // 2. Construir la ruta completa del archivo
-        // baseDir es relativo a la ubicación raíz (ej: "fotos/entrega_precinto_contenedor")
-        const fullPath = path.resolve(storageRoot, baseDir, filename);
+        // Normalizar: convertir backslashes a forward slashes (compatibilidad Windows/Linux)                                                        
+        const normalizedBaseDir = baseDir.replace(/\\/g, '/');
+        const normalizedFilename = filename.replace(/\\/g, '/');
 
-        // 3. Validación contra path traversal
-        // Asegura que la ruta final comience con la ruta raíz configurada
-        if (!fullPath.startsWith(storageRoot)) {
+        // Detectar path traversal ANTES de resolver                                                                                                 
+        //    Bloquea: "../", "/..", "..\", "\.."                                                                                                       
+        const traversalPattern = /(?:^|[\\/])\.\.(?:[\\/]|$)/;
+        if (traversalPattern.test(normalizedBaseDir) || traversalPattern.test(normalizedFilename)) {
             throw new Error('Ruta de archivo no permitida (Path Traversal detectado)');
         }
 
-        // 4. Asegurar que el directorio destino existe
+        // Detectar rutas absolutas de AMBOS sistemas operativos                                                                                     
+        //    Linux: /etc/passwd                                                                                                                        
+        //    Windows: C:\Windows, D:\, \\server\share                                                                                                  
+        const absolutePattern = /^(?:\/|[A-Za-z]:|\\\\)/;
+        if (absolutePattern.test(normalizedBaseDir) || absolutePattern.test(normalizedFilename)) {
+            throw new Error('Ruta de archivo no permitida (Path Traversal detectado)');
+        }
+
+        // Construir la ruta completa del archivo
+        // baseDir es relativo a la ubicación raíz (ej: "fotos/entrega_precinto_contenedor")
+        const fullPath = path.resolve(storageRoot, normalizedBaseDir, normalizedFilename);
+
+        // Validación contra path traversal
+        // Asegura que la ruta final comience con la ruta raíz configurada
+        if (!fullPath.startsWith(storageRoot + path.sep) && fullPath !== storageRoot) {
+            throw new Error('Ruta de archivo no permitida (Path Traversal detectado)');
+        }
+
+        // Asegurar que el directorio destino existe
         // Usamos path.dirname(fullPath) para obtener el directorio padre del archivo final
         const dirToCreate = path.dirname(fullPath);
 

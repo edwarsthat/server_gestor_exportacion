@@ -2,6 +2,7 @@ import { CalidadRepository } from "../../api/Calidad.js";
 import { ComercialRepository } from "../../api/Comercial.js";
 import { InventariosRepository } from "../../api/inventarios.js";
 import { InventarioDescarteController } from "../../api/inventarios/inventarioDescarte.js";
+import { InventarioFrutaSinProcesarController } from "../../api/inventarios/inventarioFrutaSinProcesar.js";
 import { ModificarRepository } from "../../api/ModificarData.js";
 import { ProcesoRepository } from "../../api/Proceso.mjs";
 import { successResponseRoutes } from "../helpers/responses.js";
@@ -53,7 +54,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes()
     },
     put_inventarios_ordenVaceo_vacear: async (data) => {
-        await InventariosRepository.put_inventarios_ordenVaceo_vacear(data)
+        await InventarioFrutaSinProcesarController.put_inventarios_ordenVaceo_vacear(data)
         return successResponseRoutes()
     },
     get_inventarios_frutaDesverdizando_lotes: async () => {
