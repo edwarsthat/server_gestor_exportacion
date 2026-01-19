@@ -33,31 +33,33 @@ export function isPaisesCaribe(contenedor) {
     return true;
 }
 export function resumenCalidad(itemsPallet, calidad = "") {
-    const out = {}
+    const outMap = new Map();
     let total = 0;
     let totalPallets = 0;
 
     for (const item of itemsPallet) {
         const calibre = new Set()
 
-
         if (item.pallet.numeroPallet > totalPallets) totalPallets = item.pallet.numeroPallet
         total += item.cajas
-        if ( calidad === "" || item.calidad._id.toString() === calidad._id.toString() ) {
-            if (!out[item.calibre]) {
-                out[item.calibre] = {
+        if (calidad === "" || item.calidad._id.toString() === calidad._id.toString()) {
+            if (!outMap.has(item.calibre)) {
+                outMap.set(item.calibre, {
                     cantidad: 0,
-                }
+                })
             }
-            out[item.calibre].cantidad += item.cajas
+            outMap.get(item.calibre).cantidad += item.cajas
             calibre.add(item.calibre)
         }
     }
 
-    Object.keys(out).forEach(item => {
-        out[item].pallets = Math.round((out[item].cantidad * totalPallets) / total)
-        out[item].porcentage = (out[item].cantidad * 100) / total
+    outMap.forEach((value) => {
+        value.pallets = Math.round((value.cantidad * totalPallets) / total);
+        value.porcentage = (value.cantidad * 100) / total;
     })
+
+    const out = Object.fromEntries(outMap);
+
     return out
 }
 export function resumenPredios(itemsPallet) {
