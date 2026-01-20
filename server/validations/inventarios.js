@@ -523,4 +523,11 @@ export class InventariosValidations {
             )
         });
     }
+    static put_inventarios_ordenVaceo_vacear() {
+        return z.object({
+            _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
+            kilosVaciados: z.number().gt(0, "Los kilos vaciados deben ser mayores a cero"),
+            action: z.string()
+        });
+    }
 }

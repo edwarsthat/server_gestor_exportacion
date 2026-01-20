@@ -996,7 +996,9 @@ describe('FileService', () => {
                 'UPLOADS'
             );
 
-            expect(result).toMatch(new RegExp(`^${testDir}/[0-9a-f-]{36}\\.png$`));
+            // Usar [\\/] para compatibilidad Windows/Unix
+            const escapedDir = testDir.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            expect(result).toMatch(new RegExp(`^${escapedDir}[\\\\/][0-9a-f-]{36}\\.png$`));
         });
 
         test('debería crear el archivo en disco', async () => {

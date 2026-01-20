@@ -127,12 +127,17 @@ export class IndicadoresAPIRepository {
     }
     static async put_indicadores_actualizar_indicador(update, session = null) {
         try {
+            if (!update || Object.keys(update).length === 0) {
+                throw new ProcessError(400, "El objeto de actualización no puede estar vacío");
+            }
             const indicador = await IndicadoresRepository.actualizar_indicador(
                 {},
                 update,
                 {
                     sort: { fecha_creacion: -1, _id: -1 },
-                    session
+                    session,
+                    new: true,
+                    runValidators: true
                 }
             );
             if (!indicador) {
@@ -141,10 +146,13 @@ export class IndicadoresAPIRepository {
             return indicador
 
         } catch (err) {
-            if (err.status === 524) {
-                throw err
+            // Preservar errores que ya vienen formateados (como el 404 de arriba o errores del repo)
+            if (err instanceof ProcessError || err.status) {
+                throw err;
             }
-            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
+
+            // Manejo de errores inesperados (DB caídas, timeouts)
+            throw new ProcessError(475, `Error en actualización de indicadores: ${err.message}`);
         }
     }
     static async reiniciarValores_proceso() {
@@ -213,16 +221,16 @@ export class IndicadoresAPIRepository {
 
             const lotes = await LotesRepository.getLotes({
                 query: query,
-                select: { 
+                select: {
                     _id: 1,
                     enf: 1,
-                    kilos: 1, 
+                    kilos: 1,
                     kilosVaciados: 1,
-                    descarteLavado: 1, 
-                    descarteEncerado: 1, 
-                    frutaNacional: 1, 
+                    descarteLavado: 1,
+                    descarteEncerado: 1,
+                    frutaNacional: 1,
                     directoNacional: 1,
-                    salidaExportacion: 1, 
+                    salidaExportacion: 1,
                 }
             });
 

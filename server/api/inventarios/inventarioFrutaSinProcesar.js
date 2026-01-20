@@ -7,12 +7,18 @@ import { InventariosService } from "../../services/inventarios.js";
 import { registrarPasoLog } from "../helper/logs.js";
 import { IndicadoresAPIRepository } from "../IndicadoresAPI.js";
 import { ErrorInventarioLogicHandlers } from "../utils/errorsHandlers.js";
+import { InventariosValidations } from "../../validations/inventarios.js";
+
 
 export class InventarioFrutaSinProcesarController {
     static async put_inventarios_ordenVaceo_vacear(req) {
         let log
         const { user, data } = req;
+
+        InventariosValidations.put_inventarios_ordenVaceo_vacear().parse(data);
+
         const { _id, kilosVaciados, action } = data;
+
 
         const session = await db.Lotes.db.startSession();
 
@@ -27,20 +33,23 @@ export class InventarioFrutaSinProcesarController {
         });
         try {
             let lote
-            const loteAnterior = await InventariosService.probar_deshidratacion_loteProcesando(user)
-            await registrarPasoLog(log._id, "InventariosService.probar_deshidratacion_loteProcesando", "Completado");
 
-            const query = {
-                $inc: {
-                    kilosVaciados: kilosVaciados,
-                },
-                finalizado: false,
-                fechaProceso: new Date()
-            }
             await session.withTransaction(async () => {
 
+                const loteAnterior = await InventariosService.probar_deshidratacion_loteProcesando(user)
+                await registrarPasoLog(log._id, "InventariosService.probar_deshidratacion_loteProcesando", "Completado");
+
+                // Obtener datos del ítem para saber cuántas canastillas restar
                 const item = await InventariosHistorialRepository.get_item_frutaSinProcesar(_id);
 
+                // Actualizar lote actual (Kilos y Estado)
+                const query = {
+                    $inc: {
+                        kilosVaciados: kilosVaciados,
+                    },
+                    finalizado: false,
+                    fechaProceso: new Date()
+                }
                 lote = await LotesHelper.actualizar_lotes_helper(
                     { _id: _id },
                     query,
@@ -51,9 +60,11 @@ export class InventarioFrutaSinProcesarController {
                 )
                 await registrarPasoLog(log._id, "LotesRepository.modificar_lote", "Completado", `Se modificó el lote con ID ${_id} para vaciarlo, kilosVaciados: ${kilosVaciados}`);
 
+                // Restar canastillas del inventario
                 const descripcion = `Vaceo - Canastillas decrementadas: ${item.canastillas}`
-                await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(item.canastillas), user, action, lote, log, session, descripcion);
-                await InventariosHistorialRepository.put_borrar_item_ordenVaceo(session);
+                await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(item.canastillas), user, action, lote, session, descripcion);
+                console.log("item", item)
+                await InventariosHistorialRepository.put_borrar_item_ordenVaceo(item.lote, session);
                 await registrarPasoLog(
                     log._id,
                     "InventariosHistorialRepository.put_borrar_item_ordenVaceo",
@@ -61,12 +72,12 @@ export class InventarioFrutaSinProcesarController {
                     `Se eliminó el item ${item._id} del inventario de fruta sin procesar`);
 
                 if (loteAnterior !== null) {
-                    await LotesHelper.actualizar_lote(
+                    await LotesHelper.actualizar_lotes_helper(
                         { _id: loteAnterior._id },
                         { finalizado: true },
                         { user: user, action: "finalizado", session }
                     );
-                    await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Se actualizó el lote ${loteAnterior._id} a finalizado: true`);
+                    await registrarPasoLog(log._id, "LotesHelper.actualizar_lote", "Completado", `Se actualizó el lote ${loteAnterior._id} a finalizado: true`);
                 }
 
                 await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(

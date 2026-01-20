@@ -24,6 +24,7 @@ import config from "../../src/config/index.js";
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
 import { dataService } from "./data.js";
 import { DescartesRepository } from "../Class/Descartes.js";
+import { LotesHelper } from "../helper/lotes.js";
 
 export class InventariosService {
 
@@ -629,38 +630,42 @@ export class InventariosService {
     }
     static async probar_deshidratacion_loteProcesando(user) {
         const predioVaciando = await FrutaProcesada.obtener_ultimaEntrada();
-        if (!predioVaciando || predioVaciando.length === 0 || predioVaciando.loteId === null) {
-            return null
+
+        if (!predioVaciando || !predioVaciando.loteId) {
+            return null;
         }
 
-        const [EF1, EF10] = await Promise.all([
-            LotesRepository.getLotes({ ids: [predioVaciando.loteId._id] }),
-            LotesRepository.getLotesMaquila({ ids: [predioVaciando.loteId._id] })
-        ])
-        const lote = EF1.length > 0 ? EF1[0] : (EF10.length > 0 ? EF10[0] : null);
+        const loteIdBusqueda = predioVaciando.loteId._id ?? predioVaciando.loteId;
+
+        const lotes = await LotesHelper.obtener_lote_helper({ ids: [loteIdBusqueda] });
+        const lote = lotes[0] ?? null;
 
         if (!lote) {
-            return null
+            throw new InventariosLogicError(404, "El lote asociado al proceso no fue encontrado.");
         }
 
-        // Cargos con vía rápida
+        const ROL_ADMIN = 0;
         const PERM_1 = config.COORDINADOR_PRODUCCION;
         const PERM_2 = config.DIR_OPERACIONES;
 
-        // Pueden saltarse la validación si:
-        // - Rol = 0  O  - Cargo está en la lista permitida
-        const puedeOmitirValidacion =
-            Number(user?.Rol) === 0 || [PERM_1, PERM_2].includes(user?.cargo);
+        if (!PERM_1 || !PERM_2) {
+            throw new InventariosLogicError(500, "Configuración de permisos incompleta para validación de deshidratación.");
+        }
+
+        const CARGOS_AUTORIZADOS = [PERM_1, PERM_2];
+        const puedeOmitirValidacion = Number(user?.Rol) === ROL_ADMIN || (user?.cargo && CARGOS_AUTORIZADOS.includes(user.cargo));
 
         if (!puedeOmitirValidacion) {
             const d = lote.deshidratacion;
-            const esNumero = typeof d === "number" && Number.isFinite(d);
 
-            // Solo valida si hay número; fuera de [-1, 3] => error
-            if (esNumero && (d > 3 || d < -1)) {
+            // Corregido: Validamos si el dato NO existe o si está fuera de rango
+            const esDatoInvalido = typeof d !== "number" || !Number.isFinite(d);
+            const estaFueraDeRango = d > 3 || d < -1;
+
+            if (esDatoInvalido || estaFueraDeRango) {
                 throw new InventariosLogicError(
                     470,
-                    `El lote no se puede vaciar porque la deshidratación de ${predioVaciando.enf} - ${predioVaciando.nombrePredio} no está en el rango permitido.`
+                    `El lote no se puede vaciar. La deshidratación de ${predioVaciando.enf} - ${predioVaciando.nombrePredio} (${d ?? 'N/A'}%) no es válida o está fuera del rango permitido (-1% a 3%).`
                 );
             }
         }
@@ -908,36 +913,45 @@ export class InventariosService {
         }
         return { operation, out };
     }
-    static async modificarRestarInventarioFrutaSinProocesar(canastillas, user, action, lote, log, session, descripcion) {
+    static async modificarRestarInventarioFrutaSinProocesar(canastillas, user, action, lote, session, descripcion) {
         const inventarioFrutaSinProcesar = config.INVENTARIO_FRUTA_SIN_PROCESAR;
-        let tipoInventario = "";
-        if (lote.enf.startsWith("EF1-")) {
-            tipoInventario = "inventario";
-        } else if (lote.enf.startsWith("EF10-")) {
-            tipoInventario = "inventarioMaquila";
+
+        // Validaciones de entrada
+        if (!canastillas || canastillas <= 0) throw new Error('Las canastillas deben ser un número positivo');
+        if (!lote?._id || !lote?.enf) throw new Error('Datos del lote incompletos (_id, enf)');
+        if (!user?._id) throw new Error('ID de usuario requerido');
+
+        // Determinar campo de inventario
+        const enfUpper = lote.enf.trim().toUpperCase();
+        const tipoInventario = enfUpper.startsWith("EF1-") ? "inventario" :
+            enfUpper.startsWith("EF10-") ? "inventarioMaquila" : null;
+
+        if (!tipoInventario) {
+            throw new Error(`ENF inválido: ${lote.enf}. No se reconoce el prefijo.`);
         }
-        // Primero decrementar las canastillas
-        const updateResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
-            { _id: inventarioFrutaSinProcesar },
-            { $inc: { [tipoInventario + ".$[it].canastillas"]: -canastillas, __v: 1 } },
+
+        const pullResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+            {
+                _id: inventarioFrutaSinProcesar,
+                [`${tipoInventario}.lote`]: lote._id
+            },
+            {
+                $pull: { [tipoInventario]: { lote: new mongoose.Types.ObjectId(lote._id) } },
+                $inc: { __v: 1 }
+            },
             {
                 session,
-                action: action,
+                action,
                 description: descripcion,
-                user: user._id,
-                arrayFilters: [{ 'it.lote': new mongoose.Types.ObjectId(lote._id) }],
+                user: user._id
             }
         );
-        await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple_updateOne (decrementar)", "Completado", `Canastillas decrementadas: ${canastillas}, matchedCount: ${updateResult?.matchedCount}, modifiedCount: ${updateResult?.modifiedCount}`);
 
-        // Luego eliminar elementos con canastillas <= 0
-        const pullResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
-            { _id: inventarioFrutaSinProcesar },
-            { $pull: { [tipoInventario]: { lote: new mongoose.Types.ObjectId(lote._id), canastillas: { $lte: 0 } } } },
-            { session, skipAudit: true, runValidators: false }
-        );
-        await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple_updateOne (pull)", "Completado", `Elementos eliminados con canastillas <= 0, matchedCount: ${pullResult?.matchedCount}, modifiedCount: ${pullResult?.modifiedCount}`);
+        if (pullResult.matchedCount === 0) {
+            throw new Error(`El lote ${lote.enf} ya no se encuentra en el inventario (posiblemente ya fue procesado)`);
+        }
 
+        return pullResult;
     }
     static async modificarSumarInventarioFrutaSinProocesar(
         canastillas, user, action, loteId, tipo, log, session, descripcion

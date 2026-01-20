@@ -49,7 +49,9 @@ export default [
       // Los datos base64 de prueba no son secretos reales
       "no-secrets/no-secrets": "off",
       // En tests es necesario usar variables para paths dinámicos
-      "security/detect-non-literal-fs-filename": "off"
+      "security/detect-non-literal-fs-filename": "off",
+      // En tests es común usar regex dinámicos para validar paths
+      "security/detect-non-literal-regexp": "off"
     }
   },
   {
