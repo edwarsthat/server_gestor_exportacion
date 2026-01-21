@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { ProcessError } from '../../Error/ProcessError.js';
 import { db } from '../../DB/mongoDB/config/init.js';
 import { registrarPasoLog } from '../api/helper/logs.js';
-import { CARNET_ENUMS } from '../../constants/personal.js';
+import { CARNET_ENUMS, TIPOS_IDENTIFICACION_ENUMS } from '../../constants/personal.js';
 import { AREAS_SELECCION } from '../../constants/AreasProceso.js';
 // La magia para tener __dirname:
 const __filename = fileURLToPath(import.meta.url);
@@ -116,6 +116,9 @@ export class ConstantesDelSistema {
         } catch (err) {
             throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`)
         }
+    }
+    static get_constantes_sistema_tiposIdentificacion() {
+        return TIPOS_IDENTIFICACION_ENUMS;
     }
 }
 

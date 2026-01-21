@@ -295,19 +295,25 @@ export class dataRepository {
     }
     static async get_data_bootstrap() {
         try {
-            const [tipoFrutas, calidadesExport, descartes, carnet, areasSeleccion, paisesExpGGN] = await Promise.all([
-                ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(),
-                ConstantesDelSistema.get_constantes_sistema_calidades(),
-                ConstantesDelSistema.get_constantes_sistema_descartes(),
-                ConstantesDelSistema.get_constantes_carnets(),
-                ConstantesDelSistema.get_constantes_sistema_areasSeleccion(),
-                ConstantesDelSistema.get_constantes_sistema_paises_GGN()
-            ]);
+            const promises = {
+                tipoFrutas: ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(),
+                calidadesExport: ConstantesDelSistema.get_constantes_sistema_calidades(),
+                descartes: ConstantesDelSistema.get_constantes_sistema_descartes(),
+                carnet: ConstantesDelSistema.get_constantes_carnets(),
+                areasSeleccion: ConstantesDelSistema.get_constantes_sistema_areasSeleccion(),
+                paisesExpGGN: ConstantesDelSistema.get_constantes_sistema_paises_GGN(),
+                tiposIdentificacion: ConstantesDelSistema.get_constantes_sistema_tiposIdentificacion()
+            };
 
-            return { tipoFrutas, calidadesExport, descartes, carnet, areasSeleccion, paisesExpGGN }
+            const entries = await Promise.all(
+                Object.entries(promises).map(async ([key, promise]) => [key, await promise])
+            );
+            console.log(entries)
+            return Object.fromEntries(entries);
+
         } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            await ErrorDataLogicHandlers(err)
+            console.error(`[ERROR][${new Date().toISOString()}] Bootstrap failed:`, err);
+            throw await ErrorDataLogicHandlers(err);
         }
     }
 }

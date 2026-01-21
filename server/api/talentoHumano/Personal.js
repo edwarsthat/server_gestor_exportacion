@@ -12,6 +12,7 @@ import { FileService } from "../../services/helpers/FileService.js";
 import { CarnetsService } from "../../services/talentoHumano/carnets.js";
 import { TalentoHumanoDotacionCarnetsRepository } from "../../Class/talentoHumano/dotacion/Carnets.js";
 import bcrypt from "bcrypt";
+import PDFDocument from "pdfkit";
 
 
 export class PersonalControllerRepository {
@@ -91,7 +92,7 @@ export class PersonalControllerRepository {
     }
     static async post_talentoHumano_personal_cargarCedula(req) {
         const { user } = req
-        const { action, cedula } = req.data
+        const { action, cedula, cedulaFrente, cedulaTrasera } = req.data
         let log
         log = await LogsRepository.create({
             user: user._id,
@@ -101,28 +102,71 @@ export class PersonalControllerRepository {
 
         try {
 
-            if (!cedula) {
-                throw new Error('El documento de identificación es obligatorio.');
-            }
-
-            if (typeof cedula !== 'string') {
-                throw new Error('El documento de identificación debe enviarse como string en base64.');
-            }
+            TalentoHumanoValidations.post_talentoHumano_personal_cargarCedula().parse(req.data)
 
             const urlPath = path.join(
                 "personal",
                 "identificacion",
             );
 
-            const filePath = await FileService.saveBase64File(
-                cedula,
-                urlPath,
-                "STORAGE",
-                { encrypt: true }
-            )
+            let filePath;
+
+            if (cedulaFrente?.url && cedulaTrasera?.url) {
+                const pdfBuffer = await new Promise((resolve, reject) => {
+                    const doc = new PDFDocument({ margin: 0, size: 'A4' });
+                    const chunks = [];
+                    doc.on('data', chunk => chunks.push(chunk));
+                    doc.on('end', () => resolve(Buffer.concat(chunks)));
+                    doc.on('error', reject);
+
+                    try {
+                        const img1 = Buffer.from(cedulaFrente.url.split(',')[1], 'base64');
+                        const img2 = Buffer.from(cedulaTrasera.url.split(',')[1], 'base64');
+
+                        doc.image(img1, {
+                            fit: [doc.page.width, doc.page.height],
+                            align: 'center',
+                            valign: 'center'
+                        });
+                        doc.addPage();
+                        doc.image(img2, {
+                            fit: [doc.page.width, doc.page.height],
+                            align: 'center',
+                            valign: 'center'
+                        });
+                        doc.end();
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+
+                const pdfBase64 = `data:application/pdf;base64,${pdfBuffer.toString('base64')}`;
+                filePath = await FileService.saveBase64File(
+                    pdfBase64,
+                    urlPath,
+                    "STORAGE",
+                    { encrypt: true }
+                );
+
+            } else if (cedula && typeof cedula === 'string') {
+                filePath = await FileService.saveBase64File(
+                    cedula,
+                    urlPath,
+                    "STORAGE",
+                    { encrypt: true }
+                )
+            }
+
+            if (!filePath) {
+                throw new Error("La cedula es obligatoria")
+            }
+
             await registrarPasoLog(log._id, "Cargar cedula", "completado")
+
+            let dataForRust = filePath;
+
             const payload = {
-                data: JSON.stringify(cleanForRust(filePath)),
+                data: JSON.stringify(cleanForRust(dataForRust)),
                 server: "python",
                 action: "validar_cedula"
             };

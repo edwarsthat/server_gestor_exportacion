@@ -1,6 +1,18 @@
 import { z } from "zod";
 
 export class TalentoHumanoValidations {
+    static post_talentoHumano_personal_cargarCedula() {
+        return z.object({
+            action: z.string().min(1, "La acción es obligatoria"),
+            cedula: z.string().optional(),
+            cedulaFrente: z.object({
+                url: z.string(),
+            }).optional(),
+            cedulaTrasera: z.object({
+                url: z.string(),
+            }).optional(),
+        })
+    }
     static post_talentoHumano_cargos_ingresoCargo() {
         return z.object({
             nombre: z.string().min(1, "El nombre es obligatorio"),
