@@ -85,7 +85,7 @@ describe('dataRepository.get_data_bootstrap', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 
         // Setup default mock responses
         mockGetTipoFrutas2.mockResolvedValue(MOCK_DATA.tipoFrutas);
@@ -435,7 +435,7 @@ describe('dataRepository.get_data_bootstrap', () => {
             // Este test FALLARÁ hasta que se implemente inmutabilidad
             // Descomentar cuando se quiera forzar la implementación
             const originalData = [{ _id: '1', tipoFruta: 'Naranja' }];
-            const frozenData = JSON.parse(JSON.stringify(originalData)); // Copia para comparar
+            // const frozenData = JSON.parse(JSON.stringify(originalData)); // Copia para comparar
             mockGetTipoFrutas2.mockResolvedValue(originalData);
 
             const result = await dataRepository.get_data_bootstrap();
@@ -554,7 +554,7 @@ describe('dataRepository.get_data_bootstrap - Tests de Performance', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 
         mockGetTipoFrutas2.mockResolvedValue(MOCK_DATA.tipoFrutas);
         mockGetCalidades.mockResolvedValue(MOCK_DATA.calidadesExport);

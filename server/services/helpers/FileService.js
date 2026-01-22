@@ -95,33 +95,35 @@ export class FileService {
             };
         }
     }
-    static async readTemplate(templateSubPath) {
-        const validation = await this.validateFilePath(templateSubPath, 'TEMPLATES');
-
-        if (!validation.isValid) {
-            throw new Error(`Template no encontrado o inválido: ${validation.error}`);
+    static async sanitizeAndValidatePath(filePath, location = 'TEMPLATES') {
+        if (!filePath || typeof filePath !== 'string') {
+            throw new Error('Ruta de archivo inválida');
         }
-
+        const sanitizedPath = filePath.replace(/\0/g, '').trim();
+        const validation = await this.validateFilePath(sanitizedPath, location);
+        if (!validation.isValid) {
+            throw new Error('Archivo no encontrado o acceso denegado');
+        }
+        return validation.resolvedPath;
+    }
+    static async readTemplate(templateSubPath) {
+        const resolvedPath = await this.sanitizeAndValidatePath(templateSubPath, 'TEMPLATES');
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        return await fs.readFile(validation.resolvedPath, 'utf-8');
+        return await fs.readFile(resolvedPath, 'utf-8');
     }
     static async getTemplateDir(templateSubPath) {
-        const validation = await this.validateFilePath(templateSubPath, 'TEMPLATES');
-        if (!validation.isValid) {
-            throw new Error(`Directorio de template no encontrado: ${validation.error}`);
-        }
-        return path.dirname(validation.resolvedPath);
+        const resolvedPath = await this.sanitizeAndValidatePath(templateSubPath, 'TEMPLATES');
+        return path.dirname(resolvedPath);
     }
     static async readFileAsBase64(filePath, location = 'TEMPLATES', options = {}) {
         const {
             decrypt = false,
         } = options;
-        const validation = await this.validateFilePath(filePath, location);
-        if (!validation.isValid) {
-            throw new Error(`Archivo no encontrado para base64: ${validation.error}`);
-        }
+
+        const resolvedPath = await this.sanitizeAndValidatePath(filePath, location);
+
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        let buffer = await fs.readFile(validation.resolvedPath);
+        let buffer = await fs.readFile(resolvedPath);
 
         if (decrypt) {
             buffer = this.decryptBuffer(buffer);
@@ -158,10 +160,10 @@ export class FileService {
         };
 
         // Obtener extensión, manejando archivos encriptados (.pdf.enc → .pdf)
-        let ext = path.extname(validation.resolvedPath).toLowerCase();
+        let ext = path.extname(resolvedPath).toLowerCase();
         if (ext === '.enc') {
             // Remover .enc y obtener la extensión real
-            const nameWithoutEnc = validation.resolvedPath.slice(0, -4);
+            const nameWithoutEnc = resolvedPath.slice(0, -4);
             ext = path.extname(nameWithoutEnc).toLowerCase();
         }
 
@@ -174,14 +176,10 @@ export class FileService {
             decrypt = false,
         } = options;
 
-        const validation = await this.validateFilePath(filePath, location);
-
-        if (!validation.isValid) {
-            throw new Error(`Archivo no encontrado o inválido: ${validation.error}`);
-        }
+        const resolvedPath = await this.sanitizeAndValidatePath(filePath, location);
 
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        const buffer = await fs.readFile(validation.resolvedPath);
+        const buffer = await fs.readFile(resolvedPath);
 
         if (decrypt) {
             return this.decryptBuffer(buffer);
@@ -189,14 +187,9 @@ export class FileService {
         return buffer;
     }
     static async getFileStats(filePath, location = 'TEMPLATES') {
-        const validation = await this.validateFilePath(filePath, location);
-
-        if (!validation.isValid) {
-            throw new Error(`Archivo no encontrado o inválido: ${validation.error}`);
-        }
-
+        const resolvedPath = await this.sanitizeAndValidatePath(filePath, location);
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        return await fs.stat(validation.resolvedPath);
+        return await fs.stat(resolvedPath);
     }
 
     //encriptaciones
@@ -230,12 +223,9 @@ export class FileService {
 
     //Write
     static async makeDir(dirPath, location = 'TEMPLATES') {
-        const validation = await this.validateFilePath(dirPath, location);
-        if (!validation.isValid) {
-            throw new Error(`Directorio no encontrado o inválido: ${validation.error}`);
-        }
+        const resolvedPath = await this.sanitizeAndValidatePath(dirPath, location);
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        return await fs.mkdir(validation.resolvedPath, { recursive: true });
+        return await fs.mkdir(resolvedPath, { recursive: true });
     }
     static async validateAndDecodeBase64(
         base64String,
@@ -387,12 +377,9 @@ export class FileService {
         return fullPath;
     }
     static async writeFileFromBuffer(filePath, buffer, location = 'TEMPLATES') {
-        const validation = await this.validateFilePath(filePath, location);
-        if (!validation.isValid) {
-            throw new Error(`Archivo no encontrado o inválido: ${validation.error}`);
-        }
+        const resolvedPath = await this.sanitizeAndValidatePath(filePath, location);
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        return await fs.writeFile(validation.resolvedPath, buffer);
+        return await fs.writeFile(resolvedPath, buffer);
     }
     static async saveBase64File(
         base64String,

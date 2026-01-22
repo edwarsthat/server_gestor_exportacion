@@ -65,7 +65,7 @@ describe('Test 13: Archivos JSON - paisesEXP.json', () => {
         // Validación de esquema mínimo
         expect(result.length).toBeGreaterThan(0);
 
-        result.forEach((pais, index) => {
+        result.forEach((pais) => {
             expect(typeof pais).toBe('string');
             expect(pais.trim().length).toBeGreaterThan(0);
         });

@@ -3,7 +3,7 @@
  * @description Convierte el campo user de tipo String a ObjectId en lotes, loteef8 y lotemaquila
  */
 
-import { MongoClient, ObjectId } from 'mongodb';
+import { MongoClient } from 'mongodb';
 import config from '../../../src/config/index.js';
 import fs from 'fs';
 import { parse } from 'csv-parse/sync';
@@ -86,7 +86,7 @@ function convertirAccesoTotal(accesoString) {
         const parsed = JSON.parse(accesoString.trim());
         return Array.isArray(parsed) ? parsed : [];
     } catch (error) {
-        console.warn('Error parseando acceso:', accesoString);
+        console.warn('Error parseando acceso:', accesoString, error);
         return [];
     }
 }
@@ -96,27 +96,56 @@ async function main() {
         // Conectar a la base de datos
         const database = await connectProcesoDB();
 
-        // Obtener colecciones (MongoDB pluraliza automáticamente los nombres de modelo)
-        const personalsCollection = database.collection('personals');
-        const cargospersonalsCollection = database.collection('cargospersonals');
+        // Obtener colecciones
         const areasCollection = database.collection('areasfisicas');
+        const cargosCollection = database.collection('cargospersonals');
+
+        const areasArray = await areasCollection.find().toArray();
+        const areasMap = new Map(areasArray.map(area => [area.nombre, area]));
+
 
         const registros = leerCSV('scripts/2026/1.9.1/Credenciales.csv');
-        const cargos = new Set();
-        const areas = new Set();
-        console.log(typeof registros[0]["Acceso Total"]);
+        const cargosUnicos = new Map();
+
+        console.log('📦 Procesando registros del CSV...');
 
         for (const registro of registros) {
-            const accesos = convertirAccesoTotal(registro["Acceso Total"]);
+            // Ignorar registros sin nombre o con marcas de error/libres
+            if (!registro.Nombre || registro.Nombre.includes('LIBRE') || registro.Nombre.includes('DESTRUCCION') || registro.Nombre.includes('USADO')) {
+                continue;
+            }
 
-            cargos.add(registro.Cargo);
-            accesos.forEach(acceso => areas.add(acceso));
+            const areasRegistros = convertirAccesoTotal(registro["Acceso Total"]);
+            const areasRegistrosIds = areasRegistros.map(area => areasMap.get(area)._id);
+
+            if (!cargosUnicos.has(registro.Cargo)) {
+                cargosUnicos.set(registro.Cargo, {
+                    nombre: registro.Cargo,
+                    areas: areasRegistrosIds,
+                    color: "#F3930D"
+                });
+            }
+
         }
 
-        console.log(cargos);
-        console.log(areas);
+        const cargosArray = Array.from(cargosUnicos.values());
+
+        // --- MIGRACIÓN DE CARGOS ---
+        if (cargosArray.length > 0) {
+            console.log(`🌐 Sincronizando ${cargosArray.length} cargos...`);
+            const opCargos = Array.from(cargosArray).map(cargo => ({
+                updateOne: {
+                    filter: { nombre: cargo.nombre },
+                    update: { $setOnInsert: { nombre: cargo.nombre, areas: cargo.areas, color: cargo.color } },
+                    upsert: true
+                }
+            }));
+            const resCargos = await cargosCollection.bulkWrite(opCargos);
+            console.log(`✅ Cargos: ${resCargos.upsertedCount} creados, ${resCargos.matchedCount} ya existían.`);
+        }
 
 
+        console.log('🏁 Migración de tablas maestras finalizada con éxito.');
 
     } catch (error) {
         console.error('❌ Error en el proceso:', error.message);

@@ -368,13 +368,13 @@ describe('FileService', () => {
             test('debería lanzar error si el template no existe', async () => {
                 await expect(
                     FileService.readTemplate('template-inexistente-12345.html')
-                ).rejects.toThrow('Template no encontrado o inválido');
+                ).rejects.toThrow('Archivo no encontrado o acceso denegado');
             });
 
             test('debería incluir mensaje de error específico', async () => {
                 await expect(
                     FileService.readTemplate('no-existe.docx')
-                ).rejects.toThrow('Archivo no encontrado');
+                ).rejects.toThrow('Archivo no encontrado o acceso denegado');
             });
         });
 
@@ -386,19 +386,19 @@ describe('FileService', () => {
             test('debería lanzar error si la ruta es null', async () => {
                 await expect(
                     FileService.readTemplate(null)
-                ).rejects.toThrow('Template no encontrado o inválido');
+                ).rejects.toThrow('Ruta de archivo inválida');
             });
 
             test('debería lanzar error si la ruta es undefined', async () => {
                 await expect(
                     FileService.readTemplate(undefined)
-                ).rejects.toThrow('Ruta de archivo no proporcionada');
+                ).rejects.toThrow('Ruta de archivo inválida');
             });
 
             test('debería lanzar error si la ruta es string vacío', async () => {
                 await expect(
                     FileService.readTemplate('')
-                ).rejects.toThrow('Ruta de archivo no proporcionada');
+                ).rejects.toThrow('Ruta de archivo inválida');
             });
         });
 
@@ -410,25 +410,25 @@ describe('FileService', () => {
             test('debería bloquear intento de ../', async () => {
                 await expect(
                     FileService.readTemplate('../../../etc/passwd')
-                ).rejects.toThrow('fuera del directorio permitido');
+                ).rejects.toThrow('Archivo no encontrado o acceso denegado');
             });
 
             test('debería bloquear intento con múltiples ../', async () => {
                 await expect(
                     FileService.readTemplate('../../../../../../../../etc/passwd')
-                ).rejects.toThrow('Template no encontrado o inválido');
+                ).rejects.toThrow('Archivo no encontrado o acceso denegado');
             });
 
             test('debería bloquear rutas absolutas', async () => {
                 await expect(
                     FileService.readTemplate('/etc/passwd')
-                ).rejects.toThrow('Template no encontrado o inválido');
+                ).rejects.toThrow('Archivo no encontrado o acceso denegado');
             });
 
             test('debería bloquear ../ mezclado con carpetas válidas', async () => {
                 await expect(
                     FileService.readTemplate('subcarpeta/../../../etc/passwd')
-                ).rejects.toThrow('Template no encontrado o inválido');
+                ).rejects.toThrow('Archivo no encontrado o acceso denegado');
             });
         });
 
@@ -471,7 +471,7 @@ describe('FileService', () => {
                     // El archivo no se encontrará porque busca literalmente "test-subdir-unit\sub-template.txt"
                     await expect(
                         FileService.readTemplate(`${subDir}\\${subDirTemplate}`)
-                    ).rejects.toThrow('Template no encontrado o inválido');
+                    ).rejects.toThrow('Archivo no encontrado o acceso denegado');
                 }
             });
         });
@@ -525,13 +525,13 @@ describe('FileService', () => {
         test('debería lanzar error si el template no existe', async () => {
             await expect(
                 FileService.getTemplateDir('no-existe-12345.html')
-            ).rejects.toThrow('Directorio de template no encontrado');
+            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
         });
 
         test('debería lanzar error para path traversal', async () => {
             await expect(
                 FileService.getTemplateDir('../../../etc/passwd')
-            ).rejects.toThrow('Directorio de template no encontrado');
+            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
         });
     });
 
@@ -568,13 +568,13 @@ describe('FileService', () => {
         test('debería lanzar error si el archivo no existe', async () => {
             await expect(
                 FileService.readFile('no-existe.txt', 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o inválido');
+            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
         });
 
         test('debería lanzar error para path traversal', async () => {
             await expect(
                 FileService.readFile('../../../etc/passwd', 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o inválido');
+            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
         });
 
         test('debería usar TEMPLATES como ubicación por defecto', async () => {
@@ -652,7 +652,7 @@ describe('FileService', () => {
         test('debería lanzar error si el archivo no existe', async () => {
             await expect(
                 FileService.readFileAsBase64('no-existe.txt', 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado para base64');
+            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
         });
 
         test('debería usar application/octet-stream para extensiones desconocidas', async () => {
@@ -719,13 +719,13 @@ describe('FileService', () => {
         test('debería lanzar error si el archivo no existe', async () => {
             await expect(
                 FileService.getFileStats('no-existe.txt', 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o inválido');
+            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
         });
 
         test('debería lanzar error para path traversal', async () => {
             await expect(
                 FileService.getFileStats('../../../etc/passwd', 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o inválido');
+            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
         });
     });
 
@@ -959,13 +959,13 @@ describe('FileService', () => {
         test('debería lanzar error si el archivo no existe', async () => {
             await expect(
                 FileService.writeFileFromBuffer('no-existe-write.txt', Buffer.from('test'), 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o inválido');
+            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
         });
 
         test('debería lanzar error para path traversal', async () => {
             await expect(
                 FileService.writeFileFromBuffer('../../../etc/passwd', Buffer.from('test'), 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o inválido');
+            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
         });
     });
 

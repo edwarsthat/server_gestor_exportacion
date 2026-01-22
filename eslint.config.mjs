@@ -63,7 +63,8 @@ export default [
       "node_modules/**",
       "dist/**",
       "public/**/assets/**",
-      "eslint.config.mjs"
+      "eslint.config.mjs",
+      "scripts/**"
     ]
   }
 ];

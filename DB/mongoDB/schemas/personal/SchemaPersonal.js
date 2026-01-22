@@ -7,7 +7,7 @@ export const defineSchemaPersonal = async (conn, auditLog) => {
     const auditPlugin = makeAuditPlugin({ collectionName: 'personal', AuditLogs: auditLog });
 
     const personalSchema = new Schema({
-        SKU: { type: String, required: true, unique: true },
+        SKU: { type: Number, required: true, unique: true },
         nombre: { type: String, required: true },
         cargo: { type: Schema.Types.ObjectId, ref: 'cargosPersonal' },
         identificacion: { type: String, required: true },
