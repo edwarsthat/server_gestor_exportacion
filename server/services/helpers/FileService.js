@@ -91,7 +91,7 @@ export class FileService {
             return {
                 isValid: false,
                 resolvedPath: null,
-                error: error.code === 'ENOENT' ? 'Archivo no encontrado' : `Error de acceso: ${error.message}`
+                error: error.code === 'ENOENT' ? 'Archivo no encontrado' : 'Error de acceso al archivo'
             };
         }
     }
