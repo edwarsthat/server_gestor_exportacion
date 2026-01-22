@@ -530,4 +530,22 @@ export class InventariosValidations {
             action: z.string()
         });
     }
+    static put_inventarios_frutaSinProcesar_directoNacional() {
+        return z.object({
+            action: z.literal('put_inventarios_frutaSinProcesar_directoNacional'),
+            data: z.object({
+                cliente: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El cliente debe ser un ObjectId válido"),
+                canastillas: z.coerce.number().gt(0, "Las canastillas deben ser mayores a cero"),
+                placa: z.string().min(1, "La placa es obligatoria"),
+                nombreConductor: z.string().min(1, "El nombre del conductor es obligatorio"),
+                telefono: z.string().min(1, "El teléfono es obligatorio"),
+                cedula: z.string().min(1, "La cédula es obligatoria"),
+                remision: z.string().min(1, "La remisión es obligatoria")
+            }),
+            lote: z.object({
+                _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id del lote debe ser un ObjectId válido")
+            }).passthrough(), // Permitimos otros campos del lote sin validarlos todos
+            __v: z.number({ required_error: "La versión (__v) es obligatoria para el control de concurrencia" })
+        });
+    }
 }

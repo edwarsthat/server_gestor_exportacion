@@ -930,21 +930,25 @@ export class InventariosService {
             throw new Error(`ENF inválido: ${lote.enf}. No se reconoce el prefijo.`);
         }
 
-        const pullResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+        await InventariosHistorialRepository.put_inventarioSimple_updateOne(
             {
                 _id: inventarioFrutaSinProcesar,
                 [`${tipoInventario}.lote`]: lote._id
             },
-            {
-                $pull: { [tipoInventario]: { lote: new mongoose.Types.ObjectId(lote._id) } },
-                $inc: { __v: 1 }
-            },
+            { $inc: { [tipoInventario + ".$[it].canastillas"]: -canastillas, __v: 1 } },
             {
                 session,
-                action,
+                action: action,
                 description: descripcion,
-                user: user._id
+                user: user._id,
+                arrayFilters: [{ 'it.lote': new mongoose.Types.ObjectId(lote._id) }],
             }
+        );
+
+        const pullResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+            { _id: inventarioFrutaSinProcesar },
+            { $pull: { [tipoInventario]: { lote: new mongoose.Types.ObjectId(lote._id), canastillas: { $lte: 0 } } } },
+            { session, skipAudit: true, runValidators: false }
         );
 
         if (pullResult.matchedCount === 0) {
@@ -1032,13 +1036,34 @@ export class InventariosService {
         return result;
     }
     static async item_in_ordenVaceo(itemId) {
+        if (!itemId || typeof itemId !== 'string' || !itemId.trim()) {
+            throw new Error(`No se proporcionó un item id válido`);
+        }
         const ordenVaceo = await InventariosHistorialRepository.get_ordenVaceo();
-        const ids = ordenVaceo.data.map(id => id.toString());
-        if (ids.includes(itemId)) {
+        if (!ordenVaceo || !ordenVaceo.data || !Array.isArray(ordenVaceo.data)) {
+            throw new Error(`Error al obtener la orden de vaceo`);
+        }
+        if (ordenVaceo.data.length === 0) {
+            return true;
+        }
+
+        const ids = ordenVaceo.data
+            .filter(id => id !== null && id !== undefined)
+            .map(id => id?.toString() ?? "");
+
+        if (ids.includes(itemId.toString())) {
             throw new Error(`EL lote ya está en la orden de vaceo, no se puede procesar como directo nacional.`);
         }
+        return true
     }
     static async check_inventarioVersion(idInventario, versionrequest) {
+        if (!idInventario || typeof idInventario !== 'string' || !idInventario.trim()) {
+            throw new Error(`No se proporcionó un inventario id válido`);
+        }
+        if (versionrequest === null || versionrequest === undefined) {
+            throw new Error(`No se proporcionó una versión válida`);
+        }
+
         const inventario = await InventariosHistorialRepository.get_inventario_simple(idInventario);
         if (inventario.__v !== versionrequest) {
             throw new Error(`La versión del inventario ha cambiado. Por favor, recargue la página e intente de nuevo.`);

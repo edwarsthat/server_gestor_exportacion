@@ -64,7 +64,8 @@ export default [
       "dist/**",
       "public/**/assets/**",
       "eslint.config.mjs",
-      "scripts/**"
+      "scripts/**",
+      "tests/**"
     ]
   }
 ];

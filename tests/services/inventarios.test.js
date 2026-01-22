@@ -744,10 +744,12 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
-            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenCalledWith(
+            // Primera llamada: $inc para restar canastillas
+            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenNthCalledWith(
+                1,
                 expect.objectContaining({ 'inventario.lote': mockLote._id }),
-                expect.objectContaining({ $pull: { inventario: expect.any(Object) } }),
-                expect.any(Object)
+                expect.objectContaining({ $inc: expect.objectContaining({ 'inventario.$[it].canastillas': -10 }) }),
+                expect.objectContaining({ arrayFilters: expect.any(Array) })
             );
         });
 
@@ -758,10 +760,12 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
-            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenCalledWith(
+            // Primera llamada: $inc para restar canastillas en inventarioMaquila
+            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenNthCalledWith(
+                1,
                 expect.objectContaining({ 'inventarioMaquila.lote': mockLote._id }),
-                expect.objectContaining({ $pull: { inventarioMaquila: expect.any(Object) } }),
-                expect.any(Object)
+                expect.objectContaining({ $inc: expect.objectContaining({ 'inventarioMaquila.$[it].canastillas': -10 }) }),
+                expect.objectContaining({ arrayFilters: expect.any(Array) })
             );
         });
 
@@ -772,7 +776,8 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
-            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenCalledWith(
+            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenNthCalledWith(
+                1,
                 expect.objectContaining({ 'inventario.lote': mockLote._id }),
                 expect.any(Object),
                 expect.any(Object)
@@ -786,7 +791,8 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
-            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenCalledWith(
+            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenNthCalledWith(
+                1,
                 expect.objectContaining({ 'inventarioMaquila.lote': mockLote._id }),
                 expect.any(Object),
                 expect.any(Object)
@@ -800,7 +806,8 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
-            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenCalledWith(
+            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenNthCalledWith(
+                1,
                 expect.objectContaining({ 'inventario.lote': mockLote._id }),
                 expect.any(Object),
                 expect.any(Object)
@@ -821,7 +828,7 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
     // ============================================================
     describe('casos básicos', () => {
 
-        test('debería eliminar lote de inventario (EF1) exitosamente', async () => {
+        test('debería restar canastillas y luego hacer pull condicional (EF1)', async () => {
             mockLote.enf = 'EF1-001';
 
             const result = await InventariosService.modificarRestarInventarioFrutaSinProocesar(
@@ -829,10 +836,11 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
             );
 
             expect(result).toEqual(mockPullResult);
-            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenCalledTimes(1);
+            // Ahora son 2 llamadas: 1) $inc para restar, 2) $pull condicional
+            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenCalledTimes(2);
         });
 
-        test('debería eliminar lote de inventarioMaquila (EF10) exitosamente', async () => {
+        test('debería restar canastillas y luego hacer pull condicional (EF10)', async () => {
             mockLote.enf = 'EF10-001';
 
             const result = await InventariosService.modificarRestarInventarioFrutaSinProocesar(
@@ -840,9 +848,10 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
             );
 
             expect(result).toEqual(mockPullResult);
+            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenCalledTimes(2);
         });
 
-        test('debería retornar pullResult', async () => {
+        test('debería retornar pullResult de la segunda operación', async () => {
             const result = await InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
@@ -857,18 +866,18 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
     // ============================================================
     describe('manejo de errores', () => {
 
-        test('debería lanzar error cuando lote no existe en inventario (matchedCount === 0)', async () => {
-            InventariosHistorialRepository.put_inventarioSimple_updateOne.mockResolvedValue({
-                matchedCount: 0,
-                modifiedCount: 0
-            });
+        test('debería lanzar error cuando el $pull no encuentra el lote (matchedCount === 0)', async () => {
+            // Primera llamada ($inc) exitosa, segunda ($pull) no encuentra
+            InventariosHistorialRepository.put_inventarioSimple_updateOne
+                .mockResolvedValueOnce({ matchedCount: 1, modifiedCount: 1 })
+                .mockResolvedValueOnce({ matchedCount: 0, modifiedCount: 0 });
 
             await expect(InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             )).rejects.toThrow('ya no se encuentra en el inventario');
         });
 
-        test('debería propagar error cuando BD falla', async () => {
+        test('debería propagar error cuando BD falla en la primera operación ($inc)', async () => {
             InventariosHistorialRepository.put_inventarioSimple_updateOne.mockRejectedValue(
                 new Error('Connection timeout')
             );
@@ -877,6 +886,16 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             )).rejects.toThrow('Connection timeout');
         });
+
+        test('debería propagar error cuando BD falla en la segunda operación ($pull)', async () => {
+            InventariosHistorialRepository.put_inventarioSimple_updateOne
+                .mockResolvedValueOnce({ matchedCount: 1, modifiedCount: 1 })
+                .mockRejectedValueOnce(new Error('Connection timeout on pull'));
+
+            await expect(InventariosService.modificarRestarInventarioFrutaSinProocesar(
+                10, mockUser, 'test', mockLote, mockSession, 'desc'
+            )).rejects.toThrow('Connection timeout on pull');
+        });
     });
 
     // ============================================================
@@ -884,29 +903,43 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
     // ============================================================
     describe('contrato de API', () => {
 
-        test('debería pasar filtro con verificación de existencia', async () => {
+        test('primera llamada: debería pasar filtro con verificación de existencia', async () => {
             await InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
+            // Primera llamada: $inc para restar canastillas
             const [filter] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
             expect(filter).toHaveProperty('_id'); // ID del inventario
             expect(filter['inventario.lote']).toBe(mockLote._id); // Verificación de existencia
         });
 
-        test('debería pasar $pull y $inc correctos', async () => {
-
+        test('primera llamada: debería pasar $inc con arrayFilters para restar canastillas', async () => {
             await InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
-            const [, update] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
-            expect(update).toHaveProperty('$pull');
-            expect(update).toHaveProperty('$inc', { __v: 1 });
+            const [, update, options] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
+            expect(update).toHaveProperty('$inc');
+            // Usar bracket notation porque la propiedad contiene caracteres especiales (. y [])
+            expect(update.$inc['inventario.$[it].canastillas']).toBe(-10);
+            expect(update.$inc.__v).toBe(1);
+            expect(options).toHaveProperty('arrayFilters');
         });
 
-        test('debería pasar session y opciones', async () => {
+        test('segunda llamada: debería pasar $pull condicional (canastillas <= 0)', async () => {
+            await InventariosService.modificarRestarInventarioFrutaSinProocesar(
+                10, mockUser, 'test', mockLote, mockSession, 'desc'
+            );
 
+            const [filter, update, options] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[1];
+            expect(filter).toHaveProperty('_id');
+            expect(update).toHaveProperty('$pull');
+            expect(update.$pull.inventario).toHaveProperty('canastillas', { $lte: 0 });
+            expect(options).toHaveProperty('skipAudit', true);
+        });
+
+        test('primera llamada: debería pasar session y opciones de auditoría', async () => {
             await InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'testAction', mockLote, mockSession, 'testDesc'
             );
@@ -916,6 +949,17 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
             expect(options).toHaveProperty('action', 'testAction');
             expect(options).toHaveProperty('description', 'testDesc');
             expect(options).toHaveProperty('user', mockUser._id);
+        });
+
+        test('segunda llamada: debería pasar session pero sin auditoría', async () => {
+            await InventariosService.modificarRestarInventarioFrutaSinProocesar(
+                10, mockUser, 'testAction', mockLote, mockSession, 'testDesc'
+            );
+
+            const [, , options] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[1];
+            expect(options).toHaveProperty('session', mockSession);
+            expect(options).toHaveProperty('skipAudit', true);
+            expect(options).toHaveProperty('runValidators', false);
         });
     });
 
@@ -931,18 +975,29 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
-            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenCalled();
+            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenCalledTimes(2);
         });
 
-        test('debería convertir lote._id a ObjectId en $pull', async () => {
-
+        test('debería convertir lote._id a ObjectId en $pull (segunda llamada)', async () => {
             await InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
-            const [, update] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
+            // Segunda llamada contiene el $pull
+            const [, update] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[1];
             // El lote en $pull debe ser un ObjectId
             expect(update.$pull.inventario.lote).toBeDefined();
+        });
+
+        test('debería convertir lote._id a ObjectId en arrayFilters (primera llamada)', async () => {
+            await InventariosService.modificarRestarInventarioFrutaSinProocesar(
+                10, mockUser, 'test', mockLote, mockSession, 'desc'
+            );
+
+            // Primera llamada contiene arrayFilters
+            const [, , options] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
+            expect(options.arrayFilters).toBeDefined();
+            expect(options.arrayFilters[0]['it.lote']).toBeDefined();
         });
     });
 
@@ -952,14 +1007,18 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
     describe('concurrencia', () => {
 
         test('debería manejar doble clic simultáneo (1er éxito, 2do error)', async () => {
-
-            // Primera llamada exitosa
+            // Primera operación completa (2 llamadas exitosas)
             InventariosHistorialRepository.put_inventarioSimple_updateOne
+                // 1ra operación: $inc (éxito)
                 .mockResolvedValueOnce({ matchedCount: 1, modifiedCount: 1 })
-                // Segunda llamada: el lote ya no existe
+                // 1ra operación: $pull (éxito)
+                .mockResolvedValueOnce({ matchedCount: 1, modifiedCount: 1 })
+                // 2da operación: $inc (éxito)
+                .mockResolvedValueOnce({ matchedCount: 1, modifiedCount: 1 })
+                // 2da operación: $pull falla porque el lote ya fue eliminado
                 .mockResolvedValueOnce({ matchedCount: 0, modifiedCount: 0 });
 
-            // Primera llamada - éxito
+            // Primera llamada completa - éxito
             const result1 = await InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
@@ -977,27 +1036,40 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
     // ============================================================
     describe('atomicidad', () => {
 
-        test('debería pasar session para permitir rollback si transacción falla', async () => {
+        test('debería pasar session a ambas operaciones para permitir rollback', async () => {
             const transactionSession = { id: 'transaction-session', inTransaction: true };
 
             await InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, transactionSession, 'desc'
             );
 
-            const [, , options] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
-            expect(options.session).toBe(transactionSession);
-            // Si la transacción falla externamente, MongoDB hace rollback automático
+            // Verificar que ambas llamadas tienen la session
+            const [, , options1] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
+            const [, , options2] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[1];
+            expect(options1.session).toBe(transactionSession);
+            expect(options2.session).toBe(transactionSession);
         });
 
-        test('debería propagar error para que la transacción pueda hacer rollback', async () => {
-            InventariosHistorialRepository.put_inventarioSimple_updateOne.mockRejectedValue(
-                new Error('Transaction aborted')
+        test('debería propagar error de primera operación ($inc) para rollback', async () => {
+            InventariosHistorialRepository.put_inventarioSimple_updateOne.mockRejectedValueOnce(
+                new Error('Transaction aborted on $inc')
             );
 
             await expect(InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
-            )).rejects.toThrow('Transaction aborted');
-            // El caller puede hacer session.abortTransaction()
+            )).rejects.toThrow('Transaction aborted on $inc');
+        });
+
+        test('debería propagar error de segunda operación ($pull) para rollback', async () => {
+            // Primera llamada exitosa
+            InventariosHistorialRepository.put_inventarioSimple_updateOne
+                .mockResolvedValueOnce({ matchedCount: 1, modifiedCount: 1 })
+                // Segunda llamada falla
+                .mockRejectedValueOnce(new Error('Transaction aborted on $pull'));
+
+            await expect(InventariosService.modificarRestarInventarioFrutaSinProocesar(
+                10, mockUser, 'test', mockLote, mockSession, 'desc'
+            )).rejects.toThrow('Transaction aborted on $pull');
         });
     });
 
@@ -1007,21 +1079,21 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
     describe('integridad', () => {
 
         test('debería no borrar nada si ID no coincide con array (desincronización ID vs ENF)', async () => {
-            // Simular que el ID existe pero en el array equivocado
-            // El filtro incluye verificación de existencia, así que matchedCount será 0
-            InventariosHistorialRepository.put_inventarioSimple_updateOne.mockResolvedValue({
-                matchedCount: 0,
-                modifiedCount: 0
-            });
+            // Simular que ambas operaciones no encuentran el lote
+            InventariosHistorialRepository.put_inventarioSimple_updateOne
+                // Primera llamada ($inc): no encuentra el lote
+                .mockResolvedValueOnce({ matchedCount: 1, modifiedCount: 1 })
+                // Segunda llamada ($pull): matchedCount 0 porque no existe
+                .mockResolvedValueOnce({ matchedCount: 0, modifiedCount: 0 });
 
-            // ENF dice EF1, pero el lote._id no está en inventario (quizás está en inventarioMaquila)
+            // ENF dice EF1, pero el lote._id no está en inventario
             mockLote.enf = 'EF1-001';
 
             await expect(InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             )).rejects.toThrow('ya no se encuentra en el inventario');
 
-            // Verifica que el filtro buscó en el array correcto según ENF
+            // Verifica que el filtro de la primera llamada buscó en el array correcto
             const [filter] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
             expect(filter['inventario.lote']).toBeDefined(); // No inventarioMaquila
         });
@@ -1032,37 +1104,49 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
     // ============================================================
     describe('persistencia', () => {
 
-        test('debería usar $pull que solo afecta al lote específico (preserva vecinos)', async () => {
-
+        test('debería usar $pull condicional que solo afecta al lote con canastillas <= 0', async () => {
             await InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
-            const [, update] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
+            // Segunda llamada contiene el $pull
+            const [, update] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[1];
 
-            // $pull solo elimina elementos que coincidan con el criterio
+            // $pull solo elimina elementos que coincidan con lote Y canastillas <= 0
             expect(update.$pull.inventario).toEqual({
-                lote: expect.any(Object) // ObjectId específico, no elimina todos
+                lote: expect.any(Object),
+                canastillas: { $lte: 0 }
             });
 
-            // No debería haber operadores que afecten todo el array
+            // No debería haber otros operadores
             expect(update.$set).toBeUndefined();
             expect(update.$unset).toBeUndefined();
         });
 
-        test('debería no modificar otros campos del documento', async () => {
-
+        test('primera llamada: solo debe tener $inc (restar canastillas y versión)', async () => {
             await InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
             const [, update] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
 
-            // Solo debe tener $pull y $inc para __v
+            // Solo debe tener $inc
+            const updateKeys = Object.keys(update);
+            expect(updateKeys).toContain('$inc');
+            expect(updateKeys.length).toBe(1);
+        });
+
+        test('segunda llamada: solo debe tener $pull', async () => {
+            await InventariosService.modificarRestarInventarioFrutaSinProocesar(
+                10, mockUser, 'test', mockLote, mockSession, 'desc'
+            );
+
+            const [, update] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[1];
+
+            // Solo debe tener $pull
             const updateKeys = Object.keys(update);
             expect(updateKeys).toContain('$pull');
-            expect(updateKeys).toContain('$inc');
-            expect(updateKeys.length).toBe(2);
+            expect(updateKeys.length).toBe(1);
         });
     });
 
@@ -1071,29 +1155,41 @@ describe('InventariosService.modificarRestarInventarioFrutaSinProocesar', () => 
     // ============================================================
     describe('versioning', () => {
 
-        test('debería incrementar __v para evitar colisiones de caché', async () => {
-
+        test('debería incrementar __v en la primera operación (junto con resta de canastillas)', async () => {
             await InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
             const [, update] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
-            expect(update.$inc).toEqual({ __v: 1 });
+            expect(update.$inc).toHaveProperty('__v', 1);
         });
 
-        test('debería incluir $inc.__v en la misma operación atómica que $pull', async () => {
-
+        test('debería ejecutar dos operaciones secuenciales: $inc y luego $pull condicional', async () => {
             await InventariosService.modificarRestarInventarioFrutaSinProocesar(
                 10, mockUser, 'test', mockLote, mockSession, 'desc'
             );
 
-            // Verificar que se llama UNA sola vez (operación atómica)
-            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenCalledTimes(1);
+            // Ahora son 2 llamadas secuenciales
+            expect(InventariosHistorialRepository.put_inventarioSimple_updateOne).toHaveBeenCalledTimes(2);
 
-            // Verificar que $pull y $inc están en el mismo update
-            const [, update] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
-            expect(update.$pull).toBeDefined();
-            expect(update.$inc).toBeDefined();
+            // Primera llamada: $inc para restar canastillas
+            const [, update1] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[0];
+            expect(update1.$inc).toBeDefined();
+            expect(update1.$pull).toBeUndefined();
+
+            // Segunda llamada: $pull condicional
+            const [, update2] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[1];
+            expect(update2.$pull).toBeDefined();
+            expect(update2.$inc).toBeUndefined();
+        });
+
+        test('el $pull solo elimina elementos cuando canastillas quedan en 0 o menos', async () => {
+            await InventariosService.modificarRestarInventarioFrutaSinProocesar(
+                10, mockUser, 'test', mockLote, mockSession, 'desc'
+            );
+
+            const [, update] = InventariosHistorialRepository.put_inventarioSimple_updateOne.mock.calls[1];
+            expect(update.$pull.inventario).toHaveProperty('canastillas', { $lte: 0 });
         });
     });
 });

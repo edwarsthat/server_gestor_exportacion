@@ -8,15 +8,26 @@ import { ProcesoRepository } from "../../api/Proceso.mjs";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketInventarios = {
+    //#region inventarios FRUTA SIN PROCESAR
+    get_inventarios_historialDirectoNacional_registros: async (data) => {
+        const response = await InventarioFrutaSinProcesarController.get_inventarios_historialDirectoNacional_registros(data)
+        return successResponseRoutes(response)
+    },
+    put_inventarios_ordenVaceo_vacear: async (data) => {
+        await InventarioFrutaSinProcesarController.put_inventarios_ordenVaceo_vacear(data)
+        return successResponseRoutes()
+    },
+    put_inventarios_frutaSinProcesar_directoNacional: async (data) => {
+        await InventarioFrutaSinProcesarController.put_inventarios_frutaSinProcesar_directoNacional(data)
+        return successResponseRoutes()
+    },
+
     //#region inventarios
     get_inventarios_frutaSinProcesar_frutaEnInventario: async () => {
         const data = await InventariosRepository.get_inventarios_frutaSinProcesar_frutaEnInventario();
         return successResponseRoutes(data)
     },
-    put_inventarios_frutaSinProcesar_directoNacional: async (data) => {
-        await InventariosRepository.directoNacional(data)
-        return successResponseRoutes()
-    },
+
     put_inventarios_frutaSinProcesar_desverdizado: async (data) => {
         await InventariosRepository.put_inventarios_frutaSinProcesar_desverdizado(data)
         return successResponseRoutes()
@@ -53,10 +64,7 @@ export const apiSocketInventarios = {
         await InventariosRepository.put_inventarios_ordenVaceo_modificar(data)
         return successResponseRoutes()
     },
-    put_inventarios_ordenVaceo_vacear: async (data) => {
-        await InventarioFrutaSinProcesarController.put_inventarios_ordenVaceo_vacear(data)
-        return successResponseRoutes()
-    },
+
     get_inventarios_frutaDesverdizando_lotes: async () => {
         const response = await InventariosRepository.get_inventarios_frutaDesverdizando_lotes()
         return successResponseRoutes(response)
@@ -143,10 +151,7 @@ export const apiSocketInventarios = {
         await InventariosRepository.put_inventarios_historialProcesado_modificarHistorial(data)
         return successResponseRoutes()
     },
-    get_inventarios_historialDirectoNacional_registros: async (data) => {
-        const response = await InventariosRepository.get_inventarios_historialDirectoNacional_registros(data)
-        return successResponseRoutes(response)
-    },
+
     put_inventarios_historialDirectoNacional_modificarHistorial: async (data) => {
         await InventariosRepository.put_inventarios_historialDirectoNacional_modificarHistorial(data)
         return successResponseRoutes()

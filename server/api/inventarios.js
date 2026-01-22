@@ -377,7 +377,7 @@ export class InventariosRepository {
                 await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", `Lote ${loteId} actualizado con desverdizado.canastillasIngreso: ${canastillas}`);
 
                 const descripcion = `Desverdizado - Canastillas decrementadas: ${canastillas}`
-                await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(canastillas), user, action, loteNew, log, session, descripcion);
+                await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(canastillas), user, action, loteNew, session, descripcion);
             })
 
             procesoEventEmitter.emit("server_event", {
@@ -692,65 +692,7 @@ export class InventariosRepository {
             }
         }
     }
-    static async directoNacional(req) {
-        const { user } = req;
-        const { data, lote, action, __v } = req.data
 
-        let log;
-
-        const session = await db.Lotes.db.startSession();
-
-        if (!session) {
-            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
-        }
-
-        log = await LogsRepository.create({
-            user: user,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-        });
-        try {
-            await session.withTransaction(async () => {
-                // Usar el mismo ID para todas las operaciones
-                const loteId = lote._id || data.lote;
-
-                await InventariosService.item_in_ordenVaceo(loteId)
-                await InventariosService.check_inventarioVersion(config.INVENTARIO_FRUTA_SIN_PROCESAR, __v)
-
-                const queryLote = {
-                    $inc: {
-                        directoNacional: lote.promedio * data.canastillas,
-                    },
-                    infoSalidaDirectoNacional: {
-                        ...data,
-                        user: user._id,
-                    }
-                };
-
-                await LotesRepository.actualizar_lote(
-                    { _id: loteId },
-                    queryLote,
-                    { new: true, user: user, action: action, session: session }
-                );
-                await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Lote ${loteId} actualizado con directoNacional: ${lote.promedio * data.canastillas}`);
-
-                const descripcion = `Directo Nacional - Canastillas decrementadas: ${data.canastillas}`
-                await InventariosService.modificarRestarInventarioFrutaSinProocesar(data.canastillas, user, action, lote, log, session, descripcion);
-            });
-
-            procesoEventEmitter.emit("server_event", {
-                action: "directo_nacional",
-                data: {}
-            });
-
-        } catch (error) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, error);
-            await ErrorInventarioLogicHandlers(error, log)
-        } finally {
-            await session.endSession();
-            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-        }
-    }
     static async get_inventarios_ordenVaceo() {
         try {
             const { data, __v } = await InventariosHistorialRepository.get_ordenVaceo();
@@ -1646,48 +1588,7 @@ export class InventariosRepository {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
-    static async get_inventarios_historialDirectoNacional_registros(req) {
-        try {
-            const { data } = req
-            const { fechaInicio, fechaFin } = data
-            let query = {
-                infoSalidaDirectoNacional: { $exists: true }
-            }
 
-            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'infoSalidaDirectoNacional.fecha')
-
-            const lotes = await LotesRepository.getLotes({
-                query: query,
-                select: { enf: 1, promedio: 1, tipoFruta: 1, __v: 1, infoSalidaDirectoNacional: 1, directoNacional: 1 },
-            });
-
-            const userIds = new Set();
-            for (const lote of lotes) {
-                if (lote.infoSalidaDirectoNacional && lote.infoSalidaDirectoNacional.user) {
-                    userIds.add(lote.infoSalidaDirectoNacional.user.toString());
-                }
-            }
-
-            const usuarios = await UsuariosRepository.get_users({
-                ids: Array.from(userIds),
-                limit: "all"
-            });
-
-            for (const lote of lotes) {
-                if (lote.infoSalidaDirectoNacional && lote.infoSalidaDirectoNacional.user) {
-                    const user = usuarios.find(user => user._id.toString() === lote.infoSalidaDirectoNacional.user.toString());
-                    lote.infoSalidaDirectoNacional.user = user ? user.user : "Usuario no encontrado";
-                }
-            }
-
-            return lotes
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async put_inventarios_historialDirectoNacional_modificarHistorial(req) {
         const { user } = req;
         const { lote, action, canastillas } = req.data;

@@ -3,6 +3,7 @@ import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PostError } from "../../Error/ConnectionErrors.js";
 import config from "../../src/config/index.js";
 import { InventariosService } from "../services/inventarios.js";
+import { MongoDBError } from "../models/ErrorModels.js";
 
 
 export class InventariosHistorialRepository {
@@ -414,13 +415,14 @@ export class InventariosHistorialRepository {
     }
     static async get_ordenVaceo() {
         try {
-            const data = await db.InventariosSimples.find({ _id: "68d1c0410f282bcb84388dd3" })
+            const data = await db.InventariosSimples.find({ _id: config.INVENTARIO_ORDEN_VACEO })
                 .select({ ordenVaceo: 1, _id: 0, __v: 1 })
                 .lean()
                 .exec();
             return { data: data?.[0]?.ordenVaceo || [], __v: data?.[0]?.__v || 0 };
         } catch (err) {
-            throw new ConnectionDBError(522, `Error obteniendo la cantidad de registros de cuartos fríos ${err.message}`);
+            console.error(err);
+            throw new MongoDBError(522, `Error obteniendo orden vaceo`);
         }
     }
     static async put_borrar_item_ordenVaceo(itemId, session = null) {

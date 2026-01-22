@@ -37,6 +37,40 @@ function filtroFechaInicioFin(fechaInicio, fechaFin, filter = {}, fecha) {
 
 }
 
+function buildDateRangeFilter(start, end, field, baseFilter = {}) {
+    // Validaciones iniciales
+    if (!field) throw new UtilError(601, "buildDateRangeFilter: Debe especificar el nombre del campo de fecha");
+
+    // Clonamos el filtro para no mutar el original (Inmutabilidad)
+    const query = { ...baseFilter };
+
+    if (start || end) {
+        const dateRange = Object.create(null);
+
+        if (start) {
+            const startDate = new Date(start);
+            if (isNaN(startDate)) throw new UtilError(601, "Fecha inicio no válida");
+
+            // Forzamos el inicio del día (00:00:00)
+            startDate.setHours(0, 0, 0, 0);
+            Reflect.set(dateRange, '$gte', startDate);
+        }
+
+        if (end) {
+            const endDate = new Date(end);
+            if (isNaN(endDate)) throw new UtilError(601, "Fecha fin no válida");
+
+            // Forzamos el fin del día (23:59:59.999)
+            endDate.setHours(23, 59, 59, 999);
+            Reflect.set(dateRange, '$lte', endDate);
+        }
+
+        Reflect.set(query, field, dateRange);
+    }
+
+    return query;
+}
+
 function filtroPorSemana(fechaInicio, fechaFin, filter = {}, year = 'year', week = 'week') {
     if (typeof filter !== 'object' || filter === null)
         throw new UtilError(601, "filtroPorSemana: filtro debe ser un objeto")
@@ -94,5 +128,6 @@ function filtroPorSemana(fechaInicio, fechaFin, filter = {}, year = 'year', week
 
 export {
     filtroFechaInicioFin,
-    filtroPorSemana
+    filtroPorSemana,
+    buildDateRangeFilter
 };
