@@ -21,6 +21,10 @@ export const apiSocketInventarios = {
         await InventarioFrutaSinProcesarController.put_inventarios_frutaSinProcesar_directoNacional(data)
         return successResponseRoutes()
     },
+    post_inventarios_ingreso_lote: async (data) => {
+        await InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote(data);
+        return successResponseRoutes()
+    },
 
     //#region inventarios
     get_inventarios_frutaSinProcesar_frutaEnInventario: async () => {
@@ -258,10 +262,7 @@ export const apiSocketInventarios = {
         const response = await InventariosRepository.get_inventarios_ingresos_ef()
         return successResponseRoutes(response)
     },
-    post_inventarios_ingreso_lote: async (data) => {
-        await InventariosRepository.post_inventarios_ingreso_lote(data);
-        return successResponseRoutes()
-    },
+
     post_inventarios_maquila: async (data) => {
         await InventariosRepository.post_inventarios_ingreso_maquila(data);
         return successResponseRoutes()
