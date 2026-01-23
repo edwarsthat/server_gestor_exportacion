@@ -7,8 +7,9 @@ import crypto from 'crypto';
 import config from '../../../src/config/index.js';
 
 const ENCRYPTION_KEY = Buffer.from(config.ENCRYPTION_KEY, 'hex');
-const IV_LENGTH = 16;
-const ALGORITHM = 'aes-256-cbc';
+const IV_LENGTH = 12; // 12 bytes es el estándar para GCM
+const AUTH_TAG_LENGTH = 16; // 16 bytes para el authentication tag
+const ALGORITHM = 'aes-256-gcm';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -202,23 +203,35 @@ export class FileService {
             cipher.final()
         ]);
 
-        // Retorna IV + datos encriptados
-        return Buffer.concat([iv, encrypted]);
+        // Obtener el authentication tag (16 bytes)
+        const authTag = cipher.getAuthTag();
+
+        // Retorna IV + AUTH_TAG + datos encriptados
+        return Buffer.concat([iv, authTag, encrypted]);
     }
     static decryptBuffer(encryptedBuffer) {
-        // Extraer el IV (primeros 16 bytes)
-        const iv = encryptedBuffer.subarray(0, IV_LENGTH);
-        // Extraer el contenido encriptado
-        const encryptedContent = encryptedBuffer.subarray(IV_LENGTH);
+        try {
+            // Extraer el IV (primeros 12 bytes)
+            const iv = encryptedBuffer.subarray(0, IV_LENGTH);
+            // Extraer el authentication tag (siguientes 16 bytes)
+            const authTag = encryptedBuffer.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
+            // Extraer el contenido encriptado (resto del buffer)
+            const encryptedContent = encryptedBuffer.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
 
-        const decipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+            const decipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+            decipher.setAuthTag(authTag);
 
-        const decrypted = Buffer.concat([
-            decipher.update(encryptedContent),
-            decipher.final()
-        ]);
+            const decrypted = Buffer.concat([
+                decipher.update(encryptedContent),
+                decipher.final()
+            ]);
 
-        return decrypted;
+            return decrypted;
+        } catch (error) {
+            // Error de autenticación: el tag no coincide o datos corruptos
+            console.error(error);
+            throw new Error('Error de autenticación: el archivo está corrupto o ha sido modificado');
+        }
     }
 
     //Write
