@@ -595,6 +595,7 @@ export class CalidadRepository {
     }
     static async put_calidad_ingresos_clasificacionDescarte(req) {
         try {
+            console.log(req.data)
             CalidadValidationsRepository.put_calidad_ingresos_clasificacionDescarte().parse(req.data);
             const { user } = req;
             const { action, data, _id } = req.data;
@@ -603,7 +604,7 @@ export class CalidadRepository {
                 'calidad.clasificacionCalidad.fecha': new Date(),
                 'calidad.clasificacionCalidad.user': user._id
             }
-            await LotesHelper.actualizar_lotes_helper(_id, update, { user, action });
+            await LotesHelper.actualizar_lotes_helper({ _id: _id }, update, { user, action });
 
         } catch (err) {
             if (err.status === 523 || err.status === 522) {
