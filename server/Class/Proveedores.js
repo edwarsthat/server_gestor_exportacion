@@ -1,10 +1,12 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PutError, PostError } from "../../Error/ConnectionErrors.js";
-import { ItemBussyError } from "../../Error/ProcessError.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-let bussyIds = new Set();
 
-export class ProveedoresRepository {
+export class ProveedoresRepository extends BaseRepository {
+    static get model() { return db.Proveedores; }
+    static modelName = 'Proveedores';
+
     static async getProveedores(data) {
         try {
             const proveedores = await db.Proveedores.find(data.data.query);
@@ -172,15 +174,6 @@ export class ProveedoresRepository {
         }
     }
 
-    static validateBussyIds(id) {
-        /**
-         * Funcion que añade el id del elemento que se este m0odificando para que no se creen errores de doble escritura
-         *
-         * @param {string} id - El id del elemento que se esta modificando
-         */
-        if (bussyIds.has(id)) throw new ItemBussyError(413, "Elemento no disponible por el momento");
-        bussyIds.add(id)
-    }
 
 }
 

@@ -136,7 +136,7 @@ async function main() {
             const opCargos = Array.from(cargosArray).map(cargo => ({
                 updateOne: {
                     filter: { nombre: cargo.nombre },
-                    update: { $setOnInsert: { nombre: cargo.nombre, areas: cargo.areas, color: cargo.color } },
+                    update: { $setOnInsert: { nombre: cargo.nombre, areasAcceso: cargo.areas, color: cargo.color } },
                     upsert: true
                 }
             }));

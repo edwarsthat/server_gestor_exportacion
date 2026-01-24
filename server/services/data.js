@@ -46,16 +46,20 @@ export class dataService {
             await registrarPasoLog(logId, "dataService.modificar_ef8_serial", "Completado");
         }
     }
-    static async get_ef1_serial(fecha = null, logId) {
-        const EF1 = await Seriales.get_seriales("EF1-");
-        if (!EF1 || EF1.length === 0) {
+    static async get_ef1_serial(fecha = null) {
+        const EF1Docs = await Seriales.get_seriales("EF1-");
+        if (!EF1Docs || EF1Docs.length === 0) {
             throw new Error("No se encontraron registros de EF1");
         }
-        if (EF1.length > 1) {
+        if (EF1Docs.length > 1) {
             throw new Error("Se encontraron múltiples registros de EF1, se esperaba uno solo");
         }
-        if (!EF1[0].serial || typeof EF1[0].serial !== 'number') {
-            throw new Error("El campo 'serial' no es un número o no existe en el registro de EF1");
+        const EF1 = EF1Docs[0];
+        if (!Number.isFinite(EF1.serial) || EF1.serial < 0) {
+            throw new Error("El campo 'serial' no es un número válido en el registro de EF1");
+        }
+        if (!EF1.name || typeof EF1.name !== 'string') {
+            throw new Error("El campo 'name' no existe o no es válido");
         }
         if (fecha) {
             fecha = new Date(fecha);
@@ -68,14 +72,10 @@ export class dataService {
         let year = fecha.getFullYear().toString().slice(-2);
         let month = String(fecha.getMonth() + 1).padStart(2, "0");
         let enf;
-        if (EF1[0].serial < 10) {
-            enf = EF1[0].name + year + month + "0" + EF1[0].serial;
+        if (EF1.serial < 10) {
+            enf = EF1.name + year + month + "0" + EF1.serial;
         } else {
-            enf = EF1[0].name + year + month + EF1[0].serial;
-        }
-
-        if (logId) {
-            await registrarPasoLog(logId, "dataService.get_ef8_serial", "Completado");
+            enf = EF1.name + year + month + EF1.serial;
         }
 
         return enf;

@@ -196,6 +196,9 @@ export class InventarioFrutaSinProcesarController {
         await executeTransactionalTask(req, async (session, log) => {
 
             const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
+            if (!inventarioID) {
+                throw new Error("No se encontró el inventario en la base de datos");
+            }
             const { action, data } = req
             const { dataLote: datos, dataCanastillas } = data
 
@@ -204,18 +207,22 @@ export class InventarioFrutaSinProcesarController {
 
             const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(datosValidados.tipoFruta, log._id)
             const [{ precioId, proveedor }, ef1] = await Promise.all([
-                InventariosService.obtenerPrecioProveedor(datosValidados.predio, tipoFruta[0]._id),
-                dataService.get_ef1_serial(data.fecha_estimada_llegada, log._id),
+                InventariosService.obtenerPrecioProveedor(datosValidados.predio, datosValidados.tipoFruta),
+                dataService.get_ef1_serial(data.fecha_estimada_llegada),
             ])
             await registrarPasoLog(log._id, "Promise.all obtener precio, proveedor, ef1 y tipo de fruta", "Completado");
 
-            if (datos.GGN)
-                await InventariosService.validarGGN(proveedor, tipoFruta[0].tipoFruta, user)
+            //! aqui se debe cambiar el ipo de fruta en un futuro para que valide el _id del tipo de fruta
+            if (datos.GGN) {
+                InventariosService.validarGGN(proveedor, tipoFruta[0].tipoFruta, user)
+                await registrarPasoLog(log._id, "InventariosService.validarGGN", "Completado");
+            }
 
-            const query = await InventariosService.construirQueryIngresoLote(datosValidados, ef1, precioId, tipoFruta[0], user);
+            const query = InventariosService.construirQueryIngresoLote(datosValidados, ef1, precioId, user);
+            await registrarPasoLog(log._id, "InventariosService.construirQueryIngresoLote", "Completado");
 
             //Se crean los datos del registro de canastillas
-            const dataRegistro = await InventariosService.crearRegistroInventarioCanastillas({
+            const dataRegistro = InventariosService.crearRegistroInventarioCanastillas({
                 destino: "65c27f3870dd4b7f03ed9857",
                 origen: datos.predio,
                 observaciones: "ingreso lote",
@@ -227,8 +234,8 @@ export class InventarioFrutaSinProcesarController {
             })
             await registrarPasoLog(log._id, "InventariosService.crearRegistroInventarioCanastillas", "Completado");
 
+            //falta por pruebas y validar funciones
             let lote
-
             lote = await LotesRepository.addLote(query, { session, user: user._id, action: action });
             await registrarPasoLog(log._id, "LotesRepository.addLote", "Completado");
 

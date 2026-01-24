@@ -29,34 +29,59 @@ import { LotesHelper } from "../helper/lotes.js";
 export class InventariosService {
 
     static async obtenerPrecioProveedor(predioId, tipoFruta, session = null) {
-        const proveedor = await ProveedoresRepository.get_proveedores({
+        if (!predioId || !tipoFruta) {
+            throw new Error("PredioId y tipoFruta son requeridos en obtenerPrecioProveedor");
+        }
+        if (!mongoose.Types.ObjectId.isValid(predioId)) {
+            throw new Error("PredioId es inválido en obtenerPrecioProveedor");
+        }
+        if (!mongoose.Types.ObjectId.isValid(tipoFruta)) {
+            throw new Error("TipoFruta es inválido en obtenerPrecioProveedor");
+        }
+        const proveedorDocs = await ProveedoresRepository.get_data({
             ids: [predioId],
             select: { precio: 1, PREDIO: 1, GGN: 1 }
         }, session);
 
-        if (!proveedor || proveedor.length === 0) {
+        if (!proveedorDocs || proveedorDocs.length === 0) {
             throw new Error("Proveedor no encontrado");
         }
+        const proveedor = proveedorDocs[0];
 
-        const idPrecio = proveedor[0].precio[tipoFruta];
-        if (!idPrecio) {
+        if (!proveedor.precio || !Reflect.has(proveedor.precio, tipoFruta)) {
             throw new Error(`No hay precio para la fruta ${tipoFruta}`);
         }
-
-        const precio = await PreciosRepository.get_precios({ ids: [idPrecio] }, session);
-        if (!precio || precio.length === 0) {
+        const idPrecio = proveedor.precio[tipoFruta];
+        if (!mongoose.Types.ObjectId.isValid(idPrecio)) {
             throw new Error("Precio inválido");
         }
 
-        return { precioId: precio[0]._id, proveedor: proveedor };
+        const precioDocs = await PreciosRepository.get_data({ ids: [idPrecio] }, session);
+        if (!precioDocs || precioDocs.length === 0) {
+            throw new Error("Precio inválido");
+        }
+        const precio = precioDocs[0];
+
+        return { precioId: precio._id, proveedor: proveedor };
 
     }
-    static async construirQueryIngresoLote(datos, enf, precioId, tipoFruta, user) {
+    static construirQueryIngresoLote(datos, enf, precioId, user) {
+        if (!datos || !enf || !precioId || !user) {
+            throw new Error("Datos, enf, precioId y user son requeridos en construirQueryIngresoLote");
+        }
+        if (!datos.fecha_estimada_llegada) {
+            throw new Error("Fecha de llegada es requerida en construirQueryIngresoLote");
+        }
+        if (!user._id) {
+            throw new Error("user._id es requerido en construirQueryIngresoLote");
+        }
         const fecha = new Date(datos.fecha_estimada_llegada);
-
+        if (isNaN(fecha.getTime())) {
+            throw new Error("Fecha de llegada inválida en construirQueryIngresoLote");
+        }
         return {
             ...datos,
-            tipoFruta: tipoFruta._id,
+            tipoFruta: datos.tipoFruta,
             precio: precioId,
             enf,
             fecha_salida_patio: fecha,
@@ -82,7 +107,7 @@ export class InventariosService {
     static async incrementarEF() {
         VariablesDelSistema.incrementarEF1();
     }
-    static async crearRegistroInventarioCanastillas(
+    static crearRegistroInventarioCanastillas(
         {
             origen = '',
             destino = '',
@@ -97,9 +122,23 @@ export class InventariosService {
 
         }
     ) {
+        if (!user || !user._id) {
+            throw new Error("user y user._id son requeridos");
+        }
+        if (!fecha) {
+            throw new Error("fecha es requerida");
+        }
+        const fechaDate = new Date(fecha);
+        if (isNaN(fechaDate.getTime())) {
+            throw new Error("fecha inválida");
+        }
+        if (!accion) {
+            throw new Error("accion es requerida");
+        }
+
         const estado = obtenerEstadoDesdeAccionCanastillasInventario(accion)
         return {
-            fecha: new Date(fecha),
+            fecha: fechaDate,
             destino: destino,
             origen: origen,
             cantidad: {
@@ -197,11 +236,21 @@ export class InventariosService {
         if (descarteEncerado)
             await VariablesDelSistema.modificar_inventario_descarte(_id, descarteEncerado, 'descarteEncerado');
     }
-    static async validarGGN(proveedor, tipoFruta, user) {
-        if (!(proveedor && proveedor[0].GGN && proveedor[0].GGN.fechaVencimiento)) { throw new Error("El predio no tiene GGN") }
+    static validarGGN(proveedores, tipoFruta, user) {
+        if (!proveedores || !Array.isArray(proveedores)) throw new Error("No se proporcionaron proveedores");
+        if (proveedores.length === 0) throw new Error("No se proporcionaron proveedores");
+        if (proveedores.length > 1) throw new Error("Se proporcionaron más de un proveedor");
+        const proveedor = proveedores[0]
+        if (!(proveedor && proveedor.GGN && proveedor.GGN.fechaVencimiento)) {
+            throw new Error("El predio no tiene GGN")
+        }
 
-        const fechaVencimiento = new Date(proveedor[0].GGN.fechaVencimiento);
+        const fechaVencimiento = new Date(proveedor.GGN.fechaVencimiento);
         const hoy = new Date();
+
+        if (!(fechaVencimiento instanceof Date) || isNaN(fechaVencimiento)) {
+            throw new Error("El predio no tiene una fecha de vencimiento válida");
+        }
 
         // Calcular la fecha de un mes después de hoy (ojo, JS hace la magia con los días)
         const unMesDespues = new Date(hoy);
@@ -209,6 +258,9 @@ export class InventariosService {
 
         // Si la fecha está entre hoy y dentro de un mes, es "cercana"
         if (fechaVencimiento > hoy && fechaVencimiento <= unMesDespues) {
+            if (!user || typeof user.Rol !== 'number') {
+                throw new Error("No se proporcionó el rol del usuario");
+            }
             if (user.Rol > 2) {
                 throw new Error("La fecha de vencimiento está cercana.");
             }
@@ -216,12 +268,17 @@ export class InventariosService {
             throw new Error("El GGN del proveedor ya expiró.");
         }
 
+        if (!proveedor.GGN || !proveedor.GGN.code) {
+            throw new Error("El predio no tiene GGN");
+        }
+        if (!Array.isArray(proveedor.GGN.tipo_fruta)) throw new Error("El predio no tiene GGN");
+
+
         if (
-            proveedor[0].GGN.code &&
-            proveedor[0].GGN.tipo_fruta.includes(tipoFruta)
+            proveedor.GGN.code &&
+            proveedor.GGN.tipo_fruta.includes(tipoFruta)
         ) return true
 
-        //poner filtro de la fecha
         throw new Error("El proveedor no tiene GGN para ese tipo de fruta")
     }
     static async modificarRecordLote_regresoHistorialFrutaIngreso(_id, __v, data) {

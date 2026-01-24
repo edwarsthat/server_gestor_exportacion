@@ -1,7 +1,11 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-export class PreciosRepository {
+export class PreciosRepository extends BaseRepository {
+    static get model() { return db.Precios; }
+    static modelName = 'Precios';
+
     static async post_precio(data, user, opts = {}) {
         const { session } = opts;
         try {
