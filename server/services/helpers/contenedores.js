@@ -62,8 +62,9 @@ export function resumenCalidad(itemsPallet, calidad = "") {
 
     return out
 }
+
 export function resumenPredios(itemsPallet) {
-    const out = {};
+    const out = new Map();
     let totalCajas = 0;
     let pesoTotal = 0;
     for (const item of itemsPallet) {
@@ -71,24 +72,24 @@ export function resumenPredios(itemsPallet) {
         const predio = item.lote?.predio.PREDIO || "SIN PREDIO";
         const ICA = item.lote?.predio.ICA.code || "SIN SIPAP";
         if (predio && ICA && id) {
-            if (!out[id]) {
-                out[id] = {
+            if (!out.has(id)) {
+                out.set(id, {
                     predio: predio,
                     cajas: 0,
                     peso: 0,
                     pesoBruto: 0,
                     ICA: ICA,
                     SISPAP: false
-                };
+                });
             }
-            out[id].cajas += item.cajas
-            out[id].peso += item.kilos
-            out[id].SISPAP = item.SISPAP || false
+            out.get(id).cajas += item.cajas
+            out.get(id).peso += item.kilos
+            out.get(id).SISPAP = item.SISPAP || false
 
         }
         totalCajas += item.cajas
         pesoTotal += item.kilos
     };
 
-    return [out, totalCajas, pesoTotal];
+    return [Object.fromEntries(out), totalCajas, pesoTotal];
 }

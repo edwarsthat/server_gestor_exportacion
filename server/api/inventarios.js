@@ -2066,7 +2066,7 @@ export class InventariosRepository {
                     loteType: "Lote"
                 },
             })
-            const inventario = {}
+            const inventario = Object.create(null);
             for (const item of itemsDescartes) {
                 if (!inventario[item.tipoFruta.toString()]) {
                     inventario[item.tipoFruta.toString()] = {}

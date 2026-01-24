@@ -74,14 +74,20 @@ async function main() {
             .find({ directoNacional: { $gt: 0 }, deshidratacion: 100 }).toArray()
 
         for (const lote of lotesArray) {
+            if (!lote._id) continue;
+
             const total = lote.directoNacional + lote.kilosProcesados
             const deshidratacion = ((total * 100) / lote.kilos) - 100
 
-            console.log(lote)
-            console.log(total)
-            console.log(deshidratacion)
-
-            await lotesCollection.updateOne({ _id: lote._id }, { $set: { deshidratacion, kilosProcesados: total } })
+            await lotesCollection.updateOne(
+                { _id: lote._id },
+                {
+                    $set: {
+                        deshidratacion: deshidratacion,
+                        kilosProcesados: total
+                    }
+                }
+            )
         }
 
         console.log('🏁 Migración de tablas maestras finalizada con éxito.');
