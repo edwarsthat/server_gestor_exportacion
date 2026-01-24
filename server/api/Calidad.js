@@ -661,7 +661,7 @@ export class CalidadRepository {
             const update = await CalidadService.crear_query_calidad_interna(data, user);
             await registrarPasoLog(log._id, "CalidadService.crear_query_calidad_interna", "Completado");
 
-            await LotesHelper.actualizar_lotes_helper(_id, update, { user, action });
+            await LotesHelper.actualizar_lotes_helper({ _id: _id }, update, { user, action });
             await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado");
 
             procesoEventEmitter.emit("server_event", {
