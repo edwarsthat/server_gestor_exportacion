@@ -103,7 +103,7 @@ export class FileService {
         const sanitizedPath = filePath.replace(/\0/g, '').trim();
         const validation = await this.validateFilePath(sanitizedPath, location);
         if (!validation.isValid) {
-            throw new Error('Archivo no encontrado o acceso denegado');
+            throw new Error(validation.error);
         }
         return validation.resolvedPath;
     }
@@ -440,5 +440,20 @@ export class FileService {
         // Retorna la ruta relativa para guardar en DB o responder al cliente
         // Ejemplo: "fotos/entrega/archivo.jpg"
         return path.join(dirPath, filename);
+    }
+
+    //delete
+    static async deleteFile(filePath, location = 'TEMPLATES') {
+        try {
+            const resolvedPath = await this.sanitizeAndValidatePath(filePath, location);
+            // eslint-disable-next-line security/detect-non-literal-fs-filename
+            return await fs.unlink(resolvedPath);
+        } catch (error) {
+            if (error.code === 'ENOENT' || error.message === 'Archivo no encontrado') {
+                return { success: true, message: 'El archivo no existía, nada que borrar' };
+            }
+            console.error(`Error eliminando archivo en ${location}:`, error);
+            throw new Error(`No se pudo eliminar el archivo: ${error.message}`)
+        }
     }
 }

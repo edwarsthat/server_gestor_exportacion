@@ -80,4 +80,8 @@ export const apiSocketTalentoHumano = {
         await PersonalControllerRepository.put_talentoHumano_personal_modificar_carnet(req)
         return successResponseRoutes()
     },
+    put_talentoHumano_upload_document: async (req) => {
+        await PersonalControllerRepository.put_talentoHumano_upload_document(req)
+        return successResponseRoutes()
+    },
 }

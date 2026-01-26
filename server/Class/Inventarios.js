@@ -3,7 +3,7 @@ import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PostError } from "../../Error/ConnectionErrors.js";
 import config from "../../src/config/index.js";
 import { InventariosService } from "../services/inventarios.js";
-import { MongoDBError } from "../models/ErrorModels.js";
+import { ClassError, MongoDBError } from "../models/ErrorModels.js";
 
 
 export class InventariosHistorialRepository {
@@ -374,33 +374,20 @@ export class InventariosHistorialRepository {
         }
     }
     static async put_inventarioSimple(filter, update, options = {}) {
-        const finalOptions = {
-            returnDocument: "after",
-            runValidators: true,
-            ...options
-        };
-
-        try {
-            const documento = await db.InventariosSimples.findOneAndUpdate(
-                filter,
-                update,
-                finalOptions
-            );
-            return documento;
-        } catch (err) {
-            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
-        }
-    }
-    static async put_inventarioSimple_updateOne(filter, update, options = {}) {
-        if (!filter || Object.keys(filter).length === 0) {
+        // Validación de parámetros
+        if (!filter || typeof filter !== 'object' || Object.keys(filter).length === 0) {
             throw new Error('El filtro es requerido y no puede estar vacío');
         }
-        if (!update || Object.keys(update).length === 0) {
+        if (!update || typeof update !== 'object' || Object.keys(update).length === 0) {
             throw new Error('El update es requerido y no puede estar vacío');
         }
+
+        // Protección contra Prototype Pollution
+        const { __proto__: _proto, constructor: _constructor, prototype: _prototype, ...safeOptions } = options;
+
         const finalOptions = {
             runValidators: false,
-            ...options,
+            ...safeOptions,
         };
 
         try {
@@ -410,7 +397,7 @@ export class InventariosHistorialRepository {
             }
             return res;
         } catch (err) {
-            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+            throw new ClassError(523, `Error modificando los datos`, err);
         }
     }
     static async get_ordenVaceo() {

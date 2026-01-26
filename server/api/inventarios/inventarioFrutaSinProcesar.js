@@ -194,26 +194,31 @@ export class InventarioFrutaSinProcesarController {
         const { user } = req;
 
         await executeTransactionalTask(req, async (session, log) => {
-
+            if (!user && !user._id) {
+                throw new Error("No se encontró el usuario en la base de datos");
+            }
             const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
             if (!inventarioID) {
                 throw new Error("No se encontró el inventario en la base de datos");
             }
-            const { action, data } = req
-            const { dataLote: datos, dataCanastillas } = data
-
-            const datosValidados = InventariosValidations.post_inventarios_ingreso_lote().parse(datos)
+            const { action, data } = req; // 'data' aquí es el body que llega de la red
+            const { dataLote: datosValidados, dataCanastillas } = InventariosValidations.post_inventarios_ingreso_lote().parse(data);
             await registrarPasoLog(log._id, "InventariosValidations.post_inventarios_ingreso_lote", "Completado");
 
-            const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(datosValidados.tipoFruta, log._id)
+            //la idea es quitar esto cuando se actualice los proveedores para uqe funcione con los _id de la fruta
+            const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(datosValidados.tipoFruta)
+            if (tipoFruta.length === 0) {
+                throw new Error("No se encontró el tipo de fruta");
+            }
+
             const [{ precioId, proveedor }, ef1] = await Promise.all([
-                InventariosService.obtenerPrecioProveedor(datosValidados.predio, datosValidados.tipoFruta),
-                dataService.get_ef1_serial(data.fecha_estimada_llegada),
+                InventariosService.obtenerPrecioProveedor(datosValidados.predio, datosValidados.tipoFruta, session),
+                dataService.get_ef1_serial(datosValidados.fecha_estimada_llegada),
             ])
             await registrarPasoLog(log._id, "Promise.all obtener precio, proveedor, ef1 y tipo de fruta", "Completado");
 
             //! aqui se debe cambiar el ipo de fruta en un futuro para que valide el _id del tipo de fruta
-            if (datos.GGN) {
+            if (datosValidados.GGN) {
                 InventariosService.validarGGN(proveedor, tipoFruta[0].tipoFruta, user)
                 await registrarPasoLog(log._id, "InventariosService.validarGGN", "Completado");
             }
@@ -223,10 +228,10 @@ export class InventarioFrutaSinProcesarController {
 
             //Se crean los datos del registro de canastillas
             const dataRegistro = InventariosService.crearRegistroInventarioCanastillas({
-                destino: "65c27f3870dd4b7f03ed9857",
-                origen: datos.predio,
+                destino: config.ID_CELIFRUT,
+                origen: datosValidados.predio,
                 observaciones: "ingreso lote",
-                fecha: datos.fecha_estimada_llegada,
+                fecha: datosValidados.fecha_estimada_llegada,
                 canastillas: dataCanastillas.canastillasPropias,
                 canastillasPrestadas: dataCanastillas.canastillasPrestadas,
                 accion: "ingreso",
@@ -234,35 +239,34 @@ export class InventarioFrutaSinProcesarController {
             })
             await registrarPasoLog(log._id, "InventariosService.crearRegistroInventarioCanastillas", "Completado");
 
-            //falta por pruebas y validar funciones
-            let lote
-            lote = await LotesRepository.addLote(query, { session, user: user._id, action: action });
+            const lote = await LotesRepository.addLote(query, { session, user: user._id, action: action });
             await registrarPasoLog(log._id, "LotesRepository.addLote", "Completado");
 
-            // await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
             await InventariosHistorialRepository.put_inventarioSimple(
                 { _id: inventarioID },
-                { $push: { inventario: { lote: lote._id, canastillas: Number(lote.canastillas) } }, $inc: { __v: 1 } },
+                { $push: { inventario: { lote: lote._id, canastillas: Number(lote.canastillas || 0) } }, $inc: { __v: 1 } },
                 { session, user: user._id, action: "ingreso_lote", operation: "ingreso", skipAudit: false }
             );
             await registrarPasoLog(log._id, "VariablesDelSistema.ingresarInventario", "Completado");
 
+
+            //!Estos quedan pendientes por pruebas unitarias y por mejorar logica para robuztes de los datos
             await InventariosService
-                .ajustarCanastillasProveedorCliente(datos.predio, -Number(dataCanastillas.canastillasPropias), user, session)
+                .ajustarCanastillasProveedorCliente(datosValidados.predio, -Number(dataCanastillas.canastillasPropias || 0), user, session);
             await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
 
             await InventariosService
-                .ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", Number(dataCanastillas.canastillasPropias), user, session)
+                .ajustarCanastillasProveedorCliente(config.ID_CELIFRUT, Number(dataCanastillas.canastillasPropias || 0), user, session);
             await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+            //!Estos quedan pendientes por pruebas unitarias y por mejorar logica para robuztes de los datos
 
-            await CanastillasRepository.post_registro(dataRegistro, user, { session })
-            await registrarPasoLog(log._id, "CanastillasRepository.post_registro", "Completado");
+            await CanastillasRepository.post_data(dataRegistro, { session: session, user: user._id, action: action });
+            await registrarPasoLog(log._id, "CanastillasRepository.post_data", "Completado");
 
-            await dataRepository.incrementar_ef1_serial(session)
-            await registrarPasoLog(log._id, "dataService.incrementar_ef1_serial", "Completado");
+            await dataRepository.incrementar_serial("EF1-", session);
+            await registrarPasoLog(log._id, "dataService.incrementar_serial", "Completado");
 
-
-
+            //este metodo tambien toca mejorarlo, que no sea un json y que sea parte del mongo para transacciones
             await VariablesDelSistema
                 .modificar_canastillas_inventario(dataCanastillas.canastillasPrestadas, "canastillasPrestadas")
             await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");

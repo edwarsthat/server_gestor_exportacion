@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { safeString, objectIdString, base64String } from "./utils/validationFunctions.js";
 
 export class TalentoHumanoValidations {
     static post_talentoHumano_personal_cargarCedula() {
@@ -33,6 +34,14 @@ export class TalentoHumanoValidations {
         return z.object({
             data: z.string().regex(/^[0-9a-fA-F]{24}$/, "ID de carnet no válido"),
             action: z.string().min(1, "La acción es obligatoria"),
+        })
+    }
+    static put_talentoHumano_upload_document() {
+        return z.object({
+            _id: objectIdString("_id"),
+            action: safeString("action"),
+            typeDoc: safeString("typeDoc"),
+            file: base64String("file"),
         })
     }
 }

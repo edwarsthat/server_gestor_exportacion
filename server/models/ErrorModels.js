@@ -24,3 +24,13 @@ export class UtilError extends Error {
         this.name = "UtilError";
     }
 }
+
+export class ClassError extends Error {
+    constructor(status, message, type, error) {
+        super(message);
+        this.status = status;
+        this.type = type;
+        this.name = "ClassError";
+        this.error = error;
+    }
+}

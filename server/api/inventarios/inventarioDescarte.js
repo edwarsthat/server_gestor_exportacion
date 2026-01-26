@@ -109,7 +109,7 @@ export class InventarioDescarteController {
                 await registrarPasoLog(log?._id, "db.InventarioMovimientoDescarte.create", `completado`);
 
                 await LotesHelper.actualizar_lotes_helper(
-                    itemModificado.lote,
+                    { _id: itemModificado.lote },
                     {
                         $inc: {
                             [`descartes.${itemModificado.tipoDescarte._id}`]: diffKilosIniciales,

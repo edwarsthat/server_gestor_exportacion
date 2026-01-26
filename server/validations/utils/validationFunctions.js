@@ -9,6 +9,20 @@ const getErrorMessages = (zodError) => {
     return errors
 }
 
+
+// Función auxiliar para validar strings seguros
+const requiredSafeString = (fieldName) =>
+    z.string()
+        .min(1, `El campo ${fieldName} es obligatorio`)
+        .refine(val =>
+            typeof val === 'string' &&
+            !val.includes('$') &&
+            !val.includes('{') &&
+            !val.includes('}') &&
+            !val.includes('<script'),
+            `El campo ${fieldName} contiene caracteres no permitidos.`
+        );
+
 // Función auxiliar para validar strings seguros
 const safeString = (fieldName) =>
     z.string()
@@ -33,8 +47,28 @@ const optionalSafeString = (campo) =>
             message: `El ${campo} debe ser una cadena de texto válida y no contener caracteres especiales.`
         });
 
+const base64String = (fieldName) =>
+    z.string()
+        .refine(val => {
+            if (!val) return false;
+            // Regex básica para validar formato data:image/...;base64,... o simplemente base64
+            const base64Regex = /^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$/;
+            const parts = val.split(',');
+            const base64Data = parts.length > 1 ? parts[1] : parts[0];
+            return base64Regex.test(base64Data);
+        }, `El campo ${fieldName} debe ser un base64 válido.`);
+
+const objectIdString = (fieldName) =>
+    z.string()
+        .refine(val => /^[0-9a-fA-F]{24}$/.test(val), {
+            message: `El campo ${fieldName} debe ser un ObjectId válido.`
+        });
+
 export {
     getErrorMessages,
     safeString,
-    optionalSafeString
+    optionalSafeString,
+    base64String,
+    objectIdString,
+    requiredSafeString
 }

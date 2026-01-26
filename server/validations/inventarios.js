@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { safeString, optionalSafeString } from "./utils/validationFunctions.js";
+import { safeString, optionalSafeString, requiredSafeString } from "./utils/validationFunctions.js";
 
 const ACCIONES_VALIDAS = ["ingreso", "salida", "traslado", "retiro", "cancelado"];
 // const validKeyRegex = /^(descarteEncerado|descarteLavado|frutaNacional).*/;
@@ -81,39 +81,69 @@ export class InventariosValidations {
         return true;
     }
     static post_inventarios_ingreso_lote() {
+        // Límites máximos razonables para evitar overflow y DoS
+        const MAX_KILOS = 1_000_000; // 1 millón de kilos máximo por lote
+        const MAX_CANASTILLAS = 50_000; // 50 mil canastillas máximo por lote
+        const MAX_OBSERVACIONES = 2000; // 2000 caracteres máximo
+
         return z.object({
-            fecha_estimada_llegada: safeString("fecha_estimada_llegada")
-                .refine(val => !isNaN(Date.parse(val)), {
-                    message: "La fecha estimada de llegada no es válida"
-                }),
-            numeroRemision: z.string().min(1, "El número de remisión es obligatorio"),
-            kilos: z.coerce.number()
-                .gt(0, "Los kilos no pueden ser cero")
-                .transform(val => Number(val)),
+            dataLote: z.object({
+                fecha_estimada_llegada: safeString("fecha_estimada_llegada")
+                    .refine(val => !isNaN(Date.parse(val)), {
+                        message: "La fecha estimada de llegada no es válida"
+                    }),
+                numeroRemision: z.string()
+                    .transform(val => val.trim())
+                    .pipe(z.string().min(1, "El número de remisión es obligatorio")),
+                kilos: z.coerce.number()
+                    .gt(0, "Los kilos deben ser mayor a cero")
+                    .max(MAX_KILOS, `Los kilos no pueden exceder ${MAX_KILOS.toLocaleString()}`)
+                    .finite()
+                    .transform(val => Number(val)),
 
-            canastillas: z.coerce.number()
-                .gt(0, "Las canastillas no pueden ser cero"),
+                canastillas: z.coerce.number()
+                    .gt(0, "Las canastillas deben ser mayor a cero")
+                    .max(MAX_CANASTILLAS, `Las canastillas no pueden exceder ${MAX_CANASTILLAS.toLocaleString()}`)
+                    .finite(),
 
-            promedio: z.coerce.number()
-                .min(17, "Los kilos no corersponden a las canastillas")
-                .max(25, "Los kilos no corersponden a las canastillas"),
+                promedio: z.coerce.number()
+                    .finite()
+                    .min(17, "Los kilos no corresponden a las canastillas")
+                    .max(25, "Los kilos no corresponden a las canastillas"),
 
-            tipoFruta: safeString("tipoFruta"),
+                tipoFruta: requiredSafeString("tipoFruta"),
 
-            GGN: z.boolean("estado GGN faltante"),
+                GGN: z.boolean("estado GGN faltante"),
 
-            predio: safeString("predio"),
+                predio: requiredSafeString("predio"),
 
-            observaciones: optionalSafeString("observaciones"),
+                observaciones: optionalSafeString("observaciones")
+                    .refine(
+                        val => val === undefined || val.length <= MAX_OBSERVACIONES,
+                        `Las observaciones no pueden exceder ${MAX_OBSERVACIONES} caracteres`
+                    ),
 
-            placa: z.string()
-                .length(6, "La placa debe tener exactamente 6 caracteres")
-                .transform(val => val.toUpperCase())
-                .refine(
-                    val => /^[A-Z]{3}[0-9]{3}$/.test(val),
-                    "La placa debe tener 3 letras seguidas de 3 números"
-                )
-                .pipe(safeString("placa")),
+                placa: z.string()
+                    .length(6, "La placa debe tener exactamente 6 caracteres")
+                    .transform(val => val.toUpperCase())
+                    .refine(
+                        val => /^[A-Z]{3}[0-9]{3}$/.test(val),
+                        "La placa debe tener 3 letras seguidas de 3 números"
+                    )
+                    .pipe(safeString("placa")),
+            }),
+            dataCanastillas: z.object({
+                canastillasPropias: z.coerce.number()
+                    .min(0, "El número de canastillas no puede ser negativo")
+                    .max(MAX_CANASTILLAS, `Las canastillas propias no pueden exceder ${MAX_CANASTILLAS.toLocaleString()}`)
+                    .finite()
+                    .transform(val => Number(val)),
+                canastillasPrestadas: z.coerce.number()
+                    .min(0, "El número de canastillas no puede ser negativo")
+                    .max(MAX_CANASTILLAS, `Las canastillas prestadas no pueden exceder ${MAX_CANASTILLAS.toLocaleString()}`)
+                    .finite()
+                    .transform(val => Number(val)),
+            })
         })
     }
     static post_inventarios_ingreso_maquila() {

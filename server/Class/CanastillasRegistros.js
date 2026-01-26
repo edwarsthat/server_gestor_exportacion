@@ -1,22 +1,11 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-export class CanastillasRepository {
-    static async post_registro(data, user, opts = {}) {
-        const { session } = opts;
+export class CanastillasRepository extends BaseRepository {
+    static get model() { return db.RegistrosCanastillas; }
+    static modelName = 'RegistrosCanastillas';
 
-        try {
-            const registro = new db.RegistrosCanastillas({
-                ...data,
-                _user: user?._id ?? user, 
-            });
-
-            const saved = await registro.save({ session });
-            return saved;
-        } catch (err) {
-            throw new ConnectionDBError(509, `Error agregando registro ${err.message}`);
-        }
-    }
     static async get_numero_registros(filtro = {}) {
         try {
             const count = await db.RegistrosCanastillas.countDocuments(filtro);

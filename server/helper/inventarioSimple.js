@@ -11,7 +11,7 @@ export class InventarioSimpleHelper {
         };
 
         // Intentar actualizar en inventario normal usando operador posicional
-        let resultado = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+        let resultado = await InventariosHistorialRepository.put_inventarioSimple(
             { 
                 _id: inventarioFrutaSinProcesarId,
                 "inventario.lote": _id
@@ -28,7 +28,7 @@ export class InventarioSimpleHelper {
         }
 
         // Intentar actualizar en inventarioMaquila
-        resultado = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+        resultado = await InventariosHistorialRepository.put_inventarioSimple(
             { 
                 _id: inventarioFrutaSinProcesarId,
                 "inventarioMaquila.lote": _id
@@ -45,7 +45,7 @@ export class InventarioSimpleHelper {
         }
 
         // No existe, agregarlo a inventario normal
-        await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+        await InventariosHistorialRepository.put_inventarioSimple(
             { _id: inventarioFrutaSinProcesarId },
             {
                 $push: { inventario: { lote: _id, canastillas: Number(canastillas) } },

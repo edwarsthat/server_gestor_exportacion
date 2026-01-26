@@ -13,9 +13,16 @@ import { CarnetsService } from "../../services/talentoHumano/carnets.js";
 import { TalentoHumanoDotacionCarnetsRepository } from "../../Class/talentoHumano/dotacion/Carnets.js";
 import bcrypt from "bcrypt";
 import PDFDocument from "pdfkit";
+import { executeTransactionalTask } from "../../utils/wrappers.js";
 
 
 export class PersonalControllerRepository {
+
+    // Hash dummy pre-calculado para protección contra timing attacks
+    // Generado con: bcrypt.hashSync("dummy_value_for_timing_protection", 10)
+    // eslint-disable-next-line no-secrets/no-secrets -- Hash falso intencional, no es un secreto real
+    static DUMMY_HASH = "$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+
 
     static async post_talentoHumano_personal_ingresoPersonal(req) {
         const { user } = req
@@ -205,10 +212,6 @@ export class PersonalControllerRepository {
             await ErrorTalentHumanoLogicHandlers(error)
         }
     }
-    // Hash dummy pre-calculado para protección contra timing attacks
-    // Generado con: bcrypt.hashSync("dummy_value_for_timing_protection", 10)
-    // eslint-disable-next-line no-secrets/no-secrets -- Hash falso intencional, no es un secreto real
-    static DUMMY_HASH = "$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 
     static async get_talentoHumano_personal_registro(req) {
         const ERROR_CREDENCIALES = 'Credenciales de carnet inválidas';
@@ -293,7 +296,7 @@ export class PersonalControllerRepository {
     static async get_talentoHumano_personal_Imgs(req) {
         try {
             const { _id } = req.data
-            const data = await PersonalRepository.get_data({ _id })
+            const data = await PersonalRepository.get_data({ ids: [_id] })
 
             if (data && data.length > 0) {
                 // Convertir a objeto plano Mongoose si es necesario para poder agregar propiedades
@@ -480,6 +483,71 @@ export class PersonalControllerRepository {
             await session.endSession();
             await registrarPasoLog(log._id, "Fin de la función", "completado")
         }
+    }
+    static async put_talentoHumano_upload_document(req) {
+        const { user } = req;
+        await executeTransactionalTask(req, async (session, log) => {
+
+            //se valida la data de entrada
+            const dataValidate = TalentoHumanoValidations.put_talentoHumano_upload_document().parse(req.data)
+
+            //se obtiene el documento del personal
+            const personalDocArr = await PersonalRepository.get_data({ ids: [dataValidate._id] }, { session })
+            const personalDoc = personalDocArr[0]
+            if (!personalDoc) {
+                throw new Error('Personal no encontrado');
+            }
+            if (!personalDoc.estado) {
+                throw new Error('Personal no activo');
+            }
+            await registrarPasoLog(log._id, "Obtener personal", "completado")
+
+            //se debe mirar que tipo de documento es elq ue se va a subir
+            let docToChange = ""
+            let campo = ""
+            let isEncrypted = false
+
+            let urlPath = ""
+
+            if (dataValidate.typeDoc === "foto") {
+                docToChange = personalDoc.urlFotoCarnet
+                campo = "urlFotoCarnet"
+
+                urlPath = path.join(
+                    "personal",
+                    "fotoCarnetProcessed",
+                );
+            } else if (dataValidate.typeDoc === "cedula") {
+                docToChange = personalDoc.urlIdentificacion
+                campo = "urlIdentificacion"
+                isEncrypted = true
+
+                urlPath = path.join(
+                    "personal",
+                    "identificacion",
+                );
+            }
+
+            //borrar el documento anterior si existe
+            if (docToChange) {
+                await FileService.deleteFile(docToChange, "STORAGE")
+                await registrarPasoLog(log._id, "Documento anterior eliminado", "completado")
+            }
+
+            //subir el nuevo documento
+            const fileUrl = await FileService.saveBase64File(dataValidate.file, urlPath, "STORAGE", { encrypt: isEncrypted })
+
+            await registrarPasoLog(log._id, "Documento subido", "completado")
+
+            //actualizar el documento en la base de datos
+            await PersonalRepository.actualizar_data(
+                { _id: dataValidate._id },
+                { [campo]: fileUrl },
+                { session, user: user._id }
+            )
+            await registrarPasoLog(log._id, "Documento actualizado", "completado")
+
+        });
     }
 }
 

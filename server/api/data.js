@@ -212,26 +212,33 @@ export class dataRepository {
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async incrementar_serial(name, session = null) {
+        if (!name || typeof name !== "string") {
+            throw new Error('El nombre del serial es requerido y debe ser string');
+        }
+
+        const resultado = await Seriales.modificar_seriales(
+            { name },
+            { $inc: { serial: 1 } },
+            {
+                session,
+                new: true,
+                upsert: true,
+                setDefaultsOnInsert: true
+            }
+        );
+
+        if (!resultado) {
+            throw new Error(`No se pudo incrementar o crear el serial: ${name}`);
+        }
+
+        return resultado.serial;
+    }
     static async incrementar_ef8_serial(session) {
         try {
             await Seriales.modificar_seriales(
                 { name: "EF8-" },
                 { $inc: { serial: 1 } },
-                session
-            )
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async incrementar_ef1_serial(session) {
-        try {
-            await Seriales.modificar_seriales(
-                { name: "EF1-" },
-                { $inc: { serial: 1 } },
-                {},
                 session
             )
         } catch (err) {

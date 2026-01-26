@@ -368,13 +368,13 @@ describe('FileService', () => {
             test('debería lanzar error si el template no existe', async () => {
                 await expect(
                     FileService.readTemplate('template-inexistente-12345.html')
-                ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+                ).rejects.toThrow('Archivo no encontrado');
             });
 
             test('debería incluir mensaje de error específico', async () => {
                 await expect(
                     FileService.readTemplate('no-existe.docx')
-                ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+                ).rejects.toThrow('Archivo no encontrado');
             });
         });
 
@@ -410,25 +410,25 @@ describe('FileService', () => {
             test('debería bloquear intento de ../', async () => {
                 await expect(
                     FileService.readTemplate('../../../etc/passwd')
-                ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+                ).rejects.toThrow('Acceso denegado');
             });
 
             test('debería bloquear intento con múltiples ../', async () => {
                 await expect(
                     FileService.readTemplate('../../../../../../../../etc/passwd')
-                ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+                ).rejects.toThrow('Acceso denegado');
             });
 
             test('debería bloquear rutas absolutas', async () => {
                 await expect(
                     FileService.readTemplate('/etc/passwd')
-                ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+                ).rejects.toThrow('Acceso denegado');
             });
 
             test('debería bloquear ../ mezclado con carpetas válidas', async () => {
                 await expect(
                     FileService.readTemplate('subcarpeta/../../../etc/passwd')
-                ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+                ).rejects.toThrow('Acceso denegado');
             });
         });
 
@@ -471,7 +471,7 @@ describe('FileService', () => {
                     // El archivo no se encontrará porque busca literalmente "test-subdir-unit\sub-template.txt"
                     await expect(
                         FileService.readTemplate(`${subDir}\\${subDirTemplate}`)
-                    ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+                    ).rejects.toThrow('Archivo no encontrado');
                 }
             });
         });
@@ -525,13 +525,13 @@ describe('FileService', () => {
         test('debería lanzar error si el template no existe', async () => {
             await expect(
                 FileService.getTemplateDir('no-existe-12345.html')
-            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+            ).rejects.toThrow('Archivo no encontrado');
         });
 
         test('debería lanzar error para path traversal', async () => {
             await expect(
                 FileService.getTemplateDir('../../../etc/passwd')
-            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+            ).rejects.toThrow('Acceso denegado');
         });
     });
 
@@ -568,13 +568,13 @@ describe('FileService', () => {
         test('debería lanzar error si el archivo no existe', async () => {
             await expect(
                 FileService.readFile('no-existe.txt', 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+            ).rejects.toThrow('Archivo no encontrado');
         });
 
         test('debería lanzar error para path traversal', async () => {
             await expect(
                 FileService.readFile('../../../etc/passwd', 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+            ).rejects.toThrow('Acceso denegado');
         });
 
         test('debería usar TEMPLATES como ubicación por defecto', async () => {
@@ -652,7 +652,7 @@ describe('FileService', () => {
         test('debería lanzar error si el archivo no existe', async () => {
             await expect(
                 FileService.readFileAsBase64('no-existe.txt', 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+            ).rejects.toThrow('Archivo no encontrado');
         });
 
         test('debería usar application/octet-stream para extensiones desconocidas', async () => {
@@ -719,13 +719,13 @@ describe('FileService', () => {
         test('debería lanzar error si el archivo no existe', async () => {
             await expect(
                 FileService.getFileStats('no-existe.txt', 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+            ).rejects.toThrow('Archivo no encontrado');
         });
 
         test('debería lanzar error para path traversal', async () => {
             await expect(
                 FileService.getFileStats('../../../etc/passwd', 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+            ).rejects.toThrow('Acceso denegado');
         });
     });
 
@@ -959,13 +959,13 @@ describe('FileService', () => {
         test('debería lanzar error si el archivo no existe', async () => {
             await expect(
                 FileService.writeFileFromBuffer('no-existe-write.txt', Buffer.from('test'), 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+            ).rejects.toThrow('Archivo no encontrado');
         });
 
         test('debería lanzar error para path traversal', async () => {
             await expect(
                 FileService.writeFileFromBuffer('../../../etc/passwd', Buffer.from('test'), 'TEMPLATES')
-            ).rejects.toThrow('Archivo no encontrado o acceso denegado');
+            ).rejects.toThrow('Acceso denegado');
         });
     });
 
@@ -1481,6 +1481,89 @@ describe('FileService', () => {
 
             // Debería funcionar aunque pases ".webp" en lugar de "webp"
             expect(filename).toContain('webp');
+        });
+    });
+
+    // ============================================================
+    // TEST GROUP: deleteFile
+    // ============================================================
+    describe('deleteFile', () => {
+        const templatesDir = path.resolve(__dirname, '../../../server/templates');
+        const fileToDelete = 'file-to-delete-unit.txt';
+        const absoluteFilePath = path.join(templatesDir, fileToDelete);
+
+        beforeAll(async () => {
+            await fs.mkdir(templatesDir, { recursive: true });
+        });
+
+        test('debería eliminar un archivo existente correctamente', async () => {
+            // 1. Crear el archivo
+            await fs.writeFile(absoluteFilePath, 'contenido para borrar');
+
+            // 2. Verificar que existe
+            const existsBefore = await fs.stat(absoluteFilePath).then(() => true).catch(() => false);
+            expect(existsBefore).toBe(true);
+
+            // 3. Eliminar
+            await FileService.deleteFile(fileToDelete, 'TEMPLATES');
+
+            // 4. Verificar que ya no existe
+            const existsAfter = await fs.stat(absoluteFilePath).then(() => true).catch(() => false);
+            expect(existsAfter).toBe(false);
+        });
+
+        test('debería retornar éxito si el archivo no existe (idempotencia)', async () => {
+            const result = await FileService.deleteFile('archivo-que-no-existe.txt', 'TEMPLATES');
+
+            expect(result.success).toBe(true);
+            expect(result.message).toContain('no existía');
+        });
+
+        test('debería proteger contra Path Traversal y no eliminar archivos fuera de la ruta', async () => {
+            // Creamos un archivo "señuelo" fuera del directorio permitido (en la raíz de server)
+            const sensitiveFile = 'sensitive-unit-test.txt';
+            const serverDir = path.resolve(templatesDir, '..');
+            const sensitivePath = path.join(serverDir, sensitiveFile);
+
+            await fs.writeFile(sensitivePath, 'no borrar esto');
+
+            try {
+                // El ataque intenta subir un nivel desde TEMPLATES (../../server/sensitive-unit-test.txt)
+                const attackPath = `../${sensitiveFile}`;
+
+                await expect(FileService.deleteFile(attackPath, 'TEMPLATES')).rejects.toThrow('Acceso denegado');
+
+                // Lo CRÍTICO es que el archivo SIGA EXISTIENDO.
+                const stillExists = await fs.stat(sensitivePath).then(() => true).catch(() => false);
+                expect(stillExists).toBe(true);
+            } finally {
+                // Limpieza manual del señuelo
+                await fs.unlink(sensitivePath).catch(() => { });
+            }
+        });
+
+        test('debería bloquear ataques con Null Byte Injection', async () => {
+            const attackPath = 'archivo.txt\0.jpg';
+            const result = await FileService.deleteFile(attackPath, 'TEMPLATES');
+
+            // El service debe sanitizar (remover \0) y fallar al no encontrar "archivo.txt.jpg" 
+            // o manejarlo de forma segura siguiendo el flujo normal de error capturado
+            expect(result.success).toBe(true);
+        });
+
+        test('debería bloquear intentos con rutas absolutas', async () => {
+            const absoluteAttack = process.platform === 'win32' ? 'C:\\Windows\\system.ini' : '/etc/passwd';
+
+            await expect(
+                FileService.deleteFile(absoluteAttack, 'TEMPLATES')
+            ).rejects.toThrow('Acceso denegado');
+        });
+
+        test('debería manejar errores inesperados del sistema de archivos', async () => {
+            // Caso donde la ubicación no es válida
+            await expect(
+                FileService.deleteFile('test.txt', 'UBICACION_INEXISTENTE')
+            ).rejects.toThrow('No se pudo eliminar el archivo');
         });
     });
 });

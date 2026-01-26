@@ -158,7 +158,19 @@ export class InventariosService {
         }
     }
     static async ajustarCanastillasProveedorCliente(_id, cantidad, user, session = null) {
-        if (!_id || !Number.isFinite(cantidad) || cantidad === 0) return;
+        // Validación de parámetros - fallar explícitamente                                                                                             
+        if (!_id) {
+            throw new Error('El _id es requerido para ajustar canastillas');
+        }
+        if (!Number.isFinite(cantidad)) {
+            throw new Error('La cantidad debe ser un número finito');
+        }
+        if (!user?._id) {
+            throw new Error('El user._id es requerido para ajustar canastillas');
+        }
+
+        // Si cantidad es 0, no hay nada que hacer (esto sí es válido retornar)                                                                         
+        if (cantidad === 0) return null;
 
         const prov = await ProveedoresRepository.actualizar_proveedores(
             { _id: _id },
@@ -987,7 +999,7 @@ export class InventariosService {
             throw new Error(`ENF inválido: ${lote.enf}. No se reconoce el prefijo.`);
         }
 
-        await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+        await InventariosHistorialRepository.put_inventarioSimple(
             {
                 _id: inventarioFrutaSinProcesar,
                 [`${tipoInventario}.lote`]: lote._id
@@ -1002,7 +1014,7 @@ export class InventariosService {
             }
         );
 
-        const pullResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+        const pullResult = await InventariosHistorialRepository.put_inventarioSimple(
             { _id: inventarioFrutaSinProcesar },
             { $pull: { [tipoInventario]: { lote: new mongoose.Types.ObjectId(lote._id), canastillas: { $lte: 0 } } } },
             { session, skipAudit: true, runValidators: false }
@@ -1071,7 +1083,7 @@ export class InventariosService {
             }
         ];
 
-        const result = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+        const result = await InventariosHistorialRepository.put_inventarioSimple(
             { _id: inventarioId },
             pipelineUpdate,
             {
@@ -1085,7 +1097,7 @@ export class InventariosService {
 
         await registrarPasoLog(
             log._id,
-            "InventariosHistorialRepository.put_inventarioSimple_updateOne (sumar/crear)",
+            "InventariosHistorialRepository.put_inventarioSimple (sumar/crear)",
             "Completado",
             `Suma/Alta de canastillas: ${canastillas} en ${campoInventario}, matchedCount: ${result?.matchedCount}, modifiedCount: ${result?.modifiedCount}, versión incrementada`
         );
