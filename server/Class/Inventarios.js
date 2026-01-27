@@ -4,9 +4,13 @@ import { ConnectionDBError, PostError } from "../../Error/ConnectionErrors.js";
 import config from "../../src/config/index.js";
 import { InventariosService } from "../services/inventarios.js";
 import { ClassError, MongoDBError } from "../models/ErrorModels.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
 
-export class InventariosHistorialRepository {
+export class InventariosHistorialRepository extends BaseRepository {
+    static get model() { return db.InventariosSimples; }
+    static modelName = 'InventariosSimples';
+
     static async crearInventarioDescarte() {
         try {
             const fecha = new Date();
@@ -146,185 +150,190 @@ export class InventariosHistorialRepository {
         }
     }
     static async getInventarioFrutaSinProcesar(options = {}) {
-        const {
-            ids = [],
-            // query = {},
-            // loteFields = ["enf", "fecha_ingreso", "kilos", "predio", "canastillas"],
-            // proveedorFields = ["PREDIO", "ICA", "GGN", "SISPAP"],
-        } = options;
+        try {
+            const { ids = [] } = options;
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return []
+            }
 
-        const _ids = ids.map(id => new mongoose.Types.ObjectId(id));
-        const pipeline = [
-            { $match: { _id: { $in: _ids } } },
-            { $project: { inventario: 1 } },
-            // Desarma el array para enriquecer cada ítem con su Lote + Proveedor
-            { $unwind: { path: "$inventario" } },
-            // Lookup Lote del ítem
-            {
-                $lookup: {
-                    from: "lotes",
-                    let: { loteId: "$inventario.lote" },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$loteId"] } } },
-                        {
-                            $project: {
-                                _id: 1,
-                                enf: 1,
-                                predio: 1,
-                                proveedor: 1,
-                                canastillas: 1,
-                                promedio: 1,
-                                fecha_ingreso_inventario: 1,
-                                fecha_creacion: 1,
-                                calidad: 1,
-                                tipoFruta: 1,
-                                observaciones: 1,
-                                clasificacionCalidad: 1,
-                                fecha_ingreso_patio: 1,
-                                fecha_salida_patio: 1,
-                                fecha_estimada_llegada: 1,
-                                kilosVaciados: 1,
-                                not_pass: 1,
-                                GGN: 1,
+            const _ids = ids.map(id => {
+                if (!mongoose.Types.ObjectId.isValid(id)) {
+                    throw new Error(`ID inválido: ${id}`);
+                }
+                return new mongoose.Types.ObjectId(id);
+            });
+
+            const pipeline = [
+                { $match: { _id: { $in: _ids } } },
+                { $project: { inventario: 1 } },
+                { $unwind: { path: "$inventario" } },
+                {
+                    $lookup: {
+                        from: "lotes",
+                        let: { loteId: "$inventario.lote" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$loteId"] } } },
+                            {
+                                $project: {
+                                    _id: 1, enf: 1, predio: 1, proveedor: 1,
+                                    canastillas: 1, promedio: 1, fecha_ingreso_inventario: 1,
+                                    fecha_creacion: 1, calidad: 1, tipoFruta: 1,
+                                    observaciones: 1, clasificacionCalidad: 1,
+                                    fecha_ingreso_patio: 1, fecha_salida_patio: 1,
+                                    fecha_estimada_llegada: 1, kilosVaciados: 1,
+                                    not_pass: 1, GGN: 1,
+                                }
                             }
-                        }
-                    ],
-                    as: "lote"
-                },
-            },
-            { $unwind: { path: "$lote", preserveNullAndEmptyArrays: true } },
-            {
-                $lookup: {
-                    from: "proveedors",
-                    let: { predioId: "$lote.predio" },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$predioId"] } } },
-                        { $project: { _id: 1, PREDIO: 1, ICA: 1, GGN: 1, SISPAP: 1 } }
-                    ],
-                    as: "predio"
-                }
-            },
-            { $unwind: { path: "$predio", preserveNullAndEmptyArrays: true } },
-            {
-                $lookup: {
-                    from: "tipofrutas",
-                    let: { tipoFrutaId: "$lote.tipoFruta" },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$tipoFrutaId"] } } },
-                        { $project: { _id: 1, tipoFruta: 1 } }
-                    ],
-                    as: "tipoFruta"
-                }
-            },
-            { $unwind: { path: "$tipoFruta", preserveNullAndEmptyArrays: true } },
-            {
-                $set: {
-                    lote: {
-                        $mergeObjects: [
-                            "$lote",
-                            { predio: "$predio" },
-                            { tipoFruta: "$tipoFruta" },  // ← Agregado aquí
-                            { canastillas: "$inventario.canastillas" }
                         ],
+                        as: "lote"
+                    },
+                },
+                { $unwind: { path: "$lote", preserveNullAndEmptyArrays: true } },
+                // Filtrar documentos donde el lote no existe
+                { $match: { lote: { $ne: null } } },
+                {
+                    $lookup: {
+                        from: "proveedors",
+                        let: { predioId: "$lote.predio" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$predioId"] } } },
+                            { $project: { _id: 1, PREDIO: 1, ICA: 1, GGN: 1, SISPAP: 1 } }
+                        ],
+                        as: "predio"
                     }
-                }
-            },
-            { $unset: ["predio", "tipoFruta", "inventario"] },  // ← Agregado tipoFruta al unset
-            { $replaceWith: "$lote" }
-        ];
+                },
+                { $unwind: { path: "$predio", preserveNullAndEmptyArrays: true } },
+                {
+                    $lookup: {
+                        from: "tipofrutas",
+                        let: { tipoFrutaId: "$lote.tipoFruta" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$tipoFrutaId"] } } },
+                            { $project: { _id: 1, tipoFruta: 1 } }
+                        ],
+                        as: "tipoFruta"
+                    }
+                },
+                { $unwind: { path: "$tipoFruta", preserveNullAndEmptyArrays: true } },
+                {
+                    $set: {
+                        lote: {
+                            $mergeObjects: [
+                                "$lote",
+                                { predio: "$predio" },
+                                { tipoFruta: "$tipoFruta" },
+                                { canastillas: "$inventario.canastillas" }
+                            ],
+                        }
+                    }
+                },
+                { $unset: ["predio", "tipoFruta", "inventario"] },
+                { $replaceWith: "$lote" }
+            ];
 
-        const res = await db.InventariosSimples.aggregate(pipeline).exec();
-        return res || []
 
+            const res = await db.InventariosSimples.aggregate(pipeline).exec();
+            return res || []
+
+        } catch (error) {
+            throw new ClassError(522, `Error obteniendo el inventario simple ${error.message}`, error);
+        }
     }
     static async getInventarioFrutaSinProcesarMaquila(options = {}) {
-        const {
-            ids = [],
-            // query = {},
-            // loteFields = ["enf", "fecha_ingreso", "kilos", "predio", "canastillas"],
-            // proveedorFields = ["PREDIO", "ICA", "GGN", "SISPAP"],
-        } = options;
+        try {
+            const { ids = [] } = options;
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return []
+            }
 
-        const _ids = ids.map(id => new mongoose.Types.ObjectId(id));
-        const pipeline = [
-            { $match: { _id: { $in: _ids } } },
-            { $project: { inventarioMaquila: 1 } },
-            { $unwind: { path: "$inventarioMaquila" } },
-            {
-                $lookup: {
-                    from: "lotemaquilas",
-                    let: { loteId: "$inventarioMaquila.lote" },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$loteId"] } } },
-                        {
-                            $project: {
-                                _id: 1,
-                                enf: 1,
-                                predio: 1,
-                                tipoFruta: 1,
-                                proveedor: 1,
-                                canastillas: 1,
-                                promedio: 1,
-                                fecha_ingreso_inventario: 1,
-                                fecha_creacion: 1,
-                                calidad: 1,
-                                observaciones: 1,
-                                clasificacionCalidad: 1,
-                                fecha_ingreso_patio: 1,
-                                fecha_salida_patio: 1,
-                                fecha_estimada_llegada: 1,
-                                kilosVaciados: 1,
-                                not_pass: 1,
-                                GGN: 1,
+            const _ids = ids.map(id => {
+                if (!mongoose.Types.ObjectId.isValid(id)) {
+                    throw new Error(`ID inválido: ${id}`);
+                }
+                return new mongoose.Types.ObjectId(id);
+            });
+            const pipeline = [
+                { $match: { _id: { $in: _ids } } },
+                { $project: { inventarioMaquila: 1 } },
+                { $unwind: { path: "$inventarioMaquila" } },
+                {
+                    $lookup: {
+                        from: "lotemaquilas",
+                        let: { loteId: "$inventarioMaquila.lote" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$loteId"] } } },
+                            {
+                                $project: {
+                                    _id: 1,
+                                    enf: 1,
+                                    predio: 1,
+                                    tipoFruta: 1,
+                                    proveedor: 1,
+                                    canastillas: 1,
+                                    promedio: 1,
+                                    fecha_ingreso_inventario: 1,
+                                    fecha_creacion: 1,
+                                    calidad: 1,
+                                    observaciones: 1,
+                                    clasificacionCalidad: 1,
+                                    fecha_ingreso_patio: 1,
+                                    fecha_salida_patio: 1,
+                                    fecha_estimada_llegada: 1,
+                                    kilosVaciados: 1,
+                                    not_pass: 1,
+                                    GGN: 1,
+                                }
                             }
-                        }
-                    ],
-                    as: "lote"
-                },
-            },
-            { $unwind: { path: "$lote", preserveNullAndEmptyArrays: true } },
-            {
-                $lookup: {
-                    from: "proveedors",
-                    let: { predioId: "$lote.predio" },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$predioId"] } } },
-                        { $project: { _id: 1, PREDIO: 1, ICA: 1, GGN: 1, SISPAP: 1 } }
-                    ],
-                    as: "predio"
-                }
-            },
-            { $unwind: { path: "$predio", preserveNullAndEmptyArrays: true } },
-            {
-                $lookup: {
-                    from: "tipofrutas",
-                    let: { tipoFrutaId: "$lote.tipoFruta" },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$tipoFrutaId"] } } },
-                        { $project: { _id: 1, tipoFruta: 1 } }
-                    ],
-                    as: "tipoFruta"
-                }
-            },
-            { $unwind: { path: "$tipoFruta", preserveNullAndEmptyArrays: true } },
-            {
-                $set: {
-                    lote: {
-                        $mergeObjects: [
-                            "$lote",
-                            { predio: "$predio" },
-                            { tipoFruta: "$tipoFruta" },  // ← Agregado aquí
-                            { canastillas: "$inventarioMaquila.canastillas" }
                         ],
+                        as: "lote"
+                    },
+                },
+                { $unwind: { path: "$lote", preserveNullAndEmptyArrays: true } },
+                {
+                    $lookup: {
+                        from: "proveedors",
+                        let: { predioId: "$lote.predio" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$predioId"] } } },
+                            { $project: { _id: 1, PREDIO: 1, ICA: 1, GGN: 1, SISPAP: 1 } }
+                        ],
+                        as: "predio"
                     }
-                }
-            },
-            { $unset: ["predio", "tipoFruta", "inventario"] },  // ← Agregado tipoFruta al unset
-            { $replaceWith: "$lote" }
-        ];
+                },
+                { $unwind: { path: "$predio", preserveNullAndEmptyArrays: true } },
+                {
+                    $lookup: {
+                        from: "tipofrutas",
+                        let: { tipoFrutaId: "$lote.tipoFruta" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$tipoFrutaId"] } } },
+                            { $project: { _id: 1, tipoFruta: 1 } }
+                        ],
+                        as: "tipoFruta"
+                    }
+                },
+                { $unwind: { path: "$tipoFruta", preserveNullAndEmptyArrays: true } },
+                {
+                    $set: {
+                        lote: {
+                            $mergeObjects: [
+                                "$lote",
+                                { predio: "$predio" },
+                                { tipoFruta: "$tipoFruta" },  // ← Agregado aquí
+                                { canastillas: "$inventarioMaquila.canastillas" }
+                            ],
+                        }
+                    }
+                },
+                { $unset: ["predio", "tipoFruta", "inventario"] },  // ← Agregado tipoFruta al unset
+                { $replaceWith: "$lote" }
+            ];
 
-        const res = await db.InventariosSimples.aggregate(pipeline).exec();
-        return res || []
+            const res = await db.InventariosSimples.aggregate(pipeline).exec();
+            return res || []
+        } catch (error) {
+            throw new ClassError(522, `Error obteniendo el inventario simple ${error.message}`, error);
+        }
 
     }
     static async get_item_frutaSinProcesar(id) {
@@ -383,6 +392,7 @@ export class InventariosHistorialRepository {
         }
 
         // Protección contra Prototype Pollution
+        // eslint-disable-next-line no-unused-vars
         const { __proto__: _proto, constructor: _constructor, prototype: _prototype, ...safeOptions } = options;
 
         const finalOptions = {

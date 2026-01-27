@@ -107,8 +107,7 @@ export class PersonalControllerRepository {
 
             const { cedula, cedulaFrente, cedulaTrasera } = req.data
 
-            const dataValidate = TalentoHumanoValidations.post_talentoHumano_personal_cargarCedula().parse(req.data)
-
+            TalentoHumanoValidations.post_talentoHumano_personal_cargarCedula().parse(req.data)
 
             const urlPath = path.join(
                 "personal",
@@ -118,41 +117,40 @@ export class PersonalControllerRepository {
             let filePath;
 
             if (cedulaFrente?.url && cedulaTrasera?.url) {
-                //     const pdfBuffer = await new Promise((resolve, reject) => {
-                //         const doc = new PDFDocument({ margin: 0, size: 'A4' });
-                //         const chunks = [];
-                //         doc.on('data', chunk => chunks.push(chunk));
-                //         doc.on('end', () => resolve(Buffer.concat(chunks)));
-                //         doc.on('error', reject);
+                const pdfBuffer = await new Promise((resolve, reject) => {
+                    const doc = new PDFDocument({ margin: 0, size: 'A4' });
+                    const chunks = [];
+                    doc.on('data', chunk => chunks.push(chunk));
+                    doc.on('end', () => resolve(Buffer.concat(chunks)));
+                    doc.on('error', reject);
 
-                //         try {
-                //             const img1 = Buffer.from(cedulaFrente.url.split(',')[1], 'base64');
-                //             const img2 = Buffer.from(cedulaTrasera.url.split(',')[1], 'base64');
+                    try {
+                        const img1 = Buffer.from(cedulaFrente);
+                        const img2 = Buffer.from(cedulaTrasera);
 
-                //             doc.image(img1, {
-                //                 fit: [doc.page.width, doc.page.height],
-                //                 align: 'center',
-                //                 valign: 'center'
-                //             });
-                //             doc.addPage();
-                //             doc.image(img2, {
-                //                 fit: [doc.page.width, doc.page.height],
-                //                 align: 'center',
-                //                 valign: 'center'
-                //             });
-                //             doc.end();
-                //         } catch (err) {
-                //             reject(err);
-                //         }
-                //     });
+                        doc.image(img1, {
+                            fit: [doc.page.width, doc.page.height],
+                            align: 'center',
+                            valign: 'center'
+                        });
+                        doc.addPage();
+                        doc.image(img2, {
+                            fit: [doc.page.width, doc.page.height],
+                            align: 'center',
+                            valign: 'center'
+                        });
+                        doc.end();
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
 
-                //     const pdfBase64 = `data:application/pdf;base64,${pdfBuffer.toString('base64')}`;
-                //     filePath = await FileService.saveBase64File(
-                //         pdfBase64,
-                //         urlPath,
-                //         "STORAGE",
-                //         { encrypt: true }
-                //     );
+                filePath = await FileService.saveBufferFile(
+                    pdfBuffer,
+                    urlPath,
+                    "STORAGE",
+                    { encrypt: true }
+                )
 
             } else if (cedula) {
                 filePath = await FileService.saveBufferFile(
@@ -163,23 +161,21 @@ export class PersonalControllerRepository {
                 )
             }
 
-
             if (!filePath) {
                 throw new Error("La cedula es obligatoria")
             }
 
+            let dataForRust = filePath;
 
-            // let dataForRust = filePath;
+            const payload = {
+                data: JSON.stringify(cleanForRust(dataForRust)),
+                server: "python",
+                action: "validar_cedula"
+            };
+            const responseStr = await rustRcpClient.sendData(payload);
+            const response = JSON.parse(responseStr);
 
-            // const payload = {
-            //     data: JSON.stringify(cleanForRust(dataForRust)),
-            //     server: "python",
-            //     action: "validar_cedula"
-            // };
-            // const responseStr = await rustRcpClient.sendData(payload);
-            // const response = JSON.parse(responseStr);
-            console.log(filePath)
-            return true
+            return response
         })
 
     }

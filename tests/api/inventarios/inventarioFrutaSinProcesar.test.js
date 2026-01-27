@@ -37,9 +37,9 @@ jest.unstable_mockModule('../../../server/api/IndicadoresAPI.js', () => ({ Indic
 jest.unstable_mockModule('../../../events/eventos.js', () => ({ procesoEventEmitter: mockEventEmitter }));
 
 // Importación dinámica del controlador
-const { InventarioFrutaSinProcesarController } = await import('../../../server/api/inventarios/inventarioFrutaSinProcesar.js');
+const { OrdenVaceoController } = await import('../../../server/api/inventarios/ordenVaceo.js');
 
-describe('InventarioFrutaSinProcesarController - put_inventarios_ordenVaceo_vacear', () => {
+describe('OrdenVaceoController - put_inventarios_ordenVaceo_vacear', () => {
     let mockReq;
 
     beforeEach(() => {
@@ -59,19 +59,19 @@ describe('InventarioFrutaSinProcesarController - put_inventarios_ordenVaceo_vace
 
         test('debería fallar si los datos de entrada son inválidos (Zod)', async () => {
             mockReq.data.kilosVaciados = -5;
-            await expect(InventarioFrutaSinProcesarController.put_inventarios_ordenVaceo_vacear(mockReq))
+            await expect(OrdenVaceoController.put_inventarios_ordenVaceo_vacear(mockReq))
                 .rejects.toThrow(ZodError);
         });
 
         test('debería lanzar error si el ítem no existe en el inventario', async () => {
             mockInventariosHistorialRepository.get_item_frutaSinProcesar.mockResolvedValue(null);
 
-            await expect(InventarioFrutaSinProcesarController.put_inventarios_ordenVaceo_vacear(mockReq))
+            await expect(OrdenVaceoController.put_inventarios_ordenVaceo_vacear(mockReq))
                 .rejects.toThrow("No se encontró el item en el inventario");
         });
 
         test('debería ejecutar el flujo completo de vaceo correctamente', async () => {
-            await InventarioFrutaSinProcesarController.put_inventarios_ordenVaceo_vacear(mockReq);
+            await OrdenVaceoController.put_inventarios_ordenVaceo_vacear(mockReq);
 
             // Verificamos que se restó el inventario con el parseInt de canastillas
             expect(mockInventariosService.modificarRestarInventarioFrutaSinProocesar).toHaveBeenCalledWith(
@@ -88,7 +88,7 @@ describe('InventarioFrutaSinProcesarController - put_inventarios_ordenVaceo_vace
         test('debería finalizar el lote anterior si el servicio lo detecta', async () => {
             mockInventariosService.probar_deshidratacion_loteProcesando.mockResolvedValue({ _id: 'lote-antiguo' });
 
-            await InventarioFrutaSinProcesarController.put_inventarios_ordenVaceo_vacear(mockReq);
+            await OrdenVaceoController.put_inventarios_ordenVaceo_vacear(mockReq);
 
             expect(mockLotesHelper.actualizar_lotes_helper).toHaveBeenCalledWith(
                 { _id: 'lote-antiguo' },
@@ -100,7 +100,7 @@ describe('InventarioFrutaSinProcesarController - put_inventarios_ordenVaceo_vace
 
     describe('Efectos Secundarios', () => {
         test('debería emitir eventos de socket y proceso al terminar con éxito', async () => {
-            await InventarioFrutaSinProcesarController.put_inventarios_ordenVaceo_vacear(mockReq);
+            await OrdenVaceoController.put_inventarios_ordenVaceo_vacear(mockReq);
 
             expect(mockEventEmitter.emit).toHaveBeenCalledWith('predio_vaciado', expect.any(Object));
             expect(mockEventEmitter.emit).toHaveBeenCalledWith('server_event', expect.objectContaining({

@@ -1,9 +1,7 @@
 import { procesoEventEmitter } from "../../../events/eventos.js";
 import { InventariosHistorialRepository } from "../../Class/Inventarios.js";
-import { LotesHelper } from "../../helper/lotes.js";
 import { InventariosService } from "../../services/inventarios.js";
 import { registrarPasoLog } from "../helper/logs.js";
-import { IndicadoresAPIRepository } from "../IndicadoresAPI.js";
 import { InventariosValidations } from "../../validations/inventarios.js";
 import { LotesRepository } from "../../Class/Lotes.js";
 import { executeQueryTask, executeTransactionalTask } from "../../utils/wrappers.js";
@@ -17,82 +15,7 @@ import { VariablesDelSistema } from "../../Class/VariablesDelSistema.js";
 
 
 export class InventarioFrutaSinProcesarController {
-    static async put_inventarios_ordenVaceo_vacear(req) {
-        const { user, data } = req;
-        let lote
 
-        InventariosValidations.put_inventarios_ordenVaceo_vacear().parse(data);
-        const { _id, kilosVaciados, action } = data;
-
-        await executeTransactionalTask(req, async (session, log) => {
-
-            const loteAnterior = await InventariosService.probar_deshidratacion_loteProcesando(user)
-            await registrarPasoLog(log._id, "InventariosService.probar_deshidratacion_loteProcesando", "Completado");
-
-            // Obtener datos del ítem para saber cuántas canastillas restar
-            const item = await InventariosHistorialRepository.get_item_frutaSinProcesar(_id);
-            if (!item || !item.canastillas) {
-                throw new Error("No se encontró el item en el inventario");
-            }
-
-            // Actualizar lote actual (Kilos y Estado)
-            const query = {
-                $inc: {
-                    kilosVaciados: kilosVaciados,
-                },
-                finalizado: false,
-                fechaProceso: new Date()
-            }
-            lote = await LotesHelper.actualizar_lotes_helper(
-                { _id: _id },
-                query,
-                {
-                    user: user._id, action: "vaciarLote", canastillas: item.canastillas,
-                    vaciar: true, session
-                }
-            )
-            await registrarPasoLog(log._id, "LotesRepository.modificar_lote", "Completado", `Se modificó el lote con ID ${_id} para vaciarlo, kilosVaciados: ${kilosVaciados}`);
-
-            const descripcion = `Vaceo - Canastillas decrementadas: ${item.canastillas}`
-            await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(item.canastillas), user, action, lote, session, descripcion);
-            console.log("item", item)
-            await InventariosHistorialRepository.put_borrar_item_ordenVaceo(item.lote, session);
-            await registrarPasoLog(
-                log._id,
-                "InventariosHistorialRepository.put_borrar_item_ordenVaceo",
-                "Completado",
-                `Se eliminó el item ${item._id} del inventario de fruta sin procesar`);
-
-            if (loteAnterior !== null) {
-                await LotesHelper.actualizar_lotes_helper(
-                    { _id: loteAnterior._id },
-                    { finalizado: true },
-                    { user: user, action: "finalizado", session }
-                );
-                await registrarPasoLog(log._id, "LotesHelper.actualizar_lote", "Completado", `Se actualizó el lote ${loteAnterior._id} a finalizado: true`);
-            }
-
-            if (!lote || !lote.tipoFruta || !lote.tipoFruta._id) {
-                throw new Error("No se encontró el lote en la base de datos");
-            }
-            await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
-                { $inc: { [`kilos_vaciados.${lote.tipoFruta._id.toString()}`]: Number(kilosVaciados) } }, session
-            );
-            await registrarPasoLog(log._id, "IndicadoresAPIRepository.put_indicadores_actualizar_indicador", "Completado", `Se actualizó el indicador kilos_vaciados con ${kilosVaciados} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
-        })
-
-        //para lista de empaque
-        procesoEventEmitter.emit("predio_vaciado", {
-            predio: lote
-        });
-        //para el desktop app
-        procesoEventEmitter.emit("server_event", {
-            action: "inventario_frutaSinProcesar",
-            data: {
-                predio: lote
-            }
-        });
-    }
     static async put_inventarios_frutaSinProcesar_directoNacional(req) {
         const { user } = req;
         InventariosValidations.put_inventarios_frutaSinProcesar_directoNacional().parse(req.data);

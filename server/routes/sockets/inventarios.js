@@ -3,6 +3,7 @@ import { ComercialRepository } from "../../api/Comercial.js";
 import { InventariosRepository } from "../../api/inventarios.js";
 import { InventarioDescarteController } from "../../api/inventarios/inventarioDescarte.js";
 import { InventarioFrutaSinProcesarController } from "../../api/inventarios/inventarioFrutaSinProcesar.js";
+import { OrdenVaceoController } from "../../api/inventarios/ordenVaceo.js";
 import { ModificarRepository } from "../../api/ModificarData.js";
 import { ProcesoRepository } from "../../api/Proceso.mjs";
 import { successResponseRoutes } from "../helpers/responses.js";
@@ -14,7 +15,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes(response)
     },
     put_inventarios_ordenVaceo_vacear: async (data) => {
-        await InventarioFrutaSinProcesarController.put_inventarios_ordenVaceo_vacear(data)
+        await OrdenVaceoController.put_inventarios_ordenVaceo_vacear(data)
         return successResponseRoutes()
     },
     put_inventarios_frutaSinProcesar_directoNacional: async (data) => {
@@ -57,11 +58,11 @@ export const apiSocketInventarios = {
         return successResponseRoutes()
     },
     get_inventarios_ordenVaceo_inventario: async () => {
-        const resultado = await InventariosRepository.get_inventarios_ordenVaceo_inventario();
+        const resultado = await OrdenVaceoController.get_inventarios_ordenVaceo_inventario();
         return successResponseRoutes(resultado)
     },
     get_inventarios_ordenVaceo_ordenVaceo: async () => {
-        const oredenVaceo = await InventariosRepository.get_inventarios_ordenVaceo()
+        const oredenVaceo = await OrdenVaceoController.get_inventarios_ordenVaceo_ordenVaceo()
         return successResponseRoutes(oredenVaceo)
     },
     put_inventarios_ordenVaceo_modificar: async (data) => {

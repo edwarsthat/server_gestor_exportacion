@@ -52,6 +52,7 @@ const base64String = (fieldName) =>
         .refine(val => {
             if (!val) return false;
             // Regex básica para validar formato data:image/...;base64,... o simplemente base64
+            // eslint-disable-next-line security/detect-unsafe-regex
             const base64Regex = /^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$/;
             const parts = val.split(',');
             const base64Data = parts.length > 1 ? parts[1] : parts[0];

@@ -17,7 +17,6 @@ export class InventarioDescarteController {
     static async get_inventarios_historiales_registros_ingresosDescartes(req) {
         try {
             const { data } = req
-            console.log(data.filtro)
             const { fechaInicio, fechaFin, tipoFruta, buscar, areaSeleccion, descarte } = data.filtro
             let lote
             let query = {
@@ -30,7 +29,6 @@ export class InventarioDescarteController {
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fechaIngreso')
 
-            console.log(buscar)
             if (buscar !== "") {
                 lote = await LotesRepository.getLotes({
                     query: {

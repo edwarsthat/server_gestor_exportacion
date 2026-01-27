@@ -323,18 +323,7 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_inventarios_ordenVaceo_inventario() {
-        const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
-        const resultado = await InventariosHistorialRepository.getInventarioFrutaSinProcesar({
-            ids: [inventarioID]
-        });
-        const resultadoMaquila = await InventariosHistorialRepository.getInventarioFrutaSinProcesarMaquila({
-            ids: [inventarioID]
-        });
-        const concatResult = resultado.concat(resultadoMaquila);
-        return concatResult
 
-    }
     static async put_inventarios_frutaSinProcesar_desverdizado(req) {
         const { user } = req;
         const { _id: loteId, desverdizado, action, __v } = req.data
@@ -1471,59 +1460,7 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`);
         }
     }
-    static async put_inventarios_ordenVaceo_modificar(req) {
 
-        const { user } = req;
-        const { data, __v, action } = req.data;
-
-        let log
-        const session = await db.InventariosSimples.db.startSession();
-
-        try {
-            log = await LogsRepository.create({
-                user: user._id,
-                action: action,
-                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-            })
-            const ids = data.map(item => new mongoose.Types.ObjectId(item));
-            await session.withTransaction(async () => {
-
-                const documentoActual = await db.InventariosSimples.find({ _id: "68d1c0410f282bcb84388dd3" })
-                    .session(session)
-                    .select({ _id: 0, __v: 1 })
-                    .lean()
-                    .exec();
-
-                if (!documentoActual) {
-                    throw new Error('El documento no existe');
-                }
-
-                if (documentoActual[0].__v !== __v) {
-                    throw new Error(`Conflicto de versión: el documento ha sido modificado reinicie la vista`);
-                }
-
-                await InventariosHistorialRepository.put_inventarioSimple(
-                    { _id: "68d1c0410f282bcb84388dd3" },
-                    { $set: { ordenVaceo: ids }, $inc: { __v: 1 } },
-                    { session, user: user._id, action: "ingreso_ordenVaceo", operation: "ingreso", skipAudit: false }
-                );
-            })
-            await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple", "Completado");
-
-            procesoEventEmitter.emit("server_event", {
-                action: "modificar_orden_vaceo",
-                data: {}
-            });
-
-        } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            await ErrorInventarioLogicHandlers(err, log)
-        } finally {
-            await session.endSession();
-            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-        }
-
-    }
     static async put_inventarios_historialProcesado_modificarHistorial(req) {
         const { user } = req;
         const { _id, canastillas, action } = req.data;
