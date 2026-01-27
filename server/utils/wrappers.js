@@ -49,7 +49,6 @@ export const executeQueryTask = async (taskLogic) => {
     if (!procesoConn || procesoConn.readyState !== 1) {
         throw new Error("La conexión a la base de datos de proceso no está lista.");
     }
-
     try {
         return await taskLogic();
     } catch (error) {

@@ -6,6 +6,20 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import config from '../../../src/config/index.js';
 
+/**
+ * Error personalizado para validaciones de archivos.
+ * Permite a los controladores distinguir entre errores de validación (400)
+ * y errores internos del servidor (500).
+ */
+export class FileValidationError extends Error {
+    constructor(message, code = 'FILE_VALIDATION_ERROR') {
+        super(message);
+        this.name = 'FileValidationError';
+        this.code = code;
+        this.statusCode = 400;
+    }
+}
+
 const ENCRYPTION_KEY = Buffer.from(config.ENCRYPTION_KEY, 'hex');
 const IV_LENGTH = 12; // 12 bytes es el estándar para GCM
 const AUTH_TAG_LENGTH = 16; // 16 bytes para el authentication tag
@@ -244,75 +258,103 @@ export class FileService {
         base64String,
         allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
     ) {
-        try {
-            //validar formato basico
-            const matches = base64String.match(/^data:([^;]+);base64,(.+)$/);
-            if (!matches) {
-                throw new Error('Formato de archivo base64 inválido');
-            }
-
-            const mimeType = matches[1];
-            const base64Data = matches[2];
-
-            // Rechazar null bytes en el base64 (null byte injection)
-            if (base64Data.includes('\0')) {
-                throw new Error('Contenido base64 inválido: caracteres nulos detectados');
-            }
-
-            // Validar que sea base64 válido(solo caracteres permitidos)
-            const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
-            if (!base64Regex.test(base64Data)) {
-                throw new Error('Contenido base64 inválido: caracteres no permitidos');
-            }
-
-            const buffer = Buffer.from(base64Data, 'base64');
-
-            // Detectar contenido de texto peligroso (PHP, HTML, JS)
-            // Revisar los primeros bytes del archivo
-            const textPreview = buffer.slice(0, 256).toString('utf-8').toLowerCase();
-            const dangerousPatterns = [
-                '<?php',           // PHP
-                '<?=',             // PHP short tag
-                '<script',         // JavaScript
-                '<html',           // HTML
-                '<!doctype',       // HTML
-                '<svg',            // SVG (puede contener JS)
-                '#!/',             // Shebang (scripts Unix)
-            ];
-
-            for (const pattern of dangerousPatterns) {
-                if (textPreview.includes(pattern)) {
-                    throw new Error('Tipo de archivo no permitido: contenido ejecutable detectado');
-                }
-            }
-
-            // Usar file-type para detectar el tipo real
-            const type = await fileTypeFromBuffer(buffer);
-            const finalMime = type ? type.mime : mimeType;
-            const finalExt = type ? type.ext : (mimeType === 'application/pdf' ? 'pdf' : 'bin');
-
-            // Si file-type no detecta el tipo, es probablemente texto plano
-            // Solo permitir si explícitamente está en allowedMimeTypes
-            if (!type && !allowedMimeTypes.includes(mimeType)) {
-                throw new Error('Tipo de archivo no permitido: formato no reconocido');
-            }
-
-            if (!allowedMimeTypes.includes(finalMime)) {
-                throw new Error(`Tipo de archivo no permitido: ${finalMime}`);
-            }
-
-            return {
-                buffer,
-                mimeType: finalMime,
-                extension: finalExt
-            };
-        } catch (error) {
-            throw new Error(`Error al validar archivo: ${error.message}`);
+        // Validar formato básico
+        const matches = base64String.match(/^data:([^;]+);base64,(.+)$/);
+        if (!matches) {
+            throw new FileValidationError('Formato de archivo base64 inválido', 'INVALID_BASE64_FORMAT');
         }
+
+        const mimeType = matches[1];
+        const base64Data = matches[2];
+
+        // Rechazar null bytes en el base64 (null byte injection)
+        if (base64Data.includes('\0')) {
+            throw new FileValidationError(
+                'Contenido base64 inválido: caracteres nulos detectados',
+                'NULL_BYTE_INJECTION'
+            );
+        }
+
+        // Validar que sea base64 válido (solo caracteres permitidos)
+        const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+        if (!base64Regex.test(base64Data)) {
+            throw new FileValidationError(
+                'Contenido base64 inválido: caracteres no permitidos',
+                'INVALID_BASE64_CHARS'
+            );
+        }
+
+        const buffer = Buffer.from(base64Data, 'base64');
+
+        // Usar file-type para detectar el tipo real
+        const type = await fileTypeFromBuffer(buffer);
+        const finalMime = type ? type.mime : mimeType;
+        const finalExt = type ? type.ext : (mimeType === 'application/pdf' ? 'pdf' : 'bin');
+
+        // Si file-type no detecta el tipo, es probablemente texto plano
+        // Solo permitir si explícitamente está en allowedMimeTypes
+        if (!type && !allowedMimeTypes.includes(mimeType)) {
+            throw new FileValidationError(
+                'Tipo de archivo no permitido: formato no reconocido',
+                'UNRECOGNIZED_FORMAT'
+            );
+        }
+
+        if (!allowedMimeTypes.includes(finalMime)) {
+            throw new FileValidationError(
+                'Tipo de archivo no permitido',
+                'INVALID_FILE_TYPE'
+            );
+        }
+
+        // Patrones peligrosos que indican contenido ejecutable
+        const dangerousPatterns = [
+            '<?php',           // PHP
+            '<?=',             // PHP short tag
+            '<script',         // JavaScript
+            '<html',           // HTML
+            '<!doctype',       // HTML
+            '#!/',             // Shebang (scripts Unix)
+        ];
+
+        // Para SVG: escanear TODO el buffer (puede tener <script> en cualquier parte - XSS risk)
+        // Para otros tipos: escanear solo los primeros 256 bytes
+        const isSvg = finalMime === 'image/svg+xml';
+        const bytesToScan = isSvg ? buffer : buffer.subarray(0, 256);
+        const textPreview = bytesToScan.toString('utf-8').toLowerCase();
+
+        for (const pattern of dangerousPatterns) {
+            if (textPreview.includes(pattern)) {
+                throw new FileValidationError(
+                    'Tipo de archivo no permitido: contenido ejecutable detectado',
+                    'EXECUTABLE_CONTENT'
+                );
+            }
+        }
+
+        // SVG adicional: buscar event handlers (onclick, onerror, onload, etc.)
+        if (isSvg) {
+            const eventHandlerPattern = /\bon\w+\s*=/i;
+            if (eventHandlerPattern.test(textPreview)) {
+                throw new FileValidationError(
+                    'Tipo de archivo no permitido: SVG con event handlers detectado',
+                    'SVG_EVENT_HANDLER'
+                );
+            }
+        }
+
+        return {
+            buffer,
+            mimeType: finalMime,
+            extension: finalExt
+        };
     }
     static validateBufferSize(buffer, maxSize = MAX_SIZE) {
         if (buffer.length > maxSize) {
-            throw new Error(`El archivo debe pesar máximo ${maxSize / (1024 * 1024)} MB.`);
+            throw new FileValidationError(
+                `El archivo debe pesar máximo ${maxSize / (1024 * 1024)} MB.`,
+                'FILE_TOO_LARGE'
+            );
         }
         return true;
     }
@@ -330,7 +372,10 @@ export class FileService {
     static validateEstimatedSize(base64String, maxSize = MAX_SIZE) {
         const estimatedSize = this.estimateBase64Size(base64String);
         if (estimatedSize > maxSize) {
-            throw new Error(`El archivo excede el tamaño máximo permitido de ${maxSize / (1024 * 1024)} MB.`);
+            throw new FileValidationError(
+                `El archivo excede el tamaño máximo permitido de ${maxSize / (1024 * 1024)} MB.`,
+                'FILE_TOO_LARGE'
+            );
         }
         return estimatedSize;
     }
@@ -394,6 +439,96 @@ export class FileService {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         return await fs.writeFile(resolvedPath, buffer);
     }
+    static async saveBufferFile(
+        buffer,
+        dirPath,
+        location = 'TEMPLATES',
+        options = {}
+    ) {
+        const {
+            maxSize = MAX_SIZE,
+            encrypt = false,
+            allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+        } = options;
+
+        // Validar que sea un Buffer válido
+        if (!Buffer.isBuffer(buffer)) {
+            throw new FileValidationError('Se esperaba un Buffer válido', 'INVALID_BUFFER');
+        }
+
+        // Validar que el buffer no esté vacío
+        if (buffer.length === 0) {
+            throw new FileValidationError('El buffer está vacío', 'EMPTY_BUFFER');
+        }
+
+        // Valida tamaño
+        this.validateBufferSize(buffer, maxSize);
+
+        // Detectar tipo de archivo por magic bytes (primero para saber si es SVG)
+        const type = await fileTypeFromBuffer(buffer);
+        if (!type || !allowedTypes.includes(type.mime)) {
+            throw new FileValidationError('Tipo de archivo no permitido o no reconocido', 'INVALID_FILE_TYPE');
+        }
+
+        // Patrones peligrosos que indican contenido ejecutable
+        const dangerousPatterns = [
+            '<?php',           // PHP
+            '<?=',             // PHP short tag
+            '<script',         // JavaScript
+            '<html',           // HTML
+            '<!doctype',       // HTML
+            '#!/',             // Shebang (scripts Unix)
+        ];
+
+        // Para SVG: escanear TODO el buffer (puede tener <script> en cualquier parte - XSS risk)
+        // Para otros tipos: escanear solo los primeros 256 bytes
+        const isSvg = type.mime === 'image/svg+xml';
+        const bytesToScan = isSvg ? buffer : buffer.subarray(0, 256);
+        const textPreview = bytesToScan.toString('utf-8').toLowerCase();
+
+        for (const pattern of dangerousPatterns) {
+            if (textPreview.includes(pattern)) {
+                throw new FileValidationError(
+                    'Tipo de archivo no permitido: contenido ejecutable detectado',
+                    'EXECUTABLE_CONTENT'
+                );
+            }
+        }
+
+        // SVG adicional: buscar event handlers (onclick, onerror, onload, etc.)
+        if (isSvg) {
+            const eventHandlerPattern = /\bon\w+\s*=/i;
+            if (eventHandlerPattern.test(textPreview)) {
+                throw new FileValidationError(
+                    'Tipo de archivo no permitido: SVG con event handlers detectado',
+                    'SVG_EVENT_HANDLER'
+                );
+            }
+        }
+
+        let finalBuffer = buffer;
+        let finalExtension = type.ext;
+
+        // Si se debe encriptar
+        if (encrypt) {
+            finalBuffer = this.encryptBuffer(buffer);
+            finalExtension = `${type.ext}.enc`;
+        }
+
+        // Genera nombre seguro
+        const filename = this.generateSecureFilename(finalExtension);
+
+        // Construye y valida ruta
+        const fullFilePath = await this.buildAndValidateFilePath(dirPath, filename, location);
+
+        // Guarda el archivo
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        await fs.writeFile(fullFilePath, finalBuffer);
+
+        // Retorna ruta normalizada con forward slashes (consistencia Windows/Linux)
+        return path.join(dirPath, filename).replace(/\\/g, '/');
+    }
+
     static async saveBase64File(
         base64String,
         dirPath,
@@ -439,7 +574,7 @@ export class FileService {
 
         // Retorna la ruta relativa para guardar en DB o responder al cliente
         // Ejemplo: "fotos/entrega/archivo.jpg"
-        return path.join(dirPath, filename);
+        return path.join(dirPath, filename).replace(/\\/g, '/');
     }
 
     //delete

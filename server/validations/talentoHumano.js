@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { safeString, objectIdString, base64String } from "./utils/validationFunctions.js";
+import { safeString, objectIdString, base64String, requiredSafeString, bufferData } from "./utils/validationFunctions.js";
 
 export class TalentoHumanoValidations {
     static post_talentoHumano_personal_cargarCedula() {
         return z.object({
             action: z.string().min(1, "La acción es obligatoria"),
-            cedula: z.string().optional(),
+            cedula: bufferData("cedula").optional(),
             cedulaFrente: z.object({
                 url: z.string(),
             }).optional(),
@@ -39,9 +39,11 @@ export class TalentoHumanoValidations {
     static put_talentoHumano_upload_document() {
         return z.object({
             _id: objectIdString("_id"),
-            action: safeString("action"),
-            typeDoc: safeString("typeDoc"),
-            file: base64String("file"),
+            action: requiredSafeString("action"),
+            typeDoc: z.enum(["foto", "cedula"], {
+                errorMap: () => ({ message: "El tipo de documento debe ser 'foto' o 'cedula'" })
+            }),
+            file: z.union([base64String("file"), bufferData("file")]),
         })
     }
 }

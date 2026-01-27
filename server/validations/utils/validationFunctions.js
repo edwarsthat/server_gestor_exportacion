@@ -64,11 +64,18 @@ const objectIdString = (fieldName) =>
             message: `El campo ${fieldName} debe ser un ObjectId válido.`
         });
 
+const bufferData = (fieldName) =>
+    z.any()
+        .refine(val => Buffer.isBuffer(val) || val instanceof ArrayBuffer || val instanceof Uint8Array, {
+            message: `El campo ${fieldName} debe ser un Buffer o ArrayBuffer válido.`
+        });
+
 export {
     getErrorMessages,
     safeString,
     optionalSafeString,
     base64String,
     objectIdString,
-    requiredSafeString
+    requiredSafeString,
+    bufferData
 }

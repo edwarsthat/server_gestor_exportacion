@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
-import { FileService } from '../../../server/services/helpers/FileService.js';
+import { FileService, FileValidationError } from '../../../server/services/helpers/FileService.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -1564,6 +1564,581 @@ describe('FileService', () => {
             await expect(
                 FileService.deleteFile('test.txt', 'UBICACION_INEXISTENTE')
             ).rejects.toThrow('No se pudo eliminar el archivo');
+        });
+    });
+
+    // ============================================================
+    // TEST GROUP: saveBufferFile
+    // ============================================================
+    describe('saveBufferFile', () => {
+
+        const uploadsDir = path.resolve(__dirname, '../../../uploads');
+        const testDir = 'test-save-buffer';
+        const testDirPath = path.join(uploadsDir, testDir);
+
+        // PNG mínimo válido (1x1 pixel)
+        const validPngBuffer = Buffer.from([
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+            0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+            0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+            0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+            0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
+            0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+            0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
+            0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+            0x42, 0x60, 0x82
+        ]);
+
+        // JPEG mínimo válido
+        const validJpegBuffer = Buffer.from([
+            0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46,
+            0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01,
+            0x00, 0x01, 0x00, 0x00, 0xFF, 0xDB, 0x00, 0x43,
+            0x00, 0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08,
+            0x07, 0x07, 0x07, 0x09, 0x09, 0x08, 0x0A, 0x0C,
+            0x14, 0x0D, 0x0C, 0x0B, 0x0B, 0x0C, 0x19, 0x12,
+            0x13, 0x0F, 0x14, 0x1D, 0x1A, 0x1F, 0x1E, 0x1D,
+            0x1A, 0x1C, 0x1C, 0x20, 0x24, 0x2E, 0x27, 0x20,
+            0x22, 0x2C, 0x23, 0x1C, 0x1C, 0x28, 0x37, 0x29,
+            0x2C, 0x30, 0x31, 0x34, 0x34, 0x34, 0x1F, 0x27,
+            0x39, 0x3D, 0x38, 0x32, 0x3C, 0x2E, 0x33, 0x34,
+            0x32, 0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01,
+            0x00, 0x01, 0x01, 0x01, 0x11, 0x00, 0xFF, 0xC4,
+            0x00, 0x1F, 0x00, 0x00, 0x01, 0x05, 0x01, 0x01,
+            0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04,
+            0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0xFF,
+            0xC4, 0x00, 0xB5, 0x10, 0x00, 0x02, 0x01, 0x03,
+            0x03, 0x02, 0x04, 0x03, 0x05, 0x05, 0x04, 0x04,
+            0x00, 0x00, 0x01, 0x7D, 0x01, 0x02, 0x03, 0x00,
+            0x04, 0x11, 0x05, 0x12, 0x21, 0x31, 0x41, 0x06,
+            0x13, 0x51, 0x61, 0x07, 0x22, 0x71, 0x14, 0x32,
+            0x81, 0x91, 0xA1, 0x08, 0x23, 0x42, 0xB1, 0xC1,
+            0x15, 0x52, 0xD1, 0xF0, 0x24, 0x33, 0x62, 0x72,
+            0x82, 0x09, 0x0A, 0x16, 0x17, 0x18, 0x19, 0x1A,
+            0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x34, 0x35,
+            0x36, 0x37, 0x38, 0x39, 0x3A, 0x43, 0x44, 0x45,
+            0x46, 0x47, 0x48, 0x49, 0x4A, 0x53, 0x54, 0x55,
+            0x56, 0x57, 0x58, 0x59, 0x5A, 0x63, 0x64, 0x65,
+            0x66, 0x67, 0x68, 0x69, 0x6A, 0x73, 0x74, 0x75,
+            0x76, 0x77, 0x78, 0x79, 0x7A, 0x83, 0x84, 0x85,
+            0x86, 0x87, 0x88, 0x89, 0x8A, 0x92, 0x93, 0x94,
+            0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0xA2, 0xA3,
+            0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xB2,
+            0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9, 0xBA,
+            0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9,
+            0xCA, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8,
+            0xD9, 0xDA, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6,
+            0xE7, 0xE8, 0xE9, 0xEA, 0xF1, 0xF2, 0xF3, 0xF4,
+            0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFF, 0xDA,
+            0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00,
+            0xFB, 0xD5, 0xDB, 0x20, 0xA8, 0xF1, 0x45, 0x00,
+            0xFF, 0xD9
+        ]);
+
+        afterAll(async () => {
+            try {
+                await fs.rm(testDirPath, { recursive: true, force: true });
+            } catch {
+                // Ignorar
+            }
+        });
+
+        // ------------------------------------------------------------
+        // Casos de éxito (Happy Path)
+        // ------------------------------------------------------------
+        describe('casos de éxito', () => {
+
+            test('debería guardar buffer PNG y retornar ruta relativa', async () => {
+                const result = await FileService.saveBufferFile(
+                    validPngBuffer,
+                    testDir,
+                    'UPLOADS'
+                );
+
+                expect(result).toMatch(/^test-save-buffer\/[0-9a-f-]{36}\.png$/);
+            });
+
+            test('debería guardar buffer JPEG correctamente', async () => {
+                const result = await FileService.saveBufferFile(
+                    validJpegBuffer,
+                    testDir,
+                    'UPLOADS'
+                );
+
+                expect(result).toMatch(/\.jpg$/);
+            });
+
+            test('debería crear el archivo en disco', async () => {
+                const result = await FileService.saveBufferFile(
+                    validPngBuffer,
+                    testDir,
+                    'UPLOADS'
+                );
+
+                const fullPath = path.join(uploadsDir, result);
+                const exists = await fs.stat(fullPath).then(() => true).catch(() => false);
+
+                expect(exists).toBe(true);
+            });
+
+            test('debería encriptar archivo cuando encrypt=true', async () => {
+                const result = await FileService.saveBufferFile(
+                    validPngBuffer,
+                    testDir,
+                    'UPLOADS',
+                    { encrypt: true }
+                );
+
+                expect(result).toMatch(/\.png\.enc$/);
+            });
+
+            test('debería poder desencriptar archivo guardado con encrypt=true', async () => {
+                const result = await FileService.saveBufferFile(
+                    validPngBuffer,
+                    testDir,
+                    'UPLOADS',
+                    { encrypt: true }
+                );
+
+                // Leer y desencriptar
+                const fullPath = path.join(uploadsDir, result);
+                const encryptedBuffer = await fs.readFile(fullPath);
+                const decrypted = FileService.decryptBuffer(encryptedBuffer);
+
+                expect(decrypted.equals(validPngBuffer)).toBe(true);
+            });
+
+            test('debería retornar rutas con forward slashes (consistencia)', async () => {
+                const result = await FileService.saveBufferFile(
+                    validPngBuffer,
+                    testDir,
+                    'UPLOADS'
+                );
+
+                expect(result).not.toContain('\\');
+                expect(result).toContain('/');
+            });
+
+            test('debería permitir tipos personalizados con allowedTypes', async () => {
+                // GIF mínimo válido
+                const gifBuffer = Buffer.from([
+                    0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00,
+                    0x01, 0x00, 0x00, 0x00, 0x00, 0x3B
+                ]);
+
+                const result = await FileService.saveBufferFile(
+                    gifBuffer,
+                    testDir,
+                    'UPLOADS',
+                    { allowedTypes: ['image/gif'] }
+                );
+
+                expect(result).toMatch(/\.gif$/);
+            });
+        });
+
+        // ------------------------------------------------------------
+        // Validación de entrada
+        // ------------------------------------------------------------
+        describe('validación de entrada', () => {
+
+            test('debería lanzar FileValidationError si no es un Buffer', async () => {
+                await expect(
+                    FileService.saveBufferFile('no soy un buffer', testDir, 'UPLOADS')
+                ).rejects.toThrow(FileValidationError);
+
+                await expect(
+                    FileService.saveBufferFile('no soy un buffer', testDir, 'UPLOADS')
+                ).rejects.toThrow('Se esperaba un Buffer válido');
+            });
+
+            test('debería lanzar FileValidationError si el buffer está vacío', async () => {
+                await expect(
+                    FileService.saveBufferFile(Buffer.alloc(0), testDir, 'UPLOADS')
+                ).rejects.toThrow(FileValidationError);
+
+                await expect(
+                    FileService.saveBufferFile(Buffer.alloc(0), testDir, 'UPLOADS')
+                ).rejects.toThrow('El buffer está vacío');
+            });
+
+            test('debería lanzar FileValidationError si es null', async () => {
+                await expect(
+                    FileService.saveBufferFile(null, testDir, 'UPLOADS')
+                ).rejects.toThrow(FileValidationError);
+            });
+
+            test('debería lanzar FileValidationError si es undefined', async () => {
+                await expect(
+                    FileService.saveBufferFile(undefined, testDir, 'UPLOADS')
+                ).rejects.toThrow(FileValidationError);
+            });
+
+            test('debería lanzar FileValidationError si es un array', async () => {
+                await expect(
+                    FileService.saveBufferFile([1, 2, 3], testDir, 'UPLOADS')
+                ).rejects.toThrow(FileValidationError);
+            });
+
+            test('debería lanzar FileValidationError si es un objeto', async () => {
+                await expect(
+                    FileService.saveBufferFile({ data: 'test' }, testDir, 'UPLOADS')
+                ).rejects.toThrow(FileValidationError);
+            });
+
+            test('debería lanzar FileValidationError si excede maxSize', async () => {
+                await expect(
+                    FileService.saveBufferFile(
+                        validPngBuffer,
+                        testDir,
+                        'UPLOADS',
+                        { maxSize: 10 } // 10 bytes - muy pequeño
+                    )
+                ).rejects.toThrow(FileValidationError);
+            });
+
+            test('el error debería tener código FILE_TOO_LARGE para tamaño excedido', async () => {
+                try {
+                    await FileService.saveBufferFile(
+                        validPngBuffer,
+                        testDir,
+                        'UPLOADS',
+                        { maxSize: 10 }
+                    );
+                } catch (error) {
+                    expect(error).toBeInstanceOf(FileValidationError);
+                    expect(error.code).toBe('FILE_TOO_LARGE');
+                    expect(error.statusCode).toBe(400);
+                }
+            });
+        });
+
+        // ------------------------------------------------------------
+        // Validación de tipo de archivo
+        // ------------------------------------------------------------
+        describe('validación de tipo de archivo', () => {
+
+            test('debería rechazar tipo MIME no permitido', async () => {
+                // GIF no está permitido por defecto
+                const gifBuffer = Buffer.from([
+                    0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00,
+                    0x01, 0x00, 0x00, 0x00, 0x00, 0x3B
+                ]);
+
+                await expect(
+                    FileService.saveBufferFile(gifBuffer, testDir, 'UPLOADS')
+                ).rejects.toThrow(FileValidationError);
+            });
+
+            test('debería rechazar archivo con tipo no reconocido', async () => {
+                // Buffer con datos aleatorios que no son un tipo conocido
+                const randomBuffer = Buffer.from([0x00, 0x01, 0x02, 0x03, 0x04]);
+
+                await expect(
+                    FileService.saveBufferFile(randomBuffer, testDir, 'UPLOADS')
+                ).rejects.toThrow('Tipo de archivo no permitido o no reconocido');
+            });
+
+            test('el error debería tener código INVALID_FILE_TYPE', async () => {
+                const randomBuffer = Buffer.from([0x00, 0x01, 0x02, 0x03, 0x04]);
+
+                try {
+                    await FileService.saveBufferFile(randomBuffer, testDir, 'UPLOADS');
+                } catch (error) {
+                    expect(error).toBeInstanceOf(FileValidationError);
+                    expect(error.code).toBe('INVALID_FILE_TYPE');
+                }
+            });
+        });
+
+        // ------------------------------------------------------------
+        // Detección de contenido peligroso
+        // ------------------------------------------------------------
+        describe('detección de contenido peligroso', () => {
+
+            test('debería rechazar PHP disfrazado (Polyglot PNG)', async () => {
+                // Magic bytes de PNG + payload PHP
+                const phpPayload = Buffer.concat([
+                    validPngBuffer.subarray(0, 8),
+                    Buffer.from('<?php system($_GET["cmd"]); ?>')
+                ]);
+
+                await expect(
+                    FileService.saveBufferFile(phpPayload, testDir, 'UPLOADS')
+                ).rejects.toThrow('contenido ejecutable detectado');
+            });
+
+            test('debería rechazar PHP short tag (Polyglot PNG)', async () => {
+                const phpShort = Buffer.concat([
+                    validPngBuffer.subarray(0, 8),
+                    Buffer.from('<?= shell_exec("ls") ?>')
+                ]);
+
+                await expect(
+                    FileService.saveBufferFile(phpShort, testDir, 'UPLOADS')
+                ).rejects.toThrow('contenido ejecutable detectado');
+            });
+
+            test('debería rechazar JavaScript/HTML (Polyglot PNG)', async () => {
+                const htmlPayload = Buffer.concat([
+                    validPngBuffer.subarray(0, 8),
+                    Buffer.from('<script>alert(document.cookie)</script>')
+                ]);
+
+                await expect(
+                    FileService.saveBufferFile(htmlPayload, testDir, 'UPLOADS')
+                ).rejects.toThrow('contenido ejecutable detectado');
+            });
+
+            test('debería rechazar HTML completo (Polyglot PNG)', async () => {
+                const htmlDoc = Buffer.concat([
+                    validPngBuffer.subarray(0, 8),
+                    Buffer.from('<html><body>Malicious</body></html>')
+                ]);
+
+                await expect(
+                    FileService.saveBufferFile(htmlDoc, testDir, 'UPLOADS')
+                ).rejects.toThrow('contenido ejecutable detectado');
+            });
+
+            test('debería rechazar DOCTYPE (Polyglot PNG)', async () => {
+                const doctype = Buffer.concat([
+                    validPngBuffer.subarray(0, 8),
+                    Buffer.from('<!DOCTYPE html><html></html>')
+                ]);
+
+                await expect(
+                    FileService.saveBufferFile(doctype, testDir, 'UPLOADS')
+                ).rejects.toThrow('contenido ejecutable detectado');
+            });
+
+            test('debería rechazar shell scripts (Polyglot PNG)', async () => {
+                const shellScript = Buffer.concat([
+                    validPngBuffer.subarray(0, 8),
+                    Buffer.from('#!/bin/bash\nrm -rf /')
+                ]);
+
+                await expect(
+                    FileService.saveBufferFile(shellScript, testDir, 'UPLOADS')
+                ).rejects.toThrow('contenido ejecutable detectado');
+            });
+
+            test('el error debería tener código EXECUTABLE_CONTENT', async () => {
+                const phpPayload = Buffer.concat([
+                    validPngBuffer.subarray(0, 8),
+                    Buffer.from('<?php echo "hacked"; ?>')
+                ]);
+
+                try {
+                    await FileService.saveBufferFile(phpPayload, testDir, 'UPLOADS');
+                } catch (error) {
+                    expect(error).toBeInstanceOf(FileValidationError);
+                    expect(error.code).toBe('EXECUTABLE_CONTENT');
+                }
+            });
+        });
+
+        // ------------------------------------------------------------
+        // Seguridad SVG (escaneo completo)
+        // NOTA: fileTypeFromBuffer no detecta SVG como tipo válido
+        // porque SVG es texto XML sin magic bytes tradicionales.
+        // Estos tests verifican que SVG no pasa la validación de tipo
+        // (comportamiento de seguridad correcto - SVG es peligroso).
+        // ------------------------------------------------------------
+        describe('seguridad SVG - rechazado por tipo no reconocido', () => {
+
+            test('debería rechazar SVG porque fileTypeFromBuffer no lo detecta', async () => {
+                const svgBuffer = Buffer.from(
+                    '<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>'
+                );
+
+                // SVG no tiene magic bytes, fileTypeFromBuffer retorna null
+                // Por lo tanto se rechaza como tipo no reconocido (comportamiento correcto)
+                await expect(
+                    FileService.saveBufferFile(
+                        svgBuffer,
+                        testDir,
+                        'UPLOADS',
+                        { allowedTypes: ['image/svg+xml'] }
+                    )
+                ).rejects.toThrow('Tipo de archivo no permitido o no reconocido');
+            });
+
+            test('debería rechazar SVG malicioso con script (tipo no reconocido primero)', async () => {
+                const svgWithScript = Buffer.from(
+                    '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+                );
+
+                // El SVG se rechaza por tipo no reconocido antes de llegar
+                // a la detección de contenido peligroso
+                await expect(
+                    FileService.saveBufferFile(
+                        svgWithScript,
+                        testDir,
+                        'UPLOADS',
+                        { allowedTypes: ['image/svg+xml'] }
+                    )
+                ).rejects.toThrow();
+            });
+
+            test('debería rechazar SVG con event handlers (tipo no reconocido)', async () => {
+                const svgWithHandler = Buffer.from(
+                    '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"></svg>'
+                );
+
+                await expect(
+                    FileService.saveBufferFile(
+                        svgWithHandler,
+                        testDir,
+                        'UPLOADS',
+                        { allowedTypes: ['image/svg+xml'] }
+                    )
+                ).rejects.toThrow();
+            });
+        });
+
+        // ------------------------------------------------------------
+        // Detección de contenido peligroso en archivos válidos
+        // (cuando el contenido peligroso está dentro de un archivo
+        // con magic bytes válidos pero contenido malicioso)
+        // ------------------------------------------------------------
+        describe('detección de contenido peligroso en tipos válidos', () => {
+
+            test('debería detectar <script> en los primeros 256 bytes de archivo no-SVG', async () => {
+                // Un archivo que comienza con magic bytes de PNG pero tiene script después
+                // fileTypeFromBuffer detectará PNG, pero el escaneo de contenido debería fallar
+                const phpInPng = Buffer.concat([
+                    validPngBuffer.subarray(0, 8),
+                    Buffer.from('  '.repeat(10)), // Algunos espacios
+                    Buffer.from('<?php system($_GET["cmd"]); ?>'),
+                ]);
+
+                await expect(
+                    FileService.saveBufferFile(phpInPng, testDir, 'UPLOADS')
+                ).rejects.toThrow('contenido ejecutable detectado');
+            });
+        });
+
+        // ------------------------------------------------------------
+        // Path Traversal
+        // ------------------------------------------------------------
+        describe('protección contra Path Traversal', () => {
+
+            test('debería bloquear ../ en dirPath', async () => {
+                await expect(
+                    FileService.saveBufferFile(
+                        validPngBuffer,
+                        '../../../etc/cron.d',
+                        'UPLOADS'
+                    )
+                ).rejects.toThrow('Path Traversal');
+            });
+
+            test('debería bloquear múltiples niveles de ../..', async () => {
+                await expect(
+                    FileService.saveBufferFile(
+                        validPngBuffer,
+                        '../../../../../../../../tmp/malware',
+                        'UPLOADS'
+                    )
+                ).rejects.toThrow('Path Traversal');
+            });
+
+            test('debería bloquear rutas absolutas Linux', async () => {
+                await expect(
+                    FileService.saveBufferFile(
+                        validPngBuffer,
+                        '/etc/cron.d',
+                        'UPLOADS'
+                    )
+                ).rejects.toThrow();
+            });
+
+            test('debería bloquear rutas absolutas Windows', async () => {
+                await expect(
+                    FileService.saveBufferFile(
+                        validPngBuffer,
+                        'C:\\Windows\\System32',
+                        'UPLOADS'
+                    )
+                ).rejects.toThrow();
+            });
+
+            test('debería bloquear backslash traversal', async () => {
+                await expect(
+                    FileService.saveBufferFile(
+                        validPngBuffer,
+                        '..\\..\\..\\etc\\passwd',
+                        'UPLOADS'
+                    )
+                ).rejects.toThrow();
+            });
+        });
+
+        // ------------------------------------------------------------
+        // FileValidationError propiedades
+        // ------------------------------------------------------------
+        describe('FileValidationError propiedades', () => {
+
+            test('FileValidationError debería tener statusCode 400', async () => {
+                try {
+                    await FileService.saveBufferFile('no buffer', testDir, 'UPLOADS');
+                } catch (error) {
+                    expect(error.statusCode).toBe(400);
+                }
+            });
+
+            test('FileValidationError debería tener nombre correcto', async () => {
+                try {
+                    await FileService.saveBufferFile('no buffer', testDir, 'UPLOADS');
+                } catch (error) {
+                    expect(error.name).toBe('FileValidationError');
+                }
+            });
+
+            test('FileValidationError debería ser instancia de Error', async () => {
+                try {
+                    await FileService.saveBufferFile('no buffer', testDir, 'UPLOADS');
+                } catch (error) {
+                    expect(error).toBeInstanceOf(Error);
+                    expect(error).toBeInstanceOf(FileValidationError);
+                }
+            });
+        });
+    });
+
+    // ============================================================
+    // TEST GROUP: FileValidationError class
+    // ============================================================
+    describe('FileValidationError', () => {
+
+        test('debería crear error con mensaje y código', () => {
+            const error = new FileValidationError('Test error', 'TEST_CODE');
+
+            expect(error.message).toBe('Test error');
+            expect(error.code).toBe('TEST_CODE');
+            expect(error.statusCode).toBe(400);
+            expect(error.name).toBe('FileValidationError');
+        });
+
+        test('debería tener código por defecto FILE_VALIDATION_ERROR', () => {
+            const error = new FileValidationError('Test error');
+
+            expect(error.code).toBe('FILE_VALIDATION_ERROR');
+        });
+
+        test('debería ser instancia de Error', () => {
+            const error = new FileValidationError('Test');
+
+            expect(error).toBeInstanceOf(Error);
+        });
+
+        test('debería tener stack trace', () => {
+            const error = new FileValidationError('Test');
+
+            expect(error.stack).toBeDefined();
+            expect(error.stack).toContain('FileValidationError');
         });
     });
 });
