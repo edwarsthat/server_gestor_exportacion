@@ -605,27 +605,39 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
     // ============================================================
     describe('Manejo de Errores y Limpieza de Archivos', () => {
 
-        test('debería eliminar archivo si rustRcpClient.sendData falla', async () => {
+        test('debería eliminar archivo y NO ejecutar transacción si rustRcpClient.sendData falla', async () => {
             mockRustRpcClient.sendData.mockRejectedValue(new Error('Error de conexión RPC'));
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('Error de conexión RPC');
 
+            // Verificar limpieza
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
+
+            // Verificar que NO se ejecutó la transacción ni operaciones posteriores
+            expect(mockExecuteTransactionalTask).not.toHaveBeenCalled();
+            expect(mockSeriales.modificar_seriales).not.toHaveBeenCalled();
+            expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
         });
 
-        test('debería eliminar archivo si JSON.parse falla (respuesta inválida)', async () => {
+        test('debería eliminar archivo y NO ejecutar transacción si JSON.parse falla (respuesta inválida)', async () => {
             mockRustRpcClient.sendData.mockResolvedValue('respuesta-no-json-valida');
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow();
 
+            // Verificar limpieza
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
+
+            // Verificar que NO se ejecutó la transacción ni operaciones posteriores
+            expect(mockExecuteTransactionalTask).not.toHaveBeenCalled();
+            expect(mockSeriales.modificar_seriales).not.toHaveBeenCalled();
+            expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
         });
 
-        test('debería eliminar archivo si response.success es false', async () => {
+        test('debería eliminar archivo y NO ejecutar transacción si response.success es false', async () => {
             mockRustRpcClient.sendData.mockResolvedValue(JSON.stringify({
                 success: false,
                 message: 'Error al procesar imagen'
@@ -635,37 +647,63 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('Error al procesar imagen');
 
+            // Verificar limpieza
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
+
+            // Verificar que NO se ejecutó la transacción ni operaciones posteriores
+            expect(mockExecuteTransactionalTask).not.toHaveBeenCalled();
+            expect(mockSeriales.modificar_seriales).not.toHaveBeenCalled();
+            expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
         });
 
-        test('debería eliminar archivo si Seriales.modificar_seriales retorna vacío', async () => {
+        test('debería eliminar archivo si Seriales.modificar_seriales retorna vacío (transacción SÍ iniciada)', async () => {
             mockSeriales.modificar_seriales.mockResolvedValue([]);
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('No se encontró el serial SKU');
 
+            // Verificar limpieza
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
+
+            // La transacción SÍ se inició pero falló internamente
+            expect(mockExecuteTransactionalTask).toHaveBeenCalled();
+            expect(mockSeriales.modificar_seriales).toHaveBeenCalled();
+            // post_data NO debería haberse llamado porque el error fue antes
+            expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
         });
 
-        test('debería eliminar archivo si Seriales.modificar_seriales retorna null', async () => {
+        test('debería eliminar archivo si Seriales.modificar_seriales retorna null (transacción SÍ iniciada)', async () => {
             mockSeriales.modificar_seriales.mockResolvedValue(null);
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('No se encontró el serial SKU');
 
+            // Verificar limpieza
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
+
+            // La transacción SÍ se inició pero falló internamente
+            expect(mockExecuteTransactionalTask).toHaveBeenCalled();
+            expect(mockSeriales.modificar_seriales).toHaveBeenCalled();
+            // post_data NO debería haberse llamado porque el error fue antes
+            expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
         });
 
-        test('debería eliminar archivo si PersonalRepository.post_data falla', async () => {
+        test('debería eliminar archivo si PersonalRepository.post_data falla (transacción SÍ iniciada)', async () => {
             mockPersonalRepository.post_data.mockRejectedValue(new Error('Error de base de datos'));
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('Error de base de datos');
 
+            // Verificar limpieza
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
+
+            // La transacción SÍ se inició y llegó hasta post_data
+            expect(mockExecuteTransactionalTask).toHaveBeenCalled();
+            expect(mockSeriales.modificar_seriales).toHaveBeenCalled();
+            expect(mockPersonalRepository.post_data).toHaveBeenCalled();
         });
 
         test('debería propagar error original si FileService.deleteFile también falla', async () => {
@@ -676,9 +714,12 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('Error RPC original');
+
+            // Verificar que la transacción NO se ejecutó (el error fue antes)
+            expect(mockExecuteTransactionalTask).not.toHaveBeenCalled();
         });
 
-        test('no debería llamar deleteFile si saveBufferFile falla', async () => {
+        test('no debería llamar deleteFile ni transacción si saveBufferFile falla', async () => {
             mockFileService.saveBufferFile.mockRejectedValue(new Error('Error al guardar archivo'));
 
             await expect(
@@ -687,6 +728,12 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
 
             // filePath nunca se asignó, así que no debería intentar eliminar
             expect(mockFileService.deleteFile).not.toHaveBeenCalled();
+
+            // La transacción NO debería haberse iniciado
+            expect(mockExecuteTransactionalTask).not.toHaveBeenCalled();
+            expect(mockRustRpcClient.sendData).not.toHaveBeenCalled();
+            expect(mockSeriales.modificar_seriales).not.toHaveBeenCalled();
+            expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
         });
     });
 

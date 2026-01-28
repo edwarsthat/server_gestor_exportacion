@@ -14,16 +14,30 @@ export const apiSocketInventarios = {
         const response = await InventarioFrutaSinProcesarController.get_inventarios_historialDirectoNacional_registros(data)
         return successResponseRoutes(response)
     },
-    put_inventarios_ordenVaceo_vacear: async (data) => {
-        await OrdenVaceoController.put_inventarios_ordenVaceo_vacear(data)
-        return successResponseRoutes()
-    },
     put_inventarios_frutaSinProcesar_directoNacional: async (data) => {
         await InventarioFrutaSinProcesarController.put_inventarios_frutaSinProcesar_directoNacional(data)
         return successResponseRoutes()
     },
     post_inventarios_ingreso_lote: async (data) => {
         await InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote(data);
+        return successResponseRoutes()
+    },
+
+    //·region Orden de vaceo
+    get_inventarios_ordenVaceo_inventario: async () => {
+        const resultado = await OrdenVaceoController.get_inventarios_ordenVaceo_inventario();
+        return successResponseRoutes(resultado)
+    },
+    get_inventarios_ordenVaceo_ordenVaceo: async () => {
+        const oredenVaceo = await OrdenVaceoController.get_inventarios_ordenVaceo_ordenVaceo()
+        return successResponseRoutes(oredenVaceo)
+    },
+    put_inventarios_ordenVaceo_modificar: async (data) => {
+        await OrdenVaceoController.put_inventarios_ordenVaceo_modificar(data)
+        return successResponseRoutes()
+    },
+    put_inventarios_ordenVaceo_vacear: async (data) => {
+        await OrdenVaceoController.put_inventarios_ordenVaceo_vacear(data)
         return successResponseRoutes()
     },
 
@@ -57,18 +71,7 @@ export const apiSocketInventarios = {
         await ModificarRepository.put_inventarioLogistica_frutaSinProcesar_modificar_canastillas(data)
         return successResponseRoutes()
     },
-    get_inventarios_ordenVaceo_inventario: async () => {
-        const resultado = await OrdenVaceoController.get_inventarios_ordenVaceo_inventario();
-        return successResponseRoutes(resultado)
-    },
-    get_inventarios_ordenVaceo_ordenVaceo: async () => {
-        const oredenVaceo = await OrdenVaceoController.get_inventarios_ordenVaceo_ordenVaceo()
-        return successResponseRoutes(oredenVaceo)
-    },
-    put_inventarios_ordenVaceo_modificar: async (data) => {
-        await OrdenVaceoController.put_inventarios_ordenVaceo_modificar(data)
-        return successResponseRoutes()
-    },
+
 
     get_inventarios_frutaDesverdizando_lotes: async () => {
         const response = await InventariosRepository.get_inventarios_frutaDesverdizando_lotes()
