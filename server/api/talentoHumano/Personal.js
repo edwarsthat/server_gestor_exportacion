@@ -26,38 +26,38 @@ export class PersonalControllerRepository {
 
     static async post_talentoHumano_personal_ingresoPersonal(req) {
         const { user } = req
-        const { action, data, cedulaPath, foto } = req.data
-        let log
-        log = await LogsRepository.create({
-            user: user._id,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-        })
-        const session = await db.Personal.db.startSession();
-
+        let filePath;
+        if (!user || !user._id) {
+            throw new Error('Usuario no encontrado');
+        }
         try {
-            TalentoHumanoValidations.post_talentoHumano_personal_ingresoPersonal().parse(data)
+            await executeTransactionalTask(req, async (session, log) => {
 
-            if (!cedulaPath) {
-                throw new Error('El documento de identificación es obligatorio.');
-            }
-            const urlPath = path.join(
-                "personal",
-                "fotoCarnet",
-            );
+                const { action, data, cedulaPath, foto } = req.data
 
-            const filePath = await FileService.saveBase64File(
-                foto.url,
-                urlPath,
-                "STORAGE"
-            )
+                TalentoHumanoValidations.post_talentoHumano_personal_ingresoPersonal().parse(req.data)
 
-            data.foto = filePath;
+                if (!foto) {
+                    throw new Error('La foto es obligatoria.');
+                }
 
+                if (!cedulaPath) {
+                    throw new Error('El documento de identificación es obligatorio.');
+                }
+                const urlPath = path.join(
+                    "personal",
+                    "fotoCarnet",
+                );
 
-            await session.withTransaction(async () => {
+                filePath = await FileService.saveBufferFile(
+                    foto,
+                    urlPath,
+                    "STORAGE"
+                )
 
-                const skuResult = await Seriales.get_seriales("SKU", session)
+                const skuResult = await Seriales.modificar_seriales({ name: "SKU" }, { $inc: { serial: 1 } }, { session })
+                await registrarPasoLog(log._id, "Actualizar serial", "completado")
+
                 if (!skuResult || skuResult.length === 0) {
                     throw new Error("No se encontró el serial SKU")
                 }
@@ -83,19 +83,19 @@ export class PersonalControllerRepository {
                 await PersonalRepository.post_data(data, { user: user._id, action: action, session })
                 await registrarPasoLog(log._id, "Agregar personal", "completado")
 
-                await Seriales.modificar_seriales({ name: "SKU" }, { $inc: { serial: 1 } }, { session })
-                await registrarPasoLog(log._id, "Actualizar serial", "completado")
-
-            })
-
-
-        } catch (error) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, error);
-            await ErrorTalentHumanoLogicHandlers(error, log)
-        } finally {
-            await session.endSession();
-            await registrarPasoLog(log._id, "Fin de la función", "completado")
+            });
         }
+        catch (error) {
+            try {
+                if (filePath) {
+                    await FileService.deleteFile(filePath, "STORAGE")
+                }
+            } catch (deleteError) {
+                console.error(deleteError)
+            }
+            throw error
+        }
+
     }
     static async post_talentoHumano_personal_cargarCedula(req) {
         const { user } = req
@@ -103,10 +103,10 @@ export class PersonalControllerRepository {
             throw new Error("No se encontró el usuario")
         }
 
-        await executeQueryTask(async () => {
+        return await executeQueryTask(async () => {
 
             const { cedula, cedulaFrente, cedulaTrasera } = req.data
-
+            console.log(req.data)
             TalentoHumanoValidations.post_talentoHumano_personal_cargarCedula().parse(req.data)
 
             const urlPath = path.join(
@@ -116,7 +116,7 @@ export class PersonalControllerRepository {
 
             let filePath;
 
-            if (cedulaFrente?.url && cedulaTrasera?.url) {
+            if (cedulaFrente && cedulaTrasera) {
                 const pdfBuffer = await new Promise((resolve, reject) => {
                     const doc = new PDFDocument({ margin: 0, size: 'A4' });
                     const chunks = [];
@@ -173,8 +173,9 @@ export class PersonalControllerRepository {
                 action: "validar_cedula"
             };
             const responseStr = await rustRcpClient.sendData(payload);
-            const response = JSON.parse(responseStr);
-
+            console.log(responseStr)
+            const response = await JSON.parse(responseStr);
+            console.log(response)
             return response
         })
 

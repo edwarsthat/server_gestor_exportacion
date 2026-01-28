@@ -198,7 +198,7 @@ export class ContabilidadRepository {
                     ids: [_id],
                     populate: [
                         { path: 'predio', select: 'PREDIO GGN ICA' },
-                        { path: 'tipoFruta', select: 'tipoFruta' },
+                        { path: 'tipoFruta', select: 'tipoFruta codNacional' },
                         { path: 'cliente', select: 'CLIENTE' },
                         { path: "user", select: "usuario nombre apellido" },
                         { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },

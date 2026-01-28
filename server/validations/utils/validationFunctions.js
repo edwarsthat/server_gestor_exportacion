@@ -71,6 +71,21 @@ const bufferData = (fieldName) =>
             message: `El campo ${fieldName} debe ser un Buffer o ArrayBuffer válido.`
         });
 
+const blobData = (fieldName) =>
+    z.any()
+        .refine((val) => {
+            // Si es opcional y no viene nada, dejamos que pase (Zod .optional() se encarga del resto)
+            if (val === undefined || val === null) return true;
+
+            // Verificación robusta: ¿Tiene las propiedades de un Blob?
+            return (
+                val instanceof Blob ||
+                (val && typeof val.size === 'number' && typeof val.type === 'string' && typeof val.arrayBuffer === 'function')
+            );
+        }, {
+            message: `El campo ${fieldName} debe ser un Blob válido.`
+        });
+
 export {
     getErrorMessages,
     safeString,
@@ -78,5 +93,6 @@ export {
     base64String,
     objectIdString,
     requiredSafeString,
-    bufferData
+    bufferData,
+    blobData
 }

@@ -10,7 +10,7 @@ export const defineSchemaPersonal = async (conn, auditLog) => {
         SKU: { type: Number, required: true, unique: true },
         nombre: { type: String, required: true },
         cargo: { type: Schema.Types.ObjectId, ref: 'cargosPersonal' },
-        identificacion: { type: String, required: true },
+        identificacion: { type: String, required: true, unique: true },
         tipoDocumento: { type: String, required: true },
         foto: { type: String },
         tipoSangre: { type: String },

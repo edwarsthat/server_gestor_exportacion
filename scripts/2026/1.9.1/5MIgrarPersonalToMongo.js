@@ -112,7 +112,7 @@ async function main() {
                     SKU: sku,
                     nombre: registro.Nombre,
                     cargo: cargosMap.get(registro.Cargo)._id,
-                    identificacion: identificacion,
+                    identificacion: String(identificacion),
                     tipoDocumento: "Cedula",
                     foto: null,
                     tipoSangre: registro["Tipo de Sangre"],

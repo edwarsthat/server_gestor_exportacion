@@ -1,17 +1,13 @@
 import { z } from "zod";
-import { objectIdString, base64String, requiredSafeString, bufferData } from "./utils/validationFunctions.js";
+import { objectIdString, base64String, requiredSafeString, bufferData, blobData, safeString } from "./utils/validationFunctions.js";
 
 export class TalentoHumanoValidations {
     static post_talentoHumano_personal_cargarCedula() {
         return z.object({
             action: z.string().min(1, "La acción es obligatoria"),
             cedula: bufferData("cedula").optional(),
-            cedulaFrente: z.object({
-                url: z.string(),
-            }).optional(),
-            cedulaTrasera: z.object({
-                url: z.string(),
-            }).optional(),
+            cedulaFrente: bufferData("cedulaFrente").optional(),
+            cedulaTrasera: bufferData("cedulaTrasera").optional(),
         })
     }
     static post_talentoHumano_cargos_ingresoCargo() {
@@ -23,11 +19,16 @@ export class TalentoHumanoValidations {
     }
     static post_talentoHumano_personal_ingresoPersonal() {
         return z.object({
-            nombre: z.string().min(1, "El nombre es obligatorio"),
-            identificacion: z.string().min(1, "La identificación es obligatoria"),
-            tipoDocumento: z.string().min(1, "El tipo de documento es obligatorio"),
-            tipoSangre: z.string().min(1, "El tipo de sangre es obligatorio"),
-            cargo: z.string().min(1, "El cargo es obligatorio"),
+            data: z.object({
+                nombre: z.string().min(1, "El nombre es obligatorio"),
+                identificacion: z.string().min(1, "La identificación es obligatoria"),
+                tipoDocumento: z.string().min(1, "El tipo de documento es obligatorio"),
+                tipoSangre: z.string().min(1, "El tipo de sangre es obligatorio"),
+                cargo: z.string().min(1, "El cargo es obligatorio"),
+            }),
+            foto: bufferData("foto"),
+            cedulaPath: requiredSafeString("cedulaPath"),
+            action: requiredSafeString("action"),
         })
     }
     static put_talentoHumano_dotacion_carnets_generar_temporal() {
