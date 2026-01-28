@@ -30,55 +30,53 @@ export class PersonalControllerRepository {
         if (!user || !user._id) {
             throw new Error('Usuario no encontrado');
         }
+        const dataValidada = TalentoHumanoValidations.post_talentoHumano_personal_ingresoPersonal().parse(req.data)
+        const { action, data, cedulaPath, foto } = dataValidada
+
+        if (!foto) {
+            throw new Error('La foto es obligatoria.');
+        }
+
+        if (!cedulaPath) {
+            throw new Error('El documento de identificación es obligatorio.');
+        }
+
+
+        const urlPath = path.join(
+            "personal",
+            "fotoCarnet",
+        );
+
         try {
+            filePath = await FileService.saveBufferFile(
+                foto,
+                urlPath,
+                "STORAGE"
+            )
+
+            const payload = {
+                data: JSON.stringify(cleanForRust(filePath)),
+                server: "python",
+                action: "talentoHumano_procesamiento_imagen"
+            };
+
+            const responseStr = await rustRcpClient.sendData(payload);
+            const response = JSON.parse(responseStr);
+
+            if (!response.success) throw new Error(response.message || 'Error al procesar la imagen');
+
             await executeTransactionalTask(req, async (session, log) => {
 
-                const { action, data, cedulaPath, foto } = req.data
-
-                TalentoHumanoValidations.post_talentoHumano_personal_ingresoPersonal().parse(req.data)
-
-                if (!foto) {
-                    throw new Error('La foto es obligatoria.');
-                }
-
-                if (!cedulaPath) {
-                    throw new Error('El documento de identificación es obligatorio.');
-                }
-                const urlPath = path.join(
-                    "personal",
-                    "fotoCarnet",
-                );
-
-                filePath = await FileService.saveBufferFile(
-                    foto,
-                    urlPath,
-                    "STORAGE"
-                )
-
                 const skuResult = await Seriales.modificar_seriales({ name: "SKU" }, { $inc: { serial: 1 } }, { session })
-                await registrarPasoLog(log._id, "Actualizar serial", "completado")
-
                 if (!skuResult || skuResult.length === 0) {
                     throw new Error("No se encontró el serial SKU")
                 }
-                const sku = skuResult[0]
-                data.SKU = sku.serial
-                data.urlIdentificacion = cedulaPath
+                await registrarPasoLog(log._id, "Actualizar serial", "completado")
 
-                const payload = {
-                    data: JSON.stringify(cleanForRust(filePath)),
-                    server: "python",
-                    action: "talentoHumano_procesamiento_imagen"
-                };
-
-                const responseStr = await rustRcpClient.sendData(payload);
-                const response = JSON.parse(responseStr);
-
-                if (!response.success) {
-                    throw new Error(response.message)
-                }
-
-                data.urlFotoCarnet = response.path
+                const sku = skuResult[0];
+                data.SKU = sku.serial;
+                data.urlIdentificacion = cedulaPath;
+                data.urlFotoCarnet = response.path;
 
                 await PersonalRepository.post_data(data, { user: user._id, action: action, session })
                 await registrarPasoLog(log._id, "Agregar personal", "completado")

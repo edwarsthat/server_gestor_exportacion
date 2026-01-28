@@ -702,7 +702,6 @@ export class ComercialRepository {
                     query: lotesQuery,
                     select: { predio: 1, precio: 1, tipoFruta: 1 }
                 }, { session })
-
                 const lotes = [...lotesEF1, ...lotesMaquila]
                 await registrarPasoLog(log._id, "LotesHelper.obtener_lote_helper", "Completado");
 

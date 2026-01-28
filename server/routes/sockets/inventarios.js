@@ -66,7 +66,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes(oredenVaceo)
     },
     put_inventarios_ordenVaceo_modificar: async (data) => {
-        await InventariosRepository.put_inventarios_ordenVaceo_modificar(data)
+        await OrdenVaceoController.put_inventarios_ordenVaceo_modificar(data)
         return successResponseRoutes()
     },
 
