@@ -11,7 +11,6 @@ import { routerProceso2 } from "../../server/routes/https/Proceso.js";
 import { routerIndicadores } from "../../server/routes/https/indicadores.js";
 import { routerComercial } from "../../server/routes/comercial.js";
 import { routerSistema } from "../../server/mobile/sistema.js";
-import { routerAppTv } from "../../server/routes/appTv.js";
 
 import { routerAPI } from "../../server/routes/api.js";
 import { SistemaRepository } from "../../server/api/Sistema.js";
@@ -115,7 +114,6 @@ app.use("/indicadores", routerIndicadores);
 app.use("/comercial", routerComercial);
 app.use("/calidad", routerCalidad)
 app.use("/sistema", routerSistema)
-app.use("/appTV", routerAppTv)
 app.use("/sp32", sp32)
 app.use("/API", routerAPI)
 app.use("/forms", formsAPI)
