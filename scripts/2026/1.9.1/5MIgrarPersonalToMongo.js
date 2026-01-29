@@ -82,7 +82,7 @@ async function main() {
         // Obtener colecciones
         const cargosCollection = database.collection('cargospersonals');
         const personalCollection = database.collection('personals');
-
+        const serialCollection = database.collection('seriales');
 
         const cargosArray = await cargosCollection.find().toArray();
         const cargosMap = new Map(cargosArray.map(cargo => [cargo.nombre, cargo]));
@@ -92,9 +92,6 @@ async function main() {
         const personalMap = new Map();
         console.log('📦 Procesando registros del CSV...');
 
-        console.log(registros[0])
-        console.log(Object.keys(registros[0]))
-
 
         for (const registro of registros) {
             // Ignorar registros sin nombre o con marcas de error/libres
@@ -103,13 +100,14 @@ async function main() {
             }
 
             const identificacion = registro["Identificación"];
-            const llaves = Object.keys(registro);
-            const sku = registro[llaves[0]];
-
-
+            const PE = await serialCollection.findOneAndUpdate(
+                { name: 'PE-' },
+                { $inc: { serial: 1 } },
+                { returnDocument: 'after' }
+            );
             if (!personalMap.has(identificacion)) {
                 personalMap.set(identificacion, {
-                    SKU: sku,
+                    PE: PE.serial,
                     nombre: registro.Nombre,
                     cargo: cargosMap.get(registro.Cargo)._id,
                     identificacion: String(identificacion),
@@ -132,8 +130,22 @@ async function main() {
             console.log(`🌐 Sincronizando ${personalArray.length} personal...`);
             const opPersonal = Array.from(personalArray).map(personal => ({
                 updateOne: {
-                    filter: { nombre: personal.nombre },
-                    update: { $setOnInsert: { SKU: personal.SKU, nombre: personal.nombre, cargo: personal.cargo, identificacion: personal.identificacion, tipoDocumento: personal.tipoDocumento, foto: personal.foto, tipoSangre: personal.tipoSangre, urlIdentificacion: personal.urlIdentificacion, urlFotoCarnet: personal.urlFotoCarnet, estado: personal.estado, carnet: personal.carnet } },
+                    filter: { identificacion: personal.identificacion },
+                    update: {
+                        $setOnInsert: {
+                            PE: personal.PE,
+                            nombre: personal.nombre,
+                            cargo: personal.cargo,
+                            identificacion: personal.identificacion,
+                            tipoDocumento: personal.tipoDocumento,
+                            foto: personal.foto,
+                            tipoSangre: personal.tipoSangre,
+                            urlIdentificacion: personal.urlIdentificacion,
+                            urlFotoCarnet: personal.urlFotoCarnet,
+                            estado: personal.estado,
+                            carnet: personal.carnet
+                        }
+                    },
                     upsert: true
                 }
             }));

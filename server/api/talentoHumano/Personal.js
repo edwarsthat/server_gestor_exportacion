@@ -14,6 +14,7 @@ import { TalentoHumanoDotacionCarnetsRepository } from "../../Class/talentoHuman
 import bcrypt from "bcrypt";
 import PDFDocument from "pdfkit";
 import { executeQueryTask, executeTransactionalTask } from "../../utils/wrappers.js";
+import mongoose from "mongoose";
 
 
 export class PersonalControllerRepository {
@@ -27,6 +28,7 @@ export class PersonalControllerRepository {
     static async post_talentoHumano_personal_ingresoPersonal(req) {
         const { user } = req
         let filePath;
+        let responsePath;
         if (!user || !user._id) {
             throw new Error('Usuario no encontrado');
         }
@@ -64,22 +66,51 @@ export class PersonalControllerRepository {
             const response = JSON.parse(responseStr);
 
             if (!response.success) throw new Error(response.message || 'Error al procesar la imagen');
+            responsePath = response.path;
 
             await executeTransactionalTask(req, async (session, log) => {
-
-                const skuResult = await Seriales.modificar_seriales({ name: "SKU" }, { $inc: { serial: 1 } }, { session })
-                if (!skuResult || skuResult.length === 0) {
+                //se crea el _id que va a tener el empleado
+                const nuevoEmpleadoId = new mongoose.Types.ObjectId();
+                if (!nuevoEmpleadoId) {
+                    throw new Error("Error creando el _id del empleado")
+                }
+                //se obtiene el serial SKU del carnet
+                const skuSerial = await Seriales.modificar_seriales({ name: "SKU" }, { $inc: { serial: 1 } }, { session })
+                if (!skuSerial) {
                     throw new Error("No se encontró el serial SKU")
                 }
                 await registrarPasoLog(log._id, "Actualizar serial", "completado")
-
-                const sku = skuResult[0];
-                data.SKU = sku.serial;
-                data.urlIdentificacion = cedulaPath;
-                data.urlFotoCarnet = response.path;
-
-                await PersonalRepository.post_data(data, { user: user._id, action: action, session })
-                await registrarPasoLog(log._id, "Agregar personal", "completado")
+                //se crea el carnet
+                const carnetIngresado = await TalentoHumanoDotacionCarnetsRepository.post_data(
+                    { type: "final", SKU: skuSerial.serial, employeeId: nuevoEmpleadoId },
+                    { user, session }
+                )
+                if (!carnetIngresado) {
+                    throw new Error("Error creando el carnet")
+                }
+                await registrarPasoLog(log._id, "Creacion del carnet", "completado")
+                //se obtiene el serial PE del empleado
+                const peResult = await Seriales.modificar_seriales({ name: "PE-" }, { $inc: { serial: 1 } }, { session })
+                if (!peResult) {
+                    throw new Error("No se encontró el serial PE")
+                }
+                await registrarPasoLog(log._id, "Actualizar serial", "completado")
+                //se crea el empleado
+                const empleado = await PersonalRepository.post_data(
+                    {
+                        _id: nuevoEmpleadoId,
+                        carnet: carnetIngresado._id,
+                        ...data,
+                        PE: peResult.serial,
+                        urlIdentificacion: cedulaPath,
+                        urlFotoCarnet: response.path,
+                    },
+                    { user: user._id, action: action, session }
+                )
+                if (!empleado) {
+                    throw new Error("Error creando el empleado")
+                }
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Empleado vinculado al carnet exitosamente");
 
             });
         }
@@ -88,12 +119,14 @@ export class PersonalControllerRepository {
                 if (filePath) {
                     await FileService.deleteFile(filePath, "STORAGE")
                 }
+                if (responsePath) {
+                    await FileService.deleteFile(responsePath, "STORAGE")
+                }
             } catch (deleteError) {
                 console.error(deleteError)
             }
             throw error
         }
-
     }
     static async post_talentoHumano_personal_cargarCedula(req) {
         const { user } = req

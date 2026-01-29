@@ -136,8 +136,6 @@ export class IndicadoresAPIRepository {
                 {
                     sort: { fecha_creacion: -1, _id: -1 },
                     session,
-                    new: true,
-                    runValidators: true
                 }
             );
             if (!indicador) {
@@ -146,13 +144,7 @@ export class IndicadoresAPIRepository {
             return indicador
 
         } catch (err) {
-            // Preservar errores que ya vienen formateados (como el 404 de arriba o errores del repo)
-            if (err instanceof ProcessError || err.status) {
-                throw err;
-            }
-
-            // Manejo de errores inesperados (DB caídas, timeouts)
-            throw new ProcessError(475, `Error en actualización de indicadores: ${err.message}`);
+            throw err;
         }
     }
     static async reiniciarValores_proceso() {

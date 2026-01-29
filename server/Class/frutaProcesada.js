@@ -1,7 +1,11 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-export class FrutaProcesada {
+export class FrutaProcesada extends BaseRepository {
+    static get model() { return db.frutaProcesada; }
+    static modelName = 'frutaProcesada';
+
     static async obtener_ultimaEntrada() {
         try {
             return await db.frutaProcesada.findOne()

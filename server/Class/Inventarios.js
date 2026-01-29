@@ -450,6 +450,18 @@ export class InventariosHistorialRepository extends BaseRepository {
         const { session } = opts;
         const { lote, tipoFruta, area, tipoDescarte, kilos, loteType } = data;
         try {
+            if (!lote || !tipoFruta || !area || !tipoDescarte || !kilos || !loteType) {
+                throw new Error('Faltan datos para agregar el elemento al inventario de descartes');
+            }
+            if (isNaN(kilos)) {
+                throw new Error('El campo kilos debe ser un número');
+            }
+            if (!isFinite(kilos)) {
+                throw new Error('El campo kilos debe ser un número finito');
+            }
+            if (kilos <= 0) {
+                throw new Error('El campo kilos debe ser mayor a 0');
+            }
 
             const existeRegistro = await db.InventarioActualDescarte.findOne({
                 lote: lote,

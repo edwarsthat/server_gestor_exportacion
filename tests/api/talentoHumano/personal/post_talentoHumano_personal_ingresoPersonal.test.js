@@ -13,10 +13,12 @@ import { ZodError } from 'zod';
  * 4. Guardar archivo de foto (FileService.saveBufferFile)
  * 5. Procesar imagen con servicio Python (rustRcpClient.sendData)
  * 6. TRANSACCIÓN:
- *    - Incrementar y obtener SKU (Seriales.modificar_seriales)
- *    - Asignar datos al personal
- *    - Guardar registro (PersonalRepository.post_data)
- * 7. Limpieza de archivo en caso de error
+ *    a. Generar ObjectId para el nuevo empleado
+ *    b. Incrementar y obtener serial SKU (Seriales.modificar_seriales)
+ *    c. Crear carnet (TalentoHumanoDotacionCarnetsRepository.post_data)
+ *    d. Incrementar y obtener serial PE (Seriales.modificar_seriales)
+ *    e. Crear empleado (PersonalRepository.post_data)
+ * 7. Limpieza de archivos (filePath + responsePath) en caso de error
  */
 
 // ============================================================
@@ -45,6 +47,12 @@ const mockPersonalRepository = {
     actualizar_data: jest.fn()
 };
 
+const mockTalentoHumanoDotacionCarnetsRepository = {
+    post_data: jest.fn(),
+    get_data: jest.fn(),
+    actualizar_data: jest.fn()
+};
+
 const mockFileService = {
     saveBufferFile: jest.fn(),
     deleteFile: jest.fn(),
@@ -63,6 +71,10 @@ const mockCleanForRust = jest.fn(data => data);
 
 jest.unstable_mockModule('../../../../server/Class/talentoHumano/Personal.js', () => ({
     PersonalRepository: mockPersonalRepository
+}));
+
+jest.unstable_mockModule('../../../../server/Class/talentoHumano/dotacion/Carnets.js', () => ({
+    TalentoHumanoDotacionCarnetsRepository: mockTalentoHumanoDotacionCarnetsRepository
 }));
 
 jest.unstable_mockModule('../../../../server/services/helpers/FileService.js', () => ({
@@ -98,10 +110,6 @@ jest.unstable_mockModule('../../../../server/services/talentoHumano/carnets.js',
     CarnetsService: {}
 }));
 
-jest.unstable_mockModule('../../../../server/Class/talentoHumano/dotacion/Carnets.js', () => ({
-    TalentoHumanoDotacionCarnetsRepository: {}
-}));
-
 // Importación dinámica del controlador
 const { PersonalControllerRepository } = await import('../../../../server/api/talentoHumano/Personal.js');
 
@@ -114,7 +122,9 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
     const MOCK_FILE_PATH = 'personal/fotoCarnet/foto-123.jpg';
     const MOCK_PROCESSED_PATH = 'personal/fotoCarnetProcessed/foto-123-processed.jpg';
     const MOCK_CEDULA_PATH = 'personal/identificacion/cedula-123.pdf';
-    const MOCK_SKU = 1001;
+    const MOCK_SKU_SERIAL = 1001;
+    const MOCK_PE_SERIAL = 5001;
+    const MOCK_CARNET_ID = 'carnet-abc-123';
 
     let mockReq;
 
@@ -141,22 +151,34 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
         path: MOCK_PROCESSED_PATH
     });
 
-    const createMockSkuResult = (serial = MOCK_SKU) => [{
+    /** modificar_seriales usa findOneAndUpdate → retorna un documento, no un array */
+    const createMockSkuResult = (serial = MOCK_SKU_SERIAL) => ({
         _id: 'sku-id',
         name: 'SKU',
         serial: serial
-    }];
+    });
+
+    const createMockPeResult = (serial = MOCK_PE_SERIAL) => ({
+        _id: 'pe-id',
+        name: 'PE-',
+        serial: serial
+    });
+
+    const setupHappyPathMocks = () => {
+        mockFileService.saveBufferFile.mockResolvedValue(MOCK_FILE_PATH);
+        mockFileService.deleteFile.mockResolvedValue(true);
+        mockRustRpcClient.sendData.mockResolvedValue(createSuccessRpcResponse());
+        mockSeriales.modificar_seriales
+            .mockResolvedValueOnce(createMockSkuResult())
+            .mockResolvedValueOnce(createMockPeResult());
+        mockTalentoHumanoDotacionCarnetsRepository.post_data.mockResolvedValue({ _id: MOCK_CARNET_ID });
+        mockPersonalRepository.post_data.mockResolvedValue({ _id: VALID_OBJECT_ID });
+    };
 
     beforeEach(() => {
         jest.clearAllMocks();
         mockReq = createValidRequest();
-
-        // Happy path mocks
-        mockFileService.saveBufferFile.mockResolvedValue(MOCK_FILE_PATH);
-        mockFileService.deleteFile.mockResolvedValue(true);
-        mockRustRpcClient.sendData.mockResolvedValue(createSuccessRpcResponse());
-        mockSeriales.modificar_seriales.mockResolvedValue(createMockSkuResult());
-        mockPersonalRepository.post_data.mockResolvedValue({ _id: VALID_OBJECT_ID });
+        setupHappyPathMocks();
     });
 
     afterEach(() => {
@@ -177,18 +199,54 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
                 'STORAGE'
             );
             expect(mockRustRpcClient.sendData).toHaveBeenCalled();
-            expect(mockSeriales.modificar_seriales).toHaveBeenCalled();
+            expect(mockSeriales.modificar_seriales).toHaveBeenCalledTimes(2);
+            expect(mockTalentoHumanoDotacionCarnetsRepository.post_data).toHaveBeenCalled();
             expect(mockPersonalRepository.post_data).toHaveBeenCalled();
         });
 
-        test('debería asignar SKU correcto al personal', async () => {
-            const expectedSku = 2000;
-            mockSeriales.modificar_seriales.mockResolvedValue(createMockSkuResult(expectedSku));
+        test('debería crear el carnet con type "final", SKU y employeeId', async () => {
+            await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
+
+            expect(mockTalentoHumanoDotacionCarnetsRepository.post_data).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'final',
+                    SKU: MOCK_SKU_SERIAL,
+                }),
+                expect.objectContaining({
+                    user: mockReq.user,
+                    session: 'mock-session'
+                })
+            );
+        });
+
+        test('debería usar el mismo ObjectId como employeeId del carnet y _id del empleado', async () => {
+            await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
+
+            const carnetArgs = mockTalentoHumanoDotacionCarnetsRepository.post_data.mock.calls[0][0];
+            const personalArgs = mockPersonalRepository.post_data.mock.calls[0][0];
+            expect(personalArgs._id).toBe(carnetArgs.employeeId);
+        });
+
+        test('debería asignar PE serial correctamente al empleado', async () => {
+            const expectedPe = 7777;
+            mockSeriales.modificar_seriales
+                .mockReset()
+                .mockResolvedValueOnce(createMockSkuResult())
+                .mockResolvedValueOnce(createMockPeResult(expectedPe));
 
             await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
 
             expect(mockPersonalRepository.post_data).toHaveBeenCalledWith(
-                expect.objectContaining({ SKU: expectedSku }),
+                expect.objectContaining({ PE: expectedPe }),
+                expect.any(Object)
+            );
+        });
+
+        test('debería asignar el _id del carnet creado al empleado', async () => {
+            await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
+
+            expect(mockPersonalRepository.post_data).toHaveBeenCalledWith(
+                expect.objectContaining({ carnet: MOCK_CARNET_ID }),
                 expect.any(Object)
             );
         });
@@ -211,7 +269,7 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
             );
         });
 
-        test('debería pasar el user._id y action a post_data', async () => {
+        test('debería pasar el user._id y action a post_data del empleado', async () => {
             await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
 
             expect(mockPersonalRepository.post_data).toHaveBeenCalledWith(
@@ -224,7 +282,7 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
             );
         });
 
-        test('debería llamar a modificar_seriales con session', async () => {
+        test('debería llamar a modificar_seriales con SKU y session', async () => {
             await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
 
             expect(mockSeriales.modificar_seriales).toHaveBeenCalledWith(
@@ -234,11 +292,22 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
             );
         });
 
+        test('debería llamar a modificar_seriales con PE- y session', async () => {
+            await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
+
+            expect(mockSeriales.modificar_seriales).toHaveBeenCalledWith(
+                { name: 'PE-' },
+                { $inc: { serial: 1 } },
+                { session: 'mock-session' }
+            );
+        });
+
         test('debería registrar pasos en el log correctamente', async () => {
             await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
 
             expect(mockRegistrarPasoLog).toHaveBeenCalledWith('log-123', 'Actualizar serial', 'completado');
-            expect(mockRegistrarPasoLog).toHaveBeenCalledWith('log-123', 'Agregar personal', 'completado');
+            expect(mockRegistrarPasoLog).toHaveBeenCalledWith('log-123', 'Creacion del carnet', 'completado');
+            expect(mockRegistrarPasoLog).toHaveBeenCalledWith('log-123', 'Éxito', 'Completado', 'Empleado vinculado al carnet exitosamente');
         });
 
         test('debería enviar payload correcto al servicio Python', async () => {
@@ -605,39 +674,33 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
     // ============================================================
     describe('Manejo de Errores y Limpieza de Archivos', () => {
 
-        test('debería eliminar archivo y NO ejecutar transacción si rustRcpClient.sendData falla', async () => {
+        test('debería eliminar filePath y NO ejecutar transacción si rustRcpClient.sendData falla', async () => {
             mockRustRpcClient.sendData.mockRejectedValue(new Error('Error de conexión RPC'));
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('Error de conexión RPC');
 
-            // Verificar limpieza
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
-
-            // Verificar que NO se ejecutó la transacción ni operaciones posteriores
+            expect(mockFileService.deleteFile).toHaveBeenCalledTimes(1);
             expect(mockExecuteTransactionalTask).not.toHaveBeenCalled();
             expect(mockSeriales.modificar_seriales).not.toHaveBeenCalled();
             expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
         });
 
-        test('debería eliminar archivo y NO ejecutar transacción si JSON.parse falla (respuesta inválida)', async () => {
+        test('debería eliminar filePath y NO ejecutar transacción si JSON.parse falla (respuesta inválida)', async () => {
             mockRustRpcClient.sendData.mockResolvedValue('respuesta-no-json-valida');
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow();
 
-            // Verificar limpieza
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
-
-            // Verificar que NO se ejecutó la transacción ni operaciones posteriores
+            expect(mockFileService.deleteFile).toHaveBeenCalledTimes(1);
             expect(mockExecuteTransactionalTask).not.toHaveBeenCalled();
-            expect(mockSeriales.modificar_seriales).not.toHaveBeenCalled();
-            expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
         });
 
-        test('debería eliminar archivo y NO ejecutar transacción si response.success es false', async () => {
+        test('debería eliminar filePath y NO ejecutar transacción si response.success es false', async () => {
             mockRustRpcClient.sendData.mockResolvedValue(JSON.stringify({
                 success: false,
                 message: 'Error al procesar imagen'
@@ -647,63 +710,77 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('Error al procesar imagen');
 
-            // Verificar limpieza
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
-
-            // Verificar que NO se ejecutó la transacción ni operaciones posteriores
+            expect(mockFileService.deleteFile).toHaveBeenCalledTimes(1);
             expect(mockExecuteTransactionalTask).not.toHaveBeenCalled();
-            expect(mockSeriales.modificar_seriales).not.toHaveBeenCalled();
-            expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
         });
 
-        test('debería eliminar archivo si Seriales.modificar_seriales retorna vacío (transacción SÍ iniciada)', async () => {
-            mockSeriales.modificar_seriales.mockResolvedValue([]);
+        test('debería eliminar filePath y responsePath si el serial SKU no se encuentra', async () => {
+            mockSeriales.modificar_seriales
+                .mockReset()
+                .mockResolvedValueOnce(null);
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('No se encontró el serial SKU');
 
-            // Verificar limpieza
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
-
-            // La transacción SÍ se inició pero falló internamente
+            expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_PROCESSED_PATH, 'STORAGE');
             expect(mockExecuteTransactionalTask).toHaveBeenCalled();
-            expect(mockSeriales.modificar_seriales).toHaveBeenCalled();
-            // post_data NO debería haberse llamado porque el error fue antes
+            expect(mockTalentoHumanoDotacionCarnetsRepository.post_data).not.toHaveBeenCalled();
             expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
         });
 
-        test('debería eliminar archivo si Seriales.modificar_seriales retorna null (transacción SÍ iniciada)', async () => {
-            mockSeriales.modificar_seriales.mockResolvedValue(null);
+        test('debería eliminar filePath y responsePath si la creación del carnet falla', async () => {
+            mockTalentoHumanoDotacionCarnetsRepository.post_data.mockResolvedValue(null);
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow('No se encontró el serial SKU');
+            ).rejects.toThrow('Error creando el carnet');
 
-            // Verificar limpieza
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
-
-            // La transacción SÍ se inició pero falló internamente
-            expect(mockExecuteTransactionalTask).toHaveBeenCalled();
-            expect(mockSeriales.modificar_seriales).toHaveBeenCalled();
-            // post_data NO debería haberse llamado porque el error fue antes
+            expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_PROCESSED_PATH, 'STORAGE');
             expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
         });
 
-        test('debería eliminar archivo si PersonalRepository.post_data falla (transacción SÍ iniciada)', async () => {
+        test('debería eliminar filePath y responsePath si la creación del carnet lanza error', async () => {
+            mockTalentoHumanoDotacionCarnetsRepository.post_data.mockRejectedValue(new Error('Error de BD en carnet'));
+
+            await expect(
+                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
+            ).rejects.toThrow('Error de BD en carnet');
+
+            expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
+            expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_PROCESSED_PATH, 'STORAGE');
+            expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
+        });
+
+        test('debería eliminar filePath y responsePath si el serial PE no se encuentra', async () => {
+            mockSeriales.modificar_seriales
+                .mockReset()
+                .mockResolvedValueOnce(createMockSkuResult())
+                .mockResolvedValueOnce(null);
+
+            await expect(
+                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
+            ).rejects.toThrow('No se encontró el serial PE');
+
+            expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
+            expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_PROCESSED_PATH, 'STORAGE');
+            expect(mockTalentoHumanoDotacionCarnetsRepository.post_data).toHaveBeenCalled();
+            expect(mockPersonalRepository.post_data).not.toHaveBeenCalled();
+        });
+
+        test('debería eliminar filePath y responsePath si PersonalRepository.post_data falla', async () => {
             mockPersonalRepository.post_data.mockRejectedValue(new Error('Error de base de datos'));
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('Error de base de datos');
 
-            // Verificar limpieza
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_FILE_PATH, 'STORAGE');
-
-            // La transacción SÍ se inició y llegó hasta post_data
-            expect(mockExecuteTransactionalTask).toHaveBeenCalled();
-            expect(mockSeriales.modificar_seriales).toHaveBeenCalled();
-            expect(mockPersonalRepository.post_data).toHaveBeenCalled();
+            expect(mockFileService.deleteFile).toHaveBeenCalledWith(MOCK_PROCESSED_PATH, 'STORAGE');
+            expect(mockFileService.deleteFile).toHaveBeenCalledTimes(2);
         });
 
         test('debería propagar error original si FileService.deleteFile también falla', async () => {
@@ -715,7 +792,6 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('Error RPC original');
 
-            // Verificar que la transacción NO se ejecutó (el error fue antes)
             expect(mockExecuteTransactionalTask).not.toHaveBeenCalled();
         });
 
@@ -726,10 +802,7 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('Error al guardar archivo');
 
-            // filePath nunca se asignó, así que no debería intentar eliminar
             expect(mockFileService.deleteFile).not.toHaveBeenCalled();
-
-            // La transacción NO debería haberse iniciado
             expect(mockExecuteTransactionalTask).not.toHaveBeenCalled();
             expect(mockRustRpcClient.sendData).not.toHaveBeenCalled();
             expect(mockSeriales.modificar_seriales).not.toHaveBeenCalled();
@@ -882,15 +955,22 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow('DB Error');
 
-            // La transacción debería haberse ejecutado pero fallado
             expect(mockExecuteTransactionalTask).toHaveBeenCalled();
         });
 
-        test('debería pasar session a Seriales.modificar_seriales', async () => {
+        test('debería pasar session a ambas llamadas de Seriales.modificar_seriales', async () => {
             await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
 
-            expect(mockSeriales.modificar_seriales).toHaveBeenCalledWith(
-                expect.any(Object),
+            const calls = mockSeriales.modificar_seriales.mock.calls;
+            expect(calls).toHaveLength(2);
+            expect(calls[0][2]).toEqual({ session: 'mock-session' });
+            expect(calls[1][2]).toEqual({ session: 'mock-session' });
+        });
+
+        test('debería pasar session a TalentoHumanoDotacionCarnetsRepository.post_data', async () => {
+            await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
+
+            expect(mockTalentoHumanoDotacionCarnetsRepository.post_data).toHaveBeenCalledWith(
                 expect.any(Object),
                 expect.objectContaining({ session: 'mock-session' })
             );
@@ -928,12 +1008,29 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
         });
 
         test('debería manejar SKU con valor muy alto', async () => {
-            mockSeriales.modificar_seriales.mockResolvedValue(createMockSkuResult(999999999));
+            mockSeriales.modificar_seriales
+                .mockReset()
+                .mockResolvedValueOnce(createMockSkuResult(999999999))
+                .mockResolvedValueOnce(createMockPeResult());
+
+            await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
+
+            expect(mockTalentoHumanoDotacionCarnetsRepository.post_data).toHaveBeenCalledWith(
+                expect.objectContaining({ SKU: 999999999 }),
+                expect.any(Object)
+            );
+        });
+
+        test('debería manejar PE con valor muy alto', async () => {
+            mockSeriales.modificar_seriales
+                .mockReset()
+                .mockResolvedValueOnce(createMockSkuResult())
+                .mockResolvedValueOnce(createMockPeResult(999999999));
 
             await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
 
             expect(mockPersonalRepository.post_data).toHaveBeenCalledWith(
-                expect.objectContaining({ SKU: 999999999 }),
+                expect.objectContaining({ PE: 999999999 }),
                 expect.any(Object)
             );
         });
@@ -946,7 +1043,7 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow();
+            ).rejects.toThrow('Error al procesar la imagen');
         });
 
         test('debería manejar cedulaPath con espacios', async () => {
@@ -984,7 +1081,6 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow(ZodError);
 
-            // No debería haber intentado guardar el archivo
             expect(mockFileService.saveBufferFile).not.toHaveBeenCalled();
         });
 
@@ -1001,7 +1097,8 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
 
             await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
 
-            expect(callOrder).toEqual(['saveBufferFile', 'sendData']);
+            expect(callOrder).toEqual(expect.arrayContaining(['saveBufferFile', 'sendData']));
+            expect(callOrder.indexOf('saveBufferFile')).toBeLessThan(callOrder.indexOf('sendData'));
         });
 
         test('debería llamar al servicio Python antes de la transacción', async () => {
@@ -1017,23 +1114,32 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
 
             await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
 
-            expect(callOrder).toEqual(['sendData', 'transaction']);
+            expect(callOrder.indexOf('sendData')).toBeLessThan(callOrder.indexOf('transaction'));
         });
 
-        test('debería incrementar SKU antes de guardar personal', async () => {
+        test('debería seguir el orden: SKU → carnet → PE → empleado dentro de la transacción', async () => {
             const callOrder = [];
-            mockSeriales.modificar_seriales.mockImplementation(async () => {
-                callOrder.push('modificar_seriales');
-                return createMockSkuResult();
+            mockSeriales.modificar_seriales.mockReset().mockImplementation(async (filter) => {
+                callOrder.push(`seriales_${filter.name}`);
+                return filter.name === 'SKU' ? createMockSkuResult() : createMockPeResult();
+            });
+            mockTalentoHumanoDotacionCarnetsRepository.post_data.mockImplementation(async () => {
+                callOrder.push('carnet_post_data');
+                return { _id: MOCK_CARNET_ID };
             });
             mockPersonalRepository.post_data.mockImplementation(async () => {
-                callOrder.push('post_data');
+                callOrder.push('personal_post_data');
                 return { _id: VALID_OBJECT_ID };
             });
 
             await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
 
-            expect(callOrder).toEqual(['modificar_seriales', 'post_data']);
+            expect(callOrder).toEqual([
+                'seriales_SKU',
+                'carnet_post_data',
+                'seriales_PE-',
+                'personal_post_data'
+            ]);
         });
     });
 });

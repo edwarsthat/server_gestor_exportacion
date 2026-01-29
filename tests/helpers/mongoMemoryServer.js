@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 // Importar las funciones de definición de schemas existentes
 import { defineAuditInventariosSimples } from '../../DB/mongoDB/schemas/audit/AuditInventariosSimples.js';
 import { defineInventarioSimple } from '../../DB/mongoDB/schemas/inventarios/SchemaInventariosSimples.js';
+import { defineSchemaCarnets } from '../../DB/mongoDB/schemas/personal/dotaciones/SchemaCarnets.js';
 
 let replSet = null;
 let testConnection = null;
@@ -60,6 +61,10 @@ export async function defineTestSchemas(conn) {
     // Definir schema de InventariosSimples usando el existente
     const InventariosSimples = await defineInventarioSimple(conn, AuditInventariosSimples);
     testDb.InventariosSimples = InventariosSimples;
+
+    // Definir schema de InventariosSimples usando el existente
+    const SchemaCarnets = await defineSchemaCarnets(conn, AuditInventariosSimples);
+    testDb.SchemaCarnets = SchemaCarnets;
 
     return testDb;
 }

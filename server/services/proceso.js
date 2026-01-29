@@ -618,14 +618,12 @@ class ProcesoService {
     static async modificarLotedescartes(_id, query, user, action, session) {
 
         const lote = await LotesHelper.actualizar_lotes_helper(
-            { _id: _id },
+            { _id: _id, finalizado: false },
             query,
             { user: user._id, action: action, session: session }
         )
-
-        const result = checkFinalizadoLote(lote)
-        if (result) {
-            throw new ProcessError(400, `El lote ${lote[0].enf} ya se encuentra finalizado, no se puede modificar`);
+        if (!lote) {
+            throw new ProcessError(400, `El lote no se pudo modificar, lote finalizado`);
         }
         return lote;
     }

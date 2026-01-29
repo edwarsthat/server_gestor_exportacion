@@ -1,7 +1,11 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-export class DescartesRepository {
+export class DescartesRepository extends BaseRepository {
+    static get model() { return db.Descartes; }
+    static modelName = 'Descartes';
+
     static async getDescartes(options = {}, { session = null } = {}) {
         const {
             ids = [],

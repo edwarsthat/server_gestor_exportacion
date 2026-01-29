@@ -1,7 +1,14 @@
 import { ProcesoRepository } from "../../api/Proceso.mjs";
+import { DescartesControllers } from "../../api/proceso/descartes.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketProceso = {
+    //#region descartes
+    put_proceso_aplicaciones_descarte: async (data) => {
+        await DescartesControllers.put_proceso_aplicaciones_descarte(data)
+        return successResponseRoutes()
+    },
+    //#endregion
     //#region aplicaciones
     post_proceso_aplicaciones_fotoCalidad: async (data) => {
         await ProcesoRepository.post_proceso_aplicaciones_fotoCalidad(data)
@@ -15,10 +22,7 @@ export const apiSocketProceso = {
         const response = await ProcesoRepository.get_proceso_aplicaciones_descarteLavado()
         return successResponseRoutes(response)
     },
-    put_proceso_aplicaciones_descarte: async (data) => {
-        await ProcesoRepository.put_proceso_aplicaciones_descarte(data)
-        return successResponseRoutes()
-    },
+
 
     //lista de empaque
     get_proceso_aplicaciones_listaEmpaque_contenedores: async () => {
