@@ -1689,15 +1689,16 @@ export class InventariosRepository {
             const datosValidados = InventariosValidations.post_inventarios_ingreso_maquila().parse(datos)
             await registrarPasoLog(log._id, "InventariosValidations.post_inventarios_ingreso_maquila", "Completado");
 
-            const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(datosValidados.tipoFruta, log._id)
+            const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(datosValidados.tipoFruta)
+            console.log(tipoFruta)
             const [{ precioId, proveedor }, ef10] = await Promise.all([
-                InventariosService.obtenerPrecioProveedor(datosValidados.predio, tipoFruta[0]._id),
-                dataService.get_ef10_serial(data.fecha_estimada_llegada, log._id),
+                InventariosService.obtenerPrecioProveedor(datosValidados.predio, tipoFruta[0]._id, session),
+                dataService.get_ef10_serial(data.fecha_estimada_llegada, log._id, session),
             ])
             await registrarPasoLog(log._id, "Promise.all obtener precio, proveedor, ef1 y tipo de fruta", "Completado");
 
             if (datos.GGN)
-                await InventariosService.validarGGN(proveedor, tipoFruta[0].tipoFruta, user)
+                await InventariosService.validarGGN(proveedor, tipoFruta[0].tipoFruta, user, session)
 
             const query = await InventariosService.construirQueryIngresoLoteMaquila(datosValidados, ef10, precioId, tipoFruta[0], user);
 
@@ -1736,7 +1737,7 @@ export class InventariosRepository {
                     .ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", Number(dataCanastillas.canastillasPropias), user, session)
                 await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
 
-                await CanastillasRepository.post_registro(dataRegistro, user, { session })
+                await CanastillasRepository.post_data(dataRegistro, { session: session, user: user._id, action: action })
                 await registrarPasoLog(log._id, "CanastillasRepository.post_registro", "Completado");
 
                 await dataRepository.incrementar_ef10_serial(session)
