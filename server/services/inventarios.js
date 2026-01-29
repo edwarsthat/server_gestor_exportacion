@@ -248,12 +248,10 @@ export class InventariosService {
         if (descarteEncerado)
             await VariablesDelSistema.modificar_inventario_descarte(_id, descarteEncerado, 'descarteEncerado');
     }
-    static validarGGN(proveedores, tipoFruta, user) {
-        if (!proveedores || !Array.isArray(proveedores)) throw new Error("No se proporcionaron proveedores");
-        if (proveedores.length === 0) throw new Error("No se proporcionaron proveedores");
-        if (proveedores.length > 1) throw new Error("Se proporcionaron más de un proveedor");
-        const proveedor = proveedores[0]
-        if (!(proveedor && proveedor.GGN && proveedor.GGN.fechaVencimiento)) {
+    static validarGGN(proveedor, tipoFruta, user) {
+        if (!proveedor) throw new Error("No se proporcionaron proveedores");
+
+        if (!proveedor.GGN || !proveedor.GGN.fechaVencimiento) {
             throw new Error("El predio no tiene GGN")
         }
 

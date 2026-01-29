@@ -320,6 +320,65 @@ describe('InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote', (
             );
         });
 
+        test('debería completar flujo exitosamente con GGN true y proveedor con certificación válida', async () => {
+            mockReq.data.dataLote.GGN = true;
+
+            // Configurar proveedor con GGN válido:
+            // - fechaVencimiento: más de un mes de vigencia (6 meses adelante)
+            // - tipo_fruta: array que contiene el tipo de fruta del lote
+            const fechaVencimientoValida = new Date();
+            fechaVencimientoValida.setMonth(fechaVencimientoValida.getMonth() + 6); // 6 meses adelante
+
+            const mockPrecioProveedorConGGN = {
+                precioId: VALID_OBJECT_ID_3,
+                proveedor: {
+                    _id: VALID_OBJECT_ID_2,
+                    PREDIO: 'Finca Certificada',
+                    GGN: {
+                        fechaVencimiento: fechaVencimientoValida,
+                        code: 'GGN-CERT-2024-001',
+                        tipo_fruta: ['Naranja', 'Limon', 'Mandarina'] // Array con tipos de fruta
+                    }
+                }
+            };
+
+            mockInventariosService.obtenerPrecioProveedor.mockResolvedValue(mockPrecioProveedorConGGN);
+
+            // Configurar mock para verificar que la query se construye con GGN
+            const mockQueryConGGN = {
+                enf: mockEf1,
+                GGN: true,
+                certificacion: {
+                    code: mockPrecioProveedorConGGN.proveedor.GGN.code,
+                    fechaVencimiento: mockPrecioProveedorConGGN.proveedor.GGN.fechaVencimiento
+                }
+            };
+            mockInventariosService.construirQueryIngresoLote.mockReturnValue(mockQueryConGGN);
+
+            await InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote(mockReq);
+
+            // Verificar que se validó el GGN con el proveedor certificado
+            expect(mockInventariosService.validarGGN).toHaveBeenCalledWith(
+                mockPrecioProveedorConGGN.proveedor,
+                'Naranja',
+                mockReq.user
+            );
+
+            // Verificar que se construyó la query con los datos de GGN
+            expect(mockInventariosService.construirQueryIngresoLote).toHaveBeenCalled();
+
+            // Verificar que el lote se creó exitosamente
+            expect(mockLotesRepository.addLote).toHaveBeenCalledWith(
+                expect.objectContaining({ GGN: true }),
+                expect.objectContaining({ session: 'mock-session' })
+            );
+
+            // Verificar que se emitió el evento
+            expect(mockEventEmitter.emit).toHaveBeenCalledWith('server_event', {
+                action: 'add_lote'
+            });
+        });
+
         test('no debería validar GGN cuando GGN es false', async () => {
             mockReq.data.dataLote.GGN = false;
 
