@@ -239,7 +239,7 @@ export class dataRepository {
             await Seriales.modificar_seriales(
                 { name: "EF8-" },
                 { $inc: { serial: 1 } },
-                session
+                { session }
             )
         } catch (err) {
             if (err.status === 522) {
@@ -253,8 +253,7 @@ export class dataRepository {
             await Seriales.modificar_seriales(
                 { name: "EF10-" },
                 { $inc: { serial: 1 } },
-                {},
-                session
+                { session }
             )
         } catch (err) {
             if (err.status === 522) {
@@ -268,8 +267,7 @@ export class dataRepository {
             await Seriales.modificar_seriales(
                 { name: codigo },
                 { $inc: { serial: 1 } },
-                {},
-                session
+                { session }
             )
         } catch (err) {
             if (err.status === 522) {

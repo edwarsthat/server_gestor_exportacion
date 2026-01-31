@@ -15,29 +15,36 @@ export class BaseRepository {
             ids = [],
             query = {},
             select = {},
+            sort = {},
             limit = 0,
             skip = 0,
-            populate = []
+            populate = [],
+            lean = false,
         } = options;
 
         try {
-            let newQuery = { ...query };
+            // Construcción limpia de la query
+            const filter = ids.length > 0
+                ? { ...query, _id: { $in: ids } }
+                : { ...query };
 
-            if (ids.length > 0) {
-                newQuery._id = { $in: ids };
-            }
-
-            const docs = await this.model.find(newQuery)
+            // Inicializar la consulta
+            let mongooseQuery = this.model.find(filter)
                 .select(select)
-                .limit(limit)
-                .skip(skip)
+                .skip(Math.max(0, skip))
                 .populate(populate)
-                .session(session)
-                .exec();
+                .session(session);
 
-            return docs;
+            // Aplicar condicionales solo si es necesario
+            if (Object.keys(sort).length > 0) mongooseQuery.sort(sort);
+            if (limit > 0) mongooseQuery.limit(limit);
+            if (lean) mongooseQuery.lean();
+
+            return await mongooseQuery.exec();
+
         } catch (err) {
-            throw new BadGetwayError(501, `Error obteniendo ${this.modelName}: ${err.message}`);
+            // Importante: No uses 501, usa 502 para Gateway Issues
+            throw new BadGetwayError(502, `Error en ${this.modelName}: ${err.message}`);
         }
     }
     static async get_numero_registros(filter) {

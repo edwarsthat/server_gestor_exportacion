@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { safeString, optionalSafeString, requiredSafeString } from "./utils/validationFunctions.js";
+import { safeString, optionalSafeString, requiredSafeString, objectIdString } from "./utils/validationFunctions.js";
 
 const ACCIONES_VALIDAS = ["ingreso", "salida", "traslado", "retiro", "cancelado"];
 // const validKeyRegex = /^(descarteEncerado|descarteLavado|frutaNacional).*/;
@@ -466,60 +466,87 @@ export class InventariosValidations {
     }
     static post_inventarios_EF8() {
         return z.object({
-            predio: z.string().min(1, "El predio es obligatorio"),
-            tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
-            descarteGeneral: z
-                .string()
-                .optional()
-                .transform(val => val === undefined || val === "" ? 0 : Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            pareja: z
-                .string()
-                .optional()
-                .transform(val => val === undefined || val === "" ? 0 : Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            balin: z
-                .string()
-                .optional()
-                .transform(val => val === undefined || val === "" ? 0 : Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            canastillasPropias: z
-                .string()
-                .optional()
-                .transform(val => Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            canastillasPrestadas: z
-                .string()
-                .optional()
-                .transform(val => Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            canastillasVaciasPropias: z
-                .string()
-                .optional()
-                .transform(val => val === undefined || val === "" ? 0 : Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            canastillasVaciasPrestadas: z
-                .string()
-                .optional()
-                .transform(val => val === undefined || val === "" ? 0 : Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            fecha_ingreso_inventario: z.string()
-                .min(1, "La fecha de ingreso es obligatoria")
-                .refine(val => !isNaN(Date.parse(val)), {
-                    message: "La fecha no es válida",
-                }),
-            placa: z
-                .string()
-                .min(1, "La placa es obligatoria")
-                .regex(/^[A-Z]{3}\d{3}$/, "La placa debe tener 3 letras seguidas de 3 números (ej. ABC123)")
-                .transform(val => val.toUpperCase())
+            action: requiredSafeString("action"),
+            data: z.object({
+                predio: objectIdString("predio"),
+                tipoFruta: objectIdString("tipoFruta"),
+                descarteGeneral: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                descarteGeneralCanastillas: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                pareja: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                parejaCanastillas: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                balin: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                balinCanastillas: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                enf: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                canastillasPropias: z
+                    .string()
+                    .optional()
+                    .transform(val => Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                canastillasPrestadas: z
+                    .string()
+                    .optional()
+                    .transform(val => Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                canastillasVaciasPropias: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                canastillasVaciasPrestadas: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                fecha_ingreso_inventario: z.string()
+                    .min(1, "La fecha de ingreso es obligatoria")
+                    .refine(val => !isNaN(Date.parse(val)), {
+                        message: "La fecha no es válida",
+                    }),
+                placa: z
+                    .string()
+                    .min(1, "La placa es obligatoria")
+                    .regex(/^[A-Z]{3}\d{3}$/, "La placa debe tener 3 letras seguidas de 3 números (ej. ABC123)")
+                    .transform(val => val.toUpperCase())
+            })
 
         });
     }

@@ -1,8 +1,13 @@
+import mongoose from "mongoose";
 import { DescartesRepository } from "../../Class/Descartes.js";
 import { FrutaProcesada } from "../../Class/frutaProcesada.js";
 import { IndicadoresService } from "../../services/indicadores.js";
 import { executeTransactionalTask } from "../../utils/wrappers.js";
 import { ProcesoValidations } from "../../validations/proceso.js";
+import { ProcesoService } from "../../services/proceso.js";
+import { registrarPasoLog } from "../helper/logs.js";
+import { procesoEventEmitter } from "../../../events/eventos.js";
+import { InventariosHistorialRepository } from "../../Class/Inventarios.js";
 
 export class DescartesControllers {
     static async put_proceso_aplicaciones_descarte(req) {
@@ -10,12 +15,10 @@ export class DescartesControllers {
         if (!user || !user._id) {
             throw new Error("No se encontró el usuario")
         }
-
         const dataValidate = ProcesoValidations.put_proceso_aplicaciones_descarteEncerado().parse(req.data)
-        console.log(dataValidate)
 
-        const { data, registroFrutaProcesada, tipo } = dataValidate;
-        const { descarte, canastillas, kilos } = data;
+        const { action, data: inputData, registroFrutaProcesada, tipo } = dataValidate;
+        const { descarte, canastillas, kilos } = inputData;
 
         await executeTransactionalTask(req, async (session, log) => {
             //se obtiene el registro de fruta procesada y el descarte
@@ -48,12 +51,13 @@ export class DescartesControllers {
                 throw new Error("No se encontró el peso o las canastillas")
             }
             const descarteData = descartesDataDocs[0];
-            if (!descarteData && !descarteData.inventario) {
+            if (!descarteData || !descarteData.inventario) {
                 throw new Error("El descarte no es de inventario")
             }
 
             //se calcula el peso total
             const kilosTotales = (Number(kilos) || 0) + ((Number(canastillas) || 0) * valorPromedio);
+            const canastillasTotales = Math.ceil(kilosTotales / valorPromedio);
 
             const query = {
                 $inc: {
@@ -64,52 +68,64 @@ export class DescartesControllers {
             //se modifica el lote
             const lote = await ProcesoService.modificarLotedescartes(registroProceso.loteId, query, user, action, session)
             await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${registroProceso.loteId},`);
+            if (!lote) {
+                throw new Error("No se encontró el lote")
+            }
+            if (!lote.tipoFruta || !lote.tipoFruta._id) {
+                throw new Error("No se encontró el tipo de fruta")
+            }
+            if (!mongoose.isValidObjectId(lote.tipoFruta._id)) {
+                throw new Error("El tipo de fruta no es válido")
+            }
+            if (!lote.enf) {
+                throw new Error("El lote no tiene enf")
+            }
             //se ingresan los indicadores
             await IndicadoresService.put_indicadores_actualizar_indicador(
-                { $inc: { [`kilos_procesados.${lote.tipoFruta._id.toString()}`]: Number(kilosTotales) } }, session
+                { $inc: { [`kilos_procesados.${lote.tipoFruta._id.toString()}`]: kilosTotales } }, session
             );
             await registrarPasoLog(
                 log._id,
                 "IndicadoresService.put_indicadores_actualizar_indicador",
                 "Completado",
                 `Se actualizó el indicador kilosProcesadosHoy con ${kilos} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
-
-
+            //se crea el registro del descarte
             const data = {
                 lote: lote._id,
                 tipoFruta: lote.tipoFruta._id,
                 area: tipo,
                 tipoDescarte: descarte,
                 kilos: kilosTotales,
-                loteType: registroProceso[0].loteType
+                canastillas: canastillasTotales,
+                loteType: registroProceso.loteType
             }
-            await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, user._id, session);
-            //         if (lote.enf.startsWith("EF1-")) {
-
-            //             await InventariosHistorialRepository.put_cardex_invetariosdescartes(
-            //                 {},
-            //                 {
-            //                     $inc: {
-            //                         [`kilos_ingreso.${lote.tipoFruta._id.toString()}.${tipo}.${descarte}`]: kilosTotales,
-            //                     },
-            //                 },
-            //                 {
-            //                     sort: { fecha: -1 },
-            //                     new: true,
-            //                     session,
-            //                 }
-            //             );
-            //         }
-            //         await registrarPasoLog(
-            //             log._id,
-            //             "Modificar inventario descartes",
-            //             "Completado",
-            //             `Se modificó el inventario de descarte y la métrica kilosProcesadosHoy con ${kilosTotales} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
+            await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, user._id, { session });
+            //se modifica el cardex de inventario descarte si aplica
+            if (lote.enf.startsWith("EF1-")) {
+                await InventariosHistorialRepository.put_cardex_invetariosdescartes(
+                    {},
+                    {
+                        $inc: {
+                            [`kilos_ingreso.${lote.tipoFruta._id.toString()}.${tipo}.${descarte}`]: kilosTotales,
+                        },
+                    },
+                    {
+                        sort: { fecha: -1 },
+                        new: true,
+                        session,
+                    }
+                );
+            }
+            await registrarPasoLog(
+                log._id,
+                "Modificar inventario descartes",
+                "Completado",
+                `Se modificó el inventario de descarte y la métrica kilosProcesadosHoy con ${kilosTotales} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
         });
 
-        // procesoEventEmitter.emit("server_event", {
-        //     action: "descarte_change",
-        //     data: {}
-        // });
+        procesoEventEmitter.emit("server_event", {
+            action: "descarte_change",
+            data: {}
+        });
     }
 }

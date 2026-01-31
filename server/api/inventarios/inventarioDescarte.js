@@ -3,15 +3,19 @@ import { InventariosLogicError } from "../../../Error/logicLayerError.js";
 import { procesoEventEmitter } from "../../../events/eventos.js";
 import { DespachoDescartesRepository } from "../../Class/DespachoDescarte.js";
 import { FrutaDescompuestaRepository } from "../../Class/FrutaDescompuesta.js";
-import { InventariosHistorialRepository } from "../../Class/Inventarios.js";
+import { InventarioDescartesRepository, InventariosHistorialRepository } from "../../Class/Inventarios.js";
 import { LogsRepository } from "../../Class/LogsSistema.js";
-import { LotesRepository } from "../../Class/Lotes.js";
+import { LotesEF8Repository, LotesRepository } from "../../Class/Lotes.js";
 import { LotesHelper } from "../../helper/lotes.js";
+import { dataService } from "../../services/data.js";
 import { InventariosService } from "../../services/inventarios.js";
 import { InventariosValidations } from "../../validations/inventarios.js";
+import { ConstantesDelSistema } from "../../Class/ConstantesDelSistema.js";
+import { dataRepository } from "../data.js";
 import { registrarPasoLog } from "../helper/logs.js";
 import { ErrorInventarioLogicHandlers } from "../utils/errorsHandlers.js";
 import { filtroFechaInicioFin } from "../utils/filtros.js";
+import { executeQueryTask, executeTransactionalTask } from "../../utils/wrappers.js";
 
 export class InventarioDescarteController {
     static async get_inventarios_historiales_registros_ingresosDescartes(req) {
@@ -63,6 +67,24 @@ export class InventarioDescarteController {
             }
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
+    }
+    static async get_inventarios_frutaDescarte_fruta() {
+        return await executeQueryTask(async () => {
+            const inventario = await InventarioDescartesRepository.get_data({
+                query: {
+                    estado: 'ACTIVO',
+                    loteType: { $in: ["Lote", "Loteef8"] },
+                },
+                sort: { fecha: -1 },
+                populate: [
+                    { path: 'tipoFruta', select: "tipoFruta" },
+                    { path: 'lote', select: "enf" },
+                    { path: 'tipoDescarte', select: "nombre inventario" },
+                ]
+            })
+            const result = InventariosService.respuesta_invetario_descartes(inventario);
+            return result
+        });
     }
     static async put_inventarios_inventarioDescarte_modificar_ingreso(req) {
         const { user } = req
@@ -229,5 +251,54 @@ export class InventarioDescarteController {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
             await session.endSession();
         }
+    }
+    static async post_inventarios_EF8(req) {
+        const { user } = req;
+        if (!user || !user._id) throw new Error("No se encontro el usuario");
+
+        const validatedData = InventariosValidations.post_inventarios_EF8().parse(req.data)
+        const { data } = validatedData;
+        const registroEF8_final = await executeTransactionalTask(req, async (session, log) => {
+            const [EF8, { precioId }, tipoFrutas] = await Promise.all([
+                dataService.get_ef8_serial(data.fecha_ingreso_inventario, log._id, session),
+                InventariosService.obtenerPrecioProveedor(data.predio, data.tipoFruta, session),
+                ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(data.tipoFruta, session)
+            ])
+
+            if (tipoFrutas.length === 0) throw new Error("No se encontró el tipo de fruta");
+            const tipoFrutaObj = tipoFrutas[0];
+
+            await registrarPasoLog(log._id, "precio, EF8 y tipoFruta obtenidos", "Completado");
+
+            const { loteEF8, } = InventariosService.construir_ef8_lote(data, EF8, precioId, user);
+            await registrarPasoLog(log._id, "EF8 construido", "Completado");
+
+            const registroCanastillas = await InventariosService.ingresarCanastillas(data, user, session);
+            await registrarPasoLog(log._id, "InventariosService.ingresarCanastillas", "Completado");
+
+            const registroEF8 = await LotesEF8Repository.post_data(
+                { ...loteEF8, registroCanastillas: registroCanastillas._id },
+                { session, user: user._id }
+            );
+            await registrarPasoLog(log._id, "LotesEF8Repository.post_data", "Completado");
+
+            console.log(tipoFrutaObj)
+            console.log(data)
+            console.log(registroEF8)
+            await InventariosService.ingresarDescarteEf8(registroEF8, data, tipoFrutaObj, user._id, session)
+            await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
+
+            await dataRepository.incrementar_ef8_serial(session)
+            await registrarPasoLog(log._id, "dataRepository.incrementar_ef8_serial", "Completado");
+
+            return registroEF8;
+        })
+
+        procesoEventEmitter.emit("server_event", {
+            action: "descarte_change",
+            data: {}
+        });
+
+        return registroEF8_final;
     }
 }

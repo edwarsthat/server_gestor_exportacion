@@ -8,6 +8,7 @@ export const defineInventarioMovimientosDescarte = async (conn) => {
         registroDescarte: { type: Schema.Types.ObjectId, ref: "inventarioActualDescarte", required: true },
         tipoMovimiento: { type: String, required: true },
         kilos: { type: Number, required: true, default: 0 },
+        canastillas: { type: Number, required: true, default: 0 },
         fechaMovimiento: { type: Date, default: () => new Date() },
         user: { type: Schema.Types.ObjectId, ref: "usuario", required: true },
         destino: { type: String, required: true },

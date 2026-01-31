@@ -447,10 +447,11 @@ export class InventariosHistorialRepository extends BaseRepository {
     // #endregion
     // #region Inventario descartes
     static async add_elemento_inventarioDescartes(data, user, opts = {}) {
+        console.log(data);
         const { session } = opts;
-        const { lote, tipoFruta, area, tipoDescarte, kilos, loteType } = data;
+        const { lote, tipoFruta, area, tipoDescarte, kilos, canastillas, loteType } = data;
         try {
-            if (!lote || !tipoFruta || !area || !tipoDescarte || !kilos || !loteType) {
+            if (!lote || !tipoFruta || !area || !tipoDescarte || !kilos || !canastillas || !loteType) {
                 throw new Error('Faltan datos para agregar el elemento al inventario de descartes');
             }
             if (isNaN(kilos)) {
@@ -478,7 +479,12 @@ export class InventariosHistorialRepository extends BaseRepository {
                 await db.InventarioActualDescarte.updateOne(
                     { _id: existeRegistro._id },
                     {
-                        $inc: { kilosActuales: kilos, kilosIniciales: kilos },
+                        $inc: {
+                            kilosActuales: kilos,
+                            kilosIniciales: kilos,
+                            canastillasActuales: canastillas,
+                            canastillasIniciales: canastillas
+                        },
                         $set: { fechaActualizacion: new Date() }
                     },
                     { session }
@@ -490,6 +496,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                     tipoMovimiento: 'INGRESO',
                     tipoRegistro: loteType,
                     kilos: kilos,
+                    canastillas: canastillas,
                     kilosRestantes: kilos,
                     fechaMovimiento: new Date(),
                     user: user,
@@ -504,6 +511,8 @@ export class InventariosHistorialRepository extends BaseRepository {
                     user: user,
                     kilosIniciales: kilos,
                     kilosActuales: kilos,
+                    canastillasIniciales: canastillas,
+                    canastillasActuales: canastillas,
                     tipoRegistro: area,
                 });
 
@@ -516,6 +525,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                     tipoRegistro: loteType,
                     kilos: kilos,
                     kilosRestantes: kilos,
+                    canastillas: canastillas,
                     fechaMovimiento: saved.fechaIngreso,
                     user: user,
                     destino: `INVENTARIO_${area}`
@@ -585,7 +595,6 @@ export class InventariosHistorialRepository extends BaseRepository {
                 .populate(populate)
                 .exec();
 
-            const result = await InventariosService.respuesta_invetario_descartes(registros);
             return result;
 
         } catch (err) {
@@ -682,4 +691,9 @@ export class InventariosHistorialRepository extends BaseRepository {
         }
     }
     // #endregion
+}
+
+export class InventarioDescartesRepository extends BaseRepository {
+    static get model() { return db.InventarioActualDescarte; }
+    static modelName = 'InventarioActualDescarte';
 }

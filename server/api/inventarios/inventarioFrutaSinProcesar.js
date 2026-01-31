@@ -141,7 +141,6 @@ export class InventarioFrutaSinProcesarController {
             await registrarPasoLog(log._id, "Promise.all obtener precio, proveedor, ef1 y tipo de fruta", "Completado");
 
             //! aqui se debe cambiar el ipo de fruta en un futuro para que valide el _id del tipo de fruta
-            console.log(proveedor)
             if (datosValidados.GGN) {
                 InventariosService.validarGGN(proveedor, tipoFruta[0].tipoFruta, user)
                 await registrarPasoLog(log._id, "InventariosService.validarGGN", "Completado");

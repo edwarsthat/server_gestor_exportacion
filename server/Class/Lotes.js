@@ -378,3 +378,9 @@ export class LotesRepository extends BaseRepository {
     //#endregion
 
 }
+
+export class LotesEF8Repository extends BaseRepository {
+    static get model() { return db.LotesEF8; }
+    static modelName = 'LotesEF8';
+
+}

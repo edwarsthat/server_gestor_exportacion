@@ -9,6 +9,8 @@ import mongoose from 'mongoose';
 import { defineAuditInventariosSimples } from '../../DB/mongoDB/schemas/audit/AuditInventariosSimples.js';
 import { defineInventarioSimple } from '../../DB/mongoDB/schemas/inventarios/SchemaInventariosSimples.js';
 import { defineSchemaCarnets } from '../../DB/mongoDB/schemas/personal/dotaciones/SchemaCarnets.js';
+import { defineTipoFrutas } from '../../DB/mongoDB/schemas/catalogs/schemaTipoFruta.js';
+import { defineLotes } from '../../DB/mongoDB/schemas/lotes/schemaLotes.js';
 
 let replSet = null;
 let testConnection = null;
@@ -65,6 +67,14 @@ export async function defineTestSchemas(conn) {
     // Definir schema de InventariosSimples usando el existente
     const SchemaCarnets = await defineSchemaCarnets(conn, AuditInventariosSimples);
     testDb.SchemaCarnets = SchemaCarnets;
+
+    // Definir schema de tipoFrutas (catálogo, sin dependencias)
+    const TipoFrutas = await defineTipoFrutas(conn);
+    testDb.TipoFrutas = TipoFrutas;
+
+    // Definir schema de Lotes (requiere AuditLog para plugin de auditoría)
+    const Lotes = await defineLotes(conn, AuditInventariosSimples);
+    testDb.Lotes = Lotes;
 
     return testDb;
 }

@@ -739,21 +739,26 @@ export class InventariosService {
 
         return lote;
     }
-    static async construir_ef8_lote(data, enf, precio, user) {
+    static construir_ef8_lote(data, enf, precio, user) {
+        if (!enf) throw new Error("No se encontro el enf");
+        if (precio === null || precio === undefined) {
+            throw new Error("No se encontró el precio");
+        }
+
         const totalCanastillas = Number(data.canastillasPropias || 0) + Number(data.canastillasVaciasPropias || 0);
         const totalCanastillasPrestadas = Number(data.canastillasVaciasPrestadas || 0) + Number(data.canastillasPrestadas || 0);
         const total = Number(data.descarteGeneral || 0) + Number(data.balin || 0) + Number(data.pareja || 0);
         const promedio = totalCanastillas > 0 ? total / totalCanastillas : 0;
 
         const loteEF8 = {
-            balin: data.balin || 0,
+            balin: Number(data.balin || 0),
             canastillas: totalCanastillas || 0,
             canastillasPrestadas: totalCanastillasPrestadas || 0,
             descarteGeneral: Number(data.descarteGeneral || 0),
             enf: enf,
             fecha_ingreso_inventario: colombiaToUTC(data.fecha_ingreso_inventario || Date.now()),
             numeroPrecintos: Number(data.numeroPrecintos || 0),
-            numeroRemision: data.numeroRemision,
+            numeroRemision: data.numeroRemision || '',
             observaciones: data.observaciones || '',
             pareja: Number(data.pareja || 0),
             placa: data.placa || '',
@@ -766,36 +771,49 @@ export class InventariosService {
 
         return { loteEF8, total }
     }
-    static async ingresarDescarteEf8(data, tipoFruta, logId, session) {
+    static async ingresarDescarteEf8(registroEF8, data, tipoFruta, user, session) {
+        console.log(data);
+        console.log(registroEF8);
+
+        if (!tipoFruta || !tipoFruta._id) throw new Error("No se encontro el tipo de fruta");
+        if (!mongoose.isValidObjectId(tipoFruta._id)) throw new Error("No se encontro el tipo de fruta");
+        if (!mongoose.isValidObjectId(registroEF8._id)) throw new Error(`No se encontro el lote ${registroEF8.enf}`);
+
         const descarteObj = {
             descarteGeneral: data.descarteGeneral || 0,
             pareja: data.pareja || 0,
             balin: data.balin || 0,
+            descarteGeneralCanastillas: data.descarteGeneralCanastillas || 0,
+            parejaCanastillas: data.parejaCanastillas || 0,
+            balinCanastillas: data.balinCanastillas || 0,
         }
         const descartesArr = ["descarteGeneral", "pareja", "balin"];
-        const descartesIds = await DescartesRepository.getDescartes({ ids: tipoFruta.descartes });
-        console.log(descartesIds)
+        const descartesIds = await DescartesRepository.get_data({ ids: tipoFruta.descartes }, { session });
+
+        if (descartesIds.length === 0) throw new Error("No se encontraron los descartes");
         for (const descarte of descartesArr) {
-            console.log(descarte)
-            if (descarteObj[descarte] === 0) continue;
+            if (descarteObj[descarte] === 0 && descarteObj[`${descarte}Canastillas`] === 0) continue;
             const descarteId = descartesIds.find(d => d.nombre === descarte);
-            console.log(descarteId)
+            if (!descarteId) throw new Error(`No se encontro el descarte ${descarte}`);
+            if (!mongoose.isValidObjectId(descarteId._id)) throw new Error(`No se encontro el descarte ${descarte}`);
+
             const newRegistro = {
-                lote: data._id,
+                lote: registroEF8._id,
                 tipoFruta: tipoFruta._id,
                 area: "LAVADO",
                 tipoDescarte: descarteId._id,
-                kilos: descarteObj[descarte],
-                kilosActuales: descarteObj[descarte],
+                kilos: Number(descarteObj[descarte]),
+                canastillas: Number(descarteObj[`${descarte}Canastillas`]),
                 loteType: "Loteef8"
             }
-            await InventariosHistorialRepository.add_elemento_inventarioDescartes(newRegistro, logId, session);
+            await InventariosHistorialRepository.add_elemento_inventarioDescartes(newRegistro, user, { session });
 
             await InventariosHistorialRepository.put_cardex_invetariosdescartes(
                 {},
                 {
                     $inc: {
                         [`kilos_ingreso.${tipoFruta._id.toString()}.LAVADO.${descarteId._id.toString()}`]: descarteObj[descarte],
+                        [`canastillas_ingreso.${tipoFruta._id.toString()}.LAVADO.${descarteId._id.toString()}`]: descarteObj[`${descarte}Canastillas`],
                     },
                 },
                 {
@@ -804,12 +822,6 @@ export class InventariosService {
                     session,
                 }
             );
-            await registrarPasoLog(
-                logId,
-                "Modificar inventario descartes",
-                "Completado",
-                `Se modificó el inventario de descarte con ${descarteObj[descarte]} kilos del tipo de fruta ${tipoFruta._id.toString()}`);
-
         }
 
 
@@ -915,12 +927,12 @@ export class InventariosService {
 
         return result;
     }
-    static async ingresarCanasillas(datos, user, session = null) {
+    static async ingresarCanastillas(datos, user, session = null) {
         const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)
         const canastillasPrestadas = Number(datos.canastillasPrestadas || 0) + Number(datos.canastillasVaciasPrestadas || 0)
 
-        const dataRegistro = await this.crearRegistroInventarioCanastillas({
-            destino: "65c27f3870dd4b7f03ed9857",
+        const dataRegistro = this.crearRegistroInventarioCanastillas({
+            destino: config.ID_CELIFRUT,
             origen: datos.predio,
             observaciones: "ingreso lote",
             fecha: datos.fecha_ingreso_inventario,
@@ -931,14 +943,9 @@ export class InventariosService {
         })
 
         await this.ajustarCanastillasProveedorCliente(datos.predio, -canastillasPropias, user, session)
-        await this.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", canastillasPropias, user, session)
-        const registroCanastillas = await CanastillasRepository.post_registro(dataRegistro)
-
-
-
+        await this.ajustarCanastillasProveedorCliente(config.ID_CELIFRUT, canastillasPropias, user, session)
+        const registroCanastillas = await CanastillasRepository.post_data(dataRegistro, { session, user: user._id })
         await VariablesDelSistema.modificar_canastillas_inventario(canastillasPrestadas, "canastillasPrestadas")
-
-
         return registroCanastillas;
 
     }
@@ -1157,25 +1164,32 @@ export class InventariosService {
         }
         return out;
     }
-    static async respuesta_invetario_descartes(registros) {
-        const out = {}
+    static respuesta_invetario_descartes(registros) {
+        if (!Array.isArray(registros)) return {};
+
+        const out = new Map();
+
         for (const registro of registros) {
-            if (!registro.tipoDescarte.inventario) continue;
+            if (!registro?.tipoDescarte?.inventario) continue;
 
-            if (registro.tipoDescarte._id.toString() === "69120e3ca1cf6dcb986f5893") {
-                if (!out[`${registro.tipoFruta._id}//${registro.area}//690f643bbe7e33ae39bda1c6`]) {
-                    out[`${registro.tipoFruta._id}//${registro.area}//690f643bbe7e33ae39bda1c6`] = 0;
-                }
-                out[`${registro.tipoFruta._id}//${registro.area}//690f643bbe7e33ae39bda1c6`] += registro.kilosActuales;
+            const frutaId = registro.tipoFruta?._id;
+            const areaId = registro.area;
+            const descarteId = registro.tipoDescarte?._id;
 
-            } else {
-                if (!out[`${registro.tipoFruta._id}//${registro.area}//${registro.tipoDescarte._id}`]) {
-                    out[`${registro.tipoFruta._id}//${registro.area}//${registro.tipoDescarte._id}`] = 0;
-                }
-                out[`${registro.tipoFruta._id}//${registro.area}//${registro.tipoDescarte._id}`] += registro.kilosActuales;
-            }
+            if (!frutaId || !areaId || !descarteId) continue;
+
+            const key = `${frutaId}//${areaId}//${descarteId}`;
+            const kilos = Number(registro.kilosActuales) || 0;
+            const canastillas = Number(registro.canastillasActuales) || 0;
+            const actual = out.get(key) || { kilos: 0, canastillas: 0 };
+
+            out.set(key, {
+                kilos: actual.kilos + kilos,
+                canastillas: actual.canastillas + canastillas
+            });
         }
-        return out;
+
+        return Object.fromEntries(out);
     }
     static async obtener_registros_inventario_descarteMaquila(_id, data, session) {
         // Extraer todas las combinaciones de área y tipoDescarte
@@ -1307,7 +1321,7 @@ export class InventariosService {
                 loteType: "Lote"
             }
 
-            await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, log._id, session);
+            await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, log._id, { session });
         }
     }
     // static async modificarIngresoCanastillas(data) {
