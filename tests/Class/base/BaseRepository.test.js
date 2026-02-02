@@ -63,7 +63,7 @@ describe('BaseRepository', () => {
 
                 expect(mockModel.find).toHaveBeenCalledWith({});
                 expect(mockQuery.select).toHaveBeenCalledWith({});
-                expect(mockQuery.limit).toHaveBeenCalledWith(0);
+                expect(mockQuery.limit).not.toHaveBeenCalled();
                 expect(mockQuery.skip).toHaveBeenCalledWith(0);
                 expect(mockQuery.populate).toHaveBeenCalledWith([]);
                 expect(mockQuery.session).toHaveBeenCalledWith(null);
@@ -176,7 +176,7 @@ describe('BaseRepository', () => {
 
                 await expect(TestRepository.get_data())
                     .rejects
-                    .toThrow('Error obteniendo TestModel');
+                    .toThrow('Error en TestModel');
             });
 
             test('deberia incluir mensaje de error original', async () => {
@@ -187,13 +187,13 @@ describe('BaseRepository', () => {
                     .toThrow('Specific error message');
             });
 
-            test('deberia tener status 501 en el error', async () => {
+            test('deberia tener status 502 en el error', async () => {
                 mockQuery.exec.mockRejectedValue(new Error('Error'));
 
                 try {
                     await TestRepository.get_data();
                 } catch (error) {
-                    expect(error.status).toBe(501);
+                    expect(error.status).toBe(502);
                 }
             });
         });

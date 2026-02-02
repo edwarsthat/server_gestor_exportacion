@@ -3,6 +3,7 @@ import { safeString, optionalSafeString, requiredSafeString, objectIdString } fr
 
 const ACCIONES_VALIDAS = ["ingreso", "salida", "traslado", "retiro", "cancelado"];
 // const validKeyRegex = /^(descarteEncerado|descarteLavado|frutaNacional).*/;
+const mongoComplexKeyRegex = /^[a-zA-Z0-9_][a-zA-Z0-9_:/-]*$/;
 
 export class InventariosValidations {
     static post_inventarios_canastillas_registro() {
@@ -184,7 +185,22 @@ export class InventariosValidations {
     }
     static put_inventarios_frutaDescarte_reprocesarFruta() {
         return z.object({
-            tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
+            inventario: z.object({
+                tipoFruta: objectIdString("tipoFruta")
+            }).catchall(
+                z.string()
+                    .regex(/^\d+$/, "El valor debe ser un número en formato string")
+            ).superRefine((val, ctx) => {
+                for (const key of Object.keys(val)) {
+                    if (!mongoComplexKeyRegex.test(key)) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            message: `La llave '${key}' contiene caracteres no permitidos (.) o ($)`,
+                            path: ['inventario', key]
+                        });
+                    }
+                }
+            })
         })
 
     }
@@ -300,7 +316,23 @@ export class InventariosValidations {
                 kilos: z.number().min(1, "Los kilos deben ser mayores a 0"),
             }),
             inventario: z.object({
-                tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
+                // Validamos la propiedad fija primero
+                tipoFruta: objectIdString("tipoFruta")
+            }).catchall(
+                // Validamos todas las demás llaves dinámicas
+                z.string()
+                    .regex(/^\d+$/, "El valor debe ser un número en formato string")
+            ).superRefine((val, ctx) => {
+                // Validamos que los nombres de las llaves dinámicas sean seguros
+                for (const key of Object.keys(val)) {
+                    if (!mongoComplexKeyRegex.test(key)) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            message: `La llave '${key}' contiene caracteres no permitidos (.) o ($)`,
+                            path: ['inventario', key]
+                        });
+                    }
+                }
             })
         })
     }
@@ -324,7 +356,23 @@ export class InventariosValidations {
                     .default("")
             }),
             inventario: z.object({
-                tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
+                // Validamos la propiedad fija primero
+                tipoFruta: objectIdString("tipoFruta")
+            }).catchall(
+                // Validamos todas las demás llaves dinámicas
+                z.string()
+                    .regex(/^\d+$/, "El valor debe ser un número en formato string")
+            ).superRefine((val, ctx) => {
+                // Validamos que los nombres de las llaves dinámicas sean seguros
+                for (const key of Object.keys(val)) {
+                    if (!mongoComplexKeyRegex.test(key)) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            message: `La llave '${key}' contiene caracteres no permitidos (.) o ($)`,
+                            path: ['inventario', key]
+                        });
+                    }
+                }
             })
         })
     }

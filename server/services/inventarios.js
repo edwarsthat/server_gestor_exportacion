@@ -10,7 +10,7 @@ import { CanastillasRepository } from "../Class/CanastillasRegistros.js";
 import { ClientesRepository, ClientesNacionalesRepository } from "../Class/Clientes.js";
 import { DespachoDescartesRepository } from "../Class/DespachoDescarte.js";
 import { FrutaDescompuestaRepository } from "../Class/FrutaDescompuesta.js";
-import { InventariosHistorialRepository } from "../Class/Inventarios.js";
+import { InventarioDescartesRepository, InventariosHistorialRepository } from "../Class/Inventarios.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { PreciosRepository } from "../Class/Precios.js";
 import { ProveedoresRepository } from "../Class/Proveedores.js";
@@ -308,13 +308,42 @@ export class InventariosService {
     }
     static async procesar_formulario_inventario_descarte(data, tipoFruta, session, user) {
         let totalKilos = 0;
-
+        let totalCanastillas = 0;
+        const dataMap = new Map();
+        //se estrucutra los datos de entrada, kilos y acnastillas por item
         for (const [key, value] of Object.entries(data)) {
-            totalKilos += value === '' ? 0 : parseInt(value);
-            const [area, descarteId] = key.split(':');
-            let kilos = value === '' ? 0 : parseInt(value);
+            const [area, descarteId, tipo] = key.split(':');
+            const campoDestino = tipo || 'kilos';
+            const valorNumerico = value === '' ? 0 : parseInt(value);
+            if (isNaN(valorNumerico)) throw new Error("El valor no es un numero");
 
-            const registros = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
+            const llaveUnica = area + ":" + descarteId;
+            const registroExistente = dataMap.get(llaveUnica) || { kilos: 0, canastillas: 0 };
+            registroExistente[campoDestino] = valorNumerico;
+            dataMap.set(llaveUnica, registroExistente);
+
+
+        }
+        //se recorre el mapa para descontar los kilos y canastillas
+        for (const [key, value] of dataMap) {
+            const [area, descarteId] = key.split(":");
+            totalKilos += value.kilos;
+            totalCanastillas += value.canastillas;
+            const kilosEliminar = value.kilos;
+            const canastillasEliminar = value.canastillas;
+
+
+            // Error si: (Kilos es 0 Y Canastillas > 0) O (Kilos > 0 Y Canastillas es 0)
+            if ((kilosEliminar === 0) !== (canastillasEliminar === 0)) {
+                throw new Error("Inconsistencia: No se puede eliminar 0 kilos y 0 canastillas.");
+            }
+
+            let kilos = value.kilos;
+            let canastillas = value.canastillas;
+            let kilosTotalTipo = 0;
+            let canastillasTotalTipo = 0;
+
+            const registros = await InventarioDescartesRepository.get_data({
                 query: {
                     tipoFruta: tipoFruta,
                     area: area,
@@ -324,32 +353,55 @@ export class InventariosService {
                 },
                 sort: { fechaIngreso: 1 },
             })
-
-            if (registros.length === 0) {
-                throw new InventariosLogicError(`No hay inventario suficiente para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
-            }
+            if (registros.length === 0) throw new Error("No hay inventario suficiente")
 
             for (const registro of registros) {
-                if (kilos <= 0) break; // Ya se descontaron todos los kilos necesarios
+                //se suma el valor total del tipo de descarte
+                kilosTotalTipo += registro.kilosActuales;
+                canastillasTotalTipo += registro.canastillasActuales;
 
-                // Calcular cuántos kilos se van a descontar de ESTE registro específico
-                const kilosADescontar = Math.min(kilos, registro.kilosActuales);
-                const kilosRestantes = registro.kilosActuales - kilosADescontar;
+                if (kilos <= 0 && canastillas <= 0) break; // Ya se descontaron todos los kilos necesarios
 
-                // Actualizar el registro
-                if (kilosRestantes > 0) {
-                    await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
-                        { _id: registro._id },
-                        { $set: { kilosActuales: kilosRestantes } },
-                        { user: user._id, action: 'Actualizar inventario descarte reproceso predio', session }
-                    )
-                } else {
-                    await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
-                        { _id: registro._id },
-                        { $set: { kilosActuales: 0, estado: "AGOTADO" } },
-                        { user: user._id, action: 'Actualizar inventario descarte reproceso predio', session }
-                    )
+                let update = {
+                    $set: {}
                 }
+                let kilosRestantes = registro.kilosActuales;
+                let kilosADescontar = 0;
+                let canastillasRestantes = registro.canastillasActuales;
+                let canastillasADescontar = 0;
+
+                if (kilos > 0) {
+                    // Calcular cuántos kilos se van a descontar de ESTE registro específico
+                    kilosADescontar = Math.min(kilos, registro.kilosActuales);
+                    kilosRestantes = registro.kilosActuales - kilosADescontar;
+                }
+                if (canastillas > 0) {
+                    // Calcular cuántas canastillas se van a descontar de ESTE registro específico
+                    canastillasADescontar = Math.min(canastillas, registro.canastillasActuales);
+                    canastillasRestantes = registro.canastillasActuales - canastillasADescontar;
+                }
+
+                //se crea el update para el registro
+                if (kilosRestantes > 0) {
+                    update.$set.kilosActuales = kilosRestantes;
+                } else {
+                    update.$set.kilosActuales = 0;
+                }
+                if (canastillasRestantes > 0) {
+                    update.$set.canastillasActuales = canastillasRestantes;
+                } else {
+                    update.$set.canastillasActuales = 0;
+                }
+
+                if (kilosRestantes <= 0 && canastillasRestantes <= 0) {
+                    update.$set.estado = "AGOTADO";
+                }
+                //se modifica el registro 
+                await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
+                    { _id: registro._id },
+                    update,
+                    { user: user._id, action: 'Actualizar inventario descarte reproceso predio', session }
+                )
 
                 // Registrar la SALIDA en el cardex (los kilos que realmente se descontaron)
                 await InventariosHistorialRepository.put_cardex_invetariosdescartes(
@@ -360,23 +412,42 @@ export class InventariosService {
 
                 // Reducir los kilos pendientes por descontar
                 kilos -= kilosADescontar;
+                canastillas -= canastillasADescontar;
+
+            }
+            const restanteKilos = kilosTotalTipo - kilosEliminar;
+            const restanteCanastillas = canastillasTotalTipo - canastillasEliminar;
+
+            // Error si: (Kilos es 0 Y Canastillas > 0) O (Kilos > 0 Y Canastillas es 0)
+            if ((restanteKilos === 0) !== (restanteCanastillas === 0)) {
+                throw new Error("Inconsistencia: No pueden quedar kilos sin canastillas o viceversa.");
+            }
+
+            // Validación adicional: No permitir valores negativos (opcional pero recomendado)
+            if (restanteKilos < 0 || restanteCanastillas < 0) {
+                throw new Error("El descuento supera el inventario disponible.");
             }
 
             // Verificar que se pudieron descontar todos los kilos
             if (kilos > 0) {
-                throw new InventariosLogicError(`No hay inventario suficiente. Faltan ${kilos} kilos para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
+                throw new InventariosLogicError(470, `No hay inventario suficiente. Faltan ${kilos} kilos para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
             }
+            if (canastillas > 0) {
+                throw new InventariosLogicError(470, `No hay inventario suficiente. Faltan ${canastillas} canastillas para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
+            }
+
         }
 
-        return totalKilos;
+        return { totalKilos, totalCanastillas };
+
     }
-    static async crear_lote_celifrut(tipoFruta, kilos, user, session) {
+    static async crear_lote_celifrut(tipoFruta, kilos, canastillas, user, session) {
         try {
-            const codigo = await dataService.get_Celifrut_serial()
+            const codigo = await dataService.get_Celifrut_serial(session)
             const lote = {
                 enf: codigo,
                 predio: config.ID_CELIFRUT,
-                canastillas: '0',
+                canastillas: canastillas,
                 kilos: kilos,
                 placa: 'AAA000',
                 tipoFruta: tipoFruta,
@@ -388,7 +459,7 @@ export class InventariosService {
                 "fecha_ingreso_inventario": new Date(),
             }
 
-            const newLote = await LotesRepository.addLote(lote, user, { session });
+            const newLote = await LotesRepository.post_data(lote, { user: user._id, session });
             const update = {
                 $inc: {
                     kilosVaciados: newLote.kilos,
@@ -399,7 +470,6 @@ export class InventariosService {
                 { _id: newLote._id },
                 update,
                 { calculateFields: true, vaciar: true, session })
-            await dataService.modificar_Celifrut_serial(session);
             return newLote
         } catch (error) {
             console.error("Error creando lote Celifrut:", error);

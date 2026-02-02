@@ -91,6 +91,9 @@ jest.unstable_mockModule('../../../../server/Class/Inventarios.js', () => ({
             }
             return res;
         }
+    },
+    InventarioDescartesRepository: {
+        get_data: jest.fn()
     }
 }));
 

@@ -16,6 +16,7 @@ import { registrarPasoLog } from "../helper/logs.js";
 import { ErrorInventarioLogicHandlers } from "../utils/errorsHandlers.js";
 import { filtroFechaInicioFin } from "../utils/filtros.js";
 import { executeQueryTask, executeTransactionalTask } from "../../utils/wrappers.js";
+import mongoose from "mongoose";
 
 export class InventarioDescarteController {
     static async get_inventarios_historiales_registros_ingresosDescartes(req) {
@@ -152,105 +153,97 @@ export class InventarioDescarteController {
     }
     static async put_inventarios_frutaDescarte_despachoDescarte(req) {
         const { user } = req;
-        const { data, inventario, action } = req.data;
-        let log;
-        const session = await db.Lotes.db.startSession();
-        if (!session) {
-            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
-        }
-        log = await LogsRepository.create({
-            user: user,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        if (!user || !user._id) throw new Error("No se proporciono un usuario valido");
+
+        const parsedData = InventariosValidations.put_inventarios_frutaDescarte_despachoDescarte().parse(req.data)
+        const { data, inventario } = parsedData;
+
+        await executeTransactionalTask(req, async (session, log) => {
+
+            const tipoFruta = inventario.tipoFruta;
+            if (!mongoose.isValidObjectId(tipoFruta)) throw new Error("No se proporciono un tipo de fruta");
+            delete inventario.tipoFruta;
+
+            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
+            await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
+            const newDespacho = {
+                ...data,
+                tipoFruta: tipoFruta,
+                descartes: inventario,
+                canastillas: totalCanastillas,
+                kilos: totalKilos
+            }
+            await DespachoDescartesRepository.post_data(newDespacho, { user: user._id, session })
+            await registrarPasoLog(log._id, "DespachoDescartesRepository.post_data", "Completado");
+        })
+    }
+    static async put_inventarios_frutaDescarte_reprocesarFruta(req) {
+        const { user } = req;
+        if (!user || !user._id) throw new Error("No se proporciono un usuario valido");
+        const parsedData = InventariosValidations.put_inventarios_frutaDescarte_reprocesarFruta().parse(req.data)
+        const { data } = parsedData;
+
+        await executeTransactionalTask(req, async (session, log) => {
+
+            const tipoFruta = data.tipoFruta;
+            if (!mongoose.isValidObjectId(tipoFruta)) throw new Error("No se proporciono un tipo de fruta");
+            delete data.tipoFruta;
+            //se borra del inventario
+            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
+            await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
+            //se crea el lote celifrut
+            await InventariosService.crear_lote_celifrut(tipoFruta, totalKilos, totalCanastillas, user._id, session);
+            await registrarPasoLog(log._id, "InventariosService.crear_lote_celifrut", "Completado");
+            await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
+                { $inc: { [`kilos_vaciados.${tipoFruta._id}`]: Number(totalKilos) } }, session
+            );
+            await registrarPasoLog(log._id, "IndicadoresAPIRepository.put_indicadores_actualizar_indicador", "Completado", `Se actualizó el indicador kilos_vaciados con ${total} kilos del tipo de fruta ${tipoFruta._id}`);
+
+        })
+        procesoEventEmitter.emit("server_event", {
+            action: "descarte_change",
+            data: {}
         });
-        try {
-            InventariosValidations.put_inventarios_frutaDescarte_despachoDescarte().parse(req.data)
-            await session.withTransaction(async () => {
-                const tipoFruta = inventario.tipoFruta;
-                delete inventario.tipoFruta;
-
-                await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
-                await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
-                const newDespacho = {
-                    ...data,
-                    tipoFruta: tipoFruta,
-                    descartes: inventario
-
-                }
-                await DespachoDescartesRepository.crear_nuevo_despacho(newDespacho, user._id, session)
-                await registrarPasoLog(log._id, "DespachoDescartesRepository.crear_nuevo_despacho", "Completado");
-            })
-
-        } catch (error) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, error);
-            await registrarPasoLog(log._id, "Error", "Fallido", error.message);
-            throw new InventariosLogicError(error, log)
-        } finally {
-            await session.endSession();
-            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-        }
-
+        return true
     }
     static async post_inventarios_frutaDescarte_frutaDescompuesta(req) {
-
+        const startTime = Date.now();
         const { user } = req;
-        const { data, inventario, action } = req.data;
-        let log;
-        const session = await db.Lotes.db.startSession();
-        if (!session) {
-            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
-        }
-        log = await LogsRepository.create({
-            user: user,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        if (!user || !user._id) throw new Error("No se proporciono un usuario valido");
+        const parsedData = InventariosValidations.post_inventarios_frutaDescarte_frutaDescompuesta().parse(req.data)
+        const { data, inventario } = parsedData;
+
+        await executeTransactionalTask(req, async (session, log) => {
+
+            const tipoFruta = inventario.tipoFruta;
+            if (!mongoose.isValidObjectId(tipoFruta)) throw new Error("No se proporciono un tipo de fruta");
+            delete inventario.tipoFruta;
+            //se borra del inventario
+            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
+            await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
+
+            if (totalKilos > 50 && user.Rol > 2) throw new Error("No puede crear un registro de fruta descompuesta de tantos kilos")
+            //se crea el registro de fruta descompuesta
+            const query = {
+                ...data,
+                descartes: inventario,
+                tipoFruta: tipoFruta,
+                user: user._id,
+                kilos: totalKilos,
+                canastillas: totalCanastillas
+            }
+            await FrutaDescompuestaRepository.post_data(query, { user: user._id, session });
+            await registrarPasoLog(log._id, "FrutaDescompuestaRepository.post_data", "Completado");
+
+        })
+        console.info(`[post_frutaDescompuesta] Tiempo total: ${Date.now() - startTime} ms`);
+        procesoEventEmitter.emit("server_event", {
+            action: "descarte_change",
+            data: {}
         });
 
-        try {
-            InventariosValidations.post_inventarios_frutaDescarte_frutaDescompuesta().parse(req.data)
-            await registrarPasoLog(log._id, "Validación de datos completada", "Completado");
+        return true
 
-            await session.withTransaction(async () => {
-                const tipoFruta = inventario.tipoFruta;
-                delete inventario.tipoFruta;
-                //se borra del inventario
-                const total = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
-                await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
-
-                if (total > 50 && user.Rol > 2) throw new Error("No puede crear un registro de fruta descompuesta de tantos kilos")
-                //se crea el registro de fruta descompuesta
-                const query = {
-                    ...data,
-                    descartes: inventario,
-                    tipoFruta: tipoFruta,
-                    user: user._id,
-                    kilos: total
-                }
-                console.log(query)
-                await FrutaDescompuestaRepository.post_fruta_descompuesta(query, user._id, { session });
-                await registrarPasoLog(log._id, "FrutaDescompuestaRepository.post_fruta_descompuesta", "Completado");
-
-            })
-
-            procesoEventEmitter.emit("server_event", {
-                action: "descarte_change",
-                data: {}
-            });
-
-            return true
-
-        } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
-
-            if (err.status === 518 || err.status === 413) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        } finally {
-            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-            await session.endSession();
-        }
     }
     static async post_inventarios_EF8(req) {
         const { user } = req;

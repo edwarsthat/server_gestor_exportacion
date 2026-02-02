@@ -11,6 +11,13 @@ import { defineInventarioSimple } from '../../DB/mongoDB/schemas/inventarios/Sch
 import { defineSchemaCarnets } from '../../DB/mongoDB/schemas/personal/dotaciones/SchemaCarnets.js';
 import { defineTipoFrutas } from '../../DB/mongoDB/schemas/catalogs/schemaTipoFruta.js';
 import { defineLotes } from '../../DB/mongoDB/schemas/lotes/schemaLotes.js';
+import { defineFrutaDescompuesta } from '../../DB/mongoDB/schemas/frutaDescompuesta/schemaFrutaDecompuesta.js';
+import { defineInventarioActualDescarte } from '../../DB/mongoDB/schemas/inventarios/SchemaInventarioActualDescarte.js';
+import { defineInventarioMovimientosDescarte } from '../../DB/mongoDB/schemas/inventarios/SchemaMovimientoInventarioDescartes.js';
+import { defineAuditSistemaLogs } from '../../DB/mongoDB/schemas/audit/AuditLosSistemaSchema.js';
+import { defineDescartes } from '../../DB/mongoDB/schemas/catalogs/schemaDescartes.js';
+import { defineUser } from '../../DB/mongoDB/schemas/usuarios/schemaUsuarios.js';
+import { defineInventarioDescarte } from '../../DB/mongoDB/schemas/inventarios/SchemaInventarioDescartes.js';
 
 let replSet = null;
 let testConnection = null;
@@ -75,6 +82,15 @@ export async function defineTestSchemas(conn) {
     // Definir schema de Lotes (requiere AuditLog para plugin de auditoría)
     const Lotes = await defineLotes(conn, AuditInventariosSimples);
     testDb.Lotes = Lotes;
+
+    // Schemas para Inventario de Descarte y Fruta Descompuesta
+    testDb.frutaDescompuesta = await defineFrutaDescompuesta(conn);
+    testDb.InventarioActualDescarte = await defineInventarioActualDescarte(conn);
+    testDb.InventarioMovimientoDescarte = await defineInventarioMovimientosDescarte(conn);
+    testDb.Logs = await defineAuditSistemaLogs(conn);
+    testDb.Descartes = await defineDescartes(conn);
+    testDb.Usuarios = await defineUser(conn);
+    testDb.InventarioDescarte = await defineInventarioDescarte(conn);
 
     return testDb;
 }

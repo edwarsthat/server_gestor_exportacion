@@ -1,17 +1,11 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { PostError, ConnectionDBError } from "../../Error/ConnectionErrors.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-export class DespachoDescartesRepository {
-    static async crear_nuevo_despacho(data, user, session = null) {
-        try {
-            const despacho = new db.historialDespachoDescarte(data);
-            despacho.user = user;
-            const despachoSave = await despacho.save({ session });
-            return despachoSave
-        } catch (err) {
-            throw new PostError(521, `Error agregando el registro del despacho ${err.message}`);
-        }
-    }
+export class DespachoDescartesRepository extends BaseRepository {
+    static get model() { return db.historialDespachoDescarte; }
+    static modelName = 'HistorialDespachoDescarte';
+
     static async get_historial_descarte(options = {}) {
         const {
             ids = [],

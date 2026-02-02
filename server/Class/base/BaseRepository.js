@@ -58,9 +58,9 @@ export class BaseRepository {
     static async post_data(data, opts = {}) {
         const { session = null, user = "" } = opts;
         try {
-            const carnet = new this.model(data);
-            carnet._user = user;
-            const saved = await carnet.save({ session });
+            const registro = new this.model(data);
+            registro.user = user;
+            const saved = await registro.save({ session });
             return saved;
         } catch (err) {
             throw new PostError(409, `Error agregando ${this.modelName} ${err.message}`);

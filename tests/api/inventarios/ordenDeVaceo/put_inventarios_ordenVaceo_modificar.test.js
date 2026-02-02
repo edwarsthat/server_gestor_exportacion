@@ -73,6 +73,9 @@ jest.unstable_mockModule('../../../../server/Class/Inventarios.js', () => ({
         put_inventarioSimple: mockPutInventarioSimple,
         getInventarioFrutaSinProcesar: jest.fn(),
         getInventarioFrutaSinProcesarMaquila: jest.fn()
+    },
+    InventarioDescartesRepository: {
+        get_data: jest.fn()
     }
 }));
 

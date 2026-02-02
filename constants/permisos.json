@@ -161,16 +161,6 @@
                     "Obtener clientes": "get_inventarios_historiales_contenedores_clientes"
                 }
             },
-            "En espera de descargue": {
-                "titulo": "Historial de los predios que se pusieron en espera de descargue",
-                "_id": {
-                    "$oid": "6740a7bc8e9713e210a04894"
-                },
-                "permisos": {
-                    "Obtener registros lote descargue pendiente": "get_record_lote_recepcion_pendiente",
-                    "MModificar fechas ingreso y salida de espera por descargar": "modificar_historial_fechas_en_patio"
-                }
-            },
             "inventario fruta sin procesar": {
                 "titulo": "Historial de los predios que entraron al inventario de fruta sin procesar",
                 "_id": {
@@ -207,6 +197,16 @@
                 },
                 "permisos": {
                     "Obtener registros": "get_inventarios_historiales_registros_inventarioDescartes"
+                }
+            },
+            "Registros Ingreso Descarte": {
+                "titulo": "Historial de los ingresos al descarte por registro",
+                "_id": {
+                    "$oid": "695bdb96703b2273851ff34a"
+                },
+                "permisos": {
+                    "Obtener registros": "get_inventarios_historiales_registros_ingresosDescartes",
+                    "Modificar registro Ingreso Descarte": "put_inventarios_inventarioDescarte_modificar_ingreso"
                 }
             }
         },
@@ -538,6 +538,16 @@
                     "Modificar Orden Vaceo": "put_sistema_reiniciar_orden_vaceo"
                 }
             }
+        },
+        "Registros": {
+            "Registro Habilitar Instancias": {
+                "_id": {
+                    "$oid": "6932fa57a880d2c37115d624"
+                },
+                "permisos": {
+                    "obtener_registro_instancias": "get_sistema_habilitarInstancias_registros"
+                }
+            }
         }
     },
     "Indicadores": {
@@ -619,8 +629,6 @@
                     "Cerrar contenedor": "put_proceso_aplicaciones_listaEmpaque_Cerrar",
                     "Modificar cajas": "put_proceso_aplicaciones_listaEmpaque_modificarItems",
                     "Añadir pallet": "put_proceso_add_pallet_listaempaque",
-                    "Eliminar items desktop": "put_proceso_aplicaciones_listaEmpaque_eliminarItem_desktop",
-                    "Modificar items desktop": "put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop",
                     "Enviar pallet cuarto frio": "put_inventarios_pallet_eviarCuartoFrio"
                 },
                 "_id": {
@@ -980,7 +988,10 @@
                 "permisos": {
                     "Obtener Personal": "get_talentoHumano_personal_registros",
                     "Obtener documentos": "get_talentoHumano_personal_Imgs",
-                    "Modificar Personal": "put_talentoHumano_personal"
+                    "Modificar Personal": "put_talentoHumano_personal",
+                    "Asignar Carnet": "put_talentoHumano_personal_asignarCarnet",
+                    "Modificar Carnet": "put_talentoHumano_personal_modificar_carnet",
+                    "Ingresar Documentos": "put_talentoHumano_upload_document"
                 }
             }
         },
@@ -1007,15 +1018,17 @@
         },
         "Dotación": {
             "Carnets": {
-                "Crear Carnet": {
-                    "titulo": "Se crean los carnet",
-                    "_id": {
-                        "$oid": "693c3eb9bb3a96d4fcc36eda"
-                    },
-                    "permisos": {
-                        "Obtener Empleados": "get_talentoHumano_dotacion_obtenerEmpleados"
-                    }
-                }
+                "_id": {
+                    "$oid": "6957d265355fef0567e07ae1"
+                },
+                "permisos": {
+                    "crear carnet": "post_talentoHumano_dotacion_carnets",
+                    "obtener carnets": "get_talentoHumano_dotacion_carnets",
+                    "obtener personal": "get_talentoHumano_dotacion_carnets_empleados",
+                    "Generar Carnet Imagen": "put_talentoHumano_dotacion_carnets_generar_temporal",
+                    "Generar Carnet Final": "put_talentoHumano_dotacion_carnets_generar_final"
+                },
+                "titulo": "Seccion donde se cren, se ven y se gestionan los carnets"
             }
         }
     }
