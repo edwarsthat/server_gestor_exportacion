@@ -335,7 +335,7 @@ export class InventariosService {
 
             // Error si: (Kilos es 0 Y Canastillas > 0) O (Kilos > 0 Y Canastillas es 0)
             if ((kilosEliminar === 0) !== (canastillasEliminar === 0)) {
-                throw new Error("Inconsistencia: No se puede eliminar 0 kilos y 0 canastillas.");
+                throw new Error("Inconsistencia: No se puede eliminar 0 kilos o 0 canastillas.");
             }
 
             let kilos = value.kilos;
@@ -443,20 +443,29 @@ export class InventariosService {
     }
     static async crear_lote_celifrut(tipoFruta, kilos, canastillas, user, session) {
         try {
+            const numKilos = Number(kilos);
+            const numCanastillas = Number(canastillas);
+
+            if (!Number.isFinite(numKilos) || numKilos <= 0) throw new Error('Lote Celifrut: Kilos debe ser un número positivo');
+            if (!Number.isFinite(numCanastillas) || numCanastillas <= 0) throw new Error('Lote Celifrut: Canastillas debe ser un número positivo');
+            if (!tipoFruta?._id || !tipoFruta?.valorPromedio || tipoFruta.valorPromedio === 0) {
+                throw new Error('Lote Celifrut: Datos de fruta inválidos o valor promedio en cero');
+            }
+            const fecha = new Date()
             const codigo = await dataService.get_Celifrut_serial(session)
             const lote = {
                 enf: codigo,
                 predio: config.ID_CELIFRUT,
-                canastillas: canastillas,
-                kilos: kilos,
+                canastillas: numCanastillas,
+                kilos: numKilos,
                 placa: 'AAA000',
-                tipoFruta: tipoFruta,
+                tipoFruta: tipoFruta._id,
                 observaciones: 'Reproceso',
-                promedio: Number(kilos) / (tipoFruta === 'Naranja' ? 19 : 20),
-                "fecha_estimada_llegada": new Date(),
-                "fecha_ingreso_patio": new Date(),
-                "fecha_salida_patio": new Date(),
-                "fecha_ingreso_inventario": new Date(),
+                promedio: numKilos / numCanastillas,
+                "fecha_estimada_llegada": fecha,
+                "fecha_ingreso_patio": fecha,
+                "fecha_salida_patio": fecha,
+                "fecha_ingreso_inventario": fecha,
             }
 
             const newLote = await LotesRepository.post_data(lote, { user: user._id, session });
@@ -464,16 +473,22 @@ export class InventariosService {
                 $inc: {
                     kilosVaciados: newLote.kilos,
                 },
-                fechaProceso: new Date()
+                $set: {
+                    fechaProceso: fecha
+                }
             }
             await LotesRepository.actualizar_lote(
                 { _id: newLote._id },
                 update,
-                { calculateFields: true, vaciar: true, session })
+                {
+                    user: user._id, action: "vaciarLote", canastillas: newLote.canastillas,
+                    vaciar: true, session
+
+                })
             return newLote
         } catch (error) {
             console.error("Error creando lote Celifrut:", error);
-            throw new Error(`Error creando lote Celifrut: ${error.message}`);
+            throw error
         }
     }
     static async revisar_cambio_registro_despachodescarte(_id, newData) {

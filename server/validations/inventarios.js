@@ -185,7 +185,9 @@ export class InventariosValidations {
     }
     static put_inventarios_frutaDescarte_reprocesarFruta() {
         return z.object({
-            inventario: z.object({
+            action: safeString("action"),
+            tipoFruta: objectIdString("tipoFruta"),
+            data: z.object({
                 tipoFruta: objectIdString("tipoFruta")
             }).catchall(
                 z.string()

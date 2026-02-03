@@ -17,6 +17,8 @@ import { ErrorInventarioLogicHandlers } from "../utils/errorsHandlers.js";
 import { filtroFechaInicioFin } from "../utils/filtros.js";
 import { executeQueryTask, executeTransactionalTask } from "../../utils/wrappers.js";
 import mongoose from "mongoose";
+import { tipoFrutaCache } from "../../cache/tipoFruta.js";
+import { IndicadoresService } from "../../services/indicadores.js";
 
 export class InventarioDescarteController {
     static async get_inventarios_historiales_registros_ingresosDescartes(req) {
@@ -161,7 +163,6 @@ export class InventarioDescarteController {
         await executeTransactionalTask(req, async (session, log) => {
 
             const tipoFruta = inventario.tipoFruta;
-            if (!mongoose.isValidObjectId(tipoFruta)) throw new Error("No se proporciono un tipo de fruta");
             delete inventario.tipoFruta;
 
             const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
@@ -185,19 +186,23 @@ export class InventarioDescarteController {
 
         await executeTransactionalTask(req, async (session, log) => {
 
-            const tipoFruta = data.tipoFruta;
-            if (!mongoose.isValidObjectId(tipoFruta)) throw new Error("No se proporciono un tipo de fruta");
+            const tipoFrutaId = parsedData.tipoFruta;
             delete data.tipoFruta;
             //se borra del inventario
-            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
+            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(data, tipoFrutaId, session, user)
             await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
+            //se obtiene el tipodefruta
+            const tipoFruta = tipoFrutaCache.getTipoFruta(tipoFrutaId);
+            if (!tipoFruta) throw new Error("No se encontro el tipo de fruta");
             //se crea el lote celifrut
-            await InventariosService.crear_lote_celifrut(tipoFruta, totalKilos, totalCanastillas, user._id, session);
+            await InventariosService.crear_lote_celifrut(tipoFruta, totalKilos, totalCanastillas, user, session);
             await registrarPasoLog(log._id, "InventariosService.crear_lote_celifrut", "Completado");
-            await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
+            await IndicadoresService.put_indicadores_actualizar_indicador(
                 { $inc: { [`kilos_vaciados.${tipoFruta._id}`]: Number(totalKilos) } }, session
             );
-            await registrarPasoLog(log._id, "IndicadoresAPIRepository.put_indicadores_actualizar_indicador", "Completado", `Se actualizó el indicador kilos_vaciados con ${total} kilos del tipo de fruta ${tipoFruta._id}`);
+            await registrarPasoLog(log._id,
+                "IndicadoresAPIRepository.put_indicadores_actualizar_indicador",
+                "Completado", `Se actualizó el indicador kilos_vaciados con ${totalKilos} kilos del tipo de fruta ${tipoFruta._id}`);
 
         })
         procesoEventEmitter.emit("server_event", {
@@ -205,6 +210,22 @@ export class InventarioDescarteController {
             data: {}
         });
         return true
+    }
+    static async put_inventarios_registros_fruta_descompuesta(data) {
+        try {
+            // let { user } = req
+            // const { action, data, _id } = req.data
+
+            InventariosValidations.put_inventarios_registros_fruta_descompuesta().parse(data)
+            throw new Error("Opcion no soportada")
+
+
+        } catch (err) {
+            if (err.status === 523) {
+                throw err
+            }
+            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
+        }
     }
     static async post_inventarios_frutaDescarte_frutaDescompuesta(req) {
         const startTime = Date.now();

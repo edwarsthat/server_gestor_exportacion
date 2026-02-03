@@ -1561,22 +1561,7 @@ export class InventariosRepository {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
-    static async put_inventarios_registros_fruta_descompuesta(data) {
-        try {
-            // let { user } = req
-            // const { action, data, _id } = req.data
 
-            InventariosValidations.put_inventarios_registros_fruta_descompuesta().parse(data)
-            throw new Error("Opcion no soportada")
-
-
-        } catch (err) {
-            if (err.status === 523) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
 
     //#endregion
     //#region ingresos

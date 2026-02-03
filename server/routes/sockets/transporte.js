@@ -1,4 +1,5 @@
 import { TransporteRepository } from "../../api/Transporte.js";
+import { TransporteIngresosController } from "../../api/transporte/Ingresos.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketTransporte = {
@@ -20,7 +21,7 @@ export const apiSocketTransporte = {
         return successResponseRoutes()
     },
     get_transporte_contenedores_entregaPrescinto: async () => {
-        const response = await TransporteRepository.get_transporte_contenedores_entregaPrescinto()
+        const response = await TransporteIngresosController.get_transporte_contenedores_entregaPrescinto()
         return successResponseRoutes(response)
     },
     post_transporte_conenedor_entregaPrecinto: async (data) => {
