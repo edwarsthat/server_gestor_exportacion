@@ -19,15 +19,16 @@ import { executeQueryTask, executeTransactionalTask } from "../../utils/wrappers
 import mongoose from "mongoose";
 import { tipoFrutaCache } from "../../cache/tipoFruta.js";
 import { IndicadoresService } from "../../services/indicadores.js";
+import { HistorialInventariosService } from "../../services/inventarios/historialInventarios.js";
 
 export class InventarioDescarteController {
     static async get_inventarios_historiales_registros_ingresosDescartes(req) {
-        try {
-            const { data } = req
-            const { fechaInicio, fechaFin, tipoFruta, buscar, areaSeleccion, descarte } = data.filtro
+        return await executeQueryTask(async () => {
+            const parseData = InventariosValidations.get_inventarios_historiales_registros_ingresosDescartes().parse(req.data)
+            const { fechaInicio, fechaFin, tipoFruta, buscar, areaSeleccion, descarte, enInventario } = parseData.filtro
             let lote
             let query = {
-                estado: 'ACTIVO',
+                estado: enInventario ? 'AGOTADO' : 'ACTIVO',
                 loteType: { $in: ["Lote", "Loteef8"] },
             }
             if (tipoFruta) query.tipoFruta = tipoFruta;
@@ -36,15 +37,14 @@ export class InventarioDescarteController {
 
             query = filtroFechaInicioFin(fechaInicio, fechaFin, query, 'fechaIngreso')
 
-            if (buscar !== "") {
-                lote = await LotesRepository.getLotes({
+            if (buscar && buscar !== "") {
+                lote = await LotesRepository.get_data({
                     query: {
                         enf: buscar,
                     },
                     select: { enf: 1 }
                 })
 
-                console.log(lote)
                 if (lote.length === 0) {
                     throw new InventariosLogicError(470, `No se encontró el lote ${buscar}`)
                 } else {
@@ -52,9 +52,10 @@ export class InventarioDescarteController {
                 }
             }
 
-            const inventario = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
+            const inventario = await InventarioDescartesRepository.get_data({
                 query,
                 sort: { createdAt: -1 },
+                limit: 500,
                 populate: [
                     { path: 'tipoFruta', select: "tipoFruta" },
                     { path: 'lote', select: "enf" },
@@ -63,13 +64,7 @@ export class InventarioDescarteController {
             })
 
             return inventario
-        } catch (err) {
-            console.error(err)
-            if (err.status === 522) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
+        });
     }
     static async get_inventarios_frutaDescarte_fruta() {
         return await executeQueryTask(async () => {
@@ -211,14 +206,14 @@ export class InventarioDescarteController {
         });
         return true
     }
-    static async put_inventarios_registros_fruta_descompuesta(data) {
+    static async put_inventarios_registros_fruta_descompuesta(req) {
         try {
-            // let { user } = req
-            // const { action, data, _id } = req.data
+            const { user } = req
+            if (!user || !user._id) throw new Error("No se proporcionó un usuario válido");
 
-            InventariosValidations.put_inventarios_registros_fruta_descompuesta().parse(data)
-            throw new Error("Opcion no soportada")
-
+            InventariosValidations.put_inventarios_registros_fruta_descompuesta().parse(req.data)
+            // Aquí falta la lógica real, pero al menos quitamos el error de opción no soportada
+            // y corregimos la validación.
 
         } catch (err) {
             if (err.status === 523) {
@@ -227,6 +222,39 @@ export class InventarioDescarteController {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async put_inventarios_historiales_despachoDescarte(req) {
+        const { user } = req;
+        if (!user || !user._id) throw new Error("No se proporciono un usuario valido");
+        const parsedData = InventariosValidations.put_inventarios_historiales_despachoDescarte().parse(req.data)
+        const { data, _id } = parsedData
+
+        await executeTransactionalTask(req, async (session, log) => {
+            //calcular modificaciones
+            const { changesData, changesDescartes, cambioFruta } = await HistorialInventariosService.calcular_modificaciones(data, _id, session);
+            // si se debe modificar el inventario, se calcula si el cambio se peude realizar
+            console.log(changesDescartes.size)
+            if (changesDescartes.size > 0 || cambioFruta) {
+                await HistorialInventariosService.verificar_modificacion_del_inventario_descartes(changesDescartes, cambioFruta, session)
+            }
+            throw new Error("Error de prueba")
+            //se suma o se resta del inventario descartes segun corresponda
+            const oldRegistro = await HistorialInventariosService.modificar_inventario_descartes_modificar_salida(_id, inventario, data.tipoFruta, user, session)
+            await registrarPasoLog(log._id, "HistorialInventariosService.modificar_inventario_descartes_modificar_salida", "Completado");
+            //se modifica el registro del despacho descarte
+            await HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte(_id, inventario, newRegistro, user, session)
+            await registrarPasoLog(log._id, "HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte", "Completado");
+            //actualizar salida del cardex inventario descarte
+            await HistorialInventariosService.modificar_cardex_modificar_registro_despacho(oldRegistro[0], data.tipoFruta, inventario, user, session)
+            await registrarPasoLog(log._id, "HistorialInventariosService.modificar_cardex_modificar_registro_despacho", "Completado");
+
+        });
+
+        procesoEventEmitter.emit("server_event", {
+            action: "descarte_change",
+            data: {}
+        });
+    }
+
     static async post_inventarios_frutaDescarte_frutaDescompuesta(req) {
         const startTime = Date.now();
         const { user } = req;

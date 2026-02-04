@@ -7,6 +7,16 @@ export class ControllerError extends Error {
     }
 }
 
+export class ServiceError extends Error {
+    constructor(status, message, type) {
+        super(message);
+        this.status = status;
+        this.type = type;
+        this.name = "ServiceError";
+    }
+}
+
+
 export class MongoDBError extends Error {
     constructor(status, message, type) {
         super(message);

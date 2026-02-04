@@ -37,6 +37,10 @@ export const apiSocketInventarios = {
         const inventario = await InventarioDescarteController.get_inventarios_frutaDescarte_fruta();
         return successResponseRoutes(inventario)
     },
+    get_inventarios_historiales_registros_ingresosDescartes: async (data) => {
+        const response = await InventarioDescarteController.get_inventarios_historiales_registros_ingresosDescartes(data)
+        return successResponseRoutes(response)
+    },
     put_inventarios_frutaDescarte_reprocesarFruta: async (data) => {
         await InventarioDescarteController.put_inventarios_frutaDescarte_reprocesarFruta(data)
         return successResponseRoutes()
@@ -45,6 +49,11 @@ export const apiSocketInventarios = {
         const response = await InventarioDescarteController.put_inventarios_registros_fruta_descompuesta(data)
         return successResponseRoutes(response)
     },
+    put_inventarios_historiales_despachoDescarte: async (data) => {
+        const response = await InventarioDescarteController.put_inventarios_historiales_despachoDescarte(data)
+        return successResponseRoutes(response)
+    },
+
     //#endregion
 
     //·region Orden de vaceo
@@ -228,10 +237,7 @@ export const apiSocketInventarios = {
         const response = await InventariosRepository.get_inventarios_historiales_numeroCanastillas_registros(data)
         return successResponseRoutes(response)
     },
-    put_inventarios_historiales_despachoDescarte: async (data) => {
-        const response = await InventariosRepository.put_inventarios_historiales_despachoDescarte(data)
-        return successResponseRoutes(response)
-    },
+
 
     get_inventarios_historiales_registros_inventarioDescartes: async (data) => {
         const response = await InventariosRepository.get_inventarios_historiales_registros_inventarioDescartes(data)
@@ -257,10 +263,7 @@ export const apiSocketInventarios = {
         const response = await InventariosRepository.get_inventarios_historiales_listaDeEmpaque_crearDocumento(data)
         return successResponseRoutes(response)
     },
-    get_inventarios_historiales_registros_ingresosDescartes: async (data) => {
-        const response = await InventarioDescarteController.get_inventarios_historiales_registros_ingresosDescartes(data)
-        return successResponseRoutes(response)
-    },
+
     put_inventarios_inventarioDescarte_modificar_ingreso: async (data) => {
         await InventarioDescarteController.put_inventarios_inventarioDescarte_modificar_ingreso(data)
         return successResponseRoutes()

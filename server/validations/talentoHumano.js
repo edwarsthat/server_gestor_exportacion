@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { objectIdString, base64String, requiredSafeString, bufferData, blobData, safeString } from "./utils/validationFunctions.js";
+import { objectIdString, base64String, requiredSafeString, bufferData } from "./utils/validationFunctions.js";
 
 export class TalentoHumanoValidations {
     static post_talentoHumano_personal_cargarCedula() {

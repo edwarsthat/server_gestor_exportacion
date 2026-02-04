@@ -67,25 +67,21 @@ export class IndicadoresService {
         return { calibres: Array.from(calibres), calidadesIds: Array.from(calidadesIds) };
     }
     static async put_indicadores_actualizar_indicador(update, session = null) {
-        try {
-            if (!update || Object.keys(update).length === 0) {
-                throw new ProcessError(400, "El objeto de actualización no puede estar vacío");
-            }
-            const indicador = await IndicadoresRepository.actualizar_indicador(
-                {},
-                update,
-                {
-                    sort: { fecha_creacion: -1, _id: -1 },
-                    session,
-                }
-            );
-            if (!indicador) {
-                throw new ProcessError(404, "No se encontró ningún indicador creado");
-            }
-            return indicador
 
-        } catch (err) {
-            throw err;
+        if (!update || Object.keys(update).length === 0) {
+            throw new ProcessError(400, "El objeto de actualización no puede estar vacío");
         }
+        const indicador = await IndicadoresRepository.actualizar_indicador(
+            {},
+            update,
+            {
+                sort: { fecha_creacion: -1, _id: -1 },
+                session,
+            }
+        );
+        if (!indicador) {
+            throw new ProcessError(404, "No se encontró ningún indicador creado");
+        }
+        return indicador
     }
 }

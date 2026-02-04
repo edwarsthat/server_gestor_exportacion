@@ -201,7 +201,7 @@ export class ContabilidadRepository {
                         { path: 'tipoFruta', select: 'tipoFruta codNacional' },
                         { path: 'cliente', select: 'CLIENTE' },
                         { path: "user", select: "usuario nombre apellido" },
-                        { path: 'salidaExportacion.contenedores', select: 'numeroContenedor' },
+                        { path: 'salidaExportacion.contenedores', select: 'numeroContenedor infoContenedor.maquila' },
                         { path: 'precio', select: 'exportacion frutaNacional descarte' },
 
                     ]

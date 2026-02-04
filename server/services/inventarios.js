@@ -494,8 +494,13 @@ export class InventariosService {
     static async revisar_cambio_registro_despachodescarte(_id, newData) {
         let cambioFruta = false
         let cambioIventario = false
-        const registro = await DespachoDescartesRepository.get_historial_descarte({
-            ids: [_id]
+        const registro = await DespachoDescartesRepository.get_data({
+            ids: [_id],
+            populate: [
+                { path: 'cliente', select: 'cliente' },
+                { path: 'tipoFruta', select: 'tipoFruta' },
+                { path: "user", select: "usuario" }
+            ]
         })
 
         if (registro.length < 0) throw new Error("El id del registro no existe")
