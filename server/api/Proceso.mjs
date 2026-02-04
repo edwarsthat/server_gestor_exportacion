@@ -29,6 +29,7 @@ import { InventariosHistorialRepository } from "../Class/Inventarios.js";
 import { LotesHelper } from "../helper/lotes.js";
 import { DescartesRepository } from "../Class/Descartes.js";
 import { ArchiveLoteMaquila } from "../archive/ArchiveLoteMaquila.js";
+import { FileService } from "../services/helpers/FileService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1062,32 +1063,35 @@ export class ProcesoRepository {
         return resultado
     }
     static async obtener_foto_calidad(url) {
+        const base64Image = await FileService.getBase64Image(url)
+        // codigo de jp por si las moscas-------------------------------------------------
         // Validar que la URL sea una ruta válida
-        if (!url || typeof url !== 'string') {
-            throw new ProcessError(400, 'URL inválida');
-        }
+        // if (!url || typeof url !== 'string') {
+        //     throw new ProcessError(400, 'URL inválida');
+        // }
 
-        // Rechazar path traversal
-        if (url.includes('..')) {
-            throw new ProcessError(400, 'URL no permitida');
-        }
+        // // Rechazar path traversal
+        // if (url.includes('..')) {
+        //     throw new ProcessError(400, 'URL no permitida');
+        // }
 
-        // Validación adicional: verificar que esté dentro del directorio permitido
-        const resolvedPath = path.resolve(url);
-        const resolvedBase = path.resolve(__dirname, '..', '..', 'fotos_frutas');
-        if (!resolvedPath.startsWith(resolvedBase)) {
-            throw new ProcessError(400, 'Ruta de archivo no permitida');
-        }
+        // // Validación adicional: verificar que esté dentro del directorio permitido
+        // const resolvedPath = path.resolve(url);
+        // const resolvedBase = path.resolve(__dirname, '..', '..', 'fotos_frutas');
+        // if (!resolvedPath.startsWith(resolvedBase)) {
+        //     throw new ProcessError(400, 'Ruta de archivo no permitida');
+        // }
 
-        // Solo permitir archivos de imagen
-        const ext = path.extname(url).toLowerCase();
-        if (!['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) {
-            throw new ProcessError(400, 'Tipo de archivo no permitido');
-        }
+        // // Solo permitir archivos de imagen
+        // const ext = path.extname(url).toLowerCase();
+        // if (!['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) {
+        //     throw new ProcessError(400, 'Tipo de archivo no permitido');
+        // }
 
-        // eslint-disable-next-line security/detect-non-literal-fs-filename
-        const data = fs.readFileSync(url)
-        const base64Image = data.toString('base64');
+        // // eslint-disable-next-line security/detect-non-literal-fs-filename
+        // const data = fs.readFileSync(url)
+        // const base64Image = data.toString('base64');
+        //aqui termina mi codigo comentado Jp ---------------------------------
         return base64Image
     }
     static async get_record_lote_recepcion_pendiente(req) {

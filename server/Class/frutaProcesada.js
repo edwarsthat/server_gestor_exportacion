@@ -1,17 +1,24 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-export class FrutaProcesada {
+export class FrutaProcesada extends BaseRepository {
+    static get model() { return db.frutaProcesada; }
+    static modelName = 'frutaProcesada';
+
     static async obtener_ultimaEntrada() {
-        return await db.frutaProcesada.findOne()
-            .sort({ createdAt: -1 })
-            .limit(1)
-            .populate([
-                { path: 'loteId', select: 'enf GGN' },
-                { path: 'tipoFruta', select: "tipoFruta" },
-                { path: 'predio', select: 'PREDIO GGN' },
-                { path: "user", select: "usuario nombre apellido" }
-            ]);
+        try {
+            return await db.frutaProcesada.findOne()
+                .sort({ createdAt: -1 })
+                .populate([
+                    { path: 'loteId', select: 'enf GGN deshidratacion' },
+                    { path: 'tipoFruta', select: "tipoFruta" },
+                    { path: 'predio', select: 'PREDIO GGN' },
+                    { path: "user", select: "usuario nombre apellido" }
+                ]);
+        } catch (err) {
+            throw new ConnectionDBError(520, `Error obteniendo última entrada de fruta procesada: ${err.message}`);
+        }
     }
     static async addFrutaProcesada(data, user, opts = {}) {
         const { session } = opts;

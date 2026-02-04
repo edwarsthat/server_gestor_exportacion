@@ -7,10 +7,10 @@ import { colombiaToUTC } from "../api/utils/fechas.js";
 import { filtroFechaInicioFin } from "../api/utils/filtros.js";
 import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
 import { CanastillasRepository } from "../Class/CanastillasRegistros.js";
-import { ClientesRepository } from "../Class/Clientes.js";
+import { ClientesRepository, ClientesNacionalesRepository } from "../Class/Clientes.js";
 import { DespachoDescartesRepository } from "../Class/DespachoDescarte.js";
 import { FrutaDescompuestaRepository } from "../Class/FrutaDescompuesta.js";
-import { InventariosHistorialRepository } from "../Class/Inventarios.js";
+import { InventarioDescartesRepository, InventariosHistorialRepository } from "../Class/Inventarios.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { PreciosRepository } from "../Class/Precios.js";
 import { ProveedoresRepository } from "../Class/Proveedores.js";
@@ -24,38 +24,64 @@ import config from "../../src/config/index.js";
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
 import { dataService } from "./data.js";
 import { DescartesRepository } from "../Class/Descartes.js";
+import { LotesHelper } from "../helper/lotes.js";
 
 export class InventariosService {
 
     static async obtenerPrecioProveedor(predioId, tipoFruta, session = null) {
-        const proveedor = await ProveedoresRepository.get_proveedores({
+        if (!predioId || !tipoFruta) {
+            throw new Error("PredioId y tipoFruta son requeridos en obtenerPrecioProveedor");
+        }
+        if (!mongoose.Types.ObjectId.isValid(predioId)) {
+            throw new Error("PredioId es inválido en obtenerPrecioProveedor");
+        }
+        if (!mongoose.Types.ObjectId.isValid(tipoFruta)) {
+            throw new Error("TipoFruta es inválido en obtenerPrecioProveedor");
+        }
+        const proveedorDocs = await ProveedoresRepository.get_data({
             ids: [predioId],
             select: { precio: 1, PREDIO: 1, GGN: 1 }
         }, session);
 
-        if (!proveedor || proveedor.length === 0) {
+        if (!proveedorDocs || proveedorDocs.length === 0) {
             throw new Error("Proveedor no encontrado");
         }
+        const proveedor = proveedorDocs[0];
 
-        const idPrecio = proveedor[0].precio[tipoFruta];
-        if (!idPrecio) {
+        if (!proveedor.precio || !Reflect.has(proveedor.precio, tipoFruta)) {
             throw new Error(`No hay precio para la fruta ${tipoFruta}`);
         }
-
-        const precio = await PreciosRepository.get_precios({ ids: [idPrecio] }, session);
-        if (!precio || precio.length === 0) {
+        const idPrecio = proveedor.precio[tipoFruta];
+        if (!mongoose.Types.ObjectId.isValid(idPrecio)) {
             throw new Error("Precio inválido");
         }
 
-        return { precioId: precio[0]._id, proveedor: proveedor };
+        const precioDocs = await PreciosRepository.get_data({ ids: [idPrecio] }, session);
+        if (!precioDocs || precioDocs.length === 0) {
+            throw new Error("Precio inválido");
+        }
+        const precio = precioDocs[0];
+
+        return { precioId: precio._id, proveedor: proveedor };
 
     }
-    static async construirQueryIngresoLote(datos, enf, precioId, tipoFruta, user) {
+    static construirQueryIngresoLote(datos, enf, precioId, user) {
+        if (!datos || !enf || !precioId || !user) {
+            throw new Error("Datos, enf, precioId y user son requeridos en construirQueryIngresoLote");
+        }
+        if (!datos.fecha_estimada_llegada) {
+            throw new Error("Fecha de llegada es requerida en construirQueryIngresoLote");
+        }
+        if (!user._id) {
+            throw new Error("user._id es requerido en construirQueryIngresoLote");
+        }
         const fecha = new Date(datos.fecha_estimada_llegada);
-
+        if (isNaN(fecha.getTime())) {
+            throw new Error("Fecha de llegada inválida en construirQueryIngresoLote");
+        }
         return {
             ...datos,
-            tipoFruta: tipoFruta._id,
+            tipoFruta: datos.tipoFruta,
             precio: precioId,
             enf,
             fecha_salida_patio: fecha,
@@ -81,7 +107,7 @@ export class InventariosService {
     static async incrementarEF() {
         VariablesDelSistema.incrementarEF1();
     }
-    static async crearRegistroInventarioCanastillas(
+    static crearRegistroInventarioCanastillas(
         {
             origen = '',
             destino = '',
@@ -96,9 +122,23 @@ export class InventariosService {
 
         }
     ) {
+        if (!user || !user._id) {
+            throw new Error("user y user._id son requeridos");
+        }
+        if (!fecha) {
+            throw new Error("fecha es requerida");
+        }
+        const fechaDate = new Date(fecha);
+        if (isNaN(fechaDate.getTime())) {
+            throw new Error("fecha inválida");
+        }
+        if (!accion) {
+            throw new Error("accion es requerida");
+        }
+
         const estado = obtenerEstadoDesdeAccionCanastillasInventario(accion)
         return {
-            fecha: new Date(fecha),
+            fecha: fechaDate,
             destino: destino,
             origen: origen,
             cantidad: {
@@ -118,7 +158,19 @@ export class InventariosService {
         }
     }
     static async ajustarCanastillasProveedorCliente(_id, cantidad, user, session = null) {
-        if (!_id || !Number.isFinite(cantidad) || cantidad === 0) return;
+        // Validación de parámetros - fallar explícitamente                                                                                             
+        if (!_id) {
+            throw new Error('El _id es requerido para ajustar canastillas');
+        }
+        if (!Number.isFinite(cantidad)) {
+            throw new Error('La cantidad debe ser un número finito');
+        }
+        if (!user?._id) {
+            throw new Error('El user._id es requerido para ajustar canastillas');
+        }
+
+        // Si cantidad es 0, no hay nada que hacer (esto sí es válido retornar)                                                                         
+        if (cantidad === 0) return null;
 
         const prov = await ProveedoresRepository.actualizar_proveedores(
             { _id: _id },
@@ -151,7 +203,7 @@ export class InventariosService {
         const proveedores = await ProveedoresRepository.get_proveedores({
             ids: ids
         })
-        const clientes = await ClientesRepository.get_clientesNacionales({
+        const clientes = await ClientesNacionalesRepository.get_data({
             ids: ids
         })
 
@@ -196,11 +248,19 @@ export class InventariosService {
         if (descarteEncerado)
             await VariablesDelSistema.modificar_inventario_descarte(_id, descarteEncerado, 'descarteEncerado');
     }
-    static async validarGGN(proveedor, tipoFruta, user) {
-        if (!(proveedor && proveedor[0].GGN && proveedor[0].GGN.fechaVencimiento)) { throw new Error("El predio no tiene GGN") }
+    static validarGGN(proveedor, tipoFruta, user) {
+        if (!proveedor) throw new Error("No se proporcionaron proveedores");
 
-        const fechaVencimiento = new Date(proveedor[0].GGN.fechaVencimiento);
+        if (!proveedor.GGN || !proveedor.GGN.fechaVencimiento) {
+            throw new Error("El predio no tiene GGN")
+        }
+
+        const fechaVencimiento = new Date(proveedor.GGN.fechaVencimiento);
         const hoy = new Date();
+
+        if (!(fechaVencimiento instanceof Date) || isNaN(fechaVencimiento)) {
+            throw new Error("El predio no tiene una fecha de vencimiento válida");
+        }
 
         // Calcular la fecha de un mes después de hoy (ojo, JS hace la magia con los días)
         const unMesDespues = new Date(hoy);
@@ -208,6 +268,9 @@ export class InventariosService {
 
         // Si la fecha está entre hoy y dentro de un mes, es "cercana"
         if (fechaVencimiento > hoy && fechaVencimiento <= unMesDespues) {
+            if (!user || typeof user.Rol !== 'number') {
+                throw new Error("No se proporcionó el rol del usuario");
+            }
             if (user.Rol > 2) {
                 throw new Error("La fecha de vencimiento está cercana.");
             }
@@ -215,12 +278,17 @@ export class InventariosService {
             throw new Error("El GGN del proveedor ya expiró.");
         }
 
+        if (!proveedor.GGN || !proveedor.GGN.code) {
+            throw new Error("El predio no tiene GGN");
+        }
+        if (!Array.isArray(proveedor.GGN.tipo_fruta)) throw new Error("El predio no tiene GGN");
+
+
         if (
-            proveedor[0].GGN.code &&
-            proveedor[0].GGN.tipo_fruta.includes(tipoFruta)
+            proveedor.GGN.code &&
+            proveedor.GGN.tipo_fruta.includes(tipoFruta)
         ) return true
 
-        //poner filtro de la fecha
         throw new Error("El proveedor no tiene GGN para ese tipo de fruta")
     }
     static async modificarRecordLote_regresoHistorialFrutaIngreso(_id, __v, data) {
@@ -240,13 +308,42 @@ export class InventariosService {
     }
     static async procesar_formulario_inventario_descarte(data, tipoFruta, session, user) {
         let totalKilos = 0;
-
+        let totalCanastillas = 0;
+        const dataMap = new Map();
+        //se estrucutra los datos de entrada, kilos y acnastillas por item
         for (const [key, value] of Object.entries(data)) {
-            totalKilos += value === '' ? 0 : parseInt(value);
-            const [area, descarteId] = key.split(':');
-            let kilos = value === '' ? 0 : parseInt(value);
+            const [area, descarteId, tipo] = key.split(':');
+            const campoDestino = tipo || 'kilos';
+            const valorNumerico = value === '' ? 0 : parseInt(value);
+            if (isNaN(valorNumerico)) throw new Error("El valor no es un numero");
 
-            const registros = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
+            const llaveUnica = area + ":" + descarteId;
+            const registroExistente = dataMap.get(llaveUnica) || { kilos: 0, canastillas: 0 };
+            registroExistente[campoDestino] = valorNumerico;
+            dataMap.set(llaveUnica, registroExistente);
+
+
+        }
+        //se recorre el mapa para descontar los kilos y canastillas
+        for (const [key, value] of dataMap) {
+            const [area, descarteId] = key.split(":");
+            totalKilos += value.kilos;
+            totalCanastillas += value.canastillas;
+            const kilosEliminar = value.kilos;
+            const canastillasEliminar = value.canastillas;
+
+
+            // Error si: (Kilos es 0 Y Canastillas > 0) O (Kilos > 0 Y Canastillas es 0)
+            if ((kilosEliminar === 0) !== (canastillasEliminar === 0)) {
+                throw new Error("Inconsistencia: No se puede eliminar 0 kilos o 0 canastillas.");
+            }
+
+            let kilos = value.kilos;
+            let canastillas = value.canastillas;
+            let kilosTotalTipo = 0;
+            let canastillasTotalTipo = 0;
+
+            const registros = await InventarioDescartesRepository.get_data({
                 query: {
                     tipoFruta: tipoFruta,
                     area: area,
@@ -256,32 +353,55 @@ export class InventariosService {
                 },
                 sort: { fechaIngreso: 1 },
             })
-
-            if (registros.length === 0) {
-                throw new InventariosLogicError(`No hay inventario suficiente para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
-            }
+            if (registros.length === 0) throw new Error("No hay inventario suficiente")
 
             for (const registro of registros) {
-                if (kilos <= 0) break; // Ya se descontaron todos los kilos necesarios
+                //se suma el valor total del tipo de descarte
+                kilosTotalTipo += registro.kilosActuales;
+                canastillasTotalTipo += registro.canastillasActuales;
 
-                // Calcular cuántos kilos se van a descontar de ESTE registro específico
-                const kilosADescontar = Math.min(kilos, registro.kilosActuales);
-                const kilosRestantes = registro.kilosActuales - kilosADescontar;
+                if (kilos <= 0 && canastillas <= 0) break; // Ya se descontaron todos los kilos necesarios
 
-                // Actualizar el registro
-                if (kilosRestantes > 0) {
-                    await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
-                        { _id: registro._id },
-                        { $set: { kilosActuales: kilosRestantes } },
-                        { user: user._id, action: 'Actualizar inventario descarte reproceso predio', session }
-                    )
-                } else {
-                    await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
-                        { _id: registro._id },
-                        { $set: { kilosActuales: 0, estado: "AGOTADO" } },
-                        { user: user._id, action: 'Actualizar inventario descarte reproceso predio', session }
-                    )
+                let update = {
+                    $set: {}
                 }
+                let kilosRestantes = registro.kilosActuales;
+                let kilosADescontar = 0;
+                let canastillasRestantes = registro.canastillasActuales;
+                let canastillasADescontar = 0;
+
+                if (kilos > 0) {
+                    // Calcular cuántos kilos se van a descontar de ESTE registro específico
+                    kilosADescontar = Math.min(kilos, registro.kilosActuales);
+                    kilosRestantes = registro.kilosActuales - kilosADescontar;
+                }
+                if (canastillas > 0) {
+                    // Calcular cuántas canastillas se van a descontar de ESTE registro específico
+                    canastillasADescontar = Math.min(canastillas, registro.canastillasActuales);
+                    canastillasRestantes = registro.canastillasActuales - canastillasADescontar;
+                }
+
+                //se crea el update para el registro
+                if (kilosRestantes > 0) {
+                    update.$set.kilosActuales = kilosRestantes;
+                } else {
+                    update.$set.kilosActuales = 0;
+                }
+                if (canastillasRestantes > 0) {
+                    update.$set.canastillasActuales = canastillasRestantes;
+                } else {
+                    update.$set.canastillasActuales = 0;
+                }
+
+                if (kilosRestantes <= 0 && canastillasRestantes <= 0) {
+                    update.$set.estado = "AGOTADO";
+                }
+                //se modifica el registro 
+                await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
+                    { _id: registro._id },
+                    update,
+                    { user: user._id, action: 'Actualizar inventario descarte reproceso predio', session }
+                )
 
                 // Registrar la SALIDA en el cardex (los kilos que realmente se descontaron)
                 await InventariosHistorialRepository.put_cardex_invetariosdescartes(
@@ -292,50 +412,83 @@ export class InventariosService {
 
                 // Reducir los kilos pendientes por descontar
                 kilos -= kilosADescontar;
+                canastillas -= canastillasADescontar;
+
+            }
+            const restanteKilos = kilosTotalTipo - kilosEliminar;
+            const restanteCanastillas = canastillasTotalTipo - canastillasEliminar;
+
+            // Error si: (Kilos es 0 Y Canastillas > 0) O (Kilos > 0 Y Canastillas es 0)
+            if ((restanteKilos === 0) !== (restanteCanastillas === 0)) {
+                throw new Error("Inconsistencia: No pueden quedar kilos sin canastillas o viceversa.");
+            }
+
+            // Validación adicional: No permitir valores negativos (opcional pero recomendado)
+            if (restanteKilos < 0 || restanteCanastillas < 0) {
+                throw new Error("El descuento supera el inventario disponible.");
             }
 
             // Verificar que se pudieron descontar todos los kilos
             if (kilos > 0) {
-                throw new InventariosLogicError(`No hay inventario suficiente. Faltan ${kilos} kilos para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
+                throw new InventariosLogicError(470, `No hay inventario suficiente. Faltan ${kilos} kilos para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
             }
+            if (canastillas > 0) {
+                throw new InventariosLogicError(470, `No hay inventario suficiente. Faltan ${canastillas} canastillas para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
+            }
+
         }
 
-        return totalKilos;
+        return { totalKilos, totalCanastillas };
+
     }
-    static async crear_lote_celifrut(tipoFruta, kilos, user, session) {
+    static async crear_lote_celifrut(tipoFruta, kilos, canastillas, user, session) {
         try {
-            const codigo = await dataService.get_Celifrut_serial()
+            const numKilos = Number(kilos);
+            const numCanastillas = Number(canastillas);
+
+            if (!Number.isFinite(numKilos) || numKilos <= 0) throw new Error('Lote Celifrut: Kilos debe ser un número positivo');
+            if (!Number.isFinite(numCanastillas) || numCanastillas <= 0) throw new Error('Lote Celifrut: Canastillas debe ser un número positivo');
+            if (!tipoFruta?._id || !tipoFruta?.valorPromedio || tipoFruta.valorPromedio === 0) {
+                throw new Error('Lote Celifrut: Datos de fruta inválidos o valor promedio en cero');
+            }
+            const fecha = new Date()
+            const codigo = await dataService.get_Celifrut_serial(session)
             const lote = {
                 enf: codigo,
                 predio: config.ID_CELIFRUT,
-                canastillas: '0',
-                kilos: kilos,
+                canastillas: numCanastillas,
+                kilos: numKilos,
                 placa: 'AAA000',
-                tipoFruta: tipoFruta,
+                tipoFruta: tipoFruta._id,
                 observaciones: 'Reproceso',
-                promedio: Number(kilos) / (tipoFruta === 'Naranja' ? 19 : 20),
-                "fecha_estimada_llegada": new Date(),
-                "fecha_ingreso_patio": new Date(),
-                "fecha_salida_patio": new Date(),
-                "fecha_ingreso_inventario": new Date(),
+                promedio: numKilos / numCanastillas,
+                "fecha_estimada_llegada": fecha,
+                "fecha_ingreso_patio": fecha,
+                "fecha_salida_patio": fecha,
+                "fecha_ingreso_inventario": fecha,
             }
 
-            const newLote = await LotesRepository.addLote(lote, user, { session });
+            const newLote = await LotesRepository.post_data(lote, { user: user._id, session });
             const update = {
                 $inc: {
                     kilosVaciados: newLote.kilos,
                 },
-                fechaProceso: new Date()
+                $set: {
+                    fechaProceso: fecha
+                }
             }
             await LotesRepository.actualizar_lote(
                 { _id: newLote._id },
                 update,
-                { calculateFields: true, vaciar: true, session })
-            await dataService.modificar_Celifrut_serial(session);
+                {
+                    user: user._id, action: "vaciarLote", canastillas: newLote.canastillas,
+                    vaciar: true, session
+
+                })
             return newLote
         } catch (error) {
             console.error("Error creando lote Celifrut:", error);
-            throw new Error(`Error creando lote Celifrut: ${error.message}`);
+            throw error
         }
     }
     static async revisar_cambio_registro_despachodescarte(_id, newData) {
@@ -629,61 +782,68 @@ export class InventariosService {
     }
     static async probar_deshidratacion_loteProcesando(user) {
         const predioVaciando = await FrutaProcesada.obtener_ultimaEntrada();
-        if (!predioVaciando) {
-            return "No vaceo"
+
+        if (!predioVaciando || !predioVaciando.loteId) {
+            return null;
         }
 
-        const [EF1, EF10] = await Promise.all([
-            LotesRepository.getLotes({ ids: [predioVaciando.loteId._id] }),
-            LotesRepository.getLotesMaquila({ ids: [predioVaciando.loteId._id] })
-        ])
-        const lote = EF1.length > 0 ? EF1[0] : (EF10.length > 0 ? EF10[0] : null);
+        const loteIdBusqueda = predioVaciando.loteId._id ?? predioVaciando.loteId;
 
-        console.log("predioVaciando ###################", lote)
+        const lotes = await LotesHelper.obtener_lote_helper({ ids: [loteIdBusqueda] });
+        const lote = lotes[0] ?? null;
 
         if (!lote) {
-            return "No vaceo"
+            throw new InventariosLogicError(404, "El lote asociado al proceso no fue encontrado.");
         }
 
-        // Cargos con vía rápida
+        const ROL_ADMIN = 0;
         const PERM_1 = config.COORDINADOR_PRODUCCION;
         const PERM_2 = config.DIR_OPERACIONES;
 
-        // Pueden saltarse la validación si:
-        // - Rol > 0  O  - Cargo está en la lista permitida
-        const puedeOmitirValidacion =
-            Number(user?.Rol) === 0 || [PERM_1, PERM_2].includes(user?.cargo);
+        if (!PERM_1 || !PERM_2) {
+            throw new InventariosLogicError(500, "Configuración de permisos incompleta para validación de deshidratación.");
+        }
+
+        const CARGOS_AUTORIZADOS = [PERM_1, PERM_2];
+        const puedeOmitirValidacion = Number(user?.Rol) === ROL_ADMIN || (user?.cargo && CARGOS_AUTORIZADOS.includes(user.cargo));
 
         if (!puedeOmitirValidacion) {
             const d = lote.deshidratacion;
-            const esNumero = typeof d === "number" && Number.isFinite(d);
 
-            // Solo valida si hay número; fuera de [-1, 3] => error
-            if (esNumero && (d > 3 || d < -1)) {
+            // Corregido: Validamos si el dato NO existe o si está fuera de rango
+            const esDatoInvalido = typeof d !== "number" || !Number.isFinite(d);
+            const estaFueraDeRango = d > 3 || d < -1;
+
+            if (esDatoInvalido || estaFueraDeRango) {
                 throw new InventariosLogicError(
                     470,
-                    `El lote no se puede vaciar porque la deshidratación de ${predioVaciando.enf} - ${predioVaciando.nombrePredio} no está en el rango permitido.`
+                    `El lote no se puede vaciar. La deshidratación de ${predioVaciando.enf} - ${predioVaciando.nombrePredio} (${d ?? 'N/A'}%) no es válida o está fuera del rango permitido (-1% a 3%).`
                 );
             }
         }
 
         return lote;
     }
-    static async construir_ef8_lote(data, enf, precio, user) {
+    static construir_ef8_lote(data, enf, precio, user) {
+        if (!enf) throw new Error("No se encontro el enf");
+        if (precio === null || precio === undefined) {
+            throw new Error("No se encontró el precio");
+        }
+
         const totalCanastillas = Number(data.canastillasPropias || 0) + Number(data.canastillasVaciasPropias || 0);
         const totalCanastillasPrestadas = Number(data.canastillasVaciasPrestadas || 0) + Number(data.canastillasPrestadas || 0);
         const total = Number(data.descarteGeneral || 0) + Number(data.balin || 0) + Number(data.pareja || 0);
         const promedio = totalCanastillas > 0 ? total / totalCanastillas : 0;
 
         const loteEF8 = {
-            balin: data.balin || 0,
+            balin: Number(data.balin || 0),
             canastillas: totalCanastillas || 0,
             canastillasPrestadas: totalCanastillasPrestadas || 0,
             descarteGeneral: Number(data.descarteGeneral || 0),
             enf: enf,
             fecha_ingreso_inventario: colombiaToUTC(data.fecha_ingreso_inventario || Date.now()),
             numeroPrecintos: Number(data.numeroPrecintos || 0),
-            numeroRemision: data.numeroRemision,
+            numeroRemision: data.numeroRemision || '',
             observaciones: data.observaciones || '',
             pareja: Number(data.pareja || 0),
             placa: data.placa || '',
@@ -696,36 +856,49 @@ export class InventariosService {
 
         return { loteEF8, total }
     }
-    static async ingresarDescarteEf8(data, tipoFruta, logId, session) {
+    static async ingresarDescarteEf8(registroEF8, data, tipoFruta, user, session) {
+        console.log(data);
+        console.log(registroEF8);
+
+        if (!tipoFruta || !tipoFruta._id) throw new Error("No se encontro el tipo de fruta");
+        if (!mongoose.isValidObjectId(tipoFruta._id)) throw new Error("No se encontro el tipo de fruta");
+        if (!mongoose.isValidObjectId(registroEF8._id)) throw new Error(`No se encontro el lote ${registroEF8.enf}`);
+
         const descarteObj = {
             descarteGeneral: data.descarteGeneral || 0,
             pareja: data.pareja || 0,
             balin: data.balin || 0,
+            descarteGeneralCanastillas: data.descarteGeneralCanastillas || 0,
+            parejaCanastillas: data.parejaCanastillas || 0,
+            balinCanastillas: data.balinCanastillas || 0,
         }
         const descartesArr = ["descarteGeneral", "pareja", "balin"];
-        const descartesIds = await DescartesRepository.getDescartes({ ids: tipoFruta.descartes });
-        console.log(descartesIds)
+        const descartesIds = await DescartesRepository.get_data({ ids: tipoFruta.descartes }, { session });
+
+        if (descartesIds.length === 0) throw new Error("No se encontraron los descartes");
         for (const descarte of descartesArr) {
-            console.log(descarte)
-            if (descarteObj[descarte] === 0) continue;
+            if (descarteObj[descarte] === 0 && descarteObj[`${descarte}Canastillas`] === 0) continue;
             const descarteId = descartesIds.find(d => d.nombre === descarte);
-            console.log(descarteId)
+            if (!descarteId) throw new Error(`No se encontro el descarte ${descarte}`);
+            if (!mongoose.isValidObjectId(descarteId._id)) throw new Error(`No se encontro el descarte ${descarte}`);
+
             const newRegistro = {
-                lote: data._id,
+                lote: registroEF8._id,
                 tipoFruta: tipoFruta._id,
                 area: "LAVADO",
                 tipoDescarte: descarteId._id,
-                kilos: descarteObj[descarte],
-                kilosActuales: descarteObj[descarte],
+                kilos: Number(descarteObj[descarte]),
+                canastillas: Number(descarteObj[`${descarte}Canastillas`]),
                 loteType: "Loteef8"
             }
-            await InventariosHistorialRepository.add_elemento_inventarioDescartes(newRegistro, logId, session);
+            await InventariosHistorialRepository.add_elemento_inventarioDescartes(newRegistro, user, { session });
 
             await InventariosHistorialRepository.put_cardex_invetariosdescartes(
                 {},
                 {
                     $inc: {
                         [`kilos_ingreso.${tipoFruta._id.toString()}.LAVADO.${descarteId._id.toString()}`]: descarteObj[descarte],
+                        [`canastillas_ingreso.${tipoFruta._id.toString()}.LAVADO.${descarteId._id.toString()}`]: descarteObj[`${descarte}Canastillas`],
                     },
                 },
                 {
@@ -734,12 +907,6 @@ export class InventariosService {
                     session,
                 }
             );
-            await registrarPasoLog(
-                logId,
-                "Modificar inventario descartes",
-                "Completado",
-                `Se modificó el inventario de descarte con ${descarteObj[descarte]} kilos del tipo de fruta ${tipoFruta._id.toString()}`);
-
         }
 
 
@@ -845,12 +1012,12 @@ export class InventariosService {
 
         return result;
     }
-    static async ingresarCanasillas(datos, user, session = null) {
+    static async ingresarCanastillas(datos, user, session = null) {
         const canastillasPropias = Number(datos.canastillasPropias || 0) + Number(datos.canastillasVaciasPropias || 0)
         const canastillasPrestadas = Number(datos.canastillasPrestadas || 0) + Number(datos.canastillasVaciasPrestadas || 0)
 
-        const dataRegistro = await this.crearRegistroInventarioCanastillas({
-            destino: "65c27f3870dd4b7f03ed9857",
+        const dataRegistro = this.crearRegistroInventarioCanastillas({
+            destino: config.ID_CELIFRUT,
             origen: datos.predio,
             observaciones: "ingreso lote",
             fecha: datos.fecha_ingreso_inventario,
@@ -861,14 +1028,9 @@ export class InventariosService {
         })
 
         await this.ajustarCanastillasProveedorCliente(datos.predio, -canastillasPropias, user, session)
-        await this.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", canastillasPropias, user, session)
-        const registroCanastillas = await CanastillasRepository.post_registro(dataRegistro)
-
-
-
+        await this.ajustarCanastillasProveedorCliente(config.ID_CELIFRUT, canastillasPropias, user, session)
+        const registroCanastillas = await CanastillasRepository.post_data(dataRegistro, { session, user: user._id })
         await VariablesDelSistema.modificar_canastillas_inventario(canastillasPrestadas, "canastillasPrestadas")
-
-
         return registroCanastillas;
 
     }
@@ -910,17 +1072,28 @@ export class InventariosService {
         }
         return { operation, out };
     }
-    static async modificarRestarInventarioFrutaSinProocesar(canastillas, user, action, lote, log, session, descripcion) {
+    static async modificarRestarInventarioFrutaSinProocesar(canastillas, user, action, lote, session, descripcion) {
         const inventarioFrutaSinProcesar = config.INVENTARIO_FRUTA_SIN_PROCESAR;
-        let tipoInventario = "";
-        if (lote.enf.startsWith("EF1-")) {
-            tipoInventario = "inventario";
-        } else if (lote.enf.startsWith("EF10-")) {
-            tipoInventario = "inventarioMaquila";
+
+        // Validaciones de entrada
+        if (!canastillas || canastillas <= 0) throw new Error('Las canastillas deben ser un número positivo');
+        if (!lote?._id || !lote?.enf) throw new Error('Datos del lote incompletos (_id, enf)');
+        if (!user?._id) throw new Error('ID de usuario requerido');
+
+        // Determinar campo de inventario
+        const enfUpper = lote.enf.trim().toUpperCase();
+        const tipoInventario = enfUpper.startsWith("EF1-") ? "inventario" :
+            enfUpper.startsWith("EF10-") ? "inventarioMaquila" : null;
+
+        if (!tipoInventario) {
+            throw new Error(`ENF inválido: ${lote.enf}. No se reconoce el prefijo.`);
         }
-        // Primero decrementar las canastillas
-        const updateResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
-            { _id: inventarioFrutaSinProcesar },
+
+        await InventariosHistorialRepository.put_inventarioSimple(
+            {
+                _id: inventarioFrutaSinProcesar,
+                [`${tipoInventario}.lote`]: lote._id
+            },
             { $inc: { [tipoInventario + ".$[it].canastillas"]: -canastillas, __v: 1 } },
             {
                 session,
@@ -930,16 +1103,18 @@ export class InventariosService {
                 arrayFilters: [{ 'it.lote': new mongoose.Types.ObjectId(lote._id) }],
             }
         );
-        await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple_updateOne (decrementar)", "Completado", `Canastillas decrementadas: ${canastillas}, matchedCount: ${updateResult?.matchedCount}, modifiedCount: ${updateResult?.modifiedCount}`);
 
-        // Luego eliminar elementos con canastillas <= 0
-        const pullResult = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+        const pullResult = await InventariosHistorialRepository.put_inventarioSimple(
             { _id: inventarioFrutaSinProcesar },
             { $pull: { [tipoInventario]: { lote: new mongoose.Types.ObjectId(lote._id), canastillas: { $lte: 0 } } } },
             { session, skipAudit: true, runValidators: false }
         );
-        await registrarPasoLog(log._id, "InventariosHistorialRepository.put_inventarioSimple_updateOne (pull)", "Completado", `Elementos eliminados con canastillas <= 0, matchedCount: ${pullResult?.matchedCount}, modifiedCount: ${pullResult?.modifiedCount}`);
 
+        if (pullResult.matchedCount === 0) {
+            throw new Error(`El lote ${lote.enf} ya no se encuentra en el inventario (posiblemente ya fue procesado)`);
+        }
+
+        return pullResult;
     }
     static async modificarSumarInventarioFrutaSinProocesar(
         canastillas, user, action, loteId, tipo, log, session, descripcion
@@ -998,7 +1173,7 @@ export class InventariosService {
             }
         ];
 
-        const result = await InventariosHistorialRepository.put_inventarioSimple_updateOne(
+        const result = await InventariosHistorialRepository.put_inventarioSimple(
             { _id: inventarioId },
             pipelineUpdate,
             {
@@ -1012,7 +1187,7 @@ export class InventariosService {
 
         await registrarPasoLog(
             log._id,
-            "InventariosHistorialRepository.put_inventarioSimple_updateOne (sumar/crear)",
+            "InventariosHistorialRepository.put_inventarioSimple (sumar/crear)",
             "Completado",
             `Suma/Alta de canastillas: ${canastillas} en ${campoInventario}, matchedCount: ${result?.matchedCount}, modifiedCount: ${result?.modifiedCount}, versión incrementada`
         );
@@ -1020,13 +1195,34 @@ export class InventariosService {
         return result;
     }
     static async item_in_ordenVaceo(itemId) {
+        if (!itemId || typeof itemId !== 'string' || !itemId.trim()) {
+            throw new Error(`No se proporcionó un item id válido`);
+        }
         const ordenVaceo = await InventariosHistorialRepository.get_ordenVaceo();
-        const ids = ordenVaceo.data.map(id => id.toString());
-        if (ids.includes(itemId)) {
+        if (!ordenVaceo || !ordenVaceo.data || !Array.isArray(ordenVaceo.data)) {
+            throw new Error(`Error al obtener la orden de vaceo`);
+        }
+        if (ordenVaceo.data.length === 0) {
+            return true;
+        }
+
+        const ids = ordenVaceo.data
+            .filter(id => id !== null && id !== undefined)
+            .map(id => id?.toString() ?? "");
+
+        if (ids.includes(itemId.toString())) {
             throw new Error(`EL lote ya está en la orden de vaceo, no se puede procesar como directo nacional.`);
         }
+        return true
     }
     static async check_inventarioVersion(idInventario, versionrequest) {
+        if (!idInventario || typeof idInventario !== 'string' || !idInventario.trim()) {
+            throw new Error(`No se proporcionó un inventario id válido`);
+        }
+        if (versionrequest === null || versionrequest === undefined) {
+            throw new Error(`No se proporcionó una versión válida`);
+        }
+
         const inventario = await InventariosHistorialRepository.get_inventario_simple(idInventario);
         if (inventario.__v !== versionrequest) {
             throw new Error(`La versión del inventario ha cambiado. Por favor, recargue la página e intente de nuevo.`);
@@ -1053,25 +1249,32 @@ export class InventariosService {
         }
         return out;
     }
-    static async respuesta_invetario_descartes(registros) {
-        const out = {}
+    static respuesta_invetario_descartes(registros) {
+        if (!Array.isArray(registros)) return {};
+
+        const out = new Map();
+
         for (const registro of registros) {
-            if (!registro.tipoDescarte.inventario) continue;
+            if (!registro?.tipoDescarte?.inventario) continue;
 
-            if (registro.tipoDescarte._id.toString() === "69120e3ca1cf6dcb986f5893") {
-                if (!out[`${registro.tipoFruta._id}//${registro.area}//690f643bbe7e33ae39bda1c6`]) {
-                    out[`${registro.tipoFruta._id}//${registro.area}//690f643bbe7e33ae39bda1c6`] = 0;
-                }
-                out[`${registro.tipoFruta._id}//${registro.area}//690f643bbe7e33ae39bda1c6`] += registro.kilosActuales;
+            const frutaId = registro.tipoFruta?._id;
+            const areaId = registro.area;
+            const descarteId = registro.tipoDescarte?._id;
 
-            } else {
-                if (!out[`${registro.tipoFruta._id}//${registro.area}//${registro.tipoDescarte._id}`]) {
-                    out[`${registro.tipoFruta._id}//${registro.area}//${registro.tipoDescarte._id}`] = 0;
-                }
-                out[`${registro.tipoFruta._id}//${registro.area}//${registro.tipoDescarte._id}`] += registro.kilosActuales;
-            }
+            if (!frutaId || !areaId || !descarteId) continue;
+
+            const key = `${frutaId}//${areaId}//${descarteId}`;
+            const kilos = Number(registro.kilosActuales) || 0;
+            const canastillas = Number(registro.canastillasActuales) || 0;
+            const actual = out.get(key) || { kilos: 0, canastillas: 0 };
+
+            out.set(key, {
+                kilos: actual.kilos + kilos,
+                canastillas: actual.canastillas + canastillas
+            });
         }
-        return out;
+
+        return Object.fromEntries(out);
     }
     static async obtener_registros_inventario_descarteMaquila(_id, data, session) {
         // Extraer todas las combinaciones de área y tipoDescarte
@@ -1203,7 +1406,7 @@ export class InventariosService {
                 loteType: "Lote"
             }
 
-            await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, log._id, session);
+            await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, log._id, { session });
         }
     }
     // static async modificarIngresoCanastillas(data) {

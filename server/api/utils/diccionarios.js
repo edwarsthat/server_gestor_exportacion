@@ -13,7 +13,7 @@ const obtenerEstadoDesdeAccionCanastillasInventario = (accion) => {
     const estado = ESTADOS[accion?.toLowerCase()];
 
     if (!estado) {
-        throw new Error(`Acción inválida para estado: '${accion}'. Estado no definido.`);
+        throw new Error("Estado no definido.");
     }
 
     return estado;

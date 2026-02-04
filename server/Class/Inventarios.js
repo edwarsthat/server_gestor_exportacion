@@ -3,9 +3,14 @@ import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PostError } from "../../Error/ConnectionErrors.js";
 import config from "../../src/config/index.js";
 import { InventariosService } from "../services/inventarios.js";
-const inventarioFrutaSinProcesarId = config.INVENTARIO_FRUTA_SIN_PROCESAR;
+import { ClassError, MongoDBError } from "../models/ErrorModels.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-export class InventariosHistorialRepository {
+
+export class InventariosHistorialRepository extends BaseRepository {
+    static get model() { return db.InventariosSimples; }
+    static modelName = 'InventariosSimples';
+
     static async crearInventarioDescarte() {
         try {
             const fecha = new Date();
@@ -145,257 +150,295 @@ export class InventariosHistorialRepository {
         }
     }
     static async getInventarioFrutaSinProcesar(options = {}) {
-        const {
-            ids = [],
-            // query = {},
-            // loteFields = ["enf", "fecha_ingreso", "kilos", "predio", "canastillas"],
-            // proveedorFields = ["PREDIO", "ICA", "GGN", "SISPAP"],
-        } = options;
+        try {
+            const { ids = [] } = options;
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return []
+            }
 
-        const _ids = ids.map(id => new mongoose.Types.ObjectId(id));
-        const pipeline = [
-            { $match: { _id: { $in: _ids } } },
-            { $project: { inventario: 1 } },
-            // Desarma el array para enriquecer cada ítem con su Lote + Proveedor
-            { $unwind: { path: "$inventario" } },
-            // Lookup Lote del ítem
-            {
-                $lookup: {
-                    from: "lotes",
-                    let: { loteId: "$inventario.lote" },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$loteId"] } } },
-                        {
-                            $project: {
-                                _id: 1,
-                                enf: 1,
-                                predio: 1,
-                                proveedor: 1,
-                                canastillas: 1,
-                                promedio: 1,
-                                fecha_ingreso_inventario: 1,
-                                fecha_creacion: 1,
-                                calidad: 1,
-                                tipoFruta: 1,
-                                observaciones: 1,
-                                clasificacionCalidad: 1,
-                                fecha_ingreso_patio: 1,
-                                fecha_salida_patio: 1,
-                                fecha_estimada_llegada: 1,
-                                kilosVaciados: 1,
-                                not_pass: 1,
-                                GGN: 1,
+            const _ids = ids.map(id => {
+                if (!mongoose.Types.ObjectId.isValid(id)) {
+                    throw new Error(`ID inválido: ${id}`);
+                }
+                return new mongoose.Types.ObjectId(id);
+            });
+
+            const pipeline = [
+                { $match: { _id: { $in: _ids } } },
+                { $project: { inventario: 1 } },
+                { $unwind: { path: "$inventario" } },
+                {
+                    $lookup: {
+                        from: "lotes",
+                        let: { loteId: "$inventario.lote" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$loteId"] } } },
+                            {
+                                $project: {
+                                    _id: 1, enf: 1, predio: 1, proveedor: 1,
+                                    canastillas: 1, promedio: 1, fecha_ingreso_inventario: 1,
+                                    fecha_creacion: 1, calidad: 1, tipoFruta: 1,
+                                    observaciones: 1, clasificacionCalidad: 1,
+                                    fecha_ingreso_patio: 1, fecha_salida_patio: 1,
+                                    fecha_estimada_llegada: 1, kilosVaciados: 1,
+                                    not_pass: 1, GGN: 1,
+                                }
                             }
-                        }
-                    ],
-                    as: "lote"
-                },
-            },
-            { $unwind: { path: "$lote", preserveNullAndEmptyArrays: true } },
-            {
-                $lookup: {
-                    from: "proveedors",
-                    let: { predioId: "$lote.predio" },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$predioId"] } } },
-                        { $project: { _id: 1, PREDIO: 1, ICA: 1, GGN: 1, SISPAP: 1 } }
-                    ],
-                    as: "predio"
-                }
-            },
-            { $unwind: { path: "$predio", preserveNullAndEmptyArrays: true } },
-            {
-                $lookup: {
-                    from: "tipofrutas",
-                    let: { tipoFrutaId: "$lote.tipoFruta" },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$tipoFrutaId"] } } },
-                        { $project: { _id: 1, tipoFruta: 1 } }
-                    ],
-                    as: "tipoFruta"
-                }
-            },
-            { $unwind: { path: "$tipoFruta", preserveNullAndEmptyArrays: true } },
-            {
-                $set: {
-                    lote: {
-                        $mergeObjects: [
-                            "$lote",
-                            { predio: "$predio" },
-                            { tipoFruta: "$tipoFruta" },  // ← Agregado aquí
-                            { canastillas: "$inventario.canastillas" }
                         ],
+                        as: "lote"
+                    },
+                },
+                { $unwind: { path: "$lote", preserveNullAndEmptyArrays: true } },
+                // Filtrar documentos donde el lote no existe
+                { $match: { lote: { $ne: null } } },
+                {
+                    $lookup: {
+                        from: "proveedors",
+                        let: { predioId: "$lote.predio" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$predioId"] } } },
+                            { $project: { _id: 1, PREDIO: 1, ICA: 1, GGN: 1, SISPAP: 1 } }
+                        ],
+                        as: "predio"
                     }
-                }
-            },
-            { $unset: ["predio", "tipoFruta", "inventario"] },  // ← Agregado tipoFruta al unset
-            { $replaceWith: "$lote" }
-        ];
+                },
+                { $unwind: { path: "$predio", preserveNullAndEmptyArrays: true } },
+                {
+                    $lookup: {
+                        from: "tipofrutas",
+                        let: { tipoFrutaId: "$lote.tipoFruta" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$tipoFrutaId"] } } },
+                            { $project: { _id: 1, tipoFruta: 1 } }
+                        ],
+                        as: "tipoFruta"
+                    }
+                },
+                { $unwind: { path: "$tipoFruta", preserveNullAndEmptyArrays: true } },
+                {
+                    $set: {
+                        lote: {
+                            $mergeObjects: [
+                                "$lote",
+                                { predio: "$predio" },
+                                { tipoFruta: "$tipoFruta" },
+                                { canastillas: "$inventario.canastillas" }
+                            ],
+                        }
+                    }
+                },
+                { $unset: ["predio", "tipoFruta", "inventario"] },
+                { $replaceWith: "$lote" }
+            ];
 
-        const res = await db.InventariosSimples.aggregate(pipeline).exec();
-        return res || []
 
+            const res = await db.InventariosSimples.aggregate(pipeline).exec();
+            return res || []
+
+        } catch (error) {
+            throw new ClassError(522, `Error obteniendo el inventario simple ${error.message}`, error);
+        }
     }
     static async getInventarioFrutaSinProcesarMaquila(options = {}) {
-        const {
-            ids = [],
-            // query = {},
-            // loteFields = ["enf", "fecha_ingreso", "kilos", "predio", "canastillas"],
-            // proveedorFields = ["PREDIO", "ICA", "GGN", "SISPAP"],
-        } = options;
+        try {
+            const { ids = [] } = options;
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return []
+            }
 
-        const _ids = ids.map(id => new mongoose.Types.ObjectId(id));
-        const pipeline = [
-            { $match: { _id: { $in: _ids } } },
-            { $project: { inventarioMaquila: 1 } },
-            { $unwind: { path: "$inventarioMaquila" } },
-            {
-                $lookup: {
-                    from: "lotemaquilas",
-                    let: { loteId: "$inventarioMaquila.lote" },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$loteId"] } } },
-                        {
-                            $project: {
-                                _id: 1,
-                                enf: 1,
-                                predio: 1,
-                                tipoFruta: 1,
-                                proveedor: 1,
-                                canastillas: 1,
-                                promedio: 1,
-                                fecha_ingreso_inventario: 1,
-                                fecha_creacion: 1,
-                                calidad: 1,
-                                observaciones: 1,
-                                clasificacionCalidad: 1,
-                                fecha_ingreso_patio: 1,
-                                fecha_salida_patio: 1,
-                                fecha_estimada_llegada: 1,
-                                kilosVaciados: 1,
-                                not_pass: 1,
-                                GGN: 1,
+            const _ids = ids.map(id => {
+                if (!mongoose.Types.ObjectId.isValid(id)) {
+                    throw new Error(`ID inválido: ${id}`);
+                }
+                return new mongoose.Types.ObjectId(id);
+            });
+            const pipeline = [
+                { $match: { _id: { $in: _ids } } },
+                { $project: { inventarioMaquila: 1 } },
+                { $unwind: { path: "$inventarioMaquila" } },
+                {
+                    $lookup: {
+                        from: "lotemaquilas",
+                        let: { loteId: "$inventarioMaquila.lote" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$loteId"] } } },
+                            {
+                                $project: {
+                                    _id: 1,
+                                    enf: 1,
+                                    predio: 1,
+                                    tipoFruta: 1,
+                                    proveedor: 1,
+                                    canastillas: 1,
+                                    promedio: 1,
+                                    fecha_ingreso_inventario: 1,
+                                    fecha_creacion: 1,
+                                    calidad: 1,
+                                    observaciones: 1,
+                                    clasificacionCalidad: 1,
+                                    fecha_ingreso_patio: 1,
+                                    fecha_salida_patio: 1,
+                                    fecha_estimada_llegada: 1,
+                                    kilosVaciados: 1,
+                                    not_pass: 1,
+                                    GGN: 1,
+                                }
                             }
-                        }
-                    ],
-                    as: "lote"
-                },
-            },
-            { $unwind: { path: "$lote", preserveNullAndEmptyArrays: true } },
-            {
-                $lookup: {
-                    from: "proveedors",
-                    let: { predioId: "$lote.predio" },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$predioId"] } } },
-                        { $project: { _id: 1, PREDIO: 1, ICA: 1, GGN: 1, SISPAP: 1 } }
-                    ],
-                    as: "predio"
-                }
-            },
-            { $unwind: { path: "$predio", preserveNullAndEmptyArrays: true } },
-            {
-                $lookup: {
-                    from: "tipofrutas",
-                    let: { tipoFrutaId: "$lote.tipoFruta" },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$tipoFrutaId"] } } },
-                        { $project: { _id: 1, tipoFruta: 1 } }
-                    ],
-                    as: "tipoFruta"
-                }
-            },
-            { $unwind: { path: "$tipoFruta", preserveNullAndEmptyArrays: true } },
-            {
-                $set: {
-                    lote: {
-                        $mergeObjects: [
-                            "$lote",
-                            { predio: "$predio" },
-                            { tipoFruta: "$tipoFruta" },  // ← Agregado aquí
-                            { canastillas: "$inventarioMaquila.canastillas" }
                         ],
+                        as: "lote"
+                    },
+                },
+                { $unwind: { path: "$lote", preserveNullAndEmptyArrays: true } },
+                {
+                    $lookup: {
+                        from: "proveedors",
+                        let: { predioId: "$lote.predio" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$predioId"] } } },
+                            { $project: { _id: 1, PREDIO: 1, ICA: 1, GGN: 1, SISPAP: 1 } }
+                        ],
+                        as: "predio"
                     }
-                }
-            },
-            { $unset: ["predio", "tipoFruta", "inventario"] },  // ← Agregado tipoFruta al unset
-            { $replaceWith: "$lote" }
-        ];
+                },
+                { $unwind: { path: "$predio", preserveNullAndEmptyArrays: true } },
+                {
+                    $lookup: {
+                        from: "tipofrutas",
+                        let: { tipoFrutaId: "$lote.tipoFruta" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$tipoFrutaId"] } } },
+                            { $project: { _id: 1, tipoFruta: 1 } }
+                        ],
+                        as: "tipoFruta"
+                    }
+                },
+                { $unwind: { path: "$tipoFruta", preserveNullAndEmptyArrays: true } },
+                {
+                    $set: {
+                        lote: {
+                            $mergeObjects: [
+                                "$lote",
+                                { predio: "$predio" },
+                                { tipoFruta: "$tipoFruta" },  // ← Agregado aquí
+                                { canastillas: "$inventarioMaquila.canastillas" }
+                            ],
+                        }
+                    }
+                },
+                { $unset: ["predio", "tipoFruta", "inventario"] },  // ← Agregado tipoFruta al unset
+                { $replaceWith: "$lote" }
+            ];
 
-        const res = await db.InventariosSimples.aggregate(pipeline).exec();
-        return res || []
+            const res = await db.InventariosSimples.aggregate(pipeline).exec();
+            return res || []
+        } catch (error) {
+            throw new ClassError(522, `Error obteniendo el inventario simple ${error.message}`, error);
+        }
 
     }
     static async get_item_frutaSinProcesar(id) {
+        if (!id) {
+            throw new Error('El parámetro id es requerido');
+        }
+
+        const idStr = id.toString();
+
         try {
-            let item
-            const documento = await db.InventariosSimples.findOne({ _id: inventarioFrutaSinProcesarId })
+            const documento = await db.InventariosSimples.findOne({ _id: config.INVENTARIO_FRUTA_SIN_PROCESAR })
                 .lean()
                 .exec();
-            item = documento.inventario.find(item => item.lote.toString() === id.toString());
-            if (!item) {
-                item = documento.inventarioMaquila.find(item => item.lote.toString() === id.toString());
+
+            if (!documento) {
+                throw new ConnectionDBError(522, 'No se encontró el documento de inventario de fruta sin procesar');
             }
-            if (!item) throw new Error('No se encontró el ítem en ninguna colección');
-            return item;
+
+            const inventario = Array.isArray(documento.inventario) ? documento.inventario : [];
+            const inventarioMaquila = Array.isArray(documento.inventarioMaquila) ? documento.inventarioMaquila : [];
+
+            const itemPropio = inventario.find(i => i?.lote?.toString() === idStr);
+            const itemMaquila = inventarioMaquila.find(i => i?.lote?.toString() === idStr);
+
+            if (itemPropio && itemMaquila) {
+                throw new Error(`Conflicto de integridad: El lote ${idStr} aparece en inventario propio y maquila simultáneamente`);
+            }
+
+            const itemFinal = itemPropio || itemMaquila;
+
+            if (!itemFinal) {
+                throw new Error(`El lote ${idStr} no existe en el inventario de fruta sin procesar`);
+            }
+
+            return itemFinal;
 
         } catch (err) {
-            throw new ConnectionDBError(522, `Error obteniendo el lote del inventario ${err.message}`);
+            if (err instanceof ConnectionDBError) {
+                throw err;
+            }
+            // Errores de lógica de negocio - no envolver en ConnectionDBError
+            const errMsg = err?.message || '';
+            if (errMsg.includes('Conflicto de integridad') || errMsg.includes('no existe en el inventario')) {
+                throw err;
+            }
+            throw new ConnectionDBError(522, `Error obteniendo el lote del inventario: ${errMsg || 'Error desconocido'}`);
         }
     }
     static async put_inventarioSimple(filter, update, options = {}) {
-        const finalOptions = {
-            returnDocument: "after",
-            runValidators: true,
-            ...options
-        };
-
-        try {
-            const documento = await db.InventariosSimples.findOneAndUpdate(
-                filter,
-                update,
-                finalOptions
-            );
-            return documento;
-        } catch (err) {
-            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+        // Validación de parámetros
+        if (!filter || typeof filter !== 'object' || Object.keys(filter).length === 0) {
+            throw new Error('El filtro es requerido y no puede estar vacío');
         }
-    }
-    static async put_inventarioSimple_updateOne(filter, update, options = {}) {
+        if (!update || typeof update !== 'object' || Object.keys(update).length === 0) {
+            throw new Error('El update es requerido y no puede estar vacío');
+        }
+
+        // Protección contra Prototype Pollution
+        // eslint-disable-next-line no-unused-vars
+        const { __proto__: _proto, constructor: _constructor, prototype: _prototype, ...safeOptions } = options;
+
         const finalOptions = {
             runValidators: false,
-            ...options,
+            ...safeOptions,
         };
 
         try {
             const res = await db.InventariosSimples.updateOne(filter, update, finalOptions);
-            // Puedes decidir si exigir también modifiedCount > 0
-            return res; // { acknowledged, matchedCount, modifiedCount, upsertedId? }
+            if (res.matchedCount === 0) {
+                throw new Error('No se encontró ningún documento que coincida con el filtro');
+            }
+            return res;
         } catch (err) {
-            throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
+            throw new ClassError(523, `Error modificando los datos`, err);
         }
     }
     static async get_ordenVaceo() {
         try {
-            const data = await db.InventariosSimples.find({ _id: "68d1c0410f282bcb84388dd3" })
+            const data = await db.InventariosSimples.find({ _id: config.INVENTARIO_ORDEN_VACEO })
                 .select({ ordenVaceo: 1, _id: 0, __v: 1 })
                 .lean()
                 .exec();
             return { data: data?.[0]?.ordenVaceo || [], __v: data?.[0]?.__v || 0 };
         } catch (err) {
-            throw new ConnectionDBError(522, `Error obteniendo la cantidad de registros de cuartos fríos ${err.message}`);
+            console.error(err);
+            throw new MongoDBError(522, `Error obteniendo orden vaceo`);
         }
     }
-    static async put_borrar_item_ordenVaceo(session = null) {
+    static async put_borrar_item_ordenVaceo(itemId, session = null) {
         try {
             const res = await db.InventariosSimples.updateOne(
-                { _id: "68d1c0410f282bcb84388dd3" },
+                {
+                    _id: config.INVENTARIO_ORDEN_VACEO,
+                    "ordenVaceo.0": new mongoose.Types.ObjectId(itemId)
+                },
                 {
                     $pop: { ordenVaceo: -1 },
                     $inc: { __v: 1 }
                 },
                 { session }
             );
+
+            if (res.matchedCount === 0) {
+                throw new Error('No se encontró ningún documento que coincida con el filtro');
+            }
             return res;
         } catch (err) {
             throw new ConnectionDBError(523, `Error modificando los datos ordenVaceo: ${err.message}`);
@@ -404,9 +447,22 @@ export class InventariosHistorialRepository {
     // #endregion
     // #region Inventario descartes
     static async add_elemento_inventarioDescartes(data, user, opts = {}) {
+        console.log(data);
         const { session } = opts;
-        const { lote, tipoFruta, area, tipoDescarte, kilos, loteType } = data;
+        const { lote, tipoFruta, area, tipoDescarte, kilos, canastillas, loteType } = data;
         try {
+            if (!lote || !tipoFruta || !area || !tipoDescarte || !kilos || !canastillas || !loteType) {
+                throw new Error('Faltan datos para agregar el elemento al inventario de descartes');
+            }
+            if (isNaN(kilos)) {
+                throw new Error('El campo kilos debe ser un número');
+            }
+            if (!isFinite(kilos)) {
+                throw new Error('El campo kilos debe ser un número finito');
+            }
+            if (kilos <= 0) {
+                throw new Error('El campo kilos debe ser mayor a 0');
+            }
 
             const existeRegistro = await db.InventarioActualDescarte.findOne({
                 lote: lote,
@@ -423,7 +479,12 @@ export class InventariosHistorialRepository {
                 await db.InventarioActualDescarte.updateOne(
                     { _id: existeRegistro._id },
                     {
-                        $inc: { kilosActuales: kilos, kilosIniciales: kilos },
+                        $inc: {
+                            kilosActuales: kilos,
+                            kilosIniciales: kilos,
+                            canastillasActuales: canastillas,
+                            canastillasIniciales: canastillas
+                        },
                         $set: { fechaActualizacion: new Date() }
                     },
                     { session }
@@ -435,6 +496,7 @@ export class InventariosHistorialRepository {
                     tipoMovimiento: 'INGRESO',
                     tipoRegistro: loteType,
                     kilos: kilos,
+                    canastillas: canastillas,
                     kilosRestantes: kilos,
                     fechaMovimiento: new Date(),
                     user: user,
@@ -449,6 +511,8 @@ export class InventariosHistorialRepository {
                     user: user,
                     kilosIniciales: kilos,
                     kilosActuales: kilos,
+                    canastillasIniciales: canastillas,
+                    canastillasActuales: canastillas,
                     tipoRegistro: area,
                 });
 
@@ -461,6 +525,7 @@ export class InventariosHistorialRepository {
                     tipoRegistro: loteType,
                     kilos: kilos,
                     kilosRestantes: kilos,
+                    canastillas: canastillas,
                     fechaMovimiento: saved.fechaIngreso,
                     user: user,
                     destino: `INVENTARIO_${area}`
@@ -530,7 +595,6 @@ export class InventariosHistorialRepository {
                 .populate(populate)
                 .exec();
 
-            const result = await InventariosService.respuesta_invetario_descartes(registros);
             return result;
 
         } catch (err) {
@@ -627,4 +691,9 @@ export class InventariosHistorialRepository {
         }
     }
     // #endregion
+}
+
+export class InventarioDescartesRepository extends BaseRepository {
+    static get model() { return db.InventarioActualDescarte; }
+    static modelName = 'InventarioActualDescarte';
 }

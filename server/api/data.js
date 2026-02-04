@@ -1,5 +1,5 @@
 import { DataLogicError } from "../../Error/logicLayerError.js";
-import { ClientesRepository } from "../Class/Clientes.js";
+import { ClientesRepository, ClientesNacionalesRepository } from "../Class/Clientes.js";
 import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { ProveedoresRepository } from "../Class/Proveedores.js";
@@ -16,7 +16,7 @@ import { ErrorDataLogicHandlers } from "./utils/errorsHandlers.js";
 export class dataRepository {
     static async get_data_clientes() {
         try {
-            const clientes = await ClientesRepository.get_clientes({
+            const clientes = await ClientesRepository.get_data({
                 select: { CLIENTE: 1, CODIGO: 1 }
             })
             return clientes
@@ -107,7 +107,7 @@ export class dataRepository {
     }
     static async get_data_clientesNacionales() {
         try {
-            const clientesNacionales = await ClientesRepository.get_clientesNacionales({
+            const clientesNacionales = await ClientesNacionalesRepository.get_data({
                 select: { cliente: 1, canastillas: 1 }
             })
             return clientesNacionales
@@ -212,27 +212,34 @@ export class dataRepository {
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async incrementar_serial(name, session = null) {
+        if (!name || typeof name !== "string") {
+            throw new Error('El nombre del serial es requerido y debe ser string');
+        }
+
+        const resultado = await Seriales.modificar_seriales(
+            { name },
+            { $inc: { serial: 1 } },
+            {
+                session,
+                new: true,
+                upsert: true,
+                setDefaultsOnInsert: true
+            }
+        );
+
+        if (!resultado) {
+            throw new Error(`No se pudo incrementar o crear el serial: ${name}`);
+        }
+
+        return resultado.serial;
+    }
     static async incrementar_ef8_serial(session) {
         try {
             await Seriales.modificar_seriales(
                 { name: "EF8-" },
                 { $inc: { serial: 1 } },
-                session
-            )
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async incrementar_ef1_serial(session) {
-        try {
-            await Seriales.modificar_seriales(
-                { name: "EF1-" },
-                { $inc: { serial: 1 } },
-                {},
-                session
+                { session }
             )
         } catch (err) {
             if (err.status === 522) {
@@ -246,8 +253,7 @@ export class dataRepository {
             await Seriales.modificar_seriales(
                 { name: "EF10-" },
                 { $inc: { serial: 1 } },
-                {},
-                session
+                { session }
             )
         } catch (err) {
             if (err.status === 522) {
@@ -261,8 +267,7 @@ export class dataRepository {
             await Seriales.modificar_seriales(
                 { name: codigo },
                 { $inc: { serial: 1 } },
-                {},
-                session
+                { session }
             )
         } catch (err) {
             if (err.status === 522) {
@@ -284,7 +289,7 @@ export class dataRepository {
     }
     static async get_data_cargosPersonal() {
         try {
-            const cargosPersonal = await CargosPersonalRepository.get_cargosPersonal()
+            const cargosPersonal = await CargosPersonalRepository.get_data()
             return cargosPersonal
         } catch (err) {
             if (err.status === 522) {
@@ -295,19 +300,25 @@ export class dataRepository {
     }
     static async get_data_bootstrap() {
         try {
-            const [tipoFrutas, calidadesExport, descartes, carnet, areasSeleccion, paisesExpGGN] = await Promise.all([
-                ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(),
-                ConstantesDelSistema.get_constantes_sistema_calidades(),
-                ConstantesDelSistema.get_constantes_sistema_descartes(),
-                ConstantesDelSistema.get_constantes_carnets(),
-                ConstantesDelSistema.get_constantes_sistema_areasSeleccion(),
-                ConstantesDelSistema.get_constantes_sistema_paises_GGN()
-            ]);
+            const promises = {
+                tipoFrutas: ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(),
+                calidadesExport: ConstantesDelSistema.get_constantes_sistema_calidades(),
+                descartes: ConstantesDelSistema.get_constantes_sistema_descartes(),
+                carnet: ConstantesDelSistema.get_constantes_carnets(),
+                areasSeleccion: ConstantesDelSistema.get_constantes_sistema_areasSeleccion(),
+                paisesExpGGN: ConstantesDelSistema.get_constantes_sistema_paises_GGN(),
+                tiposIdentificacion: ConstantesDelSistema.get_constantes_sistema_tiposIdentificacion()
+            };
 
-            return { tipoFrutas, calidadesExport, descartes, carnet, areasSeleccion, paisesExpGGN }
+            const entries = await Promise.all(
+                Object.entries(promises).map(async ([key, promise]) => [key, await promise])
+            );
+            console.log(entries)
+            return Object.fromEntries(entries);
+
         } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            await ErrorDataLogicHandlers(err)
+            console.error(`[ERROR][${new Date().toISOString()}] Bootstrap failed:`, err);
+            throw await ErrorDataLogicHandlers(err);
         }
     }
 }

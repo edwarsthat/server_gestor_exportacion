@@ -60,7 +60,7 @@ export const defineLotes = async (conn, AuditLog) => {
     cedula: String,
     remision: String,
     canastillas: Number,
-    user: String,
+    user: { type: Schema.Types.ObjectId, ref: 'usuario' },
     cliente: { type: Schema.Types.ObjectId, ref: 'ClientesNacionale' },
     fecha: { type: Date, default: () => new Date() },
     version: { type: Number, default: 1 },

@@ -35,7 +35,7 @@ export const defineSchemaCarnets = async (conn) => {
             required: true,
             default: false,
         },
-        serialNumber: {
+        SKU: {
             type: Number,
             required: true,
             select: true,
@@ -58,10 +58,10 @@ export const defineSchemaCarnets = async (conn) => {
         }
     );
     carnetSchema.index(
-        { tokenHash: 1 },
+        { SKU: 1 },
         {
             unique: true,
-            partialFilterExpression: { tokenHash: { $type: "string" } },
+            partialFilterExpression: { SKU: { $type: "number" } },
         }
     );
 

@@ -10,7 +10,8 @@ export default{
     ],
     // Configurar mocks para módulos específicos
     moduleNameMapper: {
-        '^@/(.*)$': '<rootDir>/server/$1'
+        '^@/(.*)$': '<rootDir>/server/$1',
+        '^pdfkit$': '<rootDir>/__mocks__/pdfkit.js'
     },
     // Configurar setup para pruebas
     setupFilesAfterEnv: ['<rootDir>/tests/setup.js']

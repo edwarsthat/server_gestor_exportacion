@@ -1,20 +1,11 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
 
-export class FrutaDescompuestaRepository {
-
-    static async post_fruta_descompuesta(data, user_id, opts = {}) {
-        const { session } = opts;
-        try {
-            const registro = new db.frutaDescompuesta({ ...data, user: user_id });
-            registro._user = user_id;
-            const saveregistro = await registro.save({ session });
-            return saveregistro
-        } catch (err) {
-            throw new ConnectionDBError(521, `Error creando el registro de fruta descompuesta ${err.message}`);
-        }
-    }
+export class FrutaDescompuestaRepository extends BaseRepository {
+    static get model() { return db.frutaDescompuesta; }
+    static modelName = 'frutaDescompuesta';
 
     static async get_fruta_descompuesta(options = {}) {
         const {

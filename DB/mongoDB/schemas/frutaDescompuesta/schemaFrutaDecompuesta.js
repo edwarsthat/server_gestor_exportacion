@@ -6,6 +6,7 @@ export const defineFrutaDescompuesta = async (conn) => {
 
     const frutaDescompuestaSchema = new Schema({
         kilos: Number,
+        canastillas: Number,
         createdAt: { type: Date, default: () => new Date() },
         user: { type: Schema.Types.ObjectId, ref: 'usuario' },
         razon: String,

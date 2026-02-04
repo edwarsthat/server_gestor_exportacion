@@ -71,6 +71,7 @@ import { defineTarifaPredio } from "../schemas/tarifas/schemaTarifasPredio.js";
 
 export const db = {};
 export const connections = {};
+export let procesoConn = {};
 
 
 const checkMongoDBRunning = async () => {
@@ -417,6 +418,7 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("✅ Carnets definido");
         //#endregion
 
+        procesoConn = sysConn;
         console.log("🎉 Todos los schemas de proceso han sido definidos correctamente.")
 
     } catch (error) {

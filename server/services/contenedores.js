@@ -135,42 +135,64 @@ export class ContenedoresService {
         return { resumen, totalCalidades: [...TotalCalidades], totalCalibres: [...TotalCalibres] };
     }
     static obtenerResumenPredios = (itemPallets) => {
-        const predios = {}
+        const predios = new Map();
         for (const item of itemPallets) {
+            const loteId = item.lote._id;
 
-            if (!predios[item.lote._id]) {
-                predios[item.lote._id] = {
+            if (!predios.has(loteId)) {
+                predios.set(loteId, {
                     enf: item.lote.enf,
                     predio: item.lote.predio,
-                    tipoFruta: item.tipoFruta._id
-                }
-                predios[item.lote._id].cont = {}
-                predios[item.lote._id].calibres = {}
-
+                    tipoFruta: item.tipoFruta._id,
+                    cont: new Map(),
+                    calibres: new Map()
+                })
             }
-            if (!predios[item.lote._id].cont[item.contenedor._id]) {
-                predios[item.lote._id].cont[item.contenedor._id] = {
+
+            const predioData = predios.get(loteId);
+            const contenedorId = item.contenedor._id;
+
+            console.log(predioData)
+            // Inicializar contenedor si no existe
+            if (!predioData.cont.has(contenedorId)) {
+                predioData.cont.set(contenedorId, {
                     numero: item.contenedor.numeroContenedor,
                     kilos: 0,
                     cajas: 0
-                }
+                })
             }
-            if (!predios[item.lote._id].calibres[item.calibre]) {
-                predios[item.lote._id].calibres[item.calibre] = {
+            // Inicializar calibre si no existe
+            if (!predioData.calibres.has(item.calibre)) {
+                predioData.calibres.set(item.calibre, {
                     kilos: 0,
                     cajas: 0
-                }
+                })
             }
+            // Actualizar valores si hay tipoCaja
             if (item.tipoCaja !== null) {
-                predios[item.lote._id].cont[item.contenedor._id].cajas += item.cajas
-                predios[item.lote._id].calibres[item.calibre].cajas += item.cajas
+                const contenedorData = predioData.cont.get(contenedorId);
+                const calibreData = predioData.calibres.get(item.calibre);
+                const kilos = item.kilos;
 
-                const kilos = item.kilos
-                predios[item.lote._id].cont[item.contenedor._id].kilos += kilos
-                predios[item.lote._id].calibres[item.calibre].kilos += kilos
+                contenedorData.cajas += item.cajas;
+                contenedorData.kilos += kilos;
+
+                calibreData.cajas += item.cajas;
+                calibreData.kilos += kilos;
             }
 
         }
-        return predios
+
+        const result = {};
+        for (const [loteId, predioData] of predios) {
+            result[loteId] = {
+                enf: predioData.enf,
+                predio: predioData.predio,
+                tipoFruta: predioData.tipoFruta,
+                cont: Object.fromEntries(predioData.cont),
+                calibres: Object.fromEntries(predioData.calibres)
+            };
+        }
+        return result
     }
 }

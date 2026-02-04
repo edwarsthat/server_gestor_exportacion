@@ -14,3 +14,11 @@ export const CARNET_ENUMS = {
 // Helpers para obtener solo los valores (útil para validación)
 export const CARNET_TYPES = Object.values(CARNET_ENUMS.type).map(t => t.value);
 export const CARNET_STATUSES = Object.values(CARNET_ENUMS.status).map(s => s.value);
+
+export const TIPOS_IDENTIFICACION_ENUMS = {
+  tipo: {
+    CEDULA: { value: 'cedula', label: 'Cédula' },
+    PASAPORTE: { value: 'pasaporte', label: 'Pasaporte' },
+    CEDULA_EXTRANJERA: { value: 'cedula_extranjera', label: 'Cédula Extranjera' }
+  }
+}

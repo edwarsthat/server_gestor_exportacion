@@ -7,7 +7,7 @@ import { ErrorTalentHumanoLogicHandlers } from "../utils/errorsHandlers.js";
 export class CargosPersonalControllerRepository {
     static async get_talentoHumano_cargosPersonal_ingresoPersonal() {
         try {
-            const data = await CargosPersonalRepository.get_cargosPersonal({})
+            const data = await CargosPersonalRepository.get_data({})
             return data
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
@@ -19,7 +19,7 @@ export class CargosPersonalControllerRepository {
             const { page } = req.data
             const resultsPerPage = 25;
 
-            const data = await CargosPersonalRepository.get_cargosPersonal({
+            const data = await CargosPersonalRepository.get_data({
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
                 populate: {
@@ -35,7 +35,7 @@ export class CargosPersonalControllerRepository {
     }
     static async get_talentoHumano_cargos_numeroRegistros() {
         try {
-            const data = await CargosPersonalRepository.get_numero_registros_cargos({})
+            const data = await CargosPersonalRepository.get_numero_registros({})
             return data
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
@@ -55,7 +55,7 @@ export class CargosPersonalControllerRepository {
             TalentoHumanoValidations.post_talentoHumano_cargos_ingresoCargo().parse(data)
             await registrarPasoLog(log._id, "Validación de datos", "completado")
 
-            await CargosPersonalRepository.addCargosPersonal(data, { user: user._id, action: action })
+            await CargosPersonalRepository.post_data(data, { user: user._id, action: action })
             await registrarPasoLog(log._id, "Agregar cargo", "completado")
 
         } catch (error) {
@@ -78,7 +78,7 @@ export class CargosPersonalControllerRepository {
             TalentoHumanoValidations.post_talentoHumano_cargos_ingresoCargo().parse(data)
             await registrarPasoLog(log._id, "Validación de datos", "completado")
 
-            await CargosPersonalRepository.actualizar_cargo({ _id: _id }, data, { user: user._id, action: action })
+            await CargosPersonalRepository.actualizar_data({ _id: _id }, data, { user: user._id, action: action })
             await registrarPasoLog(log._id, "Modificar cargo", "completado")
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);

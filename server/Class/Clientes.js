@@ -1,35 +1,11 @@
-import { isValidObjectId } from "mongoose";
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PutError, PostError } from "../../Error/ConnectionErrors.js";
-import { ItemBussyError } from "../../Error/ProcessError.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-let bussyIds = new Set();
-
-export class ClientesRepository {
+export class ClientesRepository extends BaseRepository {
+    static get model() { return db.Clientes; }
+    static modelName = 'Clientes';
     //clientes internacionales
-    static async get_clientes(options = {}) {
-        try {
-            const {
-                ids = [],
-                query = {},
-                select = {}
-            } = options;
-            let Query = { ...query };
-
-            if (ids.length > 0) {
-                Query._id = { $in: ids };
-            }
-
-            const clientes = await db.Clientes.find(Query)
-                .select(select)
-                .exec();
-
-            return clientes
-        } catch (err) {
-            throw new ConnectionDBError(522, `Error obteniendo el cliente ${err.message}`);
-
-        }
-    }
     static async actualizar_cliente(filter, update, options = {}, session = null) {
         /**
          * Función genérica para actualizar documentos en MongoDB usando Mongoose
@@ -59,7 +35,6 @@ export class ClientesRepository {
         }
     }
     static async put_cliente(id, query, action, user) {
-        this.validateBussyIds(id)
         try {
             const response = await db.Clientes.findOneAndUpdate({ _id: id }, query, { new: true });
             let record = new db.recordClientes({ operacionRealizada: action, user: user, documento: { ...query, _id: id } })
@@ -67,8 +42,6 @@ export class ClientesRepository {
             return response
         } catch (err) {
             throw new PutError(414, `Error al modificar el dato  ${err.message}`);
-        } finally {
-            bussyIds.delete(id);
         }
     }
     static async post_cliente(data, user) {
@@ -83,15 +56,6 @@ export class ClientesRepository {
             throw new PostError(521, `Error agregando clinete ${err.message}`);
         }
     }
-    static validateBussyIds(id) {
-        /**
-         * Funcion que añade el id del elemento que se este m0odificando para que no se creen errores de doble escritura
-         *
-         * @param {string} id - El id del elemento que se esta modificando
-         */
-        if (bussyIds.has(id)) throw new ItemBussyError(413, "Elemento no disponible por el momento");
-        bussyIds.add(id)
-    }
 
     //clientes nacionales
     static async post_cliente_nacional(data, session = null) {
@@ -103,32 +67,6 @@ export class ClientesRepository {
                 throw new PostError(521, 'Ya existe un cliente con ese identificador.')
             }
             throw new PostError(521, `Error agregando cliente nacional ${err.message}`)
-        }
-    }
-    static async get_clientesNacionales(options = {}) {
-        try {
-            const {
-                ids = [],
-                query = {},
-                select = {}
-            } = options;
-            let Query = { ...query };
-
-            if (ids.length > 0) {
-                const validIds = ids.filter(id => isValidObjectId(id))
-                if (validIds.length !== ids.length) {
-                    throw new Error("Se encontraron IDs inválidos en la solicitud.");
-                }
-
-                Query._id = { $in: validIds };
-            }
-            const clientes = await db.ClientesNacionales.find(Query)
-                .select(select)
-                .exec();
-
-            return clientes
-        } catch (err) {
-            throw new ConnectionDBError(522, `Error obteniendo el cliente ${err.message}`);
         }
     }
     static async get_numero_clientesNacionales() {
@@ -165,3 +103,7 @@ export class ClientesRepository {
     }
 }
 
+export class ClientesNacionalesRepository extends BaseRepository {
+    static get model() { return db.ClientesNacionales; }
+    static modelName = 'ClientesNacionales';
+}

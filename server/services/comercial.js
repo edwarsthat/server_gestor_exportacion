@@ -30,7 +30,7 @@ export class ComercialService {
         }
     }
     static async poner_precio_lotes(itemPallets, calidades) {
-        let enfs = {};
+        let enfs = Object.create(null);
         for (const item of itemPallets) {
             const precio = item.lote.precio?.exportacion.get(item.calidad._id) || 0;
             const enf = item.lote.enf
@@ -49,7 +49,7 @@ export class ComercialService {
         return { costo: resultado, tipo: "lote" }
     }
     static async poner_precio_contenedores(itemPallets, calidades) {
-        let enfs = {};
+        let enfs = Object.create(null);
         for (const item of itemPallets) {
             const precio = item.lote?.precio?.exportacion?.get(item.calidad._id) || 0;
             const enf = item.contenedor.numeroContenedor

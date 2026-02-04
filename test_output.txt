@@ -1,0 +1,141 @@
+
+> servidor3.0@1.0.0 test
+> node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand tests/services/inventarios/procesar_formulario_inventario_descarte.test.js
+
+  console.log
+    🧪 Iniciando pruebas unitarias del servidor...
+
+      at log (tests/setup.js:5:9)
+
+  console.log
+    📁 Configurando ambiente de pruebas...
+
+      at log (tests/setup.js:6:9)
+
+(node:53699) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL tests/services/inventarios/procesar_formulario_inventario_descarte.test.js
+  InventariosService.procesar_formulario_inventario_descarte
+    parseo de datos de entrada
+      ✓ deberia interpretar clave sin tipo (area:descarteId) como kilos por defecto (7 ms)
+      ✓ deberia parsear correctamente claves con kilos y canastillas (area:descarteId:canastillas) (1 ms)
+      ✓ deberia tratar valores vacios como 0 (1 ms)
+      ✓ deberia lanzar error si el valor no es un numero (33 ms)
+      ✓ deberia agrupar kilos y canastillas del mismo area:descarte
+      ✓ deberia manejar multiples combinaciones area:descarte (1 ms)
+      ✓ deberia funcionar con objeto data vacio
+    descuento de un solo registro
+      ✓ deberia descontar kilos y canastillas parcialmente sin marcar AGOTADO (1 ms)
+      ✓ deberia marcar AGOTADO cuando kilos y canastillas llegan a 0 (1 ms)
+    descuento FIFO de multiples registros
+      ✓ deberia descontar del primer registro y pasar al segundo si no alcanza (1 ms)
+      ✓ deberia detenerse cuando kilos y canastillas se agotan sin tocar registros restantes
+      ✓ deberia descontar canastillas de multiples registros FIFO (1 ms)
+    registro en cardex
+      ✓ deberia registrar kilos descontados en el cardex por cada registro tocado
+      ✓ no deberia registrar en cardex si no se descontaron kilos ni canastillas
+    validacion de consistencia
+      ✓ deberia lanzar error si quedan kilos=0 pero canastillas>0 en el inventario (1 ms)
+      ✓ deberia lanzar error si quedan canastillas=0 pero kilos>0 en el inventario
+      ✓ NO deberia lanzar error si ambos quedan en 0
+      ✓ NO deberia lanzar error si ambos quedan > 0
+    errores de inventario insuficiente
+      ✕ deberia lanzar Error si no hay registros ACTIVOS para el area/descarte (3 ms)
+      ✓ deberia lanzar Error si los kilos solicitados superan el inventario total (1 ms)
+      ✓ deberia lanzar Error si las canastillas solicitadas superan el inventario total (1 ms)
+    query al repositorio
+      ✓ deberia consultar con los filtros correctos
+      ✓ deberia usar el area correcta de cada entrada (1 ms)
+    totales retornados
+      ✓ deberia retornar la suma de todos los kilos y canastillas solicitados
+      ✓ deberia retornar 0 para ambos si solo se envian valores vacios (1 ms)
+    propagacion de errores de repositorios
+      ✕ deberia propagar errores de InventarioDescartesRepository.get_data (1 ms)
+      ✕ deberia propagar errores de actualizar_registro_inventario_descarte (1 ms)
+      ✕ deberia propagar errores de put_cardex_invetariosdescartes (2 ms)
+
+  ● InventariosService.procesar_formulario_inventario_descarte › errores de inventario insuficiente › deberia lanzar Error si no hay registros ACTIVOS para el area/descarte
+
+    expect(received).rejects.toThrow(expected)
+
+    Expected substring: "No hay inventario suficiente"
+    Received message:   "Inconsistencia: No se puede eliminar 0 kilos y 0 canastillas."
+
+          336 |             // Error si: (Kilos es 0 Y Canastillas > 0) O (Kilos > 0 Y Canastillas es 0)
+          337 |             if ((kilosEliminar === 0) !== (canastillasEliminar === 0)) {
+        > 338 |                 throw new Error("Inconsistencia: No se puede eliminar 0 kilos y 0 canastillas.");
+              |                       ^
+          339 |             }
+          340 |
+          341 |             let kilos = value.kilos;
+
+      at Function.procesar_formulario_inventario_descarte (server/services/inventarios.js:338:23)
+      at Object.procesar_formulario_inventario_descarte (tests/services/inventarios/procesar_formulario_inventario_descarte.test.js:376:36)
+      at Object.toThrow (node_modules/.pnpm/expect@30.0.2/node_modules/expect/build/index.js:2151:20)
+      at Object.toThrow (tests/services/inventarios/procesar_formulario_inventario_descarte.test.js:377:23)
+
+  ● InventariosService.procesar_formulario_inventario_descarte › propagacion de errores de repositorios › deberia propagar errores de InventarioDescartesRepository.get_data
+
+    expect(received).rejects.toThrow(expected)
+
+    Expected substring: "DB connection lost"
+    Received message:   "Inconsistencia: No se puede eliminar 0 kilos y 0 canastillas."
+
+          336 |             // Error si: (Kilos es 0 Y Canastillas > 0) O (Kilos > 0 Y Canastillas es 0)
+          337 |             if ((kilosEliminar === 0) !== (canastillasEliminar === 0)) {
+        > 338 |                 throw new Error("Inconsistencia: No se puede eliminar 0 kilos y 0 canastillas.");
+              |                       ^
+          339 |             }
+          340 |
+          341 |             let kilos = value.kilos;
+
+      at Function.procesar_formulario_inventario_descarte (server/services/inventarios.js:338:23)
+      at Object.procesar_formulario_inventario_descarte (tests/services/inventarios/procesar_formulario_inventario_descarte.test.js:500:36)
+      at Object.toThrow (node_modules/.pnpm/expect@30.0.2/node_modules/expect/build/index.js:2151:20)
+      at Object.toThrow (tests/services/inventarios/procesar_formulario_inventario_descarte.test.js:501:23)
+
+  ● InventariosService.procesar_formulario_inventario_descarte › propagacion de errores de repositorios › deberia propagar errores de actualizar_registro_inventario_descarte
+
+    expect(received).rejects.toThrow(expected)
+
+    Expected substring: "Write conflict"
+    Received message:   "Inconsistencia: No se puede eliminar 0 kilos y 0 canastillas."
+
+          336 |             // Error si: (Kilos es 0 Y Canastillas > 0) O (Kilos > 0 Y Canastillas es 0)
+          337 |             if ((kilosEliminar === 0) !== (canastillasEliminar === 0)) {
+        > 338 |                 throw new Error("Inconsistencia: No se puede eliminar 0 kilos y 0 canastillas.");
+              |                       ^
+          339 |             }
+          340 |
+          341 |             let kilos = value.kilos;
+
+      at Function.procesar_formulario_inventario_descarte (server/services/inventarios.js:338:23)
+      at Object.procesar_formulario_inventario_descarte (tests/services/inventarios/procesar_formulario_inventario_descarte.test.js:510:36)
+      at Object.toThrow (node_modules/.pnpm/expect@30.0.2/node_modules/expect/build/index.js:2151:20)
+      at Object.toThrow (tests/services/inventarios/procesar_formulario_inventario_descarte.test.js:511:23)
+
+  ● InventariosService.procesar_formulario_inventario_descarte › propagacion de errores de repositorios › deberia propagar errores de put_cardex_invetariosdescartes
+
+    expect(received).rejects.toThrow(expected)
+
+    Expected substring: "Cardex update failed"
+    Received message:   "Inconsistencia: No se puede eliminar 0 kilos y 0 canastillas."
+
+          336 |             // Error si: (Kilos es 0 Y Canastillas > 0) O (Kilos > 0 Y Canastillas es 0)
+          337 |             if ((kilosEliminar === 0) !== (canastillasEliminar === 0)) {
+        > 338 |                 throw new Error("Inconsistencia: No se puede eliminar 0 kilos y 0 canastillas.");
+              |                       ^
+          339 |             }
+          340 |
+          341 |             let kilos = value.kilos;
+
+      at Function.procesar_formulario_inventario_descarte (server/services/inventarios.js:338:23)
+      at Object.procesar_formulario_inventario_descarte (tests/services/inventarios/procesar_formulario_inventario_descarte.test.js:520:36)
+      at Object.toThrow (node_modules/.pnpm/expect@30.0.2/node_modules/expect/build/index.js:2151:20)
+      at Object.toThrow (tests/services/inventarios/procesar_formulario_inventario_descarte.test.js:521:23)
+
+Test Suites: 1 failed, 1 total
+Tests:       4 failed, 24 passed, 28 total
+Snapshots:   0 total
+Time:        0.922 s, estimated 1 s
+Ran all test suites matching tests/services/inventarios/procesar_formulario_inventario_descarte.test.js.

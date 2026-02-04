@@ -43,6 +43,18 @@ export default [
     }
   },
   {
+    // Configuración específica para archivos de test
+    files: ["tests/**/*.js", "**/*.test.js", "**/*.spec.js"],
+    rules: {
+      // Los datos base64 de prueba no son secretos reales
+      "no-secrets/no-secrets": "off",
+      // En tests es necesario usar variables para paths dinámicos
+      "security/detect-non-literal-fs-filename": "off",
+      // En tests es común usar regex dinámicos para validar paths
+      "security/detect-non-literal-regexp": "off"
+    }
+  },
+  {
     // Ignorar archivos de configuración y .env
     ignores: [
       "src/config/index.js",
@@ -51,7 +63,9 @@ export default [
       "node_modules/**",
       "dist/**",
       "public/**/assets/**",
-      "eslint.config.mjs"
+      "eslint.config.mjs",
+      "scripts/**",
+      "tests/**"
     ]
   }
 ];

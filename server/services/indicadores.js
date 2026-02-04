@@ -1,4 +1,6 @@
+import { ProcessError } from "../../Error/ProcessError.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
+import { IndicadoresRepository } from "../Class/Indicadores.js";
 import { calcularTotalDescarte } from "./helpers/lotes.js";
 
 export class IndicadoresService {
@@ -33,29 +35,29 @@ export class IndicadoresService {
         });
         return result;
     }
-    static async obtener_totales_lotes(lotes){
-            let totalKilosIngreso = 0;
-            let totalKilosProcesados = 0;
-            let totalKilosExportacion = 0;
-            let totalKilosDescarte = 0;
+    static async obtener_totales_lotes(lotes) {
+        let totalKilosIngreso = 0;
+        let totalKilosProcesados = 0;
+        let totalKilosExportacion = 0;
+        let totalKilosDescarte = 0;
 
-            for (const lote of lotes) {
-                totalKilosIngreso += lote?.kilos || 0;
-                totalKilosProcesados += lote?.kilosVaciados || 0;
-                totalKilosExportacion += lote?.salidaExportacion?.totalKilos || 0;
-                totalKilosDescarte += (lote?.descarteLavado ? calcularTotalDescarte(lote.descarteLavado) : 0);
-                totalKilosDescarte += (lote?.descarteEncerado ? calcularTotalDescarte(lote.descarteEncerado) : 0);
-                totalKilosDescarte += lote?.frutaNacioinal || 0;
-            }
-            return { totalKilosIngreso, totalKilosProcesados, totalKilosExportacion, totalKilosDescarte };
+        for (const lote of lotes) {
+            totalKilosIngreso += lote?.kilos || 0;
+            totalKilosProcesados += lote?.kilosVaciados || 0;
+            totalKilosExportacion += lote?.salidaExportacion?.totalKilos || 0;
+            totalKilosDescarte += (lote?.descarteLavado ? calcularTotalDescarte(lote.descarteLavado) : 0);
+            totalKilosDescarte += (lote?.descarteEncerado ? calcularTotalDescarte(lote.descarteEncerado) : 0);
+            totalKilosDescarte += lote?.frutaNacioinal || 0;
+        }
+        return { totalKilosIngreso, totalKilosProcesados, totalKilosExportacion, totalKilosDescarte };
     }
-    static async obtener_calibres_calidades(itemPallets){
+    static async obtener_calibres_calidades(itemPallets) {
         const calibres = new Set();
         const calidadesIds = new Set();
-        for(const item of itemPallets){
-            if(item._id){
+        for (const item of itemPallets) {
+            if (item._id) {
                 calibres.add(item._id);
-                if(item.kilosPorCalidad){
+                if (item.kilosPorCalidad) {
                     const keys = Object.keys(item.kilosPorCalidad);
                     console.log(keys);
                     keys.forEach(k => calidadesIds.add(k));
@@ -63,5 +65,27 @@ export class IndicadoresService {
             }
         }
         return { calibres: Array.from(calibres), calidadesIds: Array.from(calidadesIds) };
+    }
+    static async put_indicadores_actualizar_indicador(update, session = null) {
+        try {
+            if (!update || Object.keys(update).length === 0) {
+                throw new ProcessError(400, "El objeto de actualización no puede estar vacío");
+            }
+            const indicador = await IndicadoresRepository.actualizar_indicador(
+                {},
+                update,
+                {
+                    sort: { fecha_creacion: -1, _id: -1 },
+                    session,
+                }
+            );
+            if (!indicador) {
+                throw new ProcessError(404, "No se encontró ningún indicador creado");
+            }
+            return indicador
+
+        } catch (err) {
+            throw err;
+        }
     }
 }

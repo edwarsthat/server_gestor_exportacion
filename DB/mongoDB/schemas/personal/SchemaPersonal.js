@@ -7,10 +7,10 @@ export const defineSchemaPersonal = async (conn, auditLog) => {
     const auditPlugin = makeAuditPlugin({ collectionName: 'personal', AuditLogs: auditLog });
 
     const personalSchema = new Schema({
-        SKU: { type: String, required: true, unique: true },
+        PE: { type: Number, required: true, unique: true },
         nombre: { type: String, required: true },
         cargo: { type: Schema.Types.ObjectId, ref: 'cargosPersonal' },
-        identificacion: { type: String, required: true },
+        identificacion: { type: String, required: true, unique: true },
         tipoDocumento: { type: String, required: true },
         foto: { type: String },
         tipoSangre: { type: String },
@@ -21,8 +21,8 @@ export const defineSchemaPersonal = async (conn, auditLog) => {
     })
 
     personalSchema.index(
-        { SKU: 1, cargo: 1 },
-        { name: 'idx_sku_cargo' }
+        { PE: 1, cargo: 1 },
+        { name: 'idx_pe_cargo' }
     );
     personalSchema.index(
         { carnet: 1 },

@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
 import { TalentoHumanoDotacionCarnetsRepository } from "../../../Class/talentoHumano/dotacion/Carnets.js";
 import { LogsRepository } from "../../../Class/LogsSistema.js";
@@ -11,6 +12,7 @@ import { FileService } from "../../../services/helpers/FileService.js";
 import { HtmlToImage } from '../../../services/helpers/HtmlToImage.js';
 import config from '../../../../src/config/index.js';
 import { TalentoHumanoValidations } from '../../../validations/talentoHumano.js';
+import { CargosPersonalRepository } from '../../../Class/talentoHumano/CargosPersonal.js';
 
 export class DotacionCarnetsControllerRepository {
     static async post_talentoHumano_dotacion_carnets(req) {
@@ -45,7 +47,7 @@ export class DotacionCarnetsControllerRepository {
                         throw new Error("El ID del empleado no es un ObjectId válido")
                     }
                     const carnetIngresado = await TalentoHumanoDotacionCarnetsRepository.post_data({ type: tipo, serialNumber: carnet.serial, employeeId: empleado }, { user, session })
-                    await PersonalRepository.actualizar_personal({ _id: empleado }, { carnet: carnetIngresado._id }, { session })
+                    await PersonalRepository.actualizar_data({ _id: empleado }, { carnet: carnetIngresado._id }, { session })
                     await registrarPasoLog(log._id, "Éxito", "Completado", "Empleado vinculado al carnet exitosamente");
                 }
 
@@ -84,7 +86,14 @@ export class DotacionCarnetsControllerRepository {
 
         try {
             const data = await TalentoHumanoDotacionCarnetsRepository.get_data(
-                { query, limit: resultsPerPage, skip: (page - 1) * resultsPerPage },
+                {
+                    query,
+                    limit: resultsPerPage, skip: (page - 1) * resultsPerPage,
+                    populate: [
+                        { path: "employeeId", select: "nombre identificacion" }
+                    ]
+                },
+
             )
             return data
         } catch (err) {
@@ -97,11 +106,11 @@ export class DotacionCarnetsControllerRepository {
         try {
             const filtro = req.data.filtro
 
-            if (!filtro.tokenHash) {
-                filtro.tokenHash = null
-            } else {
-                delete filtro.tokenHash
+            if (filtro.tokenHash) {
+                filtro.isGenerated = false
             }
+            delete filtro.tokenHash
+
             const query = { ...filtro }
             if (query.type === "TODOS") {
                 delete query.type
@@ -110,6 +119,7 @@ export class DotacionCarnetsControllerRepository {
                 delete query.status
             }
             const data = await TalentoHumanoDotacionCarnetsRepository.get_numero_registros(query)
+            console.log(data)
             return data
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
@@ -119,7 +129,7 @@ export class DotacionCarnetsControllerRepository {
     static async get_talentoHumano_dotacion_carnets_empleados() {
         try {
 
-            const data = await PersonalRepository.get_personal({
+            const data = await PersonalRepository.get_data({
                 query: {
                     estado: true,
                     carnet: null
@@ -156,12 +166,10 @@ export class DotacionCarnetsControllerRepository {
             // Generar el AccessToken único
             const tokenGenerado = crypto.randomUUID();
             await registrarPasoLog(log._id, "Éxito", "Completado", "Token generado exitosamente");
-            const tokenHash = crypto.createHash('sha256')
-                .update(tokenGenerado)
-                .digest('hex');
+            const tokenHash = await bcrypt.hash(tokenGenerado, 10);
             await registrarPasoLog(log._id, "Éxito", "Completado", "Token hash generado exitosamente");
             // Actualizar el carnet con el tokenHash
-            const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_carnet(
+            const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_data(
                 { _id: data },
                 { tokenHash, isGenerated: true },
                 { user }
@@ -170,7 +178,7 @@ export class DotacionCarnetsControllerRepository {
                 throw new Error("No se encontró el carnet para actualizar");
             }
             await registrarPasoLog(log._id, "Éxito", "Completado", "Carnet actualizado exitosamente");
-            const urlSegura = `${config.URL_CELIFRUT}/verify#${tokenGenerado}`;
+            const urlSegura = `${config.URL_CELIFRUT}/verify?serial=${carnetActualizado.serialNumber}#${tokenGenerado}`;
             //Cargar el template HTML
             let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnet.html');
             await registrarPasoLog(log._id, "Éxito", "Completado", "Template HTML cargado exitosamente");
@@ -224,36 +232,18 @@ export class DotacionCarnetsControllerRepository {
 
         const session = await db.Carnet.db.startSession();
 
-
         try {
             TalentoHumanoValidations.put_talentoHumano_dotacion_carnets_generar_temporal().parse(req.data)
 
-            await session.withTransaction(async () => {
-
-                //se obtiene el documento del carnet
-                const carnetDoc = await TalentoHumanoDotacionCarnetsRepository.get_data({ _id: data })
-                if (!carnetDoc) {
-                    throw new Error("No se encontró el carnet para generar");
-                }
-                //se obtiene la info del empleado vinculado al carnet
-                const personalDoc = await PersonalRepository.get_personal({ ids: [carnetDoc.employeeId] })
-                if (!personalDoc) {
-                    throw new Error("No se encontró el personal para generar");
-                }
-
-                //se obtiene la imagen del carnet
-
-
+            const result = await session.withTransaction(async () => {
 
                 // Generar el AccessToken único
                 const tokenGenerado = crypto.randomUUID();
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Token generado exitosamente");
-                const tokenHash = crypto.createHash('sha256')
-                    .update(tokenGenerado)
-                    .digest('hex');
+                const tokenHash = await bcrypt.hash(tokenGenerado, 10);
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Token hash generado exitosamente");
                 // Actualizar el carnet con el tokenHash
-                const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_carnet(
+                const carnetActualizado = await TalentoHumanoDotacionCarnetsRepository.actualizar_data(
                     { _id: data },
                     { tokenHash, isGenerated: true },
                     { user }
@@ -262,35 +252,79 @@ export class DotacionCarnetsControllerRepository {
                     throw new Error("No se encontró el carnet para generar");
                 }
 
-                const empleado = await PersonalRepository.get_personal({ ids: [carnetActualizado.personalId] })
-                if (!empleado) {
+                const empleado = await PersonalRepository.get_data({
+                    ids: [carnetActualizado.employeeId],
+                    populate: [{ path: 'cargo', select: 'nombre' }]
+                })
+                if (!empleado || empleado.length === 0) {
                     throw new Error("No se encontró el empleado para generar");
                 }
+                const empleadoData = empleado[0];
 
+                const cargoArr = await CargosPersonalRepository.get_data({ ids: [empleadoData.cargo] })
+                if (!cargoArr || cargoArr.length === 0) {
+                    throw new Error("No se encontró el cargo para generar");
+                }
+                const cargoData = cargoArr[0];
 
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Carnet actualizado exitosamente");
-                const urlSegura = `${config.URL_CELIFRUT}/verify#${tokenGenerado}`;
+
                 //Cargar el template HTML
                 let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnetFinal.html');
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Template HTML cargado exitosamente");
 
-                //Cargar la iamgen de la foto
-                const imgaBase64 = await FileService.readFileAsBase64(carnetActualizado);
-                await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo cargada exitosamente");
+                //Cargar el logo de la empresa
+                const logoBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/Captura_desde_2026-01-13_16-04-29-removebg-preview.png');
+                htmlTemplate = htmlTemplate.replace('{{LOGO_BASE64}}', logoBase64);
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Logo cargado exitosamente");
 
-                //se reemplaza la imagen por la de base64 
-                htmlTemplate = htmlTemplate.replace(
-                    "url('CREDENCIAL TEMPORAL.png')",
-                    `url('${imgaBase64}')`
+                //Cargar la foto del empleado
+                const fotoBase64 = await FileService.readFileAsBase64(
+                    empleadoData.urlFotoCarnet,
+                    'STORAGE',
+                    { decrypt: empleadoData.urlFotoCarnet?.endsWith('.enc') }
                 );
-                await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo reemplazada exitosamente");
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Foto del empleado cargada exitosamente");
 
+                //Reemplazar el placeholder de la foto por la imagen en base64
+                htmlTemplate = htmlTemplate.replace('{{FOTO_BASE64}}', fotoBase64);
+                await registrarPasoLog(log._id, "Éxito", "Completado", "Foto del empleado reemplazada exitosamente");
+
+                const nombreArray = empleadoData.nombre.split(' ');
+                let nombreCompleto = '';
+                if (nombreArray.length > 3) {
+                    nombreCompleto = [nombreArray[0], nombreArray[1], nombreArray[2]]
+                        .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase())
+                        .join(' ');
+                } else {
+                    nombreCompleto = [nombreArray[0], nombreArray[1]]
+                        .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase())
+                        .join(' ');
+                }
+                const identificacionFormateada = Number(empleadoData.identificacion).toLocaleString('de-DE');
+
+                htmlTemplate = htmlTemplate.replace('{{NOMBRE}}', nombreCompleto);
+
+                //Reemplazar datos del empleado
+                htmlTemplate = htmlTemplate.replace('{{CARGO}}', (empleadoData.cargo?.nombre || 'Sin cargo'));
+                htmlTemplate = htmlTemplate.replace('{{CEDULA}}', identificacionFormateada || 'N/A');
+                htmlTemplate = htmlTemplate.replace('{{RH}}', empleadoData.tipoSangre || 'O+');
+                htmlTemplate = htmlTemplate.replace('{{COLOR_PRINCIPAL}}', cargoData.color || '#F3930D');
+
+
+                //Generar QR
+                const urlSegura = `${config.URL_CELIFRUT}/verify?serial=${carnetActualizado.serialNumber}#${tokenGenerado}`;
                 const qrDataEncoded = encodeURIComponent(urlSegura);
-                htmlTemplate = htmlTemplate.replace('PLACEHOLDER', qrDataEncoded);
-                await registrarPasoLog(log._id, "Éxito", "Completado", "QR Data codificado exitosamente");
+                htmlTemplate = htmlTemplate.replace('{{QR_URL}}', qrDataEncoded);
+                await registrarPasoLog(log._id, "Éxito", "Completado", "QR generado exitosamente");
 
                 const templateDir = await FileService.getTemplateDir('talentoHumano/carnet/carnet.html');
-                const base64 = await HtmlToImage.convertToBase64(htmlTemplate, { baseUrl: templateDir });
+                const base64 = await HtmlToImage.convertToBase64(htmlTemplate, {
+                    baseUrl: templateDir,
+                    width: 450,
+                    height: 750,
+                    waitFor: 'networkidle0'
+                });
 
                 if (!base64 || typeof base64 !== 'string' || !base64.startsWith('data:image/')) {
                     throw new Error("Fallo crítico: El carnet se generó pero la imagen resultante no es válida.");
@@ -306,10 +340,14 @@ export class DotacionCarnetsControllerRepository {
 
             })
 
+            // Devolver el resultado de la transacción
+            return result;
+
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
             await ErrorTalentHumanoLogicHandlers(error, log)
         } finally {
+            await session.endSession();
             await registrarPasoLog(log._id, "Finalizado", "Completado", "Función completada exitosamente");
         }
     }

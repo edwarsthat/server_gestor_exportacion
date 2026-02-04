@@ -3,8 +3,12 @@ import { PostError, ConnectionDBError } from "../../Error/ConnectionErrors.js";
 import { ProcessError } from "../../Error/ProcessError.js";
 import fs from 'fs';
 import { registrarPasoLog } from "../api/helper/logs.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-export class LotesRepository {
+export class LotesRepository extends BaseRepository {
+    static get model() { return db.Lotes; }
+    static modelName = 'Lotes';
+
     static async addLote(data, opts = {}) {
         const { session, user, action } = opts;
         try {
@@ -383,5 +387,11 @@ export class LotesRepository {
     }
 }
     //#endregion
+
+}
+
+export class LotesEF8Repository extends BaseRepository {
+    static get model() { return db.LotesEF8; }
+    static modelName = 'LotesEF8';
 
 }

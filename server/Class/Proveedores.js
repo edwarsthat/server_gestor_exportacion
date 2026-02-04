@@ -1,10 +1,14 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PutError, PostError } from "../../Error/ConnectionErrors.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 import { ItemBussyError } from "../../Error/ProcessError.js";
 
 let bussyIds = new Set();
 
-export class ProveedoresRepository {
+export class ProveedoresRepository extends BaseRepository {
+    static get model() { return db.Proveedores; }
+    static modelName = 'Proveedores';
+
     static async getProveedores(data) {
         try {
             const proveedores = await db.Proveedores.find(data.data.query);
@@ -181,8 +185,9 @@ export class ProveedoresRepository {
         if (bussyIds.has(id)) throw new ItemBussyError(413, "Elemento no disponible por el momento");
         bussyIds.add(id)
     }
-// Quita el id del elemento modificado del set de ids ocupados. Jp
-    static async get_proveedor_by_id(id) {
+    
+    // Quita el id del elemento modificado del set de ids ocupados. Jp
+        static async get_proveedor_by_id(id) {
     try {
         const proveedor = await db.Proveedores.findById(id).lean();
 

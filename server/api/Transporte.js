@@ -213,20 +213,7 @@ export class TransporteRepository {
             }
         }
     }
-    static async get_transporte_contenedores_entregaPrescinto() {
-        try {
-            const response = await VehiculoRegistro.getRegistrosVehiculo({
-                query: {
-                    entregaPrecinto: { $exists: false },
-                    tipoSalida: "Exportacion",
-                }
-            });
-            return response;
-        } catch (err) {
-            const message = typeof err.message === "string" ? err.message : "Error inesperado";
-            throw new TransporteError(470, `Error ${err.type || "interno"}: ${message}`);
-        }
-    }
+
     static async post_transporte_conenedor_entregaPrecinto(req) {
         const { user } = req
         const { data, fotos, action } = req.data;

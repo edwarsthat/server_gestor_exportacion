@@ -105,7 +105,11 @@ export function initSockets(io) {
 
             } catch (err) {
                 console.log("Error en el manejo de la solicitud:", err);
-                await HandleErrors.addError(err);
+                try {
+                    await HandleErrors.addError(err);
+                } catch (logError) {
+                    console.error("Error al registrar el error:", logError);
+                }
                 callback(err);
             }
         }

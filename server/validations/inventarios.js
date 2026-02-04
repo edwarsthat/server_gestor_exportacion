@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { safeString, optionalSafeString } from "./utils/validationFunctions.js";
+import { safeString, optionalSafeString, requiredSafeString, objectIdString } from "./utils/validationFunctions.js";
 
 const ACCIONES_VALIDAS = ["ingreso", "salida", "traslado", "retiro", "cancelado"];
 // const validKeyRegex = /^(descarteEncerado|descarteLavado|frutaNacional).*/;
+const mongoComplexKeyRegex = /^[a-zA-Z0-9_][a-zA-Z0-9_:/-]*$/;
 
 export class InventariosValidations {
     static post_inventarios_canastillas_registro() {
@@ -81,39 +82,69 @@ export class InventariosValidations {
         return true;
     }
     static post_inventarios_ingreso_lote() {
+        // Límites máximos razonables para evitar overflow y DoS
+        const MAX_KILOS = 1_000_000; // 1 millón de kilos máximo por lote
+        const MAX_CANASTILLAS = 50_000; // 50 mil canastillas máximo por lote
+        const MAX_OBSERVACIONES = 2000; // 2000 caracteres máximo
+
         return z.object({
-            fecha_estimada_llegada: safeString("fecha_estimada_llegada")
-                .refine(val => !isNaN(Date.parse(val)), {
-                    message: "La fecha estimada de llegada no es válida"
-                }),
-            numeroRemision: z.string().min(1, "El número de remisión es obligatorio"),
-            kilos: z.coerce.number()
-                .gt(0, "Los kilos no pueden ser cero")
-                .transform(val => Number(val)),
+            dataLote: z.object({
+                fecha_estimada_llegada: safeString("fecha_estimada_llegada")
+                    .refine(val => !isNaN(Date.parse(val)), {
+                        message: "La fecha estimada de llegada no es válida"
+                    }),
+                numeroRemision: z.string()
+                    .transform(val => val.trim())
+                    .pipe(z.string().min(1, "El número de remisión es obligatorio")),
+                kilos: z.coerce.number()
+                    .gt(0, "Los kilos deben ser mayor a cero")
+                    .max(MAX_KILOS, `Los kilos no pueden exceder ${MAX_KILOS.toLocaleString()}`)
+                    .finite()
+                    .transform(val => Number(val)),
 
-            canastillas: z.coerce.number()
-                .gt(0, "Las canastillas no pueden ser cero"),
+                canastillas: z.coerce.number()
+                    .gt(0, "Las canastillas deben ser mayor a cero")
+                    .max(MAX_CANASTILLAS, `Las canastillas no pueden exceder ${MAX_CANASTILLAS.toLocaleString()}`)
+                    .finite(),
 
-            promedio: z.coerce.number()
-                .min(17, "Los kilos no corersponden a las canastillas")
-                .max(25, "Los kilos no corersponden a las canastillas"),
+                promedio: z.coerce.number()
+                    .finite()
+                    .min(17, "Los kilos no corresponden a las canastillas")
+                    .max(25, "Los kilos no corresponden a las canastillas"),
 
-            tipoFruta: safeString("tipoFruta"),
+                tipoFruta: requiredSafeString("tipoFruta"),
 
-            GGN: z.boolean("estado GGN faltante"),
+                GGN: z.boolean("estado GGN faltante"),
 
-            predio: safeString("predio"),
+                predio: requiredSafeString("predio"),
 
-            observaciones: optionalSafeString("observaciones"),
+                observaciones: optionalSafeString("observaciones")
+                    .refine(
+                        val => val === undefined || val.length <= MAX_OBSERVACIONES,
+                        `Las observaciones no pueden exceder ${MAX_OBSERVACIONES} caracteres`
+                    ),
 
-            placa: z.string()
-                .length(6, "La placa debe tener exactamente 6 caracteres")
-                .transform(val => val.toUpperCase())
-                .refine(
-                    val => /^[A-Z]{3}[0-9]{3}$/.test(val),
-                    "La placa debe tener 3 letras seguidas de 3 números"
-                )
-                .pipe(safeString("placa")),
+                placa: z.string()
+                    .length(6, "La placa debe tener exactamente 6 caracteres")
+                    .transform(val => val.toUpperCase())
+                    .refine(
+                        val => /^[A-Z]{3}[0-9]{3}$/.test(val),
+                        "La placa debe tener 3 letras seguidas de 3 números"
+                    )
+                    .pipe(safeString("placa")),
+            }),
+            dataCanastillas: z.object({
+                canastillasPropias: z.coerce.number()
+                    .min(0, "El número de canastillas no puede ser negativo")
+                    .max(MAX_CANASTILLAS, `Las canastillas propias no pueden exceder ${MAX_CANASTILLAS.toLocaleString()}`)
+                    .finite()
+                    .transform(val => Number(val)),
+                canastillasPrestadas: z.coerce.number()
+                    .min(0, "El número de canastillas no puede ser negativo")
+                    .max(MAX_CANASTILLAS, `Las canastillas prestadas no pueden exceder ${MAX_CANASTILLAS.toLocaleString()}`)
+                    .finite()
+                    .transform(val => Number(val)),
+            })
         })
     }
     static post_inventarios_ingreso_maquila() {
@@ -154,7 +185,24 @@ export class InventariosValidations {
     }
     static put_inventarios_frutaDescarte_reprocesarFruta() {
         return z.object({
-            tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
+            action: safeString("action"),
+            tipoFruta: objectIdString("tipoFruta"),
+            data: z.object({
+                tipoFruta: objectIdString("tipoFruta")
+            }).catchall(
+                z.string()
+                    .regex(/^\d+$/, "El valor debe ser un número en formato string")
+            ).superRefine((val, ctx) => {
+                for (const key of Object.keys(val)) {
+                    if (!mongoComplexKeyRegex.test(key)) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            message: `La llave '${key}' contiene caracteres no permitidos (.) o ($)`,
+                            path: ['inventario', key]
+                        });
+                    }
+                }
+            })
         })
 
     }
@@ -270,7 +318,23 @@ export class InventariosValidations {
                 kilos: z.number().min(1, "Los kilos deben ser mayores a 0"),
             }),
             inventario: z.object({
-                tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
+                // Validamos la propiedad fija primero
+                tipoFruta: objectIdString("tipoFruta")
+            }).catchall(
+                // Validamos todas las demás llaves dinámicas
+                z.string()
+                    .regex(/^\d+$/, "El valor debe ser un número en formato string")
+            ).superRefine((val, ctx) => {
+                // Validamos que los nombres de las llaves dinámicas sean seguros
+                for (const key of Object.keys(val)) {
+                    if (!mongoComplexKeyRegex.test(key)) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            message: `La llave '${key}' contiene caracteres no permitidos (.) o ($)`,
+                            path: ['inventario', key]
+                        });
+                    }
+                }
             })
         })
     }
@@ -294,7 +358,23 @@ export class InventariosValidations {
                     .default("")
             }),
             inventario: z.object({
-                tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
+                // Validamos la propiedad fija primero
+                tipoFruta: objectIdString("tipoFruta")
+            }).catchall(
+                // Validamos todas las demás llaves dinámicas
+                z.string()
+                    .regex(/^\d+$/, "El valor debe ser un número en formato string")
+            ).superRefine((val, ctx) => {
+                // Validamos que los nombres de las llaves dinámicas sean seguros
+                for (const key of Object.keys(val)) {
+                    if (!mongoComplexKeyRegex.test(key)) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            message: `La llave '${key}' contiene caracteres no permitidos (.) o ($)`,
+                            path: ['inventario', key]
+                        });
+                    }
+                }
             })
         })
     }
@@ -436,60 +516,87 @@ export class InventariosValidations {
     }
     static post_inventarios_EF8() {
         return z.object({
-            predio: z.string().min(1, "El predio es obligatorio"),
-            tipoFruta: z.string().min(1, "El tipo de fruta es obligatorio"),
-            descarteGeneral: z
-                .string()
-                .optional()
-                .transform(val => val === undefined || val === "" ? 0 : Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            pareja: z
-                .string()
-                .optional()
-                .transform(val => val === undefined || val === "" ? 0 : Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            balin: z
-                .string()
-                .optional()
-                .transform(val => val === undefined || val === "" ? 0 : Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            canastillasPropias: z
-                .string()
-                .optional()
-                .transform(val => Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            canastillasPrestadas: z
-                .string()
-                .optional()
-                .transform(val => Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            canastillasVaciasPropias: z
-                .string()
-                .optional()
-                .transform(val => val === undefined || val === "" ? 0 : Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            canastillasVaciasPrestadas: z
-                .string()
-                .optional()
-                .transform(val => val === undefined || val === "" ? 0 : Number(val))
-                .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
-                .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
-            fecha_ingreso_inventario: z.string()
-                .min(1, "La fecha de ingreso es obligatoria")
-                .refine(val => !isNaN(Date.parse(val)), {
-                    message: "La fecha no es válida",
-                }),
-            placa: z
-                .string()
-                .min(1, "La placa es obligatoria")
-                .regex(/^[A-Z]{3}\d{3}$/, "La placa debe tener 3 letras seguidas de 3 números (ej. ABC123)")
-                .transform(val => val.toUpperCase())
+            action: requiredSafeString("action"),
+            data: z.object({
+                predio: objectIdString("predio"),
+                tipoFruta: objectIdString("tipoFruta"),
+                descarteGeneral: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                descarteGeneralCanastillas: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                pareja: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                parejaCanastillas: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                balin: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                balinCanastillas: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                enf: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                canastillasPropias: z
+                    .string()
+                    .optional()
+                    .transform(val => Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                canastillasPrestadas: z
+                    .string()
+                    .optional()
+                    .transform(val => Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                canastillasVaciasPropias: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                canastillasVaciasPrestadas: z
+                    .string()
+                    .optional()
+                    .transform(val => val === undefined || val === "" ? 0 : Number(val))
+                    .refine(val => !isNaN(val), { message: "Debe ser un número válido" })
+                    .refine(val => val >= 0, { message: "Debe ser mayor o igual a 0" }),
+                fecha_ingreso_inventario: z.string()
+                    .min(1, "La fecha de ingreso es obligatoria")
+                    .refine(val => !isNaN(Date.parse(val)), {
+                        message: "La fecha no es válida",
+                    }),
+                placa: z
+                    .string()
+                    .min(1, "La placa es obligatoria")
+                    .regex(/^[A-Z]{3}\d{3}$/, "La placa debe tener 3 letras seguidas de 3 números (ej. ABC123)")
+                    .transform(val => val.toUpperCase())
+            })
 
         });
     }
@@ -521,6 +628,31 @@ export class InventariosValidations {
                     message: `Solo se permiten los siguientes campos: ${camposValidos.join(', ')}`
                 }
             )
+        });
+    }
+    static put_inventarios_ordenVaceo_vacear() {
+        return z.object({
+            _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
+            kilosVaciados: z.number().gt(0, "Los kilos vaciados deben ser mayores a cero"),
+            action: z.string()
+        });
+    }
+    static put_inventarios_frutaSinProcesar_directoNacional() {
+        return z.object({
+            action: z.literal('put_inventarios_frutaSinProcesar_directoNacional'),
+            data: z.object({
+                cliente: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El cliente debe ser un ObjectId válido"),
+                canastillas: z.coerce.number().gt(0, "Las canastillas deben ser mayores a cero"),
+                placa: z.string().min(1, "La placa es obligatoria"),
+                nombreConductor: z.string().min(1, "El nombre del conductor es obligatorio"),
+                telefono: z.string().min(1, "El teléfono es obligatorio"),
+                cedula: z.string().min(1, "La cédula es obligatoria"),
+                remision: z.string().min(1, "La remisión es obligatoria")
+            }),
+            lote: z.object({
+                _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id del lote debe ser un ObjectId válido")
+            }).passthrough(), // Permitimos otros campos del lote sin validarlos todos
+            __v: z.number({ required_error: "La versión (__v) es obligatoria para el control de concurrencia" })
         });
     }
 }

@@ -2,20 +2,79 @@ import { CalidadRepository } from "../../api/Calidad.js";
 import { ComercialRepository } from "../../api/Comercial.js";
 import { InventariosRepository } from "../../api/inventarios.js";
 import { InventarioDescarteController } from "../../api/inventarios/inventarioDescarte.js";
+import { InventarioFrutaSinProcesarController } from "../../api/inventarios/inventarioFrutaSinProcesar.js";
+import { OrdenVaceoController } from "../../api/inventarios/ordenVaceo.js";
 import { ModificarRepository } from "../../api/ModificarData.js";
 import { ProcesoRepository } from "../../api/Proceso.mjs";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketInventarios = {
+    //#region inventarios FRUTA SIN PROCESAR
+    get_inventarios_historialDirectoNacional_registros: async (data) => {
+        const response = await InventarioFrutaSinProcesarController.get_inventarios_historialDirectoNacional_registros(data)
+        return successResponseRoutes(response)
+    },
+    put_inventarios_frutaSinProcesar_directoNacional: async (data) => {
+        await InventarioFrutaSinProcesarController.put_inventarios_frutaSinProcesar_directoNacional(data)
+        return successResponseRoutes()
+    },
+    post_inventarios_ingreso_lote: async (data) => {
+        await InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote(data);
+        return successResponseRoutes()
+    },
+    //#endregion
+
+    //#region inventario descartes
+    post_inventarios_EF8: async (data) => {
+        await InventarioDescarteController.post_inventarios_EF8(data);
+        return successResponseRoutes()
+    },
+    post_inventarios_frutaDescarte_frutaDescompuesta: async (data) => {
+        await InventarioDescarteController.post_inventarios_frutaDescarte_frutaDescompuesta(data)
+        return successResponseRoutes()
+    },
+    get_inventarios_frutaDescarte_fruta: async () => {
+        const inventario = await InventarioDescarteController.get_inventarios_frutaDescarte_fruta();
+        return successResponseRoutes(inventario)
+    },
+    put_inventarios_frutaDescarte_reprocesarFruta: async (data) => {
+        await InventarioDescarteController.put_inventarios_frutaDescarte_reprocesarFruta(data)
+        return successResponseRoutes()
+    },
+    put_inventarios_registros_fruta_descompuesta: async (data) => {
+        const response = await InventarioDescarteController.put_inventarios_registros_fruta_descompuesta(data)
+        return successResponseRoutes(response)
+    },
+    //#endregion
+
+    //·region Orden de vaceo
+    get_inventarios_ordenVaceo_inventario: async () => {
+        const resultado = await OrdenVaceoController.get_inventarios_ordenVaceo_inventario();
+        return successResponseRoutes(resultado)
+    },
+    get_inventarios_ordenVaceo_ordenVaceo: async () => {
+        const oredenVaceo = await OrdenVaceoController.get_inventarios_ordenVaceo_ordenVaceo()
+        return successResponseRoutes(oredenVaceo)
+    },
+    put_inventarios_ordenVaceo_modificar: async (data) => {
+        await OrdenVaceoController.put_inventarios_ordenVaceo_modificar(data)
+        return successResponseRoutes()
+    },
+    put_inventarios_ordenVaceo_vacear: async (data) => {
+        await OrdenVaceoController.put_inventarios_ordenVaceo_vacear(data)
+        return successResponseRoutes()
+    },
+    put_inventarios_frutaDescarte_despachoDescarte: async (data) => {
+        const descarte = await InventarioDescarteController.put_inventarios_frutaDescarte_despachoDescarte(data);
+        return successResponseRoutes(descarte)
+    },
+
     //#region inventarios
     get_inventarios_frutaSinProcesar_frutaEnInventario: async () => {
         const data = await InventariosRepository.get_inventarios_frutaSinProcesar_frutaEnInventario();
         return successResponseRoutes(data)
     },
-    put_inventarios_frutaSinProcesar_directoNacional: async (data) => {
-        await InventariosRepository.directoNacional(data)
-        return successResponseRoutes()
-    },
+
     put_inventarios_frutaSinProcesar_desverdizado: async (data) => {
         await InventariosRepository.put_inventarios_frutaSinProcesar_desverdizado(data)
         return successResponseRoutes()
@@ -40,22 +99,8 @@ export const apiSocketInventarios = {
         await ModificarRepository.put_inventarioLogistica_frutaSinProcesar_modificar_canastillas(data)
         return successResponseRoutes()
     },
-    get_inventarios_ordenVaceo_inventario: async () => {
-        const resultado = await InventariosRepository.get_inventarios_ordenVaceo_inventario();
-        return successResponseRoutes(resultado)
-    },
-    get_inventarios_ordenVaceo_ordenVaceo: async () => {
-        const oredenVaceo = await InventariosRepository.get_inventarios_ordenVaceo()
-        return successResponseRoutes(oredenVaceo)
-    },
-    put_inventarios_ordenVaceo_modificar: async (data) => {
-        await InventariosRepository.put_inventarios_ordenVaceo_modificar(data)
-        return successResponseRoutes()
-    },
-    put_inventarios_ordenVaceo_vacear: async (data) => {
-        await InventariosRepository.put_inventarios_ordenVaceo_vacear(data)
-        return successResponseRoutes()
-    },
+
+
     get_inventarios_frutaDesverdizando_lotes: async () => {
         const response = await InventariosRepository.get_inventarios_frutaDesverdizando_lotes()
         return successResponseRoutes(response)
@@ -66,26 +111,6 @@ export const apiSocketInventarios = {
     },
     put_inventarios_frutaDesverdizado_finalizar: async (data) => {
         await InventariosRepository.put_inventarios_frutaDesverdizado_finalizar(data)
-        return successResponseRoutes()
-    },
-    get_inventarios_frutaDescarte_fruta: async () => {
-        const inventario = await InventariosRepository.get_inventarios_frutaDescarte_fruta();
-        return successResponseRoutes(inventario)
-    },
-    put_inventarios_frutaDescarte_despachoDescarte: async (data) => {
-        const descarte = await InventarioDescarteController.put_inventarios_frutaDescarte_despachoDescarte(data);
-        return successResponseRoutes(descarte)
-    },
-    put_inventarios_frutaDescarte_reprocesarFruta: async (data) => {
-        await InventariosRepository.put_inventarios_frutaDescarte_reprocesarFruta(data)
-        return successResponseRoutes()
-    },
-    put_inventarios_frutaDescarte_reprocesarCelifrut: async (data) => {
-        await InventariosRepository.put_inventarios_frutaDescarte_reprocesarCelifrut(data)
-        return successResponseRoutes()
-    },
-    post_inventarios_frutaDescarte_frutaDescompuesta: async (data) => {
-        await InventarioDescarteController.post_inventarios_frutaDescarte_frutaDescompuesta(data)
         return successResponseRoutes()
     },
     get_inventarios_canastillas_canastillasCelifrut: async () => {
@@ -142,10 +167,7 @@ export const apiSocketInventarios = {
         await InventariosRepository.put_inventarios_historialProcesado_modificarHistorial(data)
         return successResponseRoutes()
     },
-    get_inventarios_historialDirectoNacional_registros: async (data) => {
-        const response = await InventariosRepository.get_inventarios_historialDirectoNacional_registros(data)
-        return successResponseRoutes(response)
-    },
+
     put_inventarios_historialDirectoNacional_modificarHistorial: async (data) => {
         await InventariosRepository.put_inventarios_historialDirectoNacional_modificarHistorial(data)
         return successResponseRoutes()
@@ -210,10 +232,7 @@ export const apiSocketInventarios = {
         const response = await InventariosRepository.put_inventarios_historiales_despachoDescarte(data)
         return successResponseRoutes(response)
     },
-    put_inventarios_registros_fruta_descompuesta: async (data) => {
-        const response = await InventariosRepository.put_inventarios_registros_fruta_descompuesta(data)
-        return successResponseRoutes(response)
-    },
+
     get_inventarios_historiales_registros_inventarioDescartes: async (data) => {
         const response = await InventariosRepository.get_inventarios_historiales_registros_inventarioDescartes(data)
         return successResponseRoutes(response)
@@ -252,18 +271,12 @@ export const apiSocketInventarios = {
         const response = await InventariosRepository.get_inventarios_ingresos_ef()
         return successResponseRoutes(response)
     },
-    post_inventarios_ingreso_lote: async (data) => {
-        await InventariosRepository.post_inventarios_ingreso_lote(data);
-        return successResponseRoutes()
-    },
+
     post_inventarios_maquila: async (data) => {
         await InventariosRepository.post_inventarios_ingreso_maquila(data);
         return successResponseRoutes()
     },
-    post_inventarios_EF8: async (data) => {
-        await InventariosRepository.post_inventarios_EF8(data);
-        return successResponseRoutes()
-    },
+
     //#endregion
     //#region programaciones
     get_inventarios_programaciones_contenedores: async (data) => {

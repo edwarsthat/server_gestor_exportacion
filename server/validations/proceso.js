@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { getErrorMessages, safeString, optionalSafeString } from './utils/validationFunctions.js';
+import { getErrorMessages, safeString, optionalSafeString, requiredSafeString, objectIdString } from './utils/validationFunctions.js';
 
 export class ProcesoValidations {
     static async put_proceso_aplicaciones_listaEmpaque_agregarItem(data) {
@@ -92,17 +92,22 @@ export class ProcesoValidations {
     }
     static put_proceso_aplicaciones_descarteEncerado() {
         return z.object({
-            descarte: z.string().min(1, "Seleccione un descarte"),
-            canastillas: z.string().refine((val) => {
-                if (val === "") return true;
-                const num = Number(val);
-                return !isNaN(num) && num >= 0;
-            }, "Las canastillas deben ser un número mayor o igual a 0").optional().or(z.literal("")),
-            kilos: z.string().refine((val) => {
-                if (val === "") return true;
-                const num = Number(val);
-                return !isNaN(num) && num >= 0;
-            }, "Los kilos deben ser un número mayor o igual a 0").optional().or(z.literal("")),
+            action: requiredSafeString("action"),
+            registroFrutaProcesada: objectIdString("registroFrutaProcesada"),
+            tipo: requiredSafeString("tipo"),
+            data: z.object({
+                descarte: z.string().min(1, "Seleccione un descarte"),
+                canastillas: z.string().refine((val) => {
+                    if (val === "") return true;
+                    const num = Number(val);
+                    return !isNaN(num) && num >= 0;
+                }, "Las canastillas deben ser un número mayor o igual a 0").optional().or(z.literal("")),
+                kilos: z.string().refine((val) => {
+                    if (val === "") return true;
+                    const num = Number(val);
+                    return !isNaN(num) && num >= 0;
+                }, "Los kilos deben ser un número mayor o igual a 0").optional().or(z.literal("")),
+            })
         })
     }
 }

@@ -33,35 +33,62 @@ export function isPaisesCaribe(contenedor) {
     return true;
 }
 export function resumenCalidad(itemsPallet, calidad = "") {
-    const out = {}
-    let total = 0;
+    const outMap = new Map();
+    let totalCajas = 0;
     let totalPallets = 0;
 
+    // 1️⃣ Agrupar por calibre y calcular totales
     for (const item of itemsPallet) {
-        const calibre = new Set()
+        // total pallets (máximo número, como en tu diseño original)
+        if (item.pallet.numeroPallet > totalPallets) {
+            totalPallets = item.pallet.numeroPallet;
+        }
 
+        totalCajas += item.cajas;
 
-        if (item.pallet.numeroPallet > totalPallets) totalPallets = item.pallet.numeroPallet
-        total += item.cajas
-        if ( calidad === "" || item.calidad._id.toString() === calidad._id.toString() ) {
-            if (!out[item.calibre]) {
-                out[item.calibre] = {
-                    cantidad: 0,
-                }
+        if (
+            calidad === "" ||
+            item.calidad._id.toString() === calidad._id.toString()
+        ) {
+            if (!outMap.has(item.calibre)) {
+                outMap.set(item.calibre, { cantidad: 0 });
             }
-            out[item.calibre].cantidad += item.cajas
-            calibre.add(item.calibre)
+
+            outMap.get(item.calibre).cantidad += item.cajas;
         }
     }
 
-    Object.keys(out).forEach(item => {
-        out[item].pallets = Math.round((out[item].cantidad * totalPallets) / total)
-        out[item].porcentage = (out[item].cantidad * 100) / total
-    })
-    return out
+    // 2️⃣ Calcular valor ideal, piso y residuo
+    let palletsAsignados = 0;
+
+    outMap.forEach(value => {
+        value.ideal = (value.cantidad * totalPallets) / totalCajas;
+        value.pallets = Math.floor(value.ideal);
+        value.residuo = value.ideal - value.pallets;
+        value.porcentage = (value.cantidad * 100) / totalCajas;
+
+        palletsAsignados += value.pallets;
+    });
+
+    // 3️⃣ Repartir pallets faltantes según mayor residuo
+    let faltan = totalPallets - palletsAsignados;
+
+    [...outMap.values()]
+        .sort((a, b) => b.residuo - a.residuo)
+        .slice(0, faltan)
+        .forEach(v => v.pallets++);
+
+    // 4️⃣ Limpiar campos internos si no los quieres exponer
+    outMap.forEach(v => {
+        delete v.ideal;
+        delete v.residuo;
+    });
+
+    return Object.fromEntries(outMap);
 }
+
 export function resumenPredios(itemsPallet) {
-    const out = {};
+    const out = new Map();
     let totalCajas = 0;
     let pesoTotal = 0;
     for (const item of itemsPallet) {
@@ -69,24 +96,24 @@ export function resumenPredios(itemsPallet) {
         const predio = item.lote?.predio.PREDIO || "SIN PREDIO";
         const ICA = item.lote?.predio.ICA.code || "SIN SIPAP";
         if (predio && ICA && id) {
-            if (!out[id]) {
-                out[id] = {
+            if (!out.has(id)) {
+                out.set(id, {
                     predio: predio,
                     cajas: 0,
                     peso: 0,
                     pesoBruto: 0,
                     ICA: ICA,
                     SISPAP: false
-                };
+                });
             }
-            out[id].cajas += item.cajas
-            out[id].peso += item.kilos
-            out[id].SISPAP = item.SISPAP || false
+            out.get(id).cajas += item.cajas
+            out.get(id).peso += item.kilos
+            out.get(id).SISPAP = item.SISPAP || false
 
         }
         totalCajas += item.cajas
         pesoTotal += item.kilos
     };
 
-    return [out, totalCajas, pesoTotal];
+    return [Object.fromEntries(out), totalCajas, pesoTotal];
 }

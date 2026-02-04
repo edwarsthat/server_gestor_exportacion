@@ -72,6 +72,28 @@ export const defineInventarioActualDescarte = async (conn) => {
                 message: 'Los kilos actuales no pueden exceder los kilos iniciales'
             }
         },
+        canastillasIniciales: {
+            type: Number,
+            required: true,
+            min: [0, 'Las canastillas iniciales no pueden ser negativas'],
+            validate: {
+                validator: function (v) {
+                    return v > 0;
+                },
+                message: 'Las canastillas iniciales deben ser mayores a 0'
+            }
+        },
+        canastillasActuales: {
+            type: Number,
+            required: true,
+            min: [0, 'Las canastillas actuales no pueden ser negativas'],
+            validate: {
+                validator: function (v) {
+                    return v <= this.canastillasIniciales;
+                },
+                message: 'Las canastillas actuales no pueden exceder las canastillas iniciales'
+            }
+        },
         estado: {
             type: String,
             required: true,
