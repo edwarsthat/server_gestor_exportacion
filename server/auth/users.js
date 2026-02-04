@@ -9,6 +9,13 @@ const permisos_generales = new Set([
     "obtener_status_proceso",
     "obtener_info_mi_cuenta",
     "modificar_mi_password",
+    //permisos de sistema para agrupar fletes compuestos. Jp
+    "agrupar_fletes_compuestos",
+    //permisos de contabilidad para agrupar fletes compuestos. Jp
+    "update_contabilidad_agrupar_fletes_compuestos",
+    //nuevos endpoint .Jp
+    "get_comercial_tarifa_predio",
+    "post_comercial_tarifa_predio",
 
     "obtener_cantidad_usuarios",
     "obtener_cantidad_historial_espera_descargue",

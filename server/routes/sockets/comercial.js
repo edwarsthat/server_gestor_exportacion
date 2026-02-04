@@ -45,6 +45,21 @@ export const apiSocketComercial = {
         await ComercialRepository.post_comercial_proveedores_add_proveedor(data)
         return successResponseRoutes()
     },
+
+    // Obtener tarifa de un predio por año (la usa el modal)
+    get_comercial_tarifa_predio: async (data) => {
+        console.log("TARIFA DEBUG input:", JSON.stringify(data?.data));
+        const response = await ComercialRepository.get_comercial_tarifa_predio(data)
+        console.log("TARIFA DEBUG response:", JSON.stringify(response));
+        return successResponseRoutes(response)
+    },
+
+    // Guardar tarifa por año para un predio
+    post_comercial_tarifa_predio: async (data) => {
+        const response = await ComercialRepository.post_comercial_tarifa_predio(data)
+        return successResponseRoutes(response)
+    },
+
     //#endregion
     //#region clientes
     get_comercial_clientes: async () => {

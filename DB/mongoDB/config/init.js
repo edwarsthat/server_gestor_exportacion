@@ -66,6 +66,8 @@ import { defineSchemaAreasFisicas } from '../schemas/catalogs/schemaAreasFisicas
 import { defineSchemaCarnets } from '../schemas/personal/dotaciones/SchemaCarnets.js';
 import { defineAuditCargosPersonal } from '../schemas/audit/AuditCargosPersonal.js';
 import { defineAuditPersonal } from '../schemas/audit/AuditPersonal.js';
+//.Jp
+import { defineTarifaPredio } from "../schemas/tarifas/schemaTarifasPredio.js";
 
 export const db = {};
 export const connections = {};
@@ -285,6 +287,12 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Proveedores...");
         db.Proveedores = await defineproveedores(sysConn);
         console.log("✅ Proveedores definido");
+
+        //.Jp
+        console.log("⚡ Definiendo TarifaPredio...");
+        db.TarifaPredio = await defineTarifaPredio(sysConn);
+        console.log("✅ TarifaPredio definido");
+
 
         console.log("⚡ Definiendo recordProveedor...");
         db.recordProveedor = await defineRecordProveedor(sysConn);

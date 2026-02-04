@@ -16,6 +16,8 @@ import { apiSocketPython } from "../../server/routes/sockets/pythonRoute.js";
 import { apiSocketSistema } from "../../server/routes/sockets/sistema.js";
 import { apiSocketTalentoHumano } from "../../server/routes/sockets/talentoHumano.js";
 import { apiSocketTransporte } from "../../server/routes/sockets/transporte.js";
+// import mongoose from "mongoose"; .Jp
+import mongoose from "mongoose";
 
 
 export function initSockets(io) {
@@ -86,6 +88,9 @@ export function initSockets(io) {
 
                 data.user = authenticatedUser;
 
+                // Añadir la conexión de mongoose al objeto data .Jp
+                data.conn = mongoose.connection;
+
                 const autorizado2 = await UserRepository.autentificacionPermisos2(data);
                 if (!autorizado2) {
                     throw new AccessError(412, `Acceso no autorizado ${data.data.action}`);
@@ -107,6 +112,11 @@ export function initSockets(io) {
 
 
         socket.on("Desktop2", async (data, callback) => {
+//console log para debuggear peticiones ws .Jp
+            console.log("WS DEBUG payload (RAW DESKTOP2):",
+                JSON.stringify(data, null, 2)
+            );
+
             if (!data || !data.data || !data.data.action) {
                 return callback(new ErrorUndefinedData(425, "Petición inválida: falta 'action'"));
             }

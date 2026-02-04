@@ -130,4 +130,22 @@ export class VariablesDelSistema {
       throw new ProcessError(523, `Error modificando el inventario canastillas ${err.message}`)
     }
   }
+
+ // estado del proceso (usado por validaciones de acciones como agrupar fletes). Jp
+  static async obtener_status_proceso() {
+    try {
+      const cliente = await getRedisClient();
+      const status = await cliente.get("statusProceso");
+
+      // normalizamos valores nulos
+      if (!status) return 'off';
+
+      // Si no existe estado, asumimos permitido
+      return status;
+    } catch  {
+      // fallback seguro: no bloquear acciones por error de redis
+      // console.error("Error obteniendo statusProceso:", err);
+      return 'off';
+    }
+  }
 }

@@ -22,11 +22,10 @@ import { dataRepository } from "./data.js";
 import { ErrorComercialLogicHandlers, ErrorProcesoLogicHandlers } from "./utils/errorsHandlers.js";
 import mongoose from "mongoose";
 import { LotesHelper } from "../helper/lotes.js";
+
+
+
 const { EMAIL, PASSWORD_EMAIL } = config;
-
-
-
-// const nodemailer = require('nodemailer');
 
 export class ComercialRepository {
 
@@ -45,7 +44,8 @@ export class ComercialRepository {
                         SISPAP: 1,
                         GGN: 1,
                         "CODIGO INTERNO": 1,
-                        canastillas: 1
+                        canastillas: 1,
+                        flete: 1 //para que se vea el valor del flete jp
                     }
                 }
             } else if (data === 'all') {
@@ -88,7 +88,7 @@ export class ComercialRepository {
 
                 query = {
                     skip: (page - 1) * resultsPerPage,
-                    query: filter
+                    query: filter,
                 }
             } else {
                 query = {
@@ -107,6 +107,30 @@ export class ComercialRepository {
             throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+
+    //se obtiene el detalle de un proveedor por id. Jp
+    static async get_comercial_proveedor_detalle(req) {
+    try {
+        const { id } = req.data;
+
+        if (!id) {
+            throw new Error("ID de proveedor no enviado");
+        }
+
+        const proveedor = await ProveedoresRepository.get_proveedor_by_id(id);
+
+        return proveedor;
+        } catch (err) {
+            if (err.status === 522) {
+                throw err;
+        }
+            throw new ComercialLogicError(
+                480,
+            `   Error ${err.type ?? "detalle_proveedor"}: ${err.message}`
+            );
+        }
+    }
+//------------------------------------------------------------------------------------
     static async get_comercial_precios_proveedores_registros() {
         try {
             const query = {
@@ -150,20 +174,31 @@ export class ComercialRepository {
             throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+    // El cambio: ya NO guarda el campo "flete" en el documento del
+    // proveedor. Así cada año tiene su propia tarifa en TarifaPredio
+    // y no se pisan entre sí.
     static async put_comercial_proveedores_modify_proveedor(req) {
         try {
             const { data: datos, user } = req
             const { _id, data, action } = datos
             ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data)
+            // El flete ya no se guarda en el documento del proveedor.
+            // Solo se guarda en TarifaPredio por año (lo hace el modal).
+            
+            // Crear una copia de data sin el campo flete
+            const dataWithoutFlete = {...data};
+            delete dataWithoutFlete.flete;
 
             const proveedorOld = await ProveedoresRepository.get_proveedores({
                 ids: [_id]
             })
+            //usa dataWithoutFlete en lugar de data
             const newProveedor = await ProveedoresRepository.actualizar_proveedor(
                 { _id },
-                data
+                // data             //antes
+                dataWithoutFlete    //ahora
             );
-            // Registrar modificación Clientes
+
             await RecordModificacionesRepository.post_record_modification(
                 action,
                 user,
@@ -183,6 +218,59 @@ export class ComercialRepository {
             throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+
+    //GUARDAR/ACTUALIZAR TARIFA
+static async post_comercial_tarifa_predio(req) {
+    try {
+        const datosReales = req.data?.data || req.data;
+        const { predio, year, tipo = "FIJA", valor } = datosReales;
+            // Validaciones básicas
+        if (!predio || !year || valor === undefined || valor === null) {
+            throw new ComercialLogicError(470, "Faltan campos obligatorios: predio, year, valor");
+        }
+
+        const resultado = await db.TarifaPredio.findOneAndUpdate(
+            { predio, year, tipo },             //filtro de busqueda
+            {$set: { valor, activo: true } },  //que actualizar
+            { upsert: true, new: true}        //upsert + retrona el doc actualizado
+        );
+
+        return resultado;
+
+    } catch (err) {
+        if (err.status) {
+                throw err; // si ya es un error custom, lo re-lanza
+            }
+        throw new ComercialLogicError( 480, `Error al guardar tarifa del predio: ${err.message}`);
+    }
+}
+
+
+    // Obtener la tarifa de un predio para un año específico.
+    // La usa el modal del proveedor para cargar el valor al abrirse.
+static async get_comercial_tarifa_predio(req) {
+    try {
+        const datosReales = req.data?.data || req.data;
+        const { predio, year, tipo ="FIJA" } = datosReales;
+
+        const tarifa = await db.TarifaPredio.findOne({
+                predio,
+                year,
+                tipo,
+                activo: true
+            }).lean();   // .lean() retorna objeto JS puro, más rápido
+
+            return tarifa; //retorna null si no existe
+
+    } catch (err) {
+        if (err.status) {
+                throw err;
+            }
+        throw new ComercialLogicError(480,`Error obteniendo tarifa predio: ${err.message}`
+        );
+    }
+}
+
     static async post_comercial_proveedores_add_proveedor(req) {
         try {
             const { data: datos, user } = req

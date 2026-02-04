@@ -64,7 +64,8 @@ export class ComercialValidationsRepository {
             "activo",
             "SISPAP",
             "departamento",
-            "municipio"
+            "municipio",
+            "flete"
         ];
         const requiredFields = [
             "CODIGO INTERNO",

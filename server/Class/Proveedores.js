@@ -181,6 +181,23 @@ export class ProveedoresRepository {
         if (bussyIds.has(id)) throw new ItemBussyError(413, "Elemento no disponible por el momento");
         bussyIds.add(id)
     }
+// Quita el id del elemento modificado del set de ids ocupados. Jp
+    static async get_proveedor_by_id(id) {
+    try {
+        const proveedor = await db.Proveedores.findById(id).lean();
+
+        if (!proveedor) {
+            throw new ConnectionDBError(404, "Proveedor no encontrado");
+        }
+
+        return proveedor;
+    } catch (err) {
+        throw new ConnectionDBError(
+            err.status || 522,
+            `Error obteniendo proveedor por id: ${err.message}`
+        );
+    }
+}
 
 }
 
