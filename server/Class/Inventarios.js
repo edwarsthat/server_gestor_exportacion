@@ -696,4 +696,43 @@ export class InventariosHistorialRepository extends BaseRepository {
 export class InventarioDescartesRepository extends BaseRepository {
     static get model() { return db.InventarioActualDescarte; }
     static modelName = 'InventarioActualDescarte';
+
+    static async get_totales_inventario_descarte(filtro = {}, options = {}) {
+        const { session } = options;
+
+        const resultado = await db.InventarioActualDescarte.aggregate([
+            {
+                '$match': filtro
+            }, {
+                '$group': {
+                    '_id': {
+                        'tipoFruta': '$tipoFruta',
+                        'area': '$area',
+                        'tipoDescarte': '$tipoDescarte'
+                    },
+                    'totalKilosActuales': {
+                        '$sum': '$kilosActuales'
+                    },
+                    'totalCanastillasActuales': {
+                        '$sum': '$canastillasActuales'
+                    },
+                    'conteoDocumentos': {
+                        '$sum': 1
+                    }
+                }
+            }, {
+                '$project': {
+                    '_id': 0,
+                    'tipoFruta': '$_id.tipoFruta',
+                    'area': '$_id.area',
+                    'tipoDescarte': '$_id.tipoDescarte',
+                    'totalKilosActuales': 1,
+                    'totalCanastillas': 1
+                }
+            }
+
+        ], { session });
+
+        return resultado;
+    }
 }

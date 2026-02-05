@@ -893,9 +893,15 @@ export class InventariosRepository {
             const { page } = data;
             const resultsPerPage = 50;
 
-            const historial = await DespachoDescartesRepository.get_historial_descarte({
+            const historial = await DespachoDescartesRepository.get_data({
                 skip: (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
+                sort: { fecha: -1 },
+                populate: [
+                    { path: 'cliente', select: 'cliente' },
+                    { path: 'tipoFruta', select: 'tipoFruta' },
+                    { path: "user", select: "usuario" }
+                ]
             });
             return historial;
         } catch (err) {
@@ -1499,60 +1505,6 @@ export class InventariosRepository {
             });
 
             return { status: 200, message: 'Ok' }
-        } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            await ErrorInventarioLogicHandlers(err, log)
-        } finally {
-            await session.endSession();
-            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-        }
-    }
-    static async put_inventarios_historiales_despachoDescarte(req) {
-        const { user } = req;
-        const { action, data, _id } = req.data
-
-        let log
-        const session = await db.Lotes.db.startSession();
-
-        log = await LogsRepository.create({
-            user: user._id,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-        })
-        try {
-            InventariosValidations.put_inventarios_historiales_despachoDescarte(data)
-            const inventario = {}
-            const newRegistro = {}
-            //se obtienen los datos de inventario
-            Object.keys(data).forEach(key => {
-                const value = Reflect.get(data, key);
-                const target = key.includes(":") ? inventario : newRegistro;
-
-                const success = Reflect.set(target, key, value);
-
-                if (!success) {
-                    throw new Error(`Error al asignar el valor ${value} a la clave ${key}`);
-                }
-            });
-
-            await session.withTransaction(async () => {
-                //se suma o se resta del inventario descartes segun corresponda
-                const oldRegistro = await HistorialInventariosService.modificar_inventario_descartes_modificar_salida(_id, inventario, data.tipoFruta, user, session)
-                await registrarPasoLog(log._id, "HistorialInventariosService.modificar_inventario_descartes_modificar_salida", "Completado");
-                //se modifica el registro del despacho descarte
-                await HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte(_id, inventario, newRegistro, user, session)
-                await registrarPasoLog(log._id, "HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte", "Completado");
-                //actualizar salida del cardex inventario descarte
-                await HistorialInventariosService.modificar_cardex_modificar_registro_despacho(oldRegistro[0], data.tipoFruta, inventario, user, session)
-                await registrarPasoLog(log._id, "HistorialInventariosService.modificar_cardex_modificar_registro_despacho", "Completado");
-
-            });
-
-            procesoEventEmitter.emit("server_event", {
-                action: "descarte_change",
-                data: {}
-            });
-
         } catch (err) {
             console.error(`[ERROR][${new Date().toISOString()}]`, err);
             await ErrorInventarioLogicHandlers(err, log)

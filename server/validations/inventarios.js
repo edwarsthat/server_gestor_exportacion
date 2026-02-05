@@ -1,5 +1,6 @@
-import { z } from "zod";
+import { literal, z } from "zod";
 import { safeString, optionalSafeString, requiredSafeString, objectIdString } from "./utils/validationFunctions.js";
+import { filtroSchema } from "./utils/validateFiltros.js";
 
 const ACCIONES_VALIDAS = ["ingreso", "salida", "traslado", "retiro", "cancelado"];
 // const validKeyRegex = /^(descarteEncerado|descarteLavado|frutaNacional).*/;
@@ -380,16 +381,30 @@ export class InventariosValidations {
     }
     static put_inventarios_historiales_despachoDescarte() {
         return z.object({
-            cliente: safeString(),
-            nombreConductor: safeString(),
-            telefono: safeString(),
-            cedula: safeString(),
-            remision: safeString(),
-            tipoFruta: safeString(),
-            kilos: z.string()
-                .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
-                .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
-                .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+            action: literal("put_inventarios_historiales_despachoDescarte"),
+            _id: objectIdString("_id"),
+            data: z.object({
+                cliente: objectIdString("cliente"),
+                nombreConductor: safeString(),
+                telefono: safeString(),
+                cedula: safeString(),
+                remision: safeString(),
+                tipoFruta: objectIdString("tipoFruta"),
+            }).catchall(
+                z.string()
+                    .regex(/^\d+$/, "El valor debe ser un número en formato string")
+            ).superRefine((val, ctx) => {
+                for (const key of Object.keys(val)) {
+                    if (!mongoComplexKeyRegex.test(key)) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            message: `La llave '${key}' contiene caracteres no permitidos (.) o ($)`,
+                            path: ['inventario', key]
+                        });
+                    }
+                }
+            })
+
         })
     }
     static put_inventarios_registros_fruta_descompuesta() {
@@ -653,6 +668,12 @@ export class InventariosValidations {
                 _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id del lote debe ser un ObjectId válido")
             }).passthrough(), // Permitimos otros campos del lote sin validarlos todos
             __v: z.number({ required_error: "La versión (__v) es obligatoria para el control de concurrencia" })
+        });
+    }
+    static get_inventarios_historiales_registros_ingresosDescartes() {
+        return z.object({
+            action: z.literal("get_inventarios_historiales_registros_ingresosDescartes"),
+            filtro: filtroSchema
         });
     }
 }
