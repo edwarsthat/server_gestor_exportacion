@@ -20,14 +20,11 @@ import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { checkFinalizadoLote } from "./utils/lotesFunctions.js";
 import { db } from "../../DB/mongoDB/config/init.js";
-import { IndicadoresAPIRepository } from "./IndicadoresAPI.js";
 import { ErrorProcesoLogicHandlers } from "./utils/errorsHandlers.js";
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
-import { InventariosHistorialRepository } from "../Class/Inventarios.js";
 import { LotesHelper } from "../helper/lotes.js";
-import { DescartesRepository } from "../Class/Descartes.js";
 import { ArchiveLoteMaquila } from "../archive/ArchiveLoteMaquila.js";
 import { FileService } from "../services/helpers/FileService.js";
 

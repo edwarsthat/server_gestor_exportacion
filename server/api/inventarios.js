@@ -33,7 +33,6 @@ import { CrearDocumentosRepository } from "../services/crearDocumentos.js";
 import { LotesHelper } from "../helper/lotes.js";
 import { InventarioSimpleHelper } from "../helper/inventarioSimple.js";
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
-import { HistorialInventariosService } from "../services/inventarios/historialInventarios.js";
 import { descarteCache } from "../cache/descartes.js";
 import { tipoFrutaCache } from "../cache/tipoFruta.js";
 

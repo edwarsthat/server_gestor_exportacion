@@ -85,8 +85,54 @@ export function descarteTotal(descarte) {
 
 const checkFinalizadoLote = lote => lote?.finalizado;
 
+function descarte_nopago_pago(lote, tiposDescartes) {
+    const descartes = tiposDescartes.map(item => item)
+    let pago = 0
+    let noPago = 0
+    for (const [key, value] of Object.entries(lote.descartesDevueltos)) {
+        const descarte = descartes.find(item => item._id === key)
+        if (descarte && !descarte.pago) {
+            noPago += value;
+        } else {
+            pago += value;
+        }
+    }
+    let deshidratacion = 0
+    if (lote.deshidratacion) {
+        deshidratacion = lote.deshidratacion === 0 ? 0 :
+            (lote.deshidratacion / 100) * lote.kilos
+    }
+    if (noPago > 0) {
+        noPago += deshidratacion
+    } else if (pago > 0) {
+        pago += deshidratacion
+    }
+
+    return { pago, noPago }
+}
+
+
+
+function descarte_nopago_pago_comprado(lote, tiposDescartes) {
+    const descartes = tiposDescartes.map(item => item)
+    let pagoComprado = 0
+    let noPagoComprado = 0
+    for (const [key, value] of Object.entries(lote.descartesComprados)) {
+        const descarte = descartes.find(item => item._id === key)
+        if (descarte && !descarte.pago) {
+            noPagoComprado += value;
+        } else {
+            pagoComprado += value;
+        }
+    }
+
+    return { pagoComprado, noPagoComprado }
+}
+
 export {
     rendimientoLote,
     deshidratacionLote,
-    checkFinalizadoLote
+    checkFinalizadoLote,
+    descarte_nopago_pago,
+    descarte_nopago_pago_comprado
 };

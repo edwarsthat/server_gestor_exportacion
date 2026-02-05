@@ -68,4 +68,8 @@ describe('InventarioDescarteController.post_inventarios_frutaDescarte_frutaDesco
      * - createManyMockInventarioActualDescarte(count, overrides)
      * - InventarioDescarteController.post_inventarios_frutaDescarte_frutaDescompuesta(req)
      */
+    test('El controlador debería estar definido', () => {
+        expect(InventarioDescarteController).toBeDefined();
+        expect(typeof InventarioDescarteController.post_inventarios_frutaDescarte_frutaDescompuesta).toBe('function');
+    });
 });
