@@ -375,6 +375,17 @@ export class LotesRepository extends BaseRepository {
             throw new ConnectionDBError(523, `Error modificando los datos: ${err.message}`);
         }
     }
+//se agrega metodo bulkWrite. Jp
+    static async bulkWrite(operations, { session = null } = {}) {
+    try {
+        return await db.Lotes.collection.bulkWrite(operations, { session });
+    } catch (err) {
+        throw new ConnectionDBError(
+            523,
+            `Error en bulkWrite de lotes: ${err.message}`
+        );
+    }
+}
     //#endregion
 
 }

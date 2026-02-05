@@ -64,7 +64,15 @@ export const defineproveedores = async (conn) => {
     precioFijo: Boolean,
     departamento: String,
     municipio: String,
-    canastillas: Number
+    canastillas: Number,
+//Tarifa de flete fija (contabilidad). Jp
+    flete: {type: Number, default: 0},
+//Tarifas de flete por kg (contabilidad). Jp
+    tarifaFleteKg: {
+      type: Number,
+      required: false,
+      default: null
+    }
 
   });
 
@@ -79,4 +87,3 @@ export const defineproveedores = async (conn) => {
   const Proveedores = conn.model("Proveedor", PredioSchema);
   return Proveedores;
 }
-

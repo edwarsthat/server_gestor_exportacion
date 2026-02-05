@@ -1,7 +1,9 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PutError, PostError } from "../../Error/ConnectionErrors.js";
 import { BaseRepository } from "./base/BaseRepository.js";
+import { ItemBussyError } from "../../Error/ProcessError.js";
 
+let bussyIds = new Set();
 
 export class ProveedoresRepository extends BaseRepository {
     static get model() { return db.Proveedores; }
@@ -174,6 +176,33 @@ export class ProveedoresRepository extends BaseRepository {
         }
     }
 
+    static validateBussyIds(id) {
+        /**
+         * Funcion que añade el id del elemento que se este m0odificando para que no se creen errores de doble escritura
+         *
+         * @param {string} id - El id del elemento que se esta modificando
+         */
+        if (bussyIds.has(id)) throw new ItemBussyError(413, "Elemento no disponible por el momento");
+        bussyIds.add(id)
+    }
+    
+    // Quita el id del elemento modificado del set de ids ocupados. Jp
+        static async get_proveedor_by_id(id) {
+    try {
+        const proveedor = await db.Proveedores.findById(id).lean();
+
+        if (!proveedor) {
+            throw new ConnectionDBError(404, "Proveedor no encontrado");
+        }
+
+        return proveedor;
+    } catch (err) {
+        throw new ConnectionDBError(
+            err.status || 522,
+            `Error obteniendo proveedor por id: ${err.message}`
+        );
+    }
+}
 
 }
 

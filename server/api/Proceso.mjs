@@ -161,7 +161,103 @@ export class ProcesoRepository {
             throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async put_proceso_aplicaciones_descarte(req) {
 
+        const { user } = req;
+        const { action, data, registroFrutaProcesada, tipo } = req.data;
+        const { descarte, canastillas, kilos } = data;
+
+        let log
+
+        const session = await db.Lotes.db.startSession();
+
+        log = await LogsRepository.create({
+            user: user._id,
+            action: action,
+            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        })
+        try {
+
+
+            ProcesoValidations.put_proceso_aplicaciones_descarteEncerado().parse(data)
+            await registrarPasoLog(log._id, "ProcesoValidations.put_proceso_aplicaciones_descarteEncerado", "Completado");
+
+            await session.withTransaction(async () => {
+                const registroProceso = await FrutaProcesada.get_frutaProcesada({
+                    ids: [registroFrutaProcesada],
+                    populate: [
+                        { path: 'tipoFruta', select: 'tipoFruta valorPromedio' }
+                    ]
+                })
+                const descartesData = await DescartesRepository.getDescartes({ ids: [descarte] })
+                const kilosTotales = (Number(kilos) || 0) + ((Number(canastillas) || 0) * registroProceso[0].tipoFruta.valorPromedio);;
+
+                const query = {
+                    $inc: {
+                        kilosProcesados: kilosTotales,
+                        [`descartes.${descarte}`]: kilosTotales
+                    }
+                };
+                if (!descartesData[0].inventario) {
+                    query.$inc[`descartesDevueltos.${descarte}`] = kilosTotales;
+                }
+
+                const lote = await ProcesoService.modificarLotedescartes(registroProceso[0].loteId, query, user, action, session)
+                await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${registroProceso[0].loteId},`);
+
+                await IndicadoresAPIRepository.put_indicadores_actualizar_indicador(
+                    { $inc: { [`kilos_procesados.${lote.tipoFruta._id.toString()}`]: Number(kilosTotales) } }, session
+                );
+                await registrarPasoLog(
+                    log._id,
+                    "IndicadoresAPIRepository.put_indicadores_actualizar_indicador",
+                    "Completado",
+                    `Se actualizó el indicador kilosProcesadosHoy con ${kilos} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
+
+
+                const data = {
+                    lote: lote._id,
+                    tipoFruta: lote.tipoFruta._id,
+                    area: tipo,
+                    tipoDescarte: descarte,
+                    kilos: kilosTotales,
+                    loteType: registroProceso[0].loteType
+                }
+                await InventariosHistorialRepository.add_elemento_inventarioDescartes(data, user._id, session);
+                if (lote.enf.startsWith("EF1-")) {
+
+                    await InventariosHistorialRepository.put_cardex_invetariosdescartes(
+                        {},
+                        {
+                            $inc: {
+                                [`kilos_ingreso.${lote.tipoFruta._id.toString()}.${tipo}.${descarte}`]: kilosTotales,
+                            },
+                        },
+                        {
+                            sort: { fecha: -1 },
+                            new: true,
+                            session,
+                        }
+                    );
+                }
+                await registrarPasoLog(
+                    log._id,
+                    "Modificar inventario descartes",
+                    "Completado",
+                    `Se modificó el inventario de descarte y la métrica kilosProcesadosHoy con ${kilosTotales} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
+            })
+            procesoEventEmitter.emit("server_event", {
+                action: "descarte_change",
+                data: {}
+            });
+        } catch (error) {
+            console.error(`[ERROR][${new Date().toISOString()}]`, error);
+            await ErrorProcesoLogicHandlers(error, log)
+        } finally {
+            await session.endSession();
+            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
+        }
+    }
     static async get_proceso_aplicaciones_listaEmpaque_contenedores() {
         try {
             const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
@@ -965,6 +1061,34 @@ export class ProcesoRepository {
     }
     static async obtener_foto_calidad(url) {
         const base64Image = await FileService.getBase64Image(url)
+        // codigo de jp por si las moscas-------------------------------------------------
+        // Validar que la URL sea una ruta válida
+        // if (!url || typeof url !== 'string') {
+        //     throw new ProcessError(400, 'URL inválida');
+        // }
+
+        // // Rechazar path traversal
+        // if (url.includes('..')) {
+        //     throw new ProcessError(400, 'URL no permitida');
+        // }
+
+        // // Validación adicional: verificar que esté dentro del directorio permitido
+        // const resolvedPath = path.resolve(url);
+        // const resolvedBase = path.resolve(__dirname, '..', '..', 'fotos_frutas');
+        // if (!resolvedPath.startsWith(resolvedBase)) {
+        //     throw new ProcessError(400, 'Ruta de archivo no permitida');
+        // }
+
+        // // Solo permitir archivos de imagen
+        // const ext = path.extname(url).toLowerCase();
+        // if (!['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) {
+        //     throw new ProcessError(400, 'Tipo de archivo no permitido');
+        // }
+
+        // // eslint-disable-next-line security/detect-non-literal-fs-filename
+        // const data = fs.readFileSync(url)
+        // const base64Image = data.toString('base64');
+        //aqui termina mi codigo comentado Jp ---------------------------------
         return base64Image
     }
     static async get_record_lote_recepcion_pendiente(req) {

@@ -112,8 +112,6 @@ export const apiSocket = {
 
     },
 
-
-
     obtener_lotes_contabilidad_informes_calidad: async (req) => {
         const { data } = req
         const response = await ContabilidadRepository.obtener_lotes_contabilidad_informes_calidad(data);
@@ -130,7 +128,6 @@ export const apiSocket = {
         const response = await ProcesoRepository.get_record_lote_ingreso_inventario(data)
         return { status: 200, message: 'Ok', data: response }
     },
-
 
     get_comercial_precios_registros_precios_proveedor: async (req) => {
         //Obtiene los proveedores
@@ -268,8 +265,11 @@ export const apiSocket = {
         return { status: 200, message: 'Ok' }
     },
 
-
-
+    //update flete proveedor. Jp
+    // update_flete_proveedor: async (req) => {
+    //     const response = await ContabilidadRepository.update_flete_proveedor(req);
+    //     return { status: 200, message: 'Ok', data: response };
+    // }
     //#endregion
 }
 

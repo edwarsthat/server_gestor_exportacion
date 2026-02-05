@@ -3,6 +3,14 @@ import { ContabilidadLogicError } from "../../Error/logicLayerError.js";
 import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import mongoose from 'mongoose';
+//jp
+// import { TarifaPredio } from "../../DB/mongoDB/schemas/tarifas/schemaTarifasPredio.js";
+import { db } from "../../DB/mongoDB/config/init.js";
+
+
+// import { VehiculoRegistro } from "../Class/VehiculosRegistros.js";
+// const TarifaPredio = db.TarifaPredio;
+
 
 export class ContabilidadRepository {
     static async get_contabilidad_informes_calidad(req) {
@@ -221,4 +229,381 @@ export class ContabilidadRepository {
             throw new ContabilidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
+
+    // Obtener informe de fletes
+    static async get_contabilidad_informe_fletes(req) {
+        try {
+            const { page = 1 } = req.data || {};
+            const resultsPerPage = 50;
+
+            // EF = Ingreso físico de fruta (fuente oficial para informe de fletes)
+            const lotes = await LotesRepository.getLotes({
+                query: { enf: { $regex: '^EF', $options: 'i' } },
+                skip: (page - 1) * resultsPerPage,
+                limit: 0, // se cambia esto para que traiga todos los efn resultsPerPage por 0 (sin limite)
+                sort: { fecha_ingreso_inventario: -1 },
+                select: {
+                    enf: 1,
+                    predio: 1,
+                    canastillas: 1,
+                    kilos: 1, // Kg Fruta
+                    fecha_ingreso_inventario: 1,
+                    placa: 1,
+                    // conductor: 1
+                    esFleteCompuesto: 1,
+                    grupoFlete: 1,
+                    totalFlete: 1
+                },
+                populate: [
+                    { path: "predio", select: "PREDIO GGN tarifaFleteKg flete" }
+                ]
+            });
+
+            // Normalizamos los datos para la vista FLETES
+            const fletes = await Promise.all (lotes.map(async lote => {
+                // const fletes = lotes.map(lote => {
+
+                const canastillas = Number(lote.canastillas) || 0;
+                const kilosFruta = Number(lote.kilos) || 0;
+
+                //.Jp -------------------------------------------
+                //📅 Año según la fecha real del lote
+                const fechaLote = lote.fecha_ingreso_inventario
+                    ? new Date(lote.fecha_ingreso_inventario)
+                    : null;
+
+                const yearTarifa = fechaLote
+                    ? fechaLote.getFullYear()
+                    : null;
+
+                // 💰 Buscar tarifa por predio + año
+                const tarifaPredio = yearTarifa
+                    ? await db.TarifaPredio.findOne({
+                        predio: lote.predio?._id,
+                        year: yearTarifa,
+                        tipo: "FIJA",
+                        activo: true
+                    }).lean()
+                    : null;
+                //-------------------------------------------------
+
+                // Total Kilos Transportados = (canastillas * 2.2) + kg fruta
+                const totalKilosTransportados =
+                    (canastillas * 2.2) + kilosFruta;
+
+                // Tarifa por Kg (sale del predio), 
+                // se ajusta la lógica por que se guarda en flete y se utiliza tarifaFleteKg .Jp
+                const tarifaKg = Number(
+                    tarifaPredio?.valor ??          // ← NUEVO: busca primero en historial
+                    lote.predio?.tarifaFleteKg ??   // fallback al campo del proveedor
+                    lote.predio?.flete ??           //otro fallback
+                    NaN
+                );
+
+                // Kilos facturables (mínimo 5000Kg), si es mayor se factura peso actual X tarifa lote.Jp
+                const kilosFacturables = Math.max(totalKilosTransportados, 5000);
+
+                // Total Flete
+                // const totalFlete = tarifaKg
+                //     ? kilosFacturables * tarifaKg
+                //     : NaN;
+                const totalFlete = lote.esFleteCompuesto
+                    ? lote.totalFlete : (tarifaKg ? kilosFacturables * tarifaKg : NaN);
+
+                // Cálculo de semana
+                const fecha = lote.fecha_ingreso_inventario
+                    ? new Date(lote.fecha_ingreso_inventario)
+                    : null;
+
+                const semana = fecha
+                    ? Math.ceil(
+                        (((fecha - new Date(fecha.getFullYear(), 0, 1)) / 86400000) +
+                            new Date(fecha.getFullYear(), 0, 1).getDay() + 1) / 7
+                    )
+                    : null;
+
+                return {
+                    _id: lote._id,
+                    fechaIngreso: lote.fecha_ingreso_inventario,
+                    ef1: lote.enf,
+                    predio: lote.predio?.PREDIO ?? 'N/A',
+                    canastillas,
+                    kgFruta: kilosFruta,
+                    totalKilosTransportados,
+                    tarifaKg: isNaN(tarifaKg) ?'SIN TARIFA' : tarifaKg,
+                    totalFlete,
+                    placa: lote.placa ?? 'N/A',
+                    // conductor: lote.conductor ?? 'N/A',
+                    semana,
+                    esFleteCompuesto: lote.esFleteCompuesto ?? false,
+                    grupoFlete: lote.grupoFlete ?? null
+                };
+            })
+        );
+
+            return fletes;
+
+        } catch (err) {
+            if (err.status === 524) {
+                throw err;
+            }
+            throw new ContabilidadLogicError(
+                475,
+                `Error ${err.type || ""}: ${err.message}`
+            );
+        }
+    }
+
+//Nuevo método para agrupar fletes compuestos. Jp
+//     static async agrupar_fletes_compuestos(req) {
+
+//         const ingresoIds = req?.data?.data?.ingresoIds;
+
+// //log para debug .Jp
+//     console.log("CONTABILIDAD DEBUG:", {
+//     ingresoIds,
+//     user: req?.user?._id
+//     });
+
+//     // try {
+//     //     const { ingresoIds } = req.data;
+
+//         if (!ingresoIds || ingresoIds.length < 2) {
+//             throw new ContabilidadLogicError(
+//                 400,
+//                 "Debe seleccionar mínimo dos ingresos para agrupar"
+//             );
+//         }
+
+//         // Buscar los EF seleccionados
+//         const lotes = await LotesRepository.getLotes({
+//             ids: ingresoIds,
+//             populate: [
+//                 { path: "predio", select: "PREDIO tarifaFleteKg flete" }
+//             ]
+//         });
+
+//         if (!lotes || lotes.length < 2) {
+//             throw new ContabilidadLogicError(404, "Ingresos no encontrados");
+//         }
+
+//         const yaAgrupados = lotes.some(l => l.esFleteCompuesto === true);
+
+//             if (yaAgrupados) {
+//                 throw new ContabilidadLogicError(
+//                     400,
+//                     "Uno o más ingresos ya pertenecen a un flete compuesto"
+//                 );
+//             }
+
+//         // Validar misma placa
+//         const placaBase = lotes[0].placa;
+//         const mismaPlaca = lotes.every(l => l.placa === placaBase);
+
+//         if (!mismaPlaca) {
+//             throw new ContabilidadLogicError(
+//                 400,
+//                 "Todos los ingresos deben pertenecer al mismo vehículo (placa)"
+//             );
+//         }
+        
+//         // Total kilos reales
+//         const kilosTotales = lotes.reduce((acc, l) => {
+//             const can = Number(l.canastillas) || 0;
+//             const kg = Number(l.kilos) || 0;
+//             return acc + (can * 2.2) + kg;
+//         }, 0);
+
+//         // Obtener tarifa menor
+//         const tarifas = lotes.map(l =>
+//             Number(l.predio?.tarifaFleteKg ?? l.predio?.flete ?? NaN)
+//         ).filter(t => !isNaN(t));
+
+//         if (tarifas.length !== lotes.length) {
+//             throw new ContabilidadLogicError(
+//                 400,
+//                 "Todos los ingresos deben tener tarifa de flete configurada"
+//             );
+//         }
+
+//         // Aplicar mínimo 5000
+//         const kilosFacturables = Math.max(kilosTotales, 5000);
+
+//         const tarifaMenor = Math.min(...tarifas);
+
+//         // Recargos (50k por predio adicional)
+//         const recargo = (lotes.length - 1) * 50000;
+
+//         // Total flete compuesto
+//         const totalFleteCompuesto =
+//             (tarifaMenor * kilosFacturables) + recargo;
+
+//         // Distribución proporcional
+//         const operaciones = lotes.map(lote => {
+//             const kilosLote =
+//                 (Number(lote.canastillas) || 0) * 2.2 +
+//                 (Number(lote.kilos) || 0);
+
+//             const proporcion = kilosLote / kilosTotales;
+//             const fleteDistribuido = Math.round(
+//                 totalFleteCompuesto * proporcion
+//             );
+
+//             return {
+//                 updateOne: {
+//                     filter: { _id: lote._id },
+//                     update: {
+//                         $set: {
+//                             totalFlete: fleteDistribuido,
+//                             tarifaKg: tarifaMenor,
+//                             esFleteCompuesto: true,
+//                             grupoFlete: placaBase
+//                         },
+//                         $setOnInsert: {
+//                             _backupFlete: {
+//                                 totalFlete: lote.totalFlete,
+//                                 tarifaKg: lote.tarifaKg
+//                             }
+//                         }
+//                     }
+//                 }
+//             };
+//         });
+
+//         operaciones.forEach((op, i) => {
+//             console.log(`OP ${i}:`, JSON.stringify(op, null, 2));
+//         });
+
+//         console.log("OPERACIONES BULK FINAL:",JSON.stringify(operaciones, null, 2)
+//         );
+        
+//         //conecta desde Lotes.js(LotesRepository) a bulkWrite .Jp
+//         await LotesRepository.bulkWrite(operaciones);
+
+//         return {
+//             ok: true,
+//             totalFleteCompuesto,
+//             tarifaMenor,
+//             kilosFacturables
+//         };
+
+//     }
+
+    static async agrupar_fletes_compuestos(req) {
+
+    const ingresoIds = req?.data?.data?.ingresoIds;
+
+    console.log("CONTABILIDAD DEBUG (VISTA COMPUESTA):", {
+        ingresoIds,
+        user: req?.user?._id
+    });
+
+    if (!ingresoIds || ingresoIds.length < 2) {
+        throw new ContabilidadLogicError(
+            400,
+            "Debe seleccionar mínimo dos ingresos para agrupar"
+        );
+    }
+
+    // 1️⃣ Obtener lotes BASE (NO se modifican)
+    const lotes = await LotesRepository.getLotes({
+        ids: ingresoIds,
+        populate: [
+            { path: "predio", select: "PREDIO tarifaFleteKg flete" }
+        ]
+    });
+
+    if (!lotes || lotes.length < 2) {
+        throw new ContabilidadLogicError(404, "Ingresos no encontrados");
+    }
+
+    // 2️⃣ Validar misma placa
+    const placaBase = lotes[0].placa;
+    const mismaPlaca = lotes.every(l => l.placa === placaBase);
+
+    if (!mismaPlaca) {
+        throw new ContabilidadLogicError(
+            400,
+            "Todos los ingresos deben pertenecer al mismo vehículo (placa)"
+        );
+    }
+
+    // 3️⃣ Total kilos reales
+    const kilosTotales = lotes.reduce((acc, l) => {
+        const can = Number(l.canastillas) || 0;
+        const kg = Number(l.kilos) || 0;
+        return acc + (can * 2.2) + kg;
+    }, 0);
+
+    // 4️⃣ Tarifas
+    const tarifas = lotes.map(l =>
+        Number(l.predio?.tarifaFleteKg ?? l.predio?.flete ?? NaN)
+    ).filter(t => !isNaN(t));
+
+    if (tarifas.length !== lotes.length) {
+        throw new ContabilidadLogicError(
+            400,
+            "Todos los ingresos deben tener tarifa de flete configurada"
+        );
+    }
+
+    // 5️⃣ Regla mínimo 5000
+    const kilosFacturables = Math.max(kilosTotales, 5000);
+
+    // 6️⃣ Tarifa menor
+    const tarifaMenor = Math.min(...tarifas);
+
+    // 7️⃣ Recargo (50k por predio adicional)
+    const recargo = (lotes.length - 1) * 50000;
+
+    // 8️⃣ Total flete compuesto
+    const totalFleteCompuesto =
+        (tarifaMenor * kilosFacturables) + recargo;
+
+    // 9️⃣ Distribución proporcional (VISTA)
+    const detalle = lotes.map(lote => {
+        const kilosLote =
+            (Number(lote.canastillas) || 0) * 2.2 +
+            (Number(lote.kilos) || 0);
+
+        const proporcion =
+            kilosTotales > 0 ? kilosLote / kilosTotales : 0;
+
+        return {
+            ...lote,
+            esFleteCompuesto: true,
+            vistaFlete: "COMPUESTO",
+            tarifaKg: tarifaMenor,
+            totalKilosTransportados: kilosLote,
+            totalFlete: Math.round(totalFleteCompuesto * proporcion),
+            grupoFlete: placaBase
+        };
+    });
+
+    // 🔟 RESPUESTA TEMPORAL (NO persistida)
+    return {
+        vista: "agrupada",
+        resumen: {
+            tipo: "FLETE_COMPUESTO",
+            placa: placaBase,
+            numeroPredios: lotes.length,
+            tarifaMenor,
+            kilosReales: kilosTotales,
+            kilosFacturables,
+            recargo,
+            totalFlete: totalFleteCompuesto
+        },
+        detalle
+    };
+} catch (err) {
+        if (err instanceof ContabilidadLogicError) {
+            throw err;
+        }
+        throw new ContabilidadLogicError(
+            475,
+            `Error agrupando flete compuesto: ${err.message}`
+        );
+    }
 }
+//------------------------------------------------------------------------------
+// }
