@@ -26,5 +26,9 @@ export const apiSocketContabilidad = {
     get_contabilidad_informeMaquila_loteMaquila_detalle: async (data) => {
         const response = await ContabilidadRepository.get_contabilidad_informeMaquila_loteMaquila_detalle(data);
         return successResponseRoutes(response);
+    },
+    get_contabilidad_informeMaquila_resumenInforme: async (data) => {
+        const response = await InformesContabilidadController.get_contabilidad_informeMaquila_resumenInforme(data);
+        return successResponseRoutes(response);
     }
 }

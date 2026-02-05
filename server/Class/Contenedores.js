@@ -4,6 +4,7 @@ import { ProcessError } from "../../Error/ProcessError.js";
 import path from 'path';
 import { registrarPasoLog } from "../api/helper/logs.js";
 import { FileService } from "../services/helpers/FileService.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
 
 export class ContenedoresRepository {
@@ -427,6 +428,21 @@ export class ContenedoresRepository {
         try {
             const result = await db.itemPallet.aggregate(pipeline).exec();
             await db.itemPallet.populate(result, populateOptions);
+            return result;
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error contenedores ${err.message}`);
+        }
+    }
+}
+
+export class ItemPalletRepository extends BaseRepository {
+    static get model() { return db.itemPallet; }
+    static modelName = 'itemPallet';
+
+    static async aggregateAndPopulate(pipeline, populateOptions) {
+        try {
+            const result = await this.model.aggregate(pipeline).exec();
+            await this.model.populate(result, populateOptions);
             return result;
         } catch (err) {
             throw new ConnectionDBError(522, `Error contenedores ${err.message}`);

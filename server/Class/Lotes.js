@@ -384,3 +384,8 @@ export class LotesEF8Repository extends BaseRepository {
     static modelName = 'LotesEF8';
 
 }
+
+export class LoteMaquilaRepository extends BaseRepository {
+    static get model() { return db.LotesMaquila; }
+    static modelName = 'LotesMaquila';
+}

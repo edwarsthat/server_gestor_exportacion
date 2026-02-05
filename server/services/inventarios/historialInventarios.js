@@ -92,27 +92,19 @@ export class HistorialInventariosService {
         );
         const movimientosARestar = [];
 
-
+        console.log(inventarioMap);
         //se verifica si se cambio la fruta
         if (cambioFruta) {
 
             //se verifica si se aumento el inventario
             for (const [key, value] of changesDescartes) {
-                console.log(cambio);
-                const [area, tipoFruta] = key.split(":");
-                // const [area, descarteId, tipo] = key.split(":");
-
-                // //se verifica si se aumento el inventario de la nueva fruta
-                // if (valueOriginal < value) {
-                //     const { key, value, valueOriginal } = cambio;
-                //     const [area, descarteId] = key.split(":");
-                //     const totalARestar = value - valueOriginal;
-
-                //     const inventario = inventarioMap.get(`${area}:${descarteId}:${cambioFruta.new}`);
-                //     if (inventario.total < totalARestar) {
-                //         throw new ServiceError(400, `No se puede restar más inventario de descarte que el disponible`);
-                //     }
-
+                const [area, tipoDescarte] = key.split(":");
+                //se revisa si el inventario es mayor al que se desea restar
+                const inventario = inventarioMap.get(`${area}:${tipoDescarte}:${cambioFruta.new}`);
+                console.log(inventario);
+                console.log(value);
+                // if (inventario.total < value.value) {
+                //     throw new ServiceError(400, `No se puede restar más inventario de descarte que el disponible`);
                 // }
 
             }
