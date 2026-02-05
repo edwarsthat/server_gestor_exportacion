@@ -278,7 +278,7 @@ describe('BaseRepository', () => {
         beforeEach(() => {
             // Mock de una instancia del modelo
             mockInstance = {
-                _user: null,
+                user: null,
                 save: jest.fn()
             };
 
@@ -311,7 +311,7 @@ describe('BaseRepository', () => {
 
                 await TestRepository.post_data(data, { user });
 
-                expect(mockInstance._user).toBe(user);
+                expect(mockInstance.user).toBe(user);
             });
 
             test('deberia usar session cuando se proporciona', async () => {
@@ -328,7 +328,7 @@ describe('BaseRepository', () => {
 
                 await TestRepository.post_data({});
 
-                expect(mockInstance._user).toBe('');
+                expect(mockInstance.user).toBe('');
                 expect(mockInstance.save).toHaveBeenCalledWith({ session: null });
             });
         });

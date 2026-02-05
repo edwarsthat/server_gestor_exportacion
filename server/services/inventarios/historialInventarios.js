@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import { InventariosHistorialServiceError } from "../../../Error/ServiceError.js";
 import { DespachoDescartesRepository } from "../../Class/DespachoDescarte.js";
 import { InventariosHistorialRepository, InventarioDescartesRepository } from "../../Class/Inventarios.js";
@@ -90,7 +89,7 @@ export class HistorialInventariosService {
         const inventarioMap = new Map(
             result.map(item => [`${item.area}:${item.tipoDescarte}:${item.tipoFruta}`, item])
         );
-        const movimientosARestar = [];
+        // const movimientosARestar = [];
 
         console.log(inventarioMap);
         //se verifica si se cambio la fruta

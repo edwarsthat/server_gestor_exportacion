@@ -595,7 +595,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                 .populate(populate)
                 .exec();
 
-            return result;
+            return registros;
 
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo registros ${err.message}`);
