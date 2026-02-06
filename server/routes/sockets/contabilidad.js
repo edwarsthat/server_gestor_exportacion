@@ -1,10 +1,9 @@
 import { ContabilidadRepository } from "../../api/Contabilidad.js";
-import { InformesContabilidadController } from "../../api/contabilidad/Informes.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketContabilidad = {
     get_contabilidad_informes_calidad: async (data) => {
-        const response = await InformesContabilidadController.get_contabilidad_informes_calidad(data);
+        const response = await ContabilidadRepository.get_contabilidad_informes_calidad(data);
         return successResponseRoutes(response);
     },
     get_contabilidad_informes_calidad_numeroElementos: async () => {
@@ -29,8 +28,8 @@ export const apiSocketContabilidad = {
     },
 
     //Actualizar tarifa de flete por kg de un proveedor. Jp
-    update_flete_proveedor: async (data) => {
-        const response = await ContabilidadRepository.update_contabilidad_proveedor_flete(data);
+    put_flete_proveedor: async (data) => {
+        const response = await ContabilidadRepository.put_contabilidad_proveedor_flete(data);
         return successResponseRoutes(response);
     },   
 
@@ -39,14 +38,8 @@ export const apiSocketContabilidad = {
         return successResponseRoutes(response);
     },
 
-    // Agrupar fletes compuestos. Jp
-    // agrupar_fletes_compuestos: async (data) => {
-    //     const response = await ContabilidadRepository.agrupar_fletes_compuestos(data);
-    //     return successResponseRoutes(response);
-    // },
-
     // Actualizar agrupacion de fletes compuestos. Jp
-    update_contabilidad_agrupar_fletes_compuestos: async (data) => {
+    put_contabilidad_agrupar_fletes_compuestos: async (data) => {
         console.log("SOCKET DEBUG:", {
         action: data?.data?.action,
         ingresoIds: data?.data?.data?.ingresoIds,
@@ -55,10 +48,6 @@ export const apiSocketContabilidad = {
     const response =
         await ContabilidadRepository.agrupar_fletes_compuestos(data);
     return successResponseRoutes(response);
-    }
-    get_contabilidad_informeMaquila_resumenInforme: async (data) => {
-        const response = await InformesContabilidadController.get_contabilidad_informeMaquila_resumenInforme(data);
-        return successResponseRoutes(response);
     }
 
 }
