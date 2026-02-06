@@ -116,11 +116,6 @@ export function initSockets(io) {
 
 
         socket.on("Desktop2", async (data, callback) => {
-//console log para debuggear peticiones ws .Jp
-            console.log("WS DEBUG payload (RAW DESKTOP2):",
-                JSON.stringify(data, null, 2)
-            );
-
             if (!data || !data.data || !data.data.action) {
                 return callback(new ErrorUndefinedData(425, "Petición inválida: falta 'action'"));
             }

@@ -32,30 +32,17 @@ export const apiSocketContabilidad = {
     update_flete_proveedor: async (data) => {
         const response = await ContabilidadRepository.update_contabilidad_proveedor_flete(data);
         return successResponseRoutes(response);
-    },   
+    },
 
     get_contabilidad_informe_fletes: async (data,) => {
         const response = await ContabilidadRepository.get_contabilidad_informe_fletes(data);
         return successResponseRoutes(response);
     },
-
-    // Agrupar fletes compuestos. Jp
-    // agrupar_fletes_compuestos: async (data) => {
-    //     const response = await ContabilidadRepository.agrupar_fletes_compuestos(data);
-    //     return successResponseRoutes(response);
-    // },
-
     // Actualizar agrupacion de fletes compuestos. Jp
     update_contabilidad_agrupar_fletes_compuestos: async (data) => {
-        console.log("SOCKET DEBUG:", {
-        action: data?.data?.action,
-        ingresoIds: data?.data?.data?.ingresoIds,
-        user: data?.user?._id
-    });
-    const response =
-        await ContabilidadRepository.agrupar_fletes_compuestos(data);
-    return successResponseRoutes(response);
-    }
+        const response = await ContabilidadRepository.agrupar_fletes_compuestos(data);
+        return successResponseRoutes(response);
+    },
     get_contabilidad_informeMaquila_resumenInforme: async (data) => {
         const response = await InformesContabilidadController.get_contabilidad_informeMaquila_resumenInforme(data);
         return successResponseRoutes(response);

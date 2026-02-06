@@ -727,7 +727,7 @@ export class InventarioDescartesRepository extends BaseRepository {
                     'area': '$_id.area',
                     'tipoDescarte': '$_id.tipoDescarte',
                     'totalKilosActuales': 1,
-                    'totalCanastillas': 1
+                    'totalCanastillasActuales': 1
                 }
             }
 

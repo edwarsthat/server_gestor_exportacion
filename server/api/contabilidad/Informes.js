@@ -130,7 +130,8 @@ export class InformesContabilidadController {
             const { pago: pagoDevuelto, noPago: noPagoDevuelto } = descarte_nopago_pago(lote, tiposDescartes)
 
             out += `10\tMPL1\tKilos\t${decimalToComma(noPagoDevuelto)}\t\t\t\n`;
-            out += `10\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(pagoDevuelto)}\t\t\t\t\t\t\t\t\tDEVUELTOS A ELLOS\n`;
+            out += `10\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(pagoDevuelto)}\t\t\t\t\t\t\t\t\tDEVUELTOS A PROVEEDOR\n`;
+
 
             const { pagoComprado, noPagoComprado } = descarte_nopago_pago_comprado(lote, tiposDescartes)
 

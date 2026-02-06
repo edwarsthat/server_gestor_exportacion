@@ -2,6 +2,8 @@ import { InventariosHistorialServiceError } from "../../../Error/ServiceError.js
 import { DespachoDescartesRepository } from "../../Class/DespachoDescarte.js";
 import { InventariosHistorialRepository, InventarioDescartesRepository } from "../../Class/Inventarios.js";
 import { ServiceError } from "../../models/ErrorModels.js";
+import { crear_arreglo_modificar_descartes, crear_arreglo_modificar_descartes_sumar } from "../helpers/descartes.js";
+import { InventariosService } from "../inventarios.js";
 
 export class HistorialInventariosService {
     static async calcular_modificaciones(data, idRegistro, session) {
@@ -16,13 +18,12 @@ export class HistorialInventariosService {
             throw new ServiceError(400, `El registro de inventario descarte con ID: ${idRegistro} no tiene tipoFruta`)
         }
         // se verifica si cambio la fruta
-        let cambioFruta = null;
-        if (registro.tipoFruta.toString() !== data.tipoFruta) {
-            cambioFruta = {
-                old: registro.tipoFruta,
-                new: data.tipoFruta
-            };
-        }
+
+        const cambioFruta = {
+            old: registro.tipoFruta.toString(),
+            new: data.tipoFruta.toString()
+        };
+
         //ver si hay algun cambio en el registro
         const changesData = []
         const changesDescartes = new Map();
@@ -56,7 +57,7 @@ export class HistorialInventariosService {
                     throw new ServiceError(400, `El valor para '${key}' debe ser numérico`);
                 }
 
-                if ((valorNuevo !== valorOriginal) || cambioFruta) {
+                if ((valorNuevo !== valorOriginal) || (cambioFruta && cambioFruta.old !== registro.new)) {
                     const existente = changesDescartes.get(`${area}:${descarteId}`) || {};
 
                     changesDescartes.set(`${area}:${descarteId}`, {
@@ -78,9 +79,12 @@ export class HistorialInventariosService {
         }
 
     }
-    static async verificar_modificacion_del_inventario_descartes(changesDescartes, cambioFruta, session) {
+    static async verificar_modificacion_del_inventario_descartes(changesDescartes, cambioFruta, user, session) {
 
-        // se obtienen los totales del inventario
+        const outOBjSumar = crear_arreglo_modificar_descartes_sumar(changesDescartes);
+        await InventariosService.procesar_formulario_inventario_descarte_sumar(outOBjSumar, cambioFruta.old, session, user);
+
+        // se obtienen los totales del inventario DESPUES del sumar para validar con datos actualizados
         const result = await InventarioDescartesRepository.get_totales_inventario_descarte({
             estado: "ACTIVO",
             loteType: { $in: ['Lote', 'Loteef8'] }
@@ -89,126 +93,60 @@ export class HistorialInventariosService {
         const inventarioMap = new Map(
             result.map(item => [`${item.area}:${item.tipoDescarte}:${item.tipoFruta}`, item])
         );
-        // const movimientosARestar = [];
 
-        console.log(inventarioMap);
-        //se verifica si se cambio la fruta
-        if (cambioFruta) {
-
-            //se verifica si se aumento el inventario
-            for (const [key, value] of changesDescartes) {
-                const [area, tipoDescarte] = key.split(":");
-                //se revisa si el inventario es mayor al que se desea restar
-                const inventario = inventarioMap.get(`${area}:${tipoDescarte}:${cambioFruta.new}`);
-                console.log(inventario);
-                console.log(value);
-                // if (inventario.total < value.value) {
-                //     throw new ServiceError(400, `No se puede restar más inventario de descarte que el disponible`);
-                // }
-
+        //se verifica si el inventario es suficiente para restar
+        for (const [key, value] of changesDescartes) {
+            const [area, tipoDescarte] = key.split(":");
+            //se revisa si el inventario es mayor al que se desea restar
+            const inventario = inventarioMap.get(`${area}:${tipoDescarte}:${cambioFruta.new}`);
+            if (!inventario) {
+                throw new ServiceError(400, `No se puede restar más inventario de descarte que el disponible`);
+            }
+            if (inventario.totalCanastillasActuales < (value.canastillas?.value ?? 0)) {
+                throw new ServiceError(400, `No se puede restar más inventario de descarte que el disponible`);
+            }
+            if (inventario.totalKilosActuales < (value.kilos?.value ?? 0)) {
+                throw new ServiceError(400, `No se puede restar más inventario de descarte que el disponible`);
             }
         }
+        const outOBj = crear_arreglo_modificar_descartes(changesDescartes);
+        await InventariosService.procesar_formulario_inventario_descarte(outOBj, cambioFruta.new, session, user);
+
     }
-    static async modificar_inventario_descartes_modificar_salida(idRegistro, newData, tipoFruta, user, session) {
+    static async modificar_registro_despacho_en_inventario_descarte(idRegistro, changesData, changesDescartes, user, session) {
         try {
-            const registro = await DespachoDescartesRepository.get_data({ ids: [idRegistro] });
-            if (registro.length === 0) {
-                throw new InventariosHistorialServiceError(`No se encontró el registro de despacho descarte con ID: ${idRegistro}`);
+            const update = {
+                $set: {},
+                $inc: {}
+            };
+
+            // Campos fijos que cambiaron
+            for (const { key, value } of changesData) {
+                update.$set[key] = value;
             }
-            for (const [key, value] of Object.entries(newData)) {
-                const [area, descarteId] = key.split(":");
-                if (Number(value) > Number(registro[0].descartes.get(key))) {
-                    //se la salida fue mas grande
-                    let kilos = Number(value) - Number(registro[0].descartes.get(key));
-                    const registros = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
-                        query: {
-                            tipoFruta: tipoFruta,
-                            area: area,
-                            tipoDescarte: descarteId,
-                            estado: "ACTIVO",
-                            loteType: "Lote"
-                        },
-                        sort: { fechaIngreso: 1 },
-                    }, session)
 
-                    if (registros.length === 0) {
-                        throw new InventariosHistorialServiceError(`No se encontró un registro activo en el inventario de descartes para el área ${area} y tipo de descarte ${descarteId}`);
-                    }
-                    const total = registros.reduce((acc, curr) => acc + curr.kilosActuales, 0);
-                    if (total < kilos) {
-                        throw new InventariosHistorialServiceError(`No hay suficientes kilos en el inventario de descartes para el área ${area} y tipo de descarte ${descarteId}. Kilos disponibles: ${total}, Kilos requeridos: ${kilos}`);
-                    }
-                    for (const registro of registros) {
-                        const nuevosKilos = Number(kilos) - Number(registro.kilosActuales);
-                        if (nuevosKilos < 0) {
-                            await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
-                                { _id: registro._id },
-                                { $set: { kilosActuales: - nuevosKilos } },
-                                { user: user._id, action: 'Actualizar inventario descarte reproceso predio', session }
-                            )
-                        } else {
-                            await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
-                                { _id: registro._id },
-                                { $set: { kilosActuales: 0, estado: "AGOTADO" } },
-                                { user: user._id, action: 'Actualizar inventario descarte reproceso predio', session }
-                            )
-                        }
-                        kilos = nuevosKilos;
-
-                    }
-                } else if (parseInt(value) < parseInt(registro[0].descartes.get(key))) {
-
-                    const kilos = parseInt(registro[0].descartes.get(key)) - parseInt(value);
-
-                    const registros = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
-                        query: {
-                            tipoFruta: tipoFruta,
-                            area: area,
-                            tipoDescarte: descarteId,
-                            loteType: "Lote"
-                        },
-                        sort: { fechaIngreso: -1 },
-                        limit: 1
-                    }, session)
-
-                    if (registros.length === 0) {
-                        throw new InventariosHistorialServiceError(`No se encontró un registro activo en el inventario de descartes para el área ${area} y tipo de descarte ${descarteId}`);
-                    }
-                    const update = {
-                        $inc: {
-                            kilosActuales: parseInt(kilos)
-                        },
-                        $set: {}
-                    }
-                    if (registros[0].estado === "AGOTADO") {
-                        update.$set.estado = "ACTIVO"
-                    }
-                    await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
-                        { _id: registros[0]._id },
-                        update,
-                        { user: user._id, action: 'Actualizar inventario descarte reproceso predio', session }
-                    )
+            // Campos dinámicos (descartes) que cambiaron
+            let kilosDelta = 0;
+            for (const [key, value] of changesDescartes) {
+                if (value.kilos !== undefined) {
+                    update.$set[`descartes.${key}:kilos`] = value.kilos.value;
+                    kilosDelta += value.kilos.value - value.kilos.valueOriginal;
+                }
+                if (value.canastillas !== undefined) {
+                    update.$set[`descartes.${key}:canastillas`] = value.canastillas.value;
                 }
             }
 
-            return registro
-
-        } catch (err) {
-            throw new InventariosHistorialServiceError(`Error service: ${err.message}`);
-        }
-    }
-    static async modificar_registro_despacho_en_inventario_descarte(idRegistro, newData, newRegistro, user, session) {
-        try {
-            const update = {
-                $set: { ...newRegistro }
-            };
-            let kilosTotal = 0
-            for (const [key, value] of Object.entries(newData)) {
-                update[`descartes.${key}`] = value;
-                kilosTotal += parseInt(value)
+            if (kilosDelta !== 0) {
+                update.$inc.kilos = kilosDelta;
             }
 
-            update.$set.kilos = kilosTotal;
+            // Limpiar operadores vacíos
+            if (Object.keys(update.$set).length === 0) delete update.$set;
+            if (Object.keys(update.$inc).length === 0) delete update.$inc;
+
+            if (Object.keys(update).length === 0) return true;
+
             await DespachoDescartesRepository.actualizar_registro(
                 { _id: idRegistro },
                 update,
@@ -219,21 +157,24 @@ export class HistorialInventariosService {
             throw new InventariosHistorialServiceError(`Error service: ${err.message}`);
         }
     }
-    static async modificar_cardex_modificar_registro_despacho(oldRegistro, tipoFruta, newData, user, session) {
+    static async modificar_cardex_modificar_registro_despacho(changesDescartes, cambioFruta, session) {
         try {
+            const inc = {};
+            for (const [key, value] of changesDescartes) {
+                if (value.kilos !== undefined) {
+                    const [area, descarteId] = key.split(":");
+                    const delta = value.kilos.value - value.kilos.valueOriginal;
+                    if (delta !== 0) {
+                        inc[`kilos_salida.${cambioFruta.new}.${area}.${descarteId}`] = delta;
+                    }
+                }
+            }
 
-            const kilosNuevos = Object.values(newData).reduce((acc, curr) => acc + parseInt(curr), 0);
-            if (kilosNuevos === 0) return true;
-
-            const total = parseInt(kilosNuevos) - parseInt(oldRegistro.kilos)
+            if (Object.keys(inc).length === 0) return true;
 
             await InventariosHistorialRepository.put_cardex_invetariosdescartes(
                 {},
-                {
-                    $inc: {
-                        [`kilos_salida.${tipoFruta}`]: total,
-                    },
-                },
+                { $inc: inc },
                 {
                     sort: { fecha: -1 },
                     new: true,
@@ -243,7 +184,7 @@ export class HistorialInventariosService {
 
             return true
         } catch (err) {
-            throw new InventariosHistorialServiceError(`Error service: ${err.message}`);
+            throw new InventariosHistorialServiceError(`Error cardex: ${err.message ?? err.status ?? err}`);
         }
     }
 }
