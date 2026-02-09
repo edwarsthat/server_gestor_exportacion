@@ -434,7 +434,7 @@ describe('InventariosService.procesar_formulario_inventario_descarte', () => {
                     loteType: { $in: ['Lote', 'Loteef8'] }
                 },
                 sort: { fechaIngreso: 1 }
-            });
+            }, { session: mockSession });
         });
 
         test('deberia usar el area correcta de cada entrada', async () => {
@@ -449,7 +449,8 @@ describe('InventariosService.procesar_formulario_inventario_descarte', () => {
             expect(spyGetData).toHaveBeenCalledWith(
                 expect.objectContaining({
                     query: expect.objectContaining({ area: 'ENCERADO' })
-                })
+                }),
+                { session: mockSession }
             );
         });
     });
