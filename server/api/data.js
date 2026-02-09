@@ -10,6 +10,7 @@ import { UsuariosRepository } from "../Class/Usuarios.js";
 import { dataService } from "../services/data.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
 import { CuartosFrios } from "../store/CuartosFrios.js";
+import { executeQueryTask } from "../utils/wrappers.js";
 import { ErrorDataLogicHandlers } from "./utils/errorsHandlers.js";
 
 
@@ -299,27 +300,23 @@ export class dataRepository {
         }
     }
     static async get_data_bootstrap() {
-        try {
+        return executeQueryTask(async () => {
             const promises = {
                 tipoFrutas: ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(),
                 calidadesExport: ConstantesDelSistema.get_constantes_sistema_calidades(),
                 descartes: ConstantesDelSistema.get_constantes_sistema_descartes(),
                 carnet: ConstantesDelSistema.get_constantes_carnets(),
                 areasSeleccion: ConstantesDelSistema.get_constantes_sistema_areasSeleccion(),
-                paisesExpGGN: ConstantesDelSistema.get_constantes_sistema_paises_GGN(),
-                tiposIdentificacion: ConstantesDelSistema.get_constantes_sistema_tiposIdentificacion()
+                paisesExpGGN: ConstantesDelSistema.get_constantes_sistema_paises_Exportacion(),
+                tiposIdentificacion: ConstantesDelSistema.get_constantes_sistema_tiposIdentificacion(),
             };
 
             const entries = await Promise.all(
                 Object.entries(promises).map(async ([key, promise]) => [key, await promise])
             );
-            console.log(entries)
             return Object.fromEntries(entries);
+        })
 
-        } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}] Bootstrap failed:`, err);
-            throw await ErrorDataLogicHandlers(err);
-        }
     }
 }
 
