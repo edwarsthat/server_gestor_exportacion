@@ -409,13 +409,30 @@ export class InventariosValidations {
     }
     static put_inventarios_registros_fruta_descompuesta() {
         return z.object({
-            tipoFruta: safeString(),
-            razon: safeString(),
-            comentario_adicional: safeString(),
-            kilos: z.string()
-                .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
-                .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
-                .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+            action: z.literal("put_inventarios_registros_fruta_descompuesta"),
+            _id: objectIdString("_id"),
+            data: z.object({
+                tipoFruta: objectIdString("tipoFruta"),
+                kilos: z.string()
+                    .refine(val => val === "" || !isNaN(parseInt(val)), "Debe ser un número válido")
+                    .refine(val => val === "" || parseInt(val) >= 0, "No puede ser un número negativo")
+                    .refine(val => val === "" || Number.isInteger(Number(val)), "No se permiten números decimales"),
+                razon: requiredSafeString("razon"),
+                comentario_adicional: optionalSafeString("comentario_adicional").default(""),
+            }).catchall(
+                z.string()
+                    .regex(/^\d+$/, "El valor debe ser un número en formato string")
+            ).superRefine((val, ctx) => {
+                for (const key of Object.keys(val)) {
+                    if (!mongoComplexKeyRegex.test(key)) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            message: `La llave '${key}' contiene caracteres no permitidos (.) o ($)`,
+                            path: ['data', key]
+                        });
+                    }
+                }
+            })
         })
     }
     static put_inventarios_frutaSinProcesar_desverdizado() {

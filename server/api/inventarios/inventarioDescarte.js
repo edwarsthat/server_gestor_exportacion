@@ -20,6 +20,7 @@ import mongoose from "mongoose";
 import { tipoFrutaCache } from "../../cache/tipoFruta.js";
 import { IndicadoresService } from "../../services/indicadores.js";
 import { HistorialInventariosService } from "../../services/inventarios/historialInventarios.js";
+import { ServiceError } from "../../models/ErrorModels.js";
 
 export class InventarioDescarteController {
     static async get_inventarios_historiales_registros_ingresosDescartes(req) {
@@ -207,20 +208,37 @@ export class InventarioDescarteController {
         return true
     }
     static async put_inventarios_registros_fruta_descompuesta(req) {
-        try {
-            const { user } = req
-            if (!user || !user._id) throw new Error("No se proporcionó un usuario válido");
 
-            InventariosValidations.put_inventarios_registros_fruta_descompuesta().parse(req.data)
-            // Aquí falta la lógica real, pero al menos quitamos el error de opción no soportada
-            // y corregimos la validación.
-
-        } catch (err) {
-            if (err.status === 523) {
-                throw err
+        const { user } = req
+        if (!user || !user._id) throw new Error("No se proporcionó un usuario válido");
+        const parsedData = InventariosValidations.put_inventarios_registros_fruta_descompuesta().parse(req.data)
+        const { data, _id } = parsedData
+        await executeTransactionalTask(req, async (session, log) => {
+            //se obtiene el registro original 
+            const registroDocs = await FrutaDescompuestaRepository.get_data({ ids: [_id] }, session);
+            if (registroDocs.length === 0) {
+                throw new ServiceError(404, `No se encontró el registro de fruta descompuesta con ID: ${_id}`)
             }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
+            const registro = registroDocs[0];
+            //calcular modificaciones
+            const { changesData, changesDescartes, cambioFruta } = await HistorialInventariosService.calcular_modificaciones(registro, data);
+            // si se debe modificar el inventario, se calcula si el cambio se peude realizar
+            if (changesDescartes.size > 0) {
+                await HistorialInventariosService.verificar_modificacion_del_inventario_descartes(changesDescartes, cambioFruta, user, session)
+            }
+            //se modifica el registro de fruta descompuesta
+            await HistorialInventariosService.modificar_registro_fruta_descompuesta_en_inventario_descarte(_id, changesData, changesDescartes, user, session)
+            await registrarPasoLog(log._id, "HistorialInventariosService.modificar_registro_fruta_descompuesta_en_inventario_descarte", "Completado");
+
+            //actualizar salida del cardex inventario descarte
+            await HistorialInventariosService.modificar_cardex_modificar_registro_despacho(changesDescartes, cambioFruta, session)
+            await registrarPasoLog(log._id, "HistorialInventariosService.modificar_cardex_modificar_registro_despacho", "Completado");
+        })
+
+        procesoEventEmitter.emit("server_event", {
+            action: "descarte_change",
+            data: {}
+        });
     }
     static async put_inventarios_historiales_despachoDescarte(req) {
         const { user } = req;
@@ -229,22 +247,24 @@ export class InventarioDescarteController {
         const { data, _id } = parsedData
 
         await executeTransactionalTask(req, async (session, log) => {
-            //calcular modificaciones
-            const { changesData, changesDescartes, cambioFruta } = await HistorialInventariosService.calcular_modificaciones(data, _id, session);
-            // si se debe modificar el inventario, se calcula si el cambio se peude realizar
-            console.log(changesDescartes.size)
-            if (changesDescartes.size > 0 || cambioFruta) {
-                await HistorialInventariosService.verificar_modificacion_del_inventario_descartes(changesDescartes, cambioFruta, session)
+            //se obtiene el registro original 
+            const registroDocs = await DespachoDescartesRepository.get_data({ ids: [_id] }, session);
+            if (registroDocs.length === 0) {
+                throw new ServiceError(404, `No se encontró el registro de despacho descarte con ID: ${_id}`)
             }
-            throw new Error("Error de prueba")
-            //se suma o se resta del inventario descartes segun corresponda
-            const oldRegistro = await HistorialInventariosService.modificar_inventario_descartes_modificar_salida(_id, inventario, data.tipoFruta, user, session)
-            await registrarPasoLog(log._id, "HistorialInventariosService.modificar_inventario_descartes_modificar_salida", "Completado");
+            const registro = registroDocs[0];
+            //calcular modificaciones
+            const { changesData, changesDescartes, cambioFruta } = await HistorialInventariosService.calcular_modificaciones(registro, data);
+            // si se debe modificar el inventario, se calcula si el cambio se peude realizar
+            if (changesDescartes.size > 0) {
+                await HistorialInventariosService.verificar_modificacion_del_inventario_descartes(changesDescartes, cambioFruta, user, session)
+            }
             //se modifica el registro del despacho descarte
-            await HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte(_id, inventario, newRegistro, user, session)
+            await HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte(_id, changesData, changesDescartes, user, session)
             await registrarPasoLog(log._id, "HistorialInventariosService.modificar_registro_despacho_en_inventario_descarte", "Completado");
+
             //actualizar salida del cardex inventario descarte
-            await HistorialInventariosService.modificar_cardex_modificar_registro_despacho(oldRegistro[0], data.tipoFruta, inventario, user, session)
+            await HistorialInventariosService.modificar_cardex_modificar_registro_despacho(changesDescartes, cambioFruta, session)
             await registrarPasoLog(log._id, "HistorialInventariosService.modificar_cardex_modificar_registro_despacho", "Completado");
 
         });
