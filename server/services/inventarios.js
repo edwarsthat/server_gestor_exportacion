@@ -306,6 +306,100 @@ export class InventariosService {
             __v
         )
     }
+    static async procesar_formulario_inventario_descarte_sumar(data, tipoFruta, session, user) {
+
+        const dataMap = new Map();
+        //se estrucutra los datos de entrada, kilos y acnastillas por item
+        for (const [key, value] of Object.entries(data)) {
+            const [area, descarteId, tipo] = key.split(':');
+            const campoDestino = tipo || 'kilos';
+            const valorNumerico = value === '' ? 0 : parseInt(value);
+            if (isNaN(valorNumerico)) throw new Error("El valor no es un numero");
+
+            const llaveUnica = area + ":" + descarteId;
+            const registroExistente = dataMap.get(llaveUnica) || { kilos: 0, canastillas: 0 };
+            registroExistente[campoDestino] = valorNumerico;
+            dataMap.set(llaveUnica, registroExistente);
+        }
+        //se recorre el mapa para descontar los kilos y canastillas
+        for (const [key, value] of dataMap) {
+            const [area, descarteId] = key.split(":");
+
+            let kilos = value.kilos;
+            let canastillas = value.canastillas;
+
+            const registros = await InventarioDescartesRepository.get_data({
+                query: {
+                    tipoFruta: tipoFruta,
+                    area: area,
+                    tipoDescarte: descarteId,
+                    estado: "ACTIVO",
+                    loteType: { $in: ["Lote", "Loteef8"] }
+                },
+                sort: { fechaIngreso: -1 },
+            }, { session })
+            if (registros.length === 0) throw new Error("No hay inventario suficiente")
+
+            for (const registro of registros) {
+
+                if (kilos <= 0 && canastillas <= 0) break; // Ya se descontaron todos los kilos necesarios
+
+                let update = {
+                    $inc: {},
+                    $set: {}
+                }
+                let kilosASumar = 0;
+                let canastillasASumar = 0;
+
+                if (kilos > 0) {
+                    // Calcular cuántos kilos se van a sumar de ESTE registro específico
+                    kilosASumar = Math.min(kilos, registro.kilosIniciales);
+                }
+                if (canastillas > 0) {
+                    // Calcular cuántas canastillas se van a sumar de ESTE registro específico
+                    canastillasASumar = Math.min(canastillas, registro.canastillasIniciales);
+                }
+
+                //se crea el update para el registro
+                if (kilosASumar > 0) {
+                    update.$inc.kilosActuales = kilosASumar;
+                }
+                if (canastillasASumar > 0) {
+                    update.$inc.canastillasActuales = canastillasASumar;
+                }
+
+                update.$set.estado = "ACTIVO";
+
+                //se modifica el registro 
+                await InventariosHistorialRepository.actualizar_registro_inventario_descarte(
+                    { _id: registro._id },
+                    update,
+                    { user: user._id, action: 'Actualizar inventario descarte reproceso predio', session }
+                )
+
+                // Registrar la SALIDA en el cardex (los kilos que realmente se descontaron)
+                await InventariosHistorialRepository.put_cardex_invetariosdescartes(
+                    {},
+                    { $inc: { [`kilos_salida.${tipoFruta}.${area}.${descarteId}`]: kilosASumar } },
+                    { sort: { fecha: -1 }, new: true, session }
+                );
+
+                // Reducir los kilos pendientes por descontar
+                kilos -= kilosASumar;
+                canastillas -= canastillasASumar;
+            }
+
+            // Verificar que se pudieron descontar todos los kilos
+            if (kilos > 0) {
+                throw new InventariosLogicError(470, `No hay inventario suficiente. Faltan ${kilos} kilos para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
+            }
+            if (canastillas > 0) {
+                throw new InventariosLogicError(470, `No hay inventario suficiente. Faltan ${canastillas} canastillas para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
+            }
+
+        }
+
+    }
     static async procesar_formulario_inventario_descarte(data, tipoFruta, session, user) {
         let totalKilos = 0;
         let totalCanastillas = 0;
@@ -352,7 +446,9 @@ export class InventariosService {
                     loteType: { $in: ["Lote", "Loteef8"] }
                 },
                 sort: { fechaIngreso: 1 },
-            })
+            }, { session })
+            console.log("registros", registros)
+
             if (registros.length === 0) throw new Error("No hay inventario suficiente")
 
             for (const registro of registros) {

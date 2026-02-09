@@ -27,6 +27,9 @@ import { FrutaProcesada } from "../Class/frutaProcesada.js";
 import { LotesHelper } from "../helper/lotes.js";
 import { ArchiveLoteMaquila } from "../archive/ArchiveLoteMaquila.js";
 import { FileService } from "../services/helpers/FileService.js";
+import { InventariosHistorialRepository } from "../Class/Inventarios.js";
+import { IndicadoresAPIRepository } from "./IndicadoresAPI.js";
+import { DescartesRepository } from "../Class/Descartes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
