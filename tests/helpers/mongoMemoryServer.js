@@ -18,6 +18,9 @@ import { defineAuditSistemaLogs } from '../../DB/mongoDB/schemas/audit/AuditLosS
 import { defineDescartes } from '../../DB/mongoDB/schemas/catalogs/schemaDescartes.js';
 import { defineUser } from '../../DB/mongoDB/schemas/usuarios/schemaUsuarios.js';
 import { defineInventarioDescarte } from '../../DB/mongoDB/schemas/inventarios/SchemaInventarioDescartes.js';
+import { defineClientes } from '../../DB/mongoDB/schemas/clientes/schemaClientes.js';
+import { defineSeriales } from '../../DB/mongoDB/schemas/seriales/SerialesSchema.js';
+import { definePaises } from '../../DB/mongoDB/schemas/catalogs/schemaPaises.js';
 
 let replSet = null;
 let testConnection = null;
@@ -91,6 +94,9 @@ export async function defineTestSchemas(conn) {
     testDb.Descartes = await defineDescartes(conn);
     testDb.Usuarios = await defineUser(conn);
     testDb.InventarioDescarte = await defineInventarioDescarte(conn);
+    testDb.Clientes = await defineClientes(conn);
+    testDb.Seriales = await defineSeriales(conn);
+    testDb.Paises = await definePaises(conn);
 
     return testDb;
 }

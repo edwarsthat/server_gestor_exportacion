@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { requiredSafeString, safeString, objectIdString } from "./utils/validationFunctions.js";
 
 export class ComercialValidationsRepository {
     static val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro) {
@@ -249,6 +250,51 @@ export class ComercialValidationsRepository {
                 .refine(val => !isNaN(Number(val)) && Number(val) > 0, "El total de cajas debe ser un número válido mayor a cero"),
             RTO: z.string().optional(),
             observaciones: z.string().min(1, "Las observaciones son obligatorias")
+        })
+    }
+    static post_comercial_clientes() {
+        return z.object({
+            action: z.literal("post_comercial_clientes"),
+            data: z.object({
+                CLIENTE: requiredSafeString("CLIENTE"),
+                CORREO: z.string()
+                    .min(1, "El campo CORREO es obligatorio")
+                    .email("El campo CORREO debe ser un correo válido"),
+                DIRECCIÓN: requiredSafeString("DIRECCIÓN"),
+                PAIS_DESTINO: z.array(
+                    z.object({
+                        codigo: objectIdString("codigo"),
+                        requiereGGN: z.boolean({ message: "El campo requiereGGN debe ser un booleano" })
+                    })
+                ).min(1, "Debe seleccionar al menos un país de destino"),
+                TELEFONO: safeString("TELEFONO")
+                    .pipe(z.string().min(1, "El campo TELEFONO es obligatorio")),
+                ID: safeString("ID")
+                    .pipe(z.string().min(1, "El campo ID es obligatorio")),
+            })
+        })
+    }
+    static put_comercial_clientes() {
+        return z.object({
+            _id: objectIdString("_id"),
+            action: z.literal("put_comercial_clientes"),
+            data: z.object({
+                CLIENTE: requiredSafeString("CLIENTE"),
+                CORREO: z.string()
+                    .min(1, "El campo CORREO es obligatorio")
+                    .email("El campo CORREO debe ser un correo válido"),
+                DIRECCIÓN: requiredSafeString("DIRECCIÓN"),
+                PAIS_DESTINO: z.array(
+                    z.object({
+                        codigo: objectIdString("codigo"),
+                        requiereGGN: z.boolean({ message: "El campo requiereGGN debe ser un booleano" })
+                    })
+                ).min(1, "Debe seleccionar al menos un país de destino"),
+                TELEFONO: safeString("TELEFONO")
+                    .pipe(z.string().min(1, "El campo TELEFONO es obligatorio")),
+                ID: safeString("ID")
+                    .pipe(z.string().min(1, "El campo ID es obligatorio")),
+            })
         })
     }
 }

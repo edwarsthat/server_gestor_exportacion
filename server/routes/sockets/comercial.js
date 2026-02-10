@@ -68,15 +68,15 @@ export const apiSocketComercial = {
         return successResponseRoutes(response)
     },
     post_comercial_clientes: async (data) => {
-        await ComercialRepository.post_comercial_clientes(data)
+        await ClientesExpController.post_comercial_clientes(data)
         return successResponseRoutes()
     },
     put_comercial_clientes: async (data) => {
-        await ComercialRepository.put_comercial_clientes(data)
+        await ClientesExpController.put_comercial_clientes(data)
         return successResponseRoutes()
     },
     put_comercial_clientes_estado: async (req) => {
-        await ComercialRepository.put_comercial_clientes_estado(req)
+        await ClientesExpController.put_comercial_clientes_estado(req)
         return successResponseRoutes()
     },
     get_comercial_clientesNacionales: async (data) => {

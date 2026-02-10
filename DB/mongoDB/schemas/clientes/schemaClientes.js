@@ -15,7 +15,10 @@ export const defineClientes = async (conn) => {
     DIRECCIÓN: String,
     ID: String,
     TELEFONO: String,
-    activo: Boolean
+    activo: Boolean,
+    user: { type: Schema.Types.ObjectId, ref: 'usuario' },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
   });
 
   const Clientes = conn.model("Cliente", ClienteSchema);
