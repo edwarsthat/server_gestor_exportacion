@@ -1,21 +1,16 @@
 import { InventariosHistorialServiceError } from "../../../Error/ServiceError.js";
 import { DespachoDescartesRepository } from "../../Class/DespachoDescarte.js";
+import { FrutaDescompuestaRepository } from "../../Class/FrutaDescompuesta.js";
 import { InventariosHistorialRepository, InventarioDescartesRepository } from "../../Class/Inventarios.js";
 import { ServiceError } from "../../models/ErrorModels.js";
 import { crear_arreglo_modificar_descartes, crear_arreglo_modificar_descartes_sumar } from "../helpers/descartes.js";
 import { InventariosService } from "../inventarios.js";
 
 export class HistorialInventariosService {
-    static async calcular_modificaciones(data, idRegistro, session) {
-        //se obtiene el registro original 
-        const registroDocs = await DespachoDescartesRepository.get_data({ ids: [idRegistro] }, session);
-        if (registroDocs.length === 0) {
-            throw new ServiceError(404, `No se encontró el registro de inventario descarte con ID: ${idRegistro}`)
-        }
-        const registro = registroDocs[0];
+    static async calcular_modificaciones(registro, data) {
         //se verifica que tenga tipoFruta
         if (!registro.tipoFruta || !data.tipoFruta) {
-            throw new ServiceError(400, `El registro de inventario descarte con ID: ${idRegistro} no tiene tipoFruta`)
+            throw new ServiceError(400, `El registro de inventario descarte con ID: ${registro._id} no tiene tipoFruta`)
         }
         // se verifica si cambio la fruta
 
@@ -151,6 +146,53 @@ export class HistorialInventariosService {
                 { _id: idRegistro },
                 update,
                 { user: user._id, action: 'Modificar registro despacho descarte en inventario descarte', session }
+            )
+            return true
+        } catch (err) {
+            throw new InventariosHistorialServiceError(`Error service: ${err.message}`);
+        }
+    }
+    static async modificar_registro_fruta_descompuesta_en_inventario_descarte(idRegistro, changesData, changesDescartes, user, session) {
+        try {
+            const update = {
+                $set: {},
+                $inc: {}
+            };
+
+            // Campos fijos que cambiaron
+            for (const { key, value } of changesData) {
+                update.$set[key] = value;
+            }
+
+            // Campos dinámicos (descartes) que cambiaron
+            let kilosDelta = 0;
+            for (const [key, value] of changesDescartes) {
+                if (value.kilos !== undefined) {
+                    update.$set[`descartes.${key}:kilos`] = value.kilos.value;
+                    kilosDelta += value.kilos.value - value.kilos.valueOriginal;
+                }
+                if (value.canastillas !== undefined) {
+                    update.$set[`descartes.${key}:canastillas`] = value.canastillas.value;
+                }
+            }
+
+            if (kilosDelta !== 0) {
+                update.$inc.kilos = kilosDelta;
+            }
+
+            // Limpiar operadores vacíos
+            if (Object.keys(update.$set).length === 0) delete update.$set;
+            if (Object.keys(update.$inc).length === 0) delete update.$inc;
+
+            if (Object.keys(update).length === 0) return true;
+
+            await FrutaDescompuestaRepository.actualizar_registro(
+                { _id: idRegistro },
+                update,
+                { session },
+                null,
+                user._id,
+                'Modificar registro fruta descompuesta en inventario descarte'
             )
             return true
         } catch (err) {

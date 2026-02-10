@@ -1,4 +1,5 @@
 import { ContabilidadRepository } from "../../api/Contabilidad.js";
+import { InformesContabilidadController } from "../../api/contabilidad/Informes.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketContabilidad = {
@@ -40,10 +41,10 @@ export const apiSocketContabilidad = {
 
     // Actualizar agrupacion de fletes compuestos. Jp
     put_contabilidad_agrupar_fletes_compuestos: async (data) => {
-    const response = await ContabilidadRepository.agrupar_fletes_compuestos(data);
-    return successResponseRoutes(response);
-    }, 
-    
+        const response = await ContabilidadRepository.agrupar_fletes_compuestos(data);
+        return successResponseRoutes(response);
+    },
+
     get_contabilidad_informeMaquila_resumenInforme: async (data) => {
         const response = await InformesContabilidadController.get_contabilidad_informeMaquila_resumenInforme(data);
         return successResponseRoutes(response);
