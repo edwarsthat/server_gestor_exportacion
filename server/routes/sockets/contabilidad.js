@@ -44,10 +44,10 @@ export const apiSocketContabilidad = {
         const response = await ContabilidadRepository.agrupar_fletes_compuestos(data);
         return successResponseRoutes(response);
     },
+
     get_contabilidad_informeMaquila_resumenInforme: async (data) => {
         const response = await InformesContabilidadController.get_contabilidad_informeMaquila_resumenInforme(data);
         return successResponseRoutes(response);
     }
-
 
 }
