@@ -122,6 +122,8 @@ export const defineContenedores = async (conn, AuditLog) => {
     totalKilos: Number,
     totalCajas: Number,
     pallets: Number,
+    GGN: Boolean,
+    pais_destino: { type: Schema.Types.ObjectId, ref: "Pais" },
     infoContenedor: infoContenedorSchema,
     infoTractoMula: schemaInfoMula,
     infoExportacion: schemaInfoExportacion,

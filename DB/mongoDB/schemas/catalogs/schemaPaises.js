@@ -8,6 +8,6 @@ export const definePaises = async (conn) => {
         activo: { type: Boolean, default: true }
     });
 
-    const Paises = conn.model("Pais", PaisSchema);
+    const Paises = conn.model("c", PaisSchema);
     return Paises;
 }

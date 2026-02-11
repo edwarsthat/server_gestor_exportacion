@@ -9,7 +9,7 @@ const mockGetCalidades = jest.fn();
 const mockGetDescartes = jest.fn();
 const mockGetCarnets = jest.fn();
 const mockGetAreasSeleccion = jest.fn();
-const mockGetPaisesGGN = jest.fn();
+const mockGetPaisesExportacion = jest.fn();
 const mockGetTiposIdentificacion = jest.fn();
 
 jest.unstable_mockModule('../../server/Class/ConstantesDelSistema.js', () => ({
@@ -19,7 +19,7 @@ jest.unstable_mockModule('../../server/Class/ConstantesDelSistema.js', () => ({
         get_constantes_sistema_descartes: mockGetDescartes,
         get_constantes_carnets: mockGetCarnets,
         get_constantes_sistema_areasSeleccion: mockGetAreasSeleccion,
-        get_constantes_sistema_paises_GGN: mockGetPaisesGGN,
+        get_constantes_sistema_paises_Exportacion: mockGetPaisesExportacion,
         get_constantes_sistema_tiposIdentificacion: mockGetTiposIdentificacion
     }
 }));
@@ -27,6 +27,12 @@ jest.unstable_mockModule('../../server/Class/ConstantesDelSistema.js', () => ({
 const mockErrorDataLogicHandlers = jest.fn();
 jest.unstable_mockModule('../../server/api/utils/errorsHandlers.js', () => ({
     ErrorDataLogicHandlers: mockErrorDataLogicHandlers
+}));
+
+// Mock executeQueryTask como wrapper transparente para aislar la lógica de get_data_bootstrap
+jest.unstable_mockModule('../../server/utils/wrappers.js', () => ({
+    executeQueryTask: jest.fn(async (fn) => fn()),
+    executeTransactionalTask: jest.fn()
 }));
 
 // Importar después de los mocks
@@ -93,7 +99,7 @@ describe('dataRepository.get_data_bootstrap', () => {
         mockGetDescartes.mockResolvedValue(MOCK_DATA.descartes);
         mockGetCarnets.mockResolvedValue(MOCK_DATA.carnet);
         mockGetAreasSeleccion.mockResolvedValue(MOCK_DATA.areasSeleccion);
-        mockGetPaisesGGN.mockResolvedValue(MOCK_DATA.paisesExpGGN);
+        mockGetPaisesExportacion.mockResolvedValue(MOCK_DATA.paisesExpGGN);
         mockGetTiposIdentificacion.mockReturnValue(MOCK_DATA.tiposIdentificacion);
     });
 
@@ -172,7 +178,7 @@ describe('dataRepository.get_data_bootstrap', () => {
             expect(mockGetDescartes).toHaveBeenCalledTimes(1);
             expect(mockGetCarnets).toHaveBeenCalledTimes(1);
             expect(mockGetAreasSeleccion).toHaveBeenCalledTimes(1);
-            expect(mockGetPaisesGGN).toHaveBeenCalledTimes(1);
+            expect(mockGetPaisesExportacion).toHaveBeenCalledTimes(1);
             expect(mockGetTiposIdentificacion).toHaveBeenCalledTimes(1);
         });
 
@@ -184,59 +190,41 @@ describe('dataRepository.get_data_bootstrap', () => {
             expect(mockGetDescartes).toHaveBeenCalledWith();
             expect(mockGetCarnets).toHaveBeenCalledWith();
             expect(mockGetAreasSeleccion).toHaveBeenCalledWith();
-            expect(mockGetPaisesGGN).toHaveBeenCalledWith();
+            expect(mockGetPaisesExportacion).toHaveBeenCalledWith();
             expect(mockGetTiposIdentificacion).toHaveBeenCalledWith();
         });
     });
 
     // ============================================================
-    // TESTS 4-7: Errores en métodos individuales (DRY con test.each)
+    // TESTS 4-7: Errores en métodos individuales
+    // get_data_bootstrap delega el manejo de errores a executeQueryTask.
+    // Aquí verificamos que los errores de cada método se propagan correctamente.
     // ============================================================
     describe('Tests 4-7: Errores en métodos individuales', () => {
-        // Mapa de métodos para test.each
         const errorTestCases = [
             ['tipo_frutas2', () => mockGetTipoFrutas2],
             ['calidades', () => mockGetCalidades],
             ['descartes', () => mockGetDescartes],
-            ['paises_GGN', () => mockGetPaisesGGN],
+            ['paises_Exportacion', () => mockGetPaisesExportacion],
             ['carnets', () => mockGetCarnets],
             ['areasSeleccion', () => mockGetAreasSeleccion]
         ];
 
         test.each(errorTestCases)(
-            'debería llamar a console.error cuando falla %s',
+            'debería propagar el error cuando falla %s',
             async (nombre, getMock) => {
                 const error = new ProcessError(540, `Error en ${nombre}`);
                 getMock().mockRejectedValue(error);
-                mockErrorDataLogicHandlers.mockResolvedValue(new DataLogicError(472, 'Error wrapped'));
 
-                await expect(dataRepository.get_data_bootstrap()).rejects.toThrow();
-
-                expect(consoleErrorSpy).toHaveBeenCalled();
-                expect(consoleErrorSpy.mock.calls[0][0]).toMatch(/\[ERROR\]\[.*\] Bootstrap failed:/);
+                await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(error);
             }
         );
 
-        test.each(errorTestCases)(
-            'debería llamar a ErrorDataLogicHandlers cuando falla %s',
-            async (nombre, getMock) => {
-                const error = new ProcessError(540, `Error en ${nombre}`);
-                getMock().mockRejectedValue(error);
-                mockErrorDataLogicHandlers.mockResolvedValue(new DataLogicError(472, 'Error wrapped'));
-
-                await expect(dataRepository.get_data_bootstrap()).rejects.toThrow();
-
-                expect(mockErrorDataLogicHandlers).toHaveBeenCalledWith(error);
-            }
-        );
-
-        test('debería lanzar el error retornado por ErrorDataLogicHandlers', async () => {
+        test('debería propagar el error original del método que falla', async () => {
             const originalError = new ProcessError(540, 'Error en tipo_frutas2');
-            const wrappedError = new DataLogicError(472, 'Error ProcessError: Error en tipo_frutas2');
             mockGetTipoFrutas2.mockRejectedValue(originalError);
-            mockErrorDataLogicHandlers.mockResolvedValue(wrappedError);
 
-            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(wrappedError);
+            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(originalError);
         });
     });
 
@@ -244,27 +232,23 @@ describe('dataRepository.get_data_bootstrap', () => {
     // TEST 8: Error con status >= 500
     // ============================================================
     describe('Test 8: Error con status >= 500', () => {
-        test('debería relanzar el error original cuando status es 500', async () => {
+        test('debería propagar el error cuando status es 500', async () => {
             const serverError = new ProcessError(500, 'Internal Server Error');
             mockGetTipoFrutas2.mockRejectedValue(serverError);
-            mockErrorDataLogicHandlers.mockResolvedValue(serverError);
 
             await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(serverError);
         });
 
-        test('debería relanzar el error original cuando status es 522', async () => {
+        test('debería propagar el error cuando status es 522', async () => {
             const serverError = new ProcessError(522, 'Connection timed out');
             mockGetCalidades.mockRejectedValue(serverError);
-            mockErrorDataLogicHandlers.mockResolvedValue(serverError);
 
             await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(serverError);
         });
 
-        test('debería relanzar el error original cuando status es 540', async () => {
+        test('debería propagar el error cuando status es 540', async () => {
             const serverError = new ProcessError(540, 'Database error');
-            serverError.status = 540;
             mockGetDescartes.mockRejectedValue(serverError);
-            mockErrorDataLogicHandlers.mockResolvedValue(serverError);
 
             await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(serverError);
         });
@@ -274,69 +258,47 @@ describe('dataRepository.get_data_bootstrap', () => {
     // TEST 9: Error con status < 500
     // ============================================================
     describe('Test 9: Error con status < 500', () => {
-        test('debería lanzar DataLogicError(472, ...) cuando error tiene status 400', async () => {
+        test('debería propagar el error cuando status es 400', async () => {
             const clientError = new Error('Bad Request');
             clientError.status = 400;
-            clientError.type = 'ValidationError';
             mockGetTipoFrutas2.mockRejectedValue(clientError);
 
-            const wrappedError = new DataLogicError(472, 'Error ValidationError: Bad Request');
-            mockErrorDataLogicHandlers.mockResolvedValue(wrappedError);
-
-            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(DataLogicError);
+            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(clientError);
         });
 
-        test('debería lanzar DataLogicError(472, ...) cuando error tiene status 404', async () => {
+        test('debería propagar el error cuando status es 404', async () => {
             const notFoundError = new Error('Not Found');
             notFoundError.status = 404;
             mockGetCalidades.mockRejectedValue(notFoundError);
 
-            const wrappedError = new DataLogicError(472, 'Error : Not Found');
-            mockErrorDataLogicHandlers.mockResolvedValue(wrappedError);
-
-            const result = dataRepository.get_data_bootstrap();
-            await expect(result).rejects.toThrow(wrappedError);
+            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(notFoundError);
         });
 
-        test('debería lanzar DataLogicError cuando error tiene status 499', async () => {
+        test('debería propagar el error cuando status es 499', async () => {
             const error = new Error('Client closed request');
             error.status = 499;
             mockGetDescartes.mockRejectedValue(error);
 
-            const wrappedError = new DataLogicError(472, 'Error : Client closed request');
-            mockErrorDataLogicHandlers.mockResolvedValue(wrappedError);
-
-            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(wrappedError);
+            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(error);
         });
     });
 
     // ============================================================
-    // TEST 10: Logging de errores
+    // TEST 10: Propagación de errores
     // ============================================================
-    describe('Test 10: Logging de errores', () => {
-        test('debería llamar a console.error con formato [ERROR][timestamp]', async () => {
+    describe('Test 10: Propagación de errores', () => {
+        test('debería propagar el error con su mensaje original', async () => {
             const error = new ProcessError(540, 'Test error');
             mockGetTipoFrutas2.mockRejectedValue(error);
-            mockErrorDataLogicHandlers.mockResolvedValue(new DataLogicError(472, 'wrapped'));
 
-            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow();
-
-            expect(consoleErrorSpy).toHaveBeenCalled();
-            const logMessage = consoleErrorSpy.mock.calls[0][0];
-            expect(logMessage).toMatch(/^\[ERROR\]\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\] Bootstrap failed:$/);
+            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow('Test error');
         });
 
-        test('debería incluir el error en el segundo argumento del log', async () => {
+        test('debería propagar el error con su tipo original', async () => {
             const error = new ProcessError(540, 'Test error for logging');
             mockGetTipoFrutas2.mockRejectedValue(error);
-            mockErrorDataLogicHandlers.mockResolvedValue(new DataLogicError(472, 'wrapped'));
 
-            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow();
-
-            expect(consoleErrorSpy).toHaveBeenCalledWith(
-                expect.stringMatching(/\[ERROR\]\[.*\] Bootstrap failed:/),
-                error
-            );
+            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(ProcessError);
         });
     });
 
@@ -350,7 +312,7 @@ describe('dataRepository.get_data_bootstrap', () => {
             mockGetDescartes.mockResolvedValue([]);
             mockGetCarnets.mockResolvedValue({});
             mockGetAreasSeleccion.mockResolvedValue({});
-            mockGetPaisesGGN.mockResolvedValue([]);
+            mockGetPaisesExportacion.mockResolvedValue([]);
             mockGetTiposIdentificacion.mockReturnValue({});
 
             const result = await dataRepository.get_data_bootstrap();
@@ -370,7 +332,7 @@ describe('dataRepository.get_data_bootstrap', () => {
             mockGetDescartes.mockResolvedValue([]);
             mockGetCarnets.mockResolvedValue({});
             mockGetAreasSeleccion.mockResolvedValue({});
-            mockGetPaisesGGN.mockResolvedValue([]);
+            mockGetPaisesExportacion.mockResolvedValue([]);
             mockGetTiposIdentificacion.mockReturnValue({});
 
             const result = await dataRepository.get_data_bootstrap();
@@ -500,38 +462,25 @@ describe('dataRepository.get_data_bootstrap', () => {
     });
 
     // ============================================================
-    // TEST 22: Sensitive Leak - No filtrar info sensible en el error
+    // TEST 22: Propagación de errores sensibles
+    // Nota: La sanitización de errores ahora se hace en executeQueryTask/GlobalControllerErrorHandler,
+    // no en get_data_bootstrap directamente. Estos tests verifican que los errores se propagan.
     // ============================================================
-    describe('Test 22: Sensitive Leak', () => {
-        test('el error retornado no debería contener stack trace interno', async () => {
+    describe('Test 22: Propagación de errores', () => {
+        test('debería propagar el error original cuando un método falla', async () => {
             const sensitiveError = new Error('Database password: secret123');
-            sensitiveError.stack = 'Error: Database password: secret123\n    at /internal/path/file.js:123';
             sensitiveError.status = 400;
             mockGetTipoFrutas2.mockRejectedValue(sensitiveError);
 
-            const cleanError = new DataLogicError(472, 'Error : Error en la operación');
-            mockErrorDataLogicHandlers.mockResolvedValue(cleanError);
-
-            try {
-                await dataRepository.get_data_bootstrap();
-                expect(true).toBe(false); // No debería llegar aquí
-            } catch (err) {
-                // Verificar que el error lanzado es el limpio
-                expect(err).toBe(cleanError);
-                expect(err.message).not.toContain('secret123');
-                expect(err.message).not.toContain('/internal/path');
-            }
+            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(sensitiveError);
         });
 
-        test('ErrorDataLogicHandlers debería ser llamado para sanitizar errores', async () => {
+        test('debería rechazar la promesa cuando un método lanza error', async () => {
             const errorWithSensitiveData = new Error('Connection string: mongodb://user:pass@host');
             errorWithSensitiveData.status = 400;
             mockGetCalidades.mockRejectedValue(errorWithSensitiveData);
-            mockErrorDataLogicHandlers.mockResolvedValue(new DataLogicError(472, 'Error de conexión'));
 
-            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow();
-
-            expect(mockErrorDataLogicHandlers).toHaveBeenCalledWith(errorWithSensitiveData);
+            await expect(dataRepository.get_data_bootstrap()).rejects.toThrow(errorWithSensitiveData);
         });
     });
 });
@@ -561,7 +510,7 @@ describe('dataRepository.get_data_bootstrap - Tests de Performance', () => {
         mockGetDescartes.mockResolvedValue(MOCK_DATA.descartes);
         mockGetCarnets.mockResolvedValue(MOCK_DATA.carnet);
         mockGetAreasSeleccion.mockResolvedValue(MOCK_DATA.areasSeleccion);
-        mockGetPaisesGGN.mockResolvedValue(MOCK_DATA.paisesExpGGN);
+        mockGetPaisesExportacion.mockResolvedValue(MOCK_DATA.paisesExpGGN);
         mockGetTiposIdentificacion.mockReturnValue(MOCK_DATA.tiposIdentificacion);
     });
 
@@ -609,7 +558,7 @@ describe('dataRepository.get_data_bootstrap - Tests de Performance', () => {
             mockGetAreasSeleccion.mockImplementation(() =>
                 new Promise(resolve => setTimeout(() => resolve(MOCK_DATA.areasSeleccion), FAST_DELAY))
             );
-            mockGetPaisesGGN.mockImplementation(() =>
+            mockGetPaisesExportacion.mockImplementation(() =>
                 new Promise(resolve => setTimeout(() => resolve(MOCK_DATA.paisesExpGGN), FAST_DELAY))
             );
             mockGetTiposIdentificacion.mockReturnValue(MOCK_DATA.tiposIdentificacion);

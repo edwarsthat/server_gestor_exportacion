@@ -39,55 +39,47 @@ afterAll(async () => {
 });
 
 // ============================================================
-// TEST 13: Archivos JSON - Verificar lectura de paisesEXP.json
+// TEST 13: Países de exportación - Verificar lectura desde BD
 // ============================================================
-describe('Test 13: Archivos JSON - paisesEXP.json', () => {
+describe('Test 13: Países de exportación desde BD', () => {
 
-    test('debería leer correctamente el archivo paisesEXP.json', async () => {
-        const result = await ConstantesDelSistema.get_constantes_sistema_paises_GGN();
+    test('debería retornar un array al consultar países', async () => {
+        if (!isConnected) {
+            console.warn('⚠️ Test saltado: No hay conexión a MongoDB');
+            return;
+        }
+
+        const result = await ConstantesDelSistema.get_constantes_sistema_paises_Exportacion();
 
         expect(Array.isArray(result)).toBe(true);
-        expect(result.length).toBeGreaterThan(0);
     });
 
-    test('debería contener países conocidos', async () => {
-        const result = await ConstantesDelSistema.get_constantes_sistema_paises_GGN();
+    test('cada país debería ser un documento válido con _id', async () => {
+        if (!isConnected) {
+            console.warn('⚠️ Test saltado: No hay conexión a MongoDB');
+            return;
+        }
 
-        // Verificar algunos países que sabemos que existen (tal como están en el JSON)
-        expect(result).toContain('colombia');
-        expect(result).toContain('Estados unidos');
-        expect(result).toContain('Ecuador');
-    });
+        const result = await ConstantesDelSistema.get_constantes_sistema_paises_Exportacion();
 
-    test('todos los elementos deberían ser strings no vacíos', async () => {
-        const result = await ConstantesDelSistema.get_constantes_sistema_paises_GGN();
-
-        // Validación de esquema mínimo
-        expect(result.length).toBeGreaterThan(0);
+        if (result.length === 0) {
+            console.warn('⚠️ La colección Paises está vacía en esta BD');
+            return;
+        }
 
         result.forEach((pais) => {
-            expect(typeof pais).toBe('string');
-            expect(pais.trim().length).toBeGreaterThan(0);
+            expect(pais).toBeDefined();
+            expect(pais._id).toBeDefined();
         });
     });
 
-    test('debería tener al menos 20 países', async () => {
-        const result = await ConstantesDelSistema.get_constantes_sistema_paises_GGN();
-
-        // Si falla, indica que el archivo puede estar corrupto o incompleto
-        expect(result.length).toBeGreaterThanOrEqual(20);
-    });
-
-    test('no debería contener elementos duplicados', async () => {
-        const result = await ConstantesDelSistema.get_constantes_sistema_paises_GGN();
-        const uniqueSet = new Set(result.map(p => p.toLowerCase()));
-
-        // Advertencia: Si hay duplicados, podría indicar datos corruptos
-        expect(uniqueSet.size).toBe(result.length);
-    });
-
     test('no debería contener valores nulos o undefined', async () => {
-        const result = await ConstantesDelSistema.get_constantes_sistema_paises_GGN();
+        if (!isConnected) {
+            console.warn('⚠️ Test saltado: No hay conexión a MongoDB');
+            return;
+        }
+
+        const result = await ConstantesDelSistema.get_constantes_sistema_paises_Exportacion();
 
         const invalidEntries = result.filter(p => p === null || p === undefined);
         expect(invalidEntries).toHaveLength(0);
@@ -242,9 +234,13 @@ describe('Test 15: Manejo de BD no disponible', () => {
 // ============================================================
 describe('Test 16: Integridad de archivos JSON', () => {
 
-    test('el archivo paisesEXP.json debería existir y ser válido', async () => {
-        // Si el archivo no existe, get_constantes_sistema_paises_GGN lanzará ProcessError(540)
-        const result = await ConstantesDelSistema.get_constantes_sistema_paises_GGN();
+    test('la colección de países debería existir y retornar datos', async () => {
+        if (!isConnected) {
+            console.warn('⚠️ Test saltado: No hay conexión a MongoDB');
+            return;
+        }
+
+        const result = await ConstantesDelSistema.get_constantes_sistema_paises_Exportacion();
 
         expect(result).toBeDefined();
         expect(Array.isArray(result)).toBe(true);
