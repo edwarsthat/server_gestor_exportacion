@@ -50,10 +50,10 @@ export class DescartesControllers {
             if (!kilos && !canastillas) {
                 throw new Error("No se encontró el peso o las canastillas")
             }
-            const descarteData = descartesDataDocs[0];
-            if (!descarteData || !descarteData.inventario) {
-                throw new Error("El descarte no es de inventario")
-            }
+            // const descarteData = descartesDataDocs[0];
+            // if (!descarteData || !descarteData.inventario) {
+            //     throw new Error("El descarte no es de inventario")
+            // }
 
             //se calcula el peso total
             const kilosTotales = (Number(kilos) || 0) + ((Number(canastillas) || 0) * valorPromedio);
