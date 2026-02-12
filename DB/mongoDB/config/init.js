@@ -449,9 +449,9 @@ const defineSchemasSistema = async (sysConn) => {
         db.recordCargo = await defineRecordcargo(sysConn);
         console.log("✅ recordCargo definido");
 
-        console.log("⚡ Definiendo Usuarios...");
-        db.Usuarios = await defineUser(sysConn);
-        console.log("✅ Usuarios definido");
+        // console.log("⚡ Definiendo Usuarios...");
+        // db.Usuarios = await defineUser(sysConn);
+        // console.log("✅ Usuarios definido");
 
 
         console.log("⚡ Definiendo Logs...");
