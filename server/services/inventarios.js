@@ -400,7 +400,8 @@ export class InventariosService {
         }
 
     }
-    static async procesar_formulario_inventario_descarte(data, tipoFruta, session, user) {
+    static async procesar_formulario_inventario_descarte(data, tipoFruta, session, user, opts = {}) {
+        const { descompuesta = false } = opts;
         let totalKilos = 0;
         let totalCanastillas = 0;
         const dataMap = new Map();
@@ -427,9 +428,14 @@ export class InventariosService {
             const canastillasEliminar = value.canastillas;
 
 
-            // Error si: (Kilos es 0 Y Canastillas > 0) O (Kilos > 0 Y Canastillas es 0)
-            if ((kilosEliminar === 0) !== (canastillasEliminar === 0)) {
-                throw new Error("Inconsistencia: No se puede eliminar 0 kilos o 0 canastillas.");
+            // 1. Si NO es descompuesta: Validación estricta de pareja (XOR)
+            if (!descompuesta && (kilosEliminar === 0) !== (canastillasEliminar === 0)) {
+                throw new Error("Inconsistencia: Debes reportar tanto kilos como canastillas.");
+            }
+
+            // 2. Si ES descompuesta: Solo error si hay canastillas pero no hay kilos
+            if (descompuesta && canastillasEliminar > 0 && kilosEliminar <= 0) {
+                throw new Error("Inconsistencia: No puedes enviar canastillas de descompuesta con 0 kilos.");
             }
 
             let kilos = value.kilos;
