@@ -693,4 +693,13 @@ export class InventariosValidations {
             filtro: filtroSchema
         });
     }
+    static put_inventarios_inventarioDescarte_modificar_ingreso() {
+        return z.object({
+            action: z.literal("put_inventarios_inventarioDescarte_modificar_ingreso"),
+            _id: objectIdString("_id"),
+            kilosIniciales: z.coerce.number()
+                .int("Los kilos deben ser un número entero")
+                .gt(0, "Los kilos deben ser mayor a cero"),
+        });
+    }
 }
