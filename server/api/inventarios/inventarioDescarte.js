@@ -190,7 +190,9 @@ export class InventarioDescarteController {
             const tipoFrutaId = parsedData.tipoFruta;
             delete data.tipoFruta;
             //se borra del inventario
-            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(data, tipoFrutaId, session, user)
+            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(
+                data, tipoFrutaId, session, user
+            )
             await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
             //se obtiene el tipodefruta
             const tipoFruta = tipoFrutaCache.getTipoFruta(tipoFrutaId);
@@ -292,10 +294,12 @@ export class InventarioDescarteController {
             if (!mongoose.isValidObjectId(tipoFruta)) throw new Error("No se proporciono un tipo de fruta");
             delete inventario.tipoFruta;
             //se borra del inventario
-            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
+            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(
+                inventario, tipoFruta, session, user, { descompuesta: true }
+            )
             await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
 
-            if (totalKilos > 50 && user.Rol > 2) throw new Error("No puede crear un registro de fruta descompuesta de tantos kilos")
+            if (totalKilos > 200 && user.Rol > 2) throw new Error("No puede crear un registro de fruta descompuesta de tantos kilos")
             //se crea el registro de fruta descompuesta
             const query = {
                 ...data,
