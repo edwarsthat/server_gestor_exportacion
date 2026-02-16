@@ -18,7 +18,7 @@ export const defineHistorialConcentraciones = async (conn) => {
         // Referencia al tipo de fruta
         tipoFruta: {
             type: Schema.Types.ObjectId,
-            ref: "TipoFrutas",
+            ref: "tipoFrutas",
             required: true
         },
         // Concentración en PPM (string para permitir letras y números)
@@ -43,7 +43,7 @@ export const defineHistorialConcentraciones = async (conn) => {
         // Usuario que hizo el registro (automático del sistema)
         usuario: {
             type: Schema.Types.ObjectId,
-            ref: "Usuario",
+            ref: "usuario",
             required: true
         },
         // Estado del registro
