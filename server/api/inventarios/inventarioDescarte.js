@@ -87,67 +87,72 @@ export class InventarioDescarteController {
     }
     static async put_inventarios_inventarioDescarte_modificar_ingreso(req) {
         const { user } = req
-        const { action, _id, kilosIniciales } = req.data
-        let log
-        log = await LogsRepository.create({
-            user: user._id,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        if (!user || !user._id) throw new ServiceError(470, `No se encontró el usuario`)
+
+        await executeTransactionalTask(req, async (session, log) => {
+
+            const parseData = InventariosValidations.put_inventarios_inventarioDescarte_modificar_ingreso().parse(req.data)
+            const { _id, kilosIniciales } = parseData
+
+            const oldValueDocs = await InventarioDescartesRepository.get_data({
+                query: { _id: _id },
+                select: "kilosIniciales kilosActuales tipoFruta"
+            })
+            if (oldValueDocs.length === 0) throw new Error(`No se encontró el registro`)
+            const oldValue = oldValueDocs[0]
+
+            const tipoFruta = await tipoFrutaCache.getTipoFruta(oldValue.tipoFruta)
+            if (!tipoFruta) throw new Error(`No se encontró el tipo de fruta`)
+            if (!tipoFruta.valorPromedio || tipoFruta.valorPromedio <= 0) throw new Error(`El valor promedio del tipo de fruta no es válido`)
+
+            const diffKilosIniciales = kilosIniciales - oldValue.kilosIniciales
+            const newCanastillas = Math.ceil(kilosIniciales / tipoFruta.valorPromedio)
+
+            const newKilosActuales = oldValue.kilosActuales + diffKilosIniciales
+            if (newKilosActuales < 0) throw new Error(`Los kilos actuales no pueden ser negativos después de la modificación`)
+            const newCanastillasActuales = Math.ceil(newKilosActuales / tipoFruta.valorPromedio)
+
+            const itemModificado = await InventarioDescartesRepository.actualizar_data(
+                { _id: _id },
+                {
+                    $set:
+                    {
+                        kilosIniciales: kilosIniciales,
+                        kilosActuales: newKilosActuales,
+                        canastillasIniciales: newCanastillas,
+                        canastillasActuales: newCanastillasActuales
+                    }
+                },
+                { session }
+            )
+            await registrarPasoLog(log?._id, "InventariosHistorialRepository.actualizar_ingreso_descarte", `completado`);
+            // Crear movimiento de MODIFICACION adicional
+            await db.InventarioMovimientoDescarte.create([{
+                registroDescarte: itemModificado._id,
+                tipoMovimiento: 'MODIFICACION',
+                tipoRegistro: itemModificado.loteType,
+                kilos: diffKilosIniciales,
+                fechaMovimiento: new Date(),
+                user: user._id,
+                destino: `INVENTARIO_${itemModificado.area}`
+            }], { session });
+            await registrarPasoLog(log?._id, "db.InventarioMovimientoDescarte.create", `completado`);
+
+            await LotesHelper.actualizar_lotes_helper(
+                { _id: itemModificado.lote },
+                {
+                    $inc: {
+                        [`descartes.${itemModificado.tipoDescarte}`]: diffKilosIniciales,
+                        kilosProcesados: diffKilosIniciales,
+                    }
+
+                },
+                session
+            )
+            await registrarPasoLog(log?._id, "LotesHelper.actualizar_lotes_helper", `completado`);
         })
 
-        const session = await db.InventarioActualDescarte.db.startSession();
 
-        try {
-            await session.withTransaction(async () => {
-                const oldValue = await InventariosHistorialRepository.get_inventario_descarteMaquila_generico({
-                    query: { _id: _id },
-                    select: "kilosIniciales kilosActuales"
-                })
-
-                const diffKilosIniciales = kilosIniciales - oldValue[0].kilosIniciales
-
-                console.log(diffKilosIniciales)
-                console.log(kilosIniciales)
-
-                const itemModificado = await InventariosHistorialRepository.actualizar_ingreso_descarte(
-                    { _id: _id },
-                    { kilosIniciales: kilosIniciales, kilosActuales: kilosIniciales },
-                    { session }
-                )
-                await registrarPasoLog(log?._id, "InventariosHistorialRepository.actualizar_ingreso_descarte", `completado`);
-                // Crear movimiento de MODIFICACION adicional
-                await db.InventarioMovimientoDescarte.create([{
-                    registroDescarte: itemModificado._id,
-                    tipoMovimiento: 'MODIFICACION',
-                    tipoRegistro: itemModificado.loteType,
-                    kilos: diffKilosIniciales,
-                    fechaMovimiento: new Date(),
-                    user: user,
-                    destino: `INVENTARIO_${itemModificado.area}`
-                }], { session });
-                await registrarPasoLog(log?._id, "db.InventarioMovimientoDescarte.create", `completado`);
-
-                await LotesHelper.actualizar_lotes_helper(
-                    { _id: itemModificado.lote },
-                    {
-                        $inc: {
-                            [`descartes.${itemModificado.tipoDescarte._id}`]: diffKilosIniciales,
-                            kilosProcesados: diffKilosIniciales,
-                        }
-
-                    },
-                    session
-                )
-                await registrarPasoLog(log?._id, "LotesHelper.actualizar_lotes_helper", `completado`);
-            })
-
-        } catch (error) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, error);
-            await ErrorInventarioLogicHandlers(error, log)
-        } finally {
-            await registrarPasoLog(log?._id, "Finalizado", "Iniciado", "Finalizado");
-            await session.endSession();
-        }
     }
     static async put_inventarios_frutaDescarte_despachoDescarte(req) {
         const { user } = req;
@@ -185,7 +190,9 @@ export class InventarioDescarteController {
             const tipoFrutaId = parsedData.tipoFruta;
             delete data.tipoFruta;
             //se borra del inventario
-            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(data, tipoFrutaId, session, user)
+            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(
+                data, tipoFrutaId, session, user
+            )
             await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
             //se obtiene el tipodefruta
             const tipoFruta = tipoFrutaCache.getTipoFruta(tipoFrutaId);
@@ -274,7 +281,6 @@ export class InventarioDescarteController {
             data: {}
         });
     }
-
     static async post_inventarios_frutaDescarte_frutaDescompuesta(req) {
         const startTime = Date.now();
         const { user } = req;
@@ -288,10 +294,12 @@ export class InventarioDescarteController {
             if (!mongoose.isValidObjectId(tipoFruta)) throw new Error("No se proporciono un tipo de fruta");
             delete inventario.tipoFruta;
             //se borra del inventario
-            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
+            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(
+                inventario, tipoFruta, session, user, { descompuesta: true }
+            )
             await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
 
-            if (totalKilos > 50 && user.Rol > 2) throw new Error("No puede crear un registro de fruta descompuesta de tantos kilos")
+            if (totalKilos > 200 && user.Rol > 2) throw new Error("No puede crear un registro de fruta descompuesta de tantos kilos")
             //se crea el registro de fruta descompuesta
             const query = {
                 ...data,

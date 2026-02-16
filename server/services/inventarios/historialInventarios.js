@@ -105,7 +105,7 @@ export class HistorialInventariosService {
             }
         }
         const outOBj = crear_arreglo_modificar_descartes(changesDescartes);
-        await InventariosService.procesar_formulario_inventario_descarte(outOBj, cambioFruta.new, session, user);
+        await InventariosService.procesar_formulario_inventario_descarte(outOBj, cambioFruta.new, session, user, { descompuesta: true });
 
     }
     static async modificar_registro_despacho_en_inventario_descarte(idRegistro, changesData, changesDescartes, user, session) {
