@@ -322,7 +322,7 @@ class ProcesoService {
         const { cajas } = item
         let tipoLote = ""
         console.log("lotes agregar item", lotes.length)
-        if (lotes[0].enf.startsWith("EF1-")) {
+        if (lotes[0].enf.startsWith("EF1-") || lotes[0].enf.startsWith("Celifrut-")) {
             tipoLote = "Lote"
         } else if (lotes[0].enf.startsWith("EF10-")) {
             tipoLote = "loteMaquila"

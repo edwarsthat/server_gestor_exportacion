@@ -106,8 +106,14 @@ export class ProcesoValidations {
                     if (val === "") return true;
                     const num = Number(val);
                     return !isNaN(num) && num >= 0;
-                }, "Los kilos deben ser un número mayor o igual a 0").optional().or(z.literal("")),
+                }, "Los kilos deben ser un número mayor a 0").or(z.literal("")),
             })
+        })
+    }
+    static put_proceso_pallet_eviarCuartoFrio() {
+        return z.object({
+            seleccion: z.array(z.string().min(1)),
+            cuartoFrio: z.string().min(1)
         })
     }
 }

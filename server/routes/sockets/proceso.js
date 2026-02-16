@@ -1,5 +1,6 @@
 import { ProcesoRepository } from "../../api/Proceso.mjs";
 import { DescartesControllers } from "../../api/proceso/descartes.js";
+import { ListaEmpaqueController } from "../../api/proceso/listaEmpaque.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketProceso = {
@@ -24,7 +25,7 @@ export const apiSocketProceso = {
     },
 
 
-    //lista de empaque
+    //·region lista de empaque
     get_proceso_aplicaciones_listaEmpaque_contenedores: async () => {
         const response = await ProcesoRepository.get_proceso_aplicaciones_listaEmpaque_contenedores()
         return successResponseRoutes(response)
@@ -75,6 +76,10 @@ export const apiSocketProceso = {
     },
     put_proceso_add_pallet_listaempaque: async (data) => {
         await ProcesoRepository.put_proceso_add_pallet_listaempaque(data)
+        return successResponseRoutes()
+    },
+    put_proceso_pallet_eviarCuartoFrio: async (data) => {
+        await ListaEmpaqueController.put_proceso_pallet_eviarCuartoFrio(data)
         return successResponseRoutes()
     },
     //#endregion
