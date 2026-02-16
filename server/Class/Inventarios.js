@@ -383,6 +383,9 @@ export class InventariosHistorialRepository extends BaseRepository {
         }
     }
     static async put_inventarioSimple(filter, update, options = {}) {
+        console.log("filter", filter);
+        console.log("update", update);
+        console.log("options", options);
         // Validación de parámetros
         if (!filter || typeof filter !== 'object' || Object.keys(filter).length === 0) {
             throw new Error('El filtro es requerido y no puede estar vacío');
@@ -399,9 +402,11 @@ export class InventariosHistorialRepository extends BaseRepository {
             runValidators: false,
             ...safeOptions,
         };
+        console.log("finalOptions", finalOptions);
 
         try {
             const res = await db.InventariosSimples.updateOne(filter, update, finalOptions);
+            console.log("res", res);
             if (res.matchedCount === 0) {
                 throw new Error('No se encontró ningún documento que coincida con el filtro');
             }
@@ -451,7 +456,7 @@ export class InventariosHistorialRepository extends BaseRepository {
         const { session } = opts;
         const { lote, tipoFruta, area, tipoDescarte, kilos, canastillas, loteType } = data;
         try {
-            if (!lote || !tipoFruta || !area || !tipoDescarte || !kilos || !canastillas || !loteType) {
+            if (!lote || !tipoFruta || !area || !tipoDescarte || !kilos || !loteType) {
                 throw new Error('Faltan datos para agregar el elemento al inventario de descartes');
             }
             if (isNaN(kilos)) {
@@ -480,10 +485,10 @@ export class InventariosHistorialRepository extends BaseRepository {
                     { _id: existeRegistro._id },
                     {
                         $inc: {
-                            kilosActuales: kilos,
-                            kilosIniciales: kilos,
-                            canastillasActuales: canastillas,
-                            canastillasIniciales: canastillas
+                            kilosActuales: Number(kilos),
+                            kilosIniciales: Number(kilos),
+                            canastillasActuales: Number(canastillas),
+                            canastillasIniciales: Number(canastillas)
                         },
                         $set: { fechaActualizacion: new Date() }
                     },
@@ -509,10 +514,10 @@ export class InventariosHistorialRepository extends BaseRepository {
                 const itemDescarte = new db.InventarioActualDescarte({
                     ...data,
                     user: user,
-                    kilosIniciales: kilos,
-                    kilosActuales: kilos,
-                    canastillasIniciales: canastillas,
-                    canastillasActuales: canastillas,
+                    kilosIniciales: Number(kilos),
+                    kilosActuales: Number(kilos),
+                    canastillasIniciales: Number(canastillas),
+                    canastillasActuales: Number(canastillas),
                     tipoRegistro: area,
                 });
 
@@ -525,7 +530,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                     tipoRegistro: loteType,
                     kilos: kilos,
                     kilosRestantes: kilos,
-                    canastillas: canastillas,
+                    canastillas: (canastillas ? canastillas : 0),
                     fechaMovimiento: saved.fechaIngreso,
                     user: user,
                     destino: `INVENTARIO_${area}`
@@ -735,4 +740,10 @@ export class InventarioDescartesRepository extends BaseRepository {
 
         return resultado;
     }
+}
+
+export class CuartosFriosRepository extends BaseRepository {
+    static get model() { return db.CuartosFrios; }
+    static modelName = 'CuartosFrios';
+
 }

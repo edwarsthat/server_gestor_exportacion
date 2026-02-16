@@ -27,6 +27,8 @@ export const defineItemPallet = async (conn, AuditLog) => {
         calibre: String,
         calidad: { type: Schema.Types.ObjectId, ref: 'calidades', index: true, required: false },
         fecha: { type: Date, index: true },
+        fecha_cuartofrio: { type: Date, index: true },
+        fecha_salida_cuartoFrio: { type: Date, index: true },
         tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas', required: true, index: true },
         SISPAP: { type: Boolean, default: false },
         GGN: { type: Boolean, default: false },

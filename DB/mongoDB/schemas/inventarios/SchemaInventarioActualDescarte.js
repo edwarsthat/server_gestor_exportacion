@@ -78,9 +78,9 @@ export const defineInventarioActualDescarte = async (conn) => {
             min: [0, 'Las canastillas iniciales no pueden ser negativas'],
             validate: {
                 validator: function (v) {
-                    return v > 0;
+                    return v >= 0;
                 },
-                message: 'Las canastillas iniciales deben ser mayores a 0'
+                message: 'Las canastillas iniciales deben ser mayores o iguales a 0'
             }
         },
         canastillasActuales: {
