@@ -392,36 +392,7 @@ export class ComercialRepository {
     }
     //#regionend
     //#region ingresos
-    static async post_comercial_contenedor(req) {
-        try {
-            const { user } = req
-            const { data, action } = req.data
 
-            ComercialValidationsRepository.post_comercial_contenedor().parse(data);
-
-            const objCont = await ComercialService.crear_contenedor(data)
-            const newCont = await ContenedoresRepository.crearContenedor(objCont, user._id);
-
-            const documento = {
-                modelo: "Cliente",
-                _id: newCont._id,
-            }
-
-            await RecordCreacionesRepository.post_record_creaciones(
-                action,
-                user,
-                documento,
-                newCont,
-                `Creacion de contenedor ${newCont.numeroContenedor}`
-            )
-
-        } catch (err) {
-            if (err.status === 521) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async post_comercial_clienteNacional(req) {
         const { user } = req
         const { data, action } = req.data

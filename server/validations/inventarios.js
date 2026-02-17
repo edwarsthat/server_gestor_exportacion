@@ -633,27 +633,45 @@ export class InventariosValidations {
         });
     }
     static put_inventarios_programacion_contenedores() {
-        // Campos válidos de infoContenedor según el schema de MongoDB
-        const camposValidos = [
-            'clienteInfo', 'fechaCreacion', 'fechaInicio', 'fechaInicioReal',
-            'fechaFinalizado', 'fechaEstimadaCargue', 'fechaSalida', 'ultimaModificacion',
-            'tipoFruta', 'tipoCaja', 'calidad', 'sombra', 'defecto', 'mancha',
-            'verdeManzana', 'cerrado', 'observaciones', 'desverdizado', 'calibres',
-            'urlInforme', 'cajasTotal', 'RrtoEstimado', 'maquila'
-        ];
+        const optionalDateString = z.union([
+            z.literal(''),
+            z.string().refine(val => !isNaN(Date.parse(val)), "La fecha no tiene un formato válido"),
+        ]);
 
         return z.object({
-            action: z.string(),
-            idContenedor: z.string().regex(/^[0-9a-fA-F]{24}$/, "El idContenedor debe ser un ObjectId válido"),
-            data: z.record(z.any()).refine(
-                (data) => {
-                    const keys = Object.keys(data);
-                    return keys.every(key => camposValidos.includes(key));
-                },
-                {
-                    message: `Solo se permiten los siguientes campos: ${camposValidos.join(', ')}`
-                }
-            )
+            action: z.literal("put_inventarios_programacion_contenedores"),
+            idContenedor: objectIdString("idContenedor"),
+            data: z.object({
+                clienteInfo: objectIdString("clienteInfo"),
+                pais_destino: objectIdString("pais_destino"),
+                GGN: z.boolean({ message: "El campo GGN debe ser un booleano" }),
+                tipoFruta: z.array(objectIdString("tipoFruta"))
+                    .min(1, "Debe seleccionar al menos un tipo de fruta"),
+                calidad: z.array(objectIdString("calidad"))
+                    .min(1, "Debe seleccionar al menos una opción de calidad"),
+                calibres: z.array(safeString("calibres").pipe(z.string().min(1, "El calibre no puede estar vacío")))
+                    .min(1, "Debe seleccionar al menos un calibre"),
+                tipoCaja: z.array(safeString("tipoCaja").pipe(z.string().min(1, "El tipo de caja no puede estar vacío")))
+                    .min(1, "Debe seleccionar al menos un tipo de caja"),
+                fechaCreacion: z.string()
+                    .min(1, "La fecha de creación es obligatoria")
+                    .refine(val => !isNaN(Date.parse(val)), "La fecha de creación no es válida"),
+                fechaInicio: z.string()
+                    .min(1, "La fecha de inicio es obligatoria")
+                    .refine(val => !isNaN(Date.parse(val)), "La fecha de inicio no es válida"),
+                fechaEstimadaCargue: z.string()
+                    .min(1, "La fecha estimada de cargue es obligatoria")
+                    .refine(val => !isNaN(Date.parse(val)), "La fecha estimada de cargue no es válida"),
+                fechaInicioReal: optionalDateString,
+                fechaFinalizado: optionalDateString,
+                fechaSalida: optionalDateString,
+                sombra: optionalSafeString("sombra"),
+                defecto: optionalSafeString("defecto"),
+                mancha: optionalSafeString("mancha"),
+                verdeManzana: optionalSafeString("verdeManzana"),
+                observaciones: optionalSafeString("observaciones"),
+                maquila: z.boolean({ message: "El campo maquila debe ser un booleano" }),
+            })
         });
     }
     static put_inventarios_ordenVaceo_vacear() {
@@ -703,5 +721,13 @@ export class InventariosValidations {
             ).min(1, "Debe seleccionar al menos un item"),
             cuartoId: objectIdString("cuartoId"),
         });
+    }
+    static get_inventarios_programaciones_contenedores() {
+        return z.object({
+            action: z.literal("get_inventarios_programaciones_contenedores"),
+            fecha: z.string()
+                .min(1, "La fecha es obligatoria")
+                .refine(val => !isNaN(Date.parse(val)), "La fecha no tiene un formato válido"),
+        })
     }
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requiredSafeString, safeString, objectIdString } from "./utils/validationFunctions.js";
+import { requiredSafeString, safeString, optionalSafeString, objectIdString } from "./utils/validationFunctions.js";
 
 export class ComercialValidationsRepository {
     static val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro) {
@@ -233,23 +233,43 @@ export class ComercialValidationsRepository {
     }
     static post_comercial_contenedor() {
         return z.object({
-            clienteInfo: z.string().min(1, "El cliente es obligatorio"),
-            numeroContenedor: z.string().min(1, "El número de contenedor es obligatorio")
-                .refine(val => !isNaN(Number(val)) && Number(val) > 0, "El número de contenedor debe ser un número válido mayor a cero"),
-            tipoFruta: z.array(z.string()).min(1, "Debe seleccionar al menos un tipo de fruta"),
-            fechaInicioProceso: z.string().min(1, "La fecha de inicio de proceso es obligatoria"),
-            fechaEstimadaCargue: z.string().min(1, "La fecha estimada de cargue es obligatoria"),
-            calidad: z.array(z.string()).min(1, "Debe seleccionar al menos una opción de calidad"),
-            calibres: z.array(z.string()).min(1, "Debe seleccionar al menos un calibre"),
-            tipoCaja: z.array(z.string()).min(1, "Debe seleccionar al menos un tipo de caja"),
-            sombra: z.string().optional(),
-            defecto: z.string().optional(),
-            mancha: z.string().optional(),
-            verdeManzana: z.string().optional(),
-            cajasTotal: z.string().min(1, "El total de cajas es obligatorio")
-                .refine(val => !isNaN(Number(val)) && Number(val) > 0, "El total de cajas debe ser un número válido mayor a cero"),
-            RTO: z.string().optional(),
-            observaciones: z.string().min(1, "Las observaciones son obligatorias")
+            action: z.literal("post_comercial_contenedor"),
+            data: z.object({
+                clienteInfo: objectIdString("clienteInfo"),
+                paisDestino: objectIdString("paisDestino"),
+                GGN: z.boolean({ message: "El campo GGN debe ser un booleano" }),
+                numeroContenedor: requiredSafeString("numeroContenedor")
+                    .pipe(z.string().refine(
+                        val => !isNaN(Number(val)) && Number(val) > 0,
+                        "El número de contenedor debe ser un número válido mayor a cero"
+                    )),
+                tipoFruta: z.array(objectIdString("tipoFruta"))
+                    .min(1, "Debe seleccionar al menos un tipo de fruta"),
+                fechaInicioProceso: z.string()
+                    .min(1, "La fecha de inicio de proceso es obligatoria")
+                    .refine(val => !isNaN(Date.parse(val)), "La fecha de inicio de proceso no es válida"),
+                fechaEstimadaCargue: z.string()
+                    .min(1, "La fecha estimada de cargue es obligatoria")
+                    .refine(val => !isNaN(Date.parse(val)), "La fecha estimada de cargue no es válida"),
+                calidad: z.array(objectIdString("calidad"))
+                    .min(1, "Debe seleccionar al menos una opción de calidad"),
+                calibres: z.array(safeString("calibres").pipe(z.string().min(1, "El calibre no puede estar vacío")))
+                    .min(1, "Debe seleccionar al menos un calibre"),
+                tipoCaja: z.array(safeString("tipoCaja").pipe(z.string().min(1, "El tipo de caja no puede estar vacío")))
+                    .min(1, "Debe seleccionar al menos un tipo de caja"),
+                sombra: optionalSafeString("sombra"),
+                defecto: optionalSafeString("defecto"),
+                mancha: optionalSafeString("mancha"),
+                verdeManzana: optionalSafeString("verdeManzana"),
+                cajasTotal: requiredSafeString("cajasTotal")
+                    .pipe(z.string().refine(
+                        val => !isNaN(Number(val)) && Number(val) > 0,
+                        "El total de cajas debe ser un número válido mayor a cero"
+                    )),
+                rtoEstimado: optionalSafeString("rtoEstimado"),
+                observaciones: optionalSafeString("observaciones"),
+                maquila: z.boolean({ message: "El campo maquila debe ser un booleano" }),
+            })
         })
     }
     static post_comercial_clientes() {

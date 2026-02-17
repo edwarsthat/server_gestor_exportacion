@@ -131,6 +131,7 @@ export const defineContenedores = async (conn, AuditLog) => {
     inspeccion_mula: inspeccionMulasSchema,
     reclamacionCalidad: reclamacionSchema,
     registrosSalidas: [{ type: Schema.Types.ObjectId, ref: "salidaVehiculo" }],
+    user: { type: Schema.Types.ObjectId, ref: 'usuario' }
   });
 
   listaEmpaqueSchema.index({ reclamacionCalidad: 1, entregaPrecinto: 1 });

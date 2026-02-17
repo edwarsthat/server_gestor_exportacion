@@ -20,13 +20,15 @@ class ProcesoService {
         }
 
         //se obtienen los datos
-        const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
+        const contenedor = await ContenedoresRepository.get_data({
             ids: [ContenedorID],
             select: { infoContenedor: 1, pallets: 1 },
-            populate: {
-                path: 'infoContenedor.clienteInfo',
-                select: 'CLIENTE PAIS_DESTINO',
-            }
+            populate: [
+                {
+                    path: 'infoContenedor.clienteInfo',
+                    select: 'CLIENTE PAIS_DESTINO',
+                }
+            ]
         }, { session });
 
         // Validar que se encontró el contenedor y tiene la estructura esperada

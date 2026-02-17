@@ -11,14 +11,16 @@ import { dataService } from "../services/data.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
 import { CuartosFrios } from "../store/CuartosFrios.js";
 import { executeQueryTask } from "../utils/wrappers.js";
-import { ErrorDataLogicHandlers } from "./utils/errorsHandlers.js";
 
 
 export class dataRepository {
     static async get_data_clientes() {
         try {
             const clientes = await ClientesRepository.get_data({
-                select: { CLIENTE: 1, CODIGO: 1 }
+                populate: {
+                    path: 'PAIS_DESTINO.codigo',
+                    select: { nombre: 1 }
+                }
             })
             return clientes
         } catch (err) {

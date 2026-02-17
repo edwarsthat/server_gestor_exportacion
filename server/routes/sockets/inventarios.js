@@ -5,6 +5,7 @@ import { InventarioCuartoFriosController } from "../../api/inventarios/inventari
 import { InventarioDescarteController } from "../../api/inventarios/inventarioDescarte.js";
 import { InventarioFrutaSinProcesarController } from "../../api/inventarios/inventarioFrutaSinProcesar.js";
 import { OrdenVaceoController } from "../../api/inventarios/ordenVaceo.js";
+import { ProgramacionesController } from "../../api/inventarios/programaciones.js";
 import { ModificarRepository } from "../../api/ModificarData.js";
 import { ProcesoRepository } from "../../api/Proceso.mjs";
 import { successResponseRoutes } from "../helpers/responses.js";
@@ -95,6 +96,16 @@ export const apiSocketInventarios = {
         const descarte = await InventarioDescarteController.put_inventarios_frutaDescarte_despachoDescarte(data);
         return successResponseRoutes(descarte)
     },
+    //#region programaciones
+    get_inventarios_programaciones_contenedores: async (data) => {
+        const response = await ProgramacionesController.get_inventarios_programaciones_contenedores(data)
+        return successResponseRoutes(response)
+    },
+    put_inventarios_programacion_contenedores: async (data) => {
+        await ProgramacionesController.put_inventarios_programacion_contenedores(data)
+        return successResponseRoutes()
+    },
+    //#endregion
 
     //#region inventarios
     get_inventarios_frutaSinProcesar_frutaEnInventario: async () => {
@@ -280,16 +291,6 @@ export const apiSocketInventarios = {
         return successResponseRoutes()
     },
 
-    //#endregion
-    //#region programaciones
-    get_inventarios_programaciones_contenedores: async (data) => {
-        const response = await InventariosRepository.get_inventarios_programaciones_contenedores(data)
-        return successResponseRoutes(response)
-    },
-    put_inventarios_programacion_contenedores: async (data) => {
-        await InventariosRepository.put_inventarios_programacion_contenedores(data)
-        return successResponseRoutes()
-    },
     //#endregion
     //#region insumos
     get_inventarios_insumos: async () => {

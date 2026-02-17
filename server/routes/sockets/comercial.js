@@ -1,5 +1,6 @@
 import { ComercialRepository } from "../../api/Comercial.js";
 import { ClientesExpController } from "../../api/comercial/clientesExp.controller.js";
+import { IngresosComercialController } from "../../api/comercial/ingresosComercial.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketComercial = {
@@ -90,7 +91,7 @@ export const apiSocketComercial = {
     //#endregion
     //#region ingresos contendores
     post_comercial_contenedor: async (data) => {
-        await ComercialRepository.post_comercial_contenedor(data)
+        await IngresosComercialController.post_comercial_contenedor(data)
         return successResponseRoutes()
     },
     post_comercial_clienteNacional: async (data) => {

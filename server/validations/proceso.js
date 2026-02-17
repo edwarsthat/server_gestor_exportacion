@@ -3,34 +3,23 @@ import { z } from 'zod';
 import { getErrorMessages, safeString, optionalSafeString, requiredSafeString, objectIdString } from './utils/validationFunctions.js';
 
 export class ProcesoValidations {
-    static async put_proceso_aplicaciones_listaEmpaque_agregarItem(data) {
-        // Schema para validar item
-        const itemSchema = z.object({
-            cajas: z.number().int().positive(),
-            lote: z.string().regex(/^[0-9a-fA-F]{24}$/),  // Validar ObjectId de MongoDB
-            calidad: z.string().min(1),
-            calibre: z.string(),
-            tipoCaja: z.string(),
-            tipoFruta: z.string().min(1),
-            fecha: z.string(),
+    static put_proceso_aplicaciones_listaEmpaque_agregarItem() {
+        return z.object({
+            action: z.literal('put_proceso_aplicaciones_listaEmpaque_agregarItem'),
+            _id: objectIdString("_id"),
+            pallet: objectIdString("pallet"),
+            item: z.object({
+                lote: objectIdString("lote"),
+                cajas: z.number().int("Las cajas deben ser un número entero").positive("Las cajas deben ser mayor a cero"),
+                tipoCaja: requiredSafeString("tipoCaja"),
+                calibre: requiredSafeString("calibre"),
+                calidad: objectIdString("calidad"),
+                tipoFruta: objectIdString("tipoFruta"),
+                fecha: z.string()
+                    .min(1, "La fecha es obligatoria")
+                    .refine(val => !isNaN(Date.parse(val)), "La fecha no tiene un formato válido"),
+            })
         });
-
-        // Schema principal para validar req.data
-        const schema = z.object({
-            _id: z.string().regex(/^[0-9a-fA-F]{24}$/), // Validar ObjectId de MongoDB
-            pallet: z.string().regex(/^[0-9a-fA-F]{24}$/), // Validar ObjectId de MongoDB
-            action: z.literal('put_proceso_aplicaciones_listaEmpaque_agregarItem'), // Valor exacto
-            item: itemSchema // Schema anidado para el item
-        });
-
-        try {
-            return schema.parse(data);
-        } catch (error) {
-            // Transformar errores de Zod en un formato más amigable
-            const formattedErrors = getErrorMessages(error);
-
-            throw new Error(`Validation error: ${JSON.stringify(formattedErrors)}`);
-        }
     }
     static put_proceso_aplicaciones_listaEmpaque_modificarItem_desktop() {
 
