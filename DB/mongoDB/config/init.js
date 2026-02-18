@@ -68,6 +68,7 @@ import { defineAuditCargosPersonal } from '../schemas/audit/AuditCargosPersonal.
 import { defineAuditPersonal } from '../schemas/audit/AuditPersonal.js';
 //.Jp
 import { defineTarifaPredio } from "../schemas/tarifas/schemaTarifasPredio.js";
+import { defineHistorialConcentraciones } from '../schemas/calidad/schemaHistorialConcentraciones.js';
 
 export const db = {};
 export const connections = {};
@@ -316,6 +317,11 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Precios...");
         db.Precios = await definePrecios(sysConn);
         console.log("✅ Precios definido");
+
+         //NUEVO JP
+        console.log("⚡ Define HistorialConcentraciones...");
+        db.HistorialConcentraciones = await defineHistorialConcentraciones(sysConn);
+        console.log("✅ HistorialConcentraciones definido");
 
         console.log("⚡ Definiendo VehiculoSalida...");
         db.VehiculoSalida = await defineVehiculoSalida(sysConn, AuditRegistroExportacionVehiculo);
