@@ -15,9 +15,9 @@ export const defineproveedores = async (conn) => {
   const GGNSchema = new Schema({
     code: String,
     fechaVencimiento: Date,
-    paises: [String],
+    paises: [{ type: Schema.Types.ObjectId, ref: 'Pais' }],
     tipo_fruta: [String],
-    activo: {type: Boolean, default: false},
+    activo: { type: Boolean, default: false },
   }, { _id: false, strict: false })
 
 
@@ -65,15 +65,15 @@ export const defineproveedores = async (conn) => {
     departamento: String,
     municipio: String,
     canastillas: Number,
-//Tarifa de flete fija (contabilidad). Jp
-    flete: {type: Number, default: 0},
-//Tarifas de flete por kg (contabilidad). Jp
+    //Tarifa de flete fija (contabilidad). Jp
+    flete: { type: Number, default: 0 },
+    //Tarifas de flete por kg (contabilidad). Jp
     tarifaFleteKg: {
       type: Number,
       required: false,
       default: null
-    }
-
+    },
+    user: { type: Schema.Types.ObjectId, ref: 'usuario' },
   });
 
   // Middleware pre-save para establecer alt = _id en la creación inicial

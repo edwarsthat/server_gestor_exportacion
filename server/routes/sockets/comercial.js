@@ -1,6 +1,7 @@
 import { ComercialRepository } from "../../api/Comercial.js";
 import { ClientesExpController } from "../../api/comercial/clientesExp.controller.js";
 import { IngresosComercialController } from "../../api/comercial/ingresosComercial.js";
+import { ProveedoresCrontroller } from "../../api/comercial/proveedores.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketComercial = {
@@ -32,7 +33,7 @@ export const apiSocketComercial = {
     //#endregion
     //#region proveedores
     get_comercial_proveedores_elementos: async (data) => {
-        const proveedores = await ComercialRepository.get_comercial_proveedores_elementos(data);
+        const proveedores = await ProveedoresCrontroller.get_comercial_proveedores_elementos(data);
         return successResponseRoutes(proveedores)
     },
     get_comercial_proveedores_numero_elementos: async (data) => {
@@ -40,12 +41,16 @@ export const apiSocketComercial = {
         return successResponseRoutes(response)
     },
     put_comercial_proveedores_modify_proveedor: async (data) => {
-        await ComercialRepository.put_comercial_proveedores_modify_proveedor(data)
+        await ProveedoresCrontroller.put_comercial_proveedores_modify_proveedor(data)
         return successResponseRoutes()
     },
     post_comercial_proveedores_add_proveedor: async (data) => {
-        await ComercialRepository.post_comercial_proveedores_add_proveedor(data)
+        await ProveedoresCrontroller.post_comercial_proveedores_add_proveedor(data)
         return successResponseRoutes()
+    },
+    post_comercial_tarifa_predio: async (data) => {
+        const response = await ComercialRepository.post_comercial_tarifa_predio(data)
+        return successResponseRoutes(response)
     },
 
     // Obtener tarifa de un predio por año (la usa el modal)
@@ -56,11 +61,6 @@ export const apiSocketComercial = {
         return successResponseRoutes(response)
     },
 
-    // Guardar tarifa por año para un predio
-    post_comercial_tarifa_predio: async (data) => {
-        const response = await ComercialRepository.post_comercial_tarifa_predio(data)
-        return successResponseRoutes(response)
-    },
 
     //#endregion
     //#region clientes

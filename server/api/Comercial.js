@@ -65,48 +65,7 @@ export class ComercialRepository {
             throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_comercial_proveedores_elementos(req) {
-        try {
-            const { data, user } = req || {};
-            const { page, filtro } = data || {}
-            const resultsPerPage = 25;
-            let filter
-            let query
 
-            if (filtro) {
-                ComercialValidationsRepository
-                    .val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
-                filter = ComercialValidationsRepository
-                    .query_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
-
-                if (user.Rol > 2) {
-                    filter = {
-                        ...filter,
-                        activo: true
-                    }
-                }
-
-                query = {
-                    skip: (page - 1) * resultsPerPage,
-                    query: filter,
-                }
-            } else {
-                query = {
-                    limit: 0
-                }
-            }
-
-
-            const registros = await ProveedoresRepository.get_proveedores(query)
-
-            return registros
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
 
     //se obtiene el detalle de un proveedor por id. Jp
     static async get_comercial_proveedor_detalle(req) {
@@ -174,50 +133,8 @@ export class ComercialRepository {
             throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    // El cambio: ya NO guarda el campo "flete" en el documento del
-    // proveedor. Así cada año tiene su propia tarifa en TarifaPredio
-    // y no se pisan entre sí.
-    static async put_comercial_proveedores_modify_proveedor(req) {
-        try {
-            const { data: datos, user } = req
-            const { _id, data, action } = datos
-            ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data)
-            // El flete ya no se guarda en el documento del proveedor.
-            // Solo se guarda en TarifaPredio por año (lo hace el modal).
 
-            // Crear una copia de data sin el campo flete
-            const dataWithoutFlete = { ...data };
-            delete dataWithoutFlete.flete;
 
-            const proveedorOld = await ProveedoresRepository.get_proveedores({
-                ids: [_id]
-            })
-            //usa dataWithoutFlete en lugar de data
-            const newProveedor = await ProveedoresRepository.actualizar_proveedor(
-                { _id },
-                // data             //antes
-                dataWithoutFlete    //ahora
-            );
-
-            await RecordModificacionesRepository.post_record_modification(
-                action,
-                user,
-                {
-                    modelo: "Proveedor",
-                    documentoId: newProveedor._id,
-                    descripcion: `Se modifico el proveedor `,
-                },
-                proveedorOld[0],
-                newProveedor,
-                { _id, data, action }
-            );
-        } catch (err) {
-            if (err.status === 523 || err.status === 522) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
 
     //GUARDAR/ACTUALIZAR TARIFA
     static async post_comercial_tarifa_predio(req) {
@@ -271,47 +188,7 @@ export class ComercialRepository {
         }
     }
 
-    static async post_comercial_proveedores_add_proveedor(req) {
-        try {
-            const { data: datos, user } = req
-            const { data } = datos
 
-            console.log(data)
-            const predio = await ProveedoresRepository.get_proveedores({
-                query: { "CODIGO INTERNO": 0 }
-            })
-
-            ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data);
-
-            const nuevoPredioConPrecio = {
-                ...data,
-                precio: predio[0].precio
-            }
-
-            // Se crea el registro
-            const proveedor = await ProveedoresRepository.addProveedor(nuevoPredioConPrecio, user._id);
-
-            const documento = {
-                modelo: "Proveedor",
-                _id: proveedor._id,
-            }
-
-            await RecordCreacionesRepository.post_record_creaciones(
-                "post_comercial_proveedores_add_proveedor",
-                user,
-                documento,
-                proveedor,
-                "Creacion de proveedor"
-            )
-
-        } catch (err) {
-
-            if (err.status === 521) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
     //#region Precios
     //#region clientes
 

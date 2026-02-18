@@ -89,6 +89,7 @@ app.use((req, res, next) => {
     next();
 });
 
+// app.set('trust proxy', 1);
 app.use(helmet());
 app.use(cors({
     origin: '*', // En producción, ¡especifica tus dominios permitidos!
