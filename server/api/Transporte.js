@@ -14,6 +14,7 @@ import { Seriales } from "../Class/Seriales.js";
 import { dataRepository } from "./data.js";
 import { CrearDocumentosRepository } from "../services/crearDocumentos.js";
 import JSZip from "jszip";
+import config from "../../src/config/index.js";
 
 const PAGE_ITEMS = 50;
 
@@ -704,7 +705,6 @@ export class TransporteRepository {
                     select: 'infoExportacion numeroContenedor infoContenedor  totalKilos  totalCajas pallets'
                 }
             });
-
             if (response.length > 0 && response[0].contenedor) {
                 await response[0].contenedor.populate('infoContenedor.clienteInfo', 'CLIENTE');
                 await response[0].contenedor.populate('infoContenedor.tipoFruta', 'tipoFruta');
@@ -732,13 +732,16 @@ export class TransporteRepository {
                 const buffer1 = await CrearDocumentosRepository.crear_reporte_vehiculo(response[0])
                 const buffer2 = await CrearDocumentosRepository.crear_reporte_datalogger(response[0])
                 const buffer3 = await CrearDocumentosRepository.crear_carta_instrucciones(response[0])
-                const buffer4 = await CrearDocumentosRepository.crear_carta_responsabilidad(response[0])
+                if (config.CLIENTE_PROACOL !== response[0].contenedor.infoContenedor.clienteInfo._id.toString()) {
+                    const buffer4 = await CrearDocumentosRepository.crear_carta_responsabilidad(response[0])
+                    zip.file(`CARTA_RESPONSABILIDAD__${response[0].contenedor.numeroContenedor}_${Date.now()}.docx`, buffer4);
 
+
+                }
                 // Agregar documentos al ZIP
                 zip.file(`REPORTE_VEHICULO__${response[0].contenedor.numeroContenedor}_${Date.now()}.xlsx`, buffer1);
                 zip.file(`REPORTE_DATALOGGER__${response[0].contenedor.numeroContenedor}_${Date.now()}.xlsx`, buffer2);
                 zip.file(`CARTA_INSTRUCCIONES__${response[0].contenedor.numeroContenedor}_${Date.now()}.docx`, buffer3);
-                zip.file(`CARTA_RESPONSABILIDAD__${response[0].contenedor.numeroContenedor}_${Date.now()}.docx`, buffer4);
 
                 // Generar ZIP
                 const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
