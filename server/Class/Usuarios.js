@@ -336,10 +336,12 @@ export class UsuariosRepository {
                 .sort(sort)
                 .populate({
                     path: 'operario',
+                    model: db.Usuarios,
                     select: 'nombre apellido usuario',
                 })
                 .populate({
                     path: 'responsable',
+                    model: db.Usuarios,
                     select: 'nombre apellido usuario',
                 })
                 .limit(limitToUse)
@@ -374,10 +376,12 @@ export class UsuariosRepository {
                 .sort(sort)
                 .populate({
                     path: 'operario',
+                    model: db.Usuarios,
                     select: 'nombre apellido usuario',
                 })
                 .populate({
                     path: 'responsable',
+                    model: db.Usuarios,
                     select: 'nombre apellido usuario',
                 })
                 .limit(limit)
