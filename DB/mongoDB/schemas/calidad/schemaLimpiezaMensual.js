@@ -56,7 +56,9 @@ export const defineLimpiezaMensual = async (conn) => {
         estibadores: elementoSchema,
         escaleras: elementoSchema,
         carritos: elementoSchema,
-        herramientas: elementoSchema
+        herramientas: elementoSchema,
+        puertas: elementoSchema,
+        ventanas_ventilaciones: elementoSchema
     }, { _id: false })
 
     const pasillosSchema = new Schema({
