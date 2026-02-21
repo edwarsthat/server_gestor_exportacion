@@ -57,7 +57,13 @@ export const defineLimpiezaDiaria = async (conn) => {
         paredes: elementoSchema,
         estibadores: elementoSchema,
         herramientas: elementoSchema,
-        basculas: elementoSchema
+        basculas: elementoSchema,
+        canastillas_rojas: elementoSchema,
+        modulo_cera: elementoSchema,
+        canastillas_azules: elementoSchema,
+        muelle_exportacion: elementoSchema,
+        cuartos_frios: elementoSchema,
+        area_produccion: elementoSchema
     }, { _id: false })
 
     const insumosSchema = new Schema({

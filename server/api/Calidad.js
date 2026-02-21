@@ -187,18 +187,6 @@ export class CalidadRepository {
 
             // Validar datos con Zod
             CalidadValidationsRepository.post_calidad_formulario_historialConcentraciones().parse(req.data);
-
-            // // Validar datos requeridos
-            // if (!data.fecha || data.kilosProcesados === undefined || !data.tipoFruta || 
-            //     !data.concentracionPPM || !data.responsable) {
-            //     throw new CalidadLogicError(400, 'Faltan datos obligatorios');
-            // }
-
-            // // Validar que kilosProcesados sea un número válido
-            // if (isNaN(data.kilosProcesados) || data.kilosProcesados < 0) {
-            //     throw new CalidadLogicError(400, 'Los kilos procesados deben ser un número válido mayor o igual a 0');
-            // }
-
             // Obtener el usuario de la sesión
             const usuarioId = user._id;
             

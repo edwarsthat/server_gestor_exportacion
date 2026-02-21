@@ -225,8 +225,8 @@ export const apiSocketInventarios = {
         const response = await InventariosRepository.get_inventarios_registros_fruta_descompuesta(data)
         return successResponseRoutes(response)
     },
-    get_inventarios_numero_registros_fruta_descompuesta: async () => {
-        const response = await InventariosRepository.get_inventarios_numero_registros_fruta_descompuesta()
+    get_inventarios_numero_registros_fruta_descompuesta: async (data) => {
+        const response = await InventariosRepository.get_inventarios_numero_registros_fruta_descompuesta(data)
         return successResponseRoutes(response)
     },
     get_inventarios_historiales_canastillas_registros: async (data) => {
