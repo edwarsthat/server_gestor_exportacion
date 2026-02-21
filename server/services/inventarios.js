@@ -19,7 +19,6 @@ import { UnionsRepository } from "../Class/Unions.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
-import { parseMultTipoCaja } from "./helpers/contenedores.js";
 import config from "../../src/config/index.js";
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
 import { dataService } from "./data.js";
@@ -1141,44 +1140,8 @@ export class InventariosService {
         return registroCanastillas;
 
     }
-    static async itemsCuartosFrios(items, contenedores) {
-        const out = [];
-        for (const contenedor of contenedores) {
-            if (!contenedor.pallets) continue;
-            for (const [index, pallet] of contenedor.pallets.entries()) {
-                if (!pallet.EF1) continue;
-                for (const item of pallet.EF1) {
-                    if (!item) continue;
 
-                    if (items.includes(item._id.toString())) {
-                        out.push({
-                            ...item,
-                            contenedor: contenedor.numeroContenedor,
-                            pallet: index,
-                        });
-                    }
-                }
 
-            }
-        }
-        return out;
-    }
-    static async sumatorias_items_cuartosFrios(items) {
-        const out = {}
-        let operation = "";
-
-        for (const item of items) {
-            const { tipoCaja, cajas, tipoFruta } = item;
-            if (!out[`totalFruta.${tipoFruta}.cajas`]) out[`totalFruta.${tipoFruta}.cajas`] = 0;
-            if (!out[`totalFruta.${tipoFruta}.kilos`]) out[`totalFruta.${tipoFruta}.kilos`] = 0;
-            const mult = parseMultTipoCaja(tipoCaja);
-            out[`totalFruta.${tipoFruta}.kilos`] -= (cajas * mult);
-            out[`totalFruta.${tipoFruta}.cajas`] -= cajas;
-            operation += `${cajas} cajas de ${tipoCaja}, `
-
-        }
-        return { operation, out };
-    }
     static async modificarRestarInventarioFrutaSinProocesar(canastillas, user, action, lote, session, descripcion) {
         const inventarioFrutaSinProcesar = config.INVENTARIO_FRUTA_SIN_PROCESAR;
 

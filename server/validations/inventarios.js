@@ -632,12 +632,6 @@ export class InventariosValidations {
 
         });
     }
-    static put_inventarios_pallet_eviarCuartoFrio() {
-        return z.object({
-            seleccion: z.array(z.string().min(1)),
-            cuartoFrio: z.string().min(1)
-        })
-    }
     static put_inventarios_programacion_contenedores() {
         // Campos válidos de infoContenedor según el schema de MongoDB
         const camposValidos = [
@@ -700,6 +694,14 @@ export class InventariosValidations {
             kilosIniciales: z.coerce.number()
                 .int("Los kilos deben ser un número entero")
                 .gt(0, "Los kilos deben ser mayor a cero"),
+        });
+    }
+    static put_inventarios_cuartosFrios_salida_item() {
+        return z.object({
+            itemsIds: z.array(
+                objectIdString("itemsIds")
+            ).min(1, "Debe seleccionar al menos un item"),
+            cuartoId: objectIdString("cuartoId"),
         });
     }
 }

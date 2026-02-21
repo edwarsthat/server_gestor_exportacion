@@ -24,7 +24,6 @@ import { TiposFruta } from "../store/TipoFruta.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import mongoose from "mongoose";
 import { ContenedoresService } from "../services/contenedores.js";
-import { CuartosFrios } from "../store/CuartosFrios.js";
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ErrorInventarioLogicHandlers } from "./utils/errorsHandlers.js";
 import config from "../../src/config/index.js";
@@ -404,89 +403,7 @@ export class InventariosRepository {
         }
     }
 
-    static async put_inventarios_pallet_eviarCuartoFrio(req) {
-        const { user } = req;
-        let log;
 
-        // Verificar que tengamos la conexión correcta
-        const catalogosConnection = db.CuartosFrios?.db || null;
-        if (!catalogosConnection) {
-            throw new Error("No se encontró la conexión a la base de datos de catálogos");
-        }
-        // Crear sesión desde la conexión específica
-        const session = await catalogosConnection.startSession();
-
-        log = await LogsRepository.create({
-            user: user,
-            action: "put_inventarios_pallet_eviarCuartoFrio",
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-        });
-        try {
-            InventariosValidations.put_inventarios_pallet_eviarCuartoFrio().parse(req.data.data);
-
-            await session.withTransaction(async () => {
-                const { seleccion, cuartoFrio } = req.data.data;
-                let tipoFrutaObj = {}
-                let operation = "";
-                const idsLimpios = []
-
-                const items = await ContenedoresRepository.getItemsPallets({ ids: seleccion });
-
-                for (const item of items) {
-                    idsLimpios.push(item._id);
-                    const { cajas, tipoCaja, tipoFruta, kilos } = item;
-                    if (!tipoFrutaObj[`totalFruta.${tipoFruta._id}.cajas`]) tipoFrutaObj[`totalFruta.${tipoFruta._id}.cajas`] = 0;
-                    if (!tipoFrutaObj[`totalFruta.${tipoFruta._id}.kilos`]) tipoFrutaObj[`totalFruta.${tipoFruta._id}.kilos`] = 0;
-
-                    tipoFrutaObj[`totalFruta.${tipoFruta._id}.cajas`] += Number.isFinite(cajas) && cajas > 0 ? cajas : 0;
-                    tipoFrutaObj[`totalFruta.${tipoFruta._id}.kilos`] += (Number.isFinite(kilos) && kilos > 0 ? kilos : 0);
-                    operation += `${cajas} cajas de ${tipoCaja}, `
-                }
-
-
-                await CuartosFrios.actualizar_cuartoFrio(
-                    { _id: cuartoFrio },
-                    {
-                        $addToSet: {
-                            inventario: { $each: idsLimpios }
-                        },
-                        $inc: tipoFrutaObj
-                    },
-                    {
-                        action: "Ingreso",
-                        operation: operation,
-                        description: 'Se agregó cajas a ' + cuartoFrio,
-                        user: user._id,
-                        session
-                    }
-                );
-
-                await registrarPasoLog(log._id, "Operación completada exitosamente", "Completado", null, { session });
-            });
-
-            await registrarPasoLog(log._id, "Transacción completada", "Completado");
-
-            procesoEventEmitter.emit("server_event", {
-                action: "lista_empaque_update",
-            });
-            procesoEventEmitter.emit("listaempaque_update");
-
-
-            return true;
-
-        } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            if (log?._id) await registrarPasoLog(log._id, "Error en transacción", "Fallido", err?.message ?? String(err));
-            if (err?.status) throw err;
-            throw Object.assign(new Error(err?.message ?? 'Error inesperado'), { status: 500 });
-
-        } finally {
-            await session.endSession();
-            if (log) {
-                await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-            }
-        }
-    }
     //? test
     static async sys_reiniciar_inventario_descarte() {
         try {
@@ -507,105 +424,8 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_inventarios_cuartosFrios_listaEmpaque() {
-        try {
-            const cuartosFrios = await CuartosFrios.get_cuartosFrios({ select: { inventario: 1, nombre: 1 } });
-            const inventarioTotal = []
-            const infoCuartos = []
-            for (const cuarto of cuartosFrios) {
-                inventarioTotal.push(...cuarto.inventario)
-                infoCuartos.push({ _id: cuarto._id, nombre: cuarto.nombre })
-            }
-            return { inventarioTotal, infoCuartos }
-        } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_inventarios_cuartosFrios() {
-        try {
-            return await CuartosFrios.get_cuartosFrios();
-        } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_inventarios_cuartosFrios_detalles(req) {
-        try {
-            const { data } = req.data
-            const contenedores = await ContenedoresRepository.getContenedores({ query: { "pallets.EF1._id": data.inventario }, select: { numeroContenedor: 1, pallets: 1 } });
-            const items = data.inventario.map(id => id.toString());
-            const result = await InventariosService.itemsCuartosFrios(items, contenedores)
-            return result
-        } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async put_inventarios_cuartosFrios_salida_item(req) {
-        const { user } = req;
-        let log;
 
-        log = await LogsRepository.create({
-            user: user,
-            action: "put_inventarios_cuartosFrios_salida_item",
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-        });
 
-        const session = await db.CuartosFrios?.db.startSession();
-
-        if (!session) {
-            throw new Error("No se pudo iniciar la sesión en la base de datos de catálogos");
-        }
-
-        try {
-            await session.withTransaction(async () => {
-                const { itemsIds, cuartoId } = req.data.data
-                const contenedores = await ContenedoresRepository.getContenedores({
-                    query: { "pallets.EF1._id": { $in: itemsIds } }, select: { numeroContenedor: 1, pallets: 1 }
-                });
-
-                const items = await InventariosService.itemsCuartosFrios(itemsIds, contenedores)
-                const { out, operation } = await InventariosService.sumatorias_items_cuartosFrios(items)
-                const itemsIdsLimpios = items.map(it => it._id)
-
-                await CuartosFrios.actualizar_cuartoFrio(
-                    { _id: cuartoId },
-                    {
-                        $pull: {
-                            inventario: { $in: itemsIdsLimpios }
-                        },
-                        $inc: out
-
-                    },
-                    {
-                        action: "Salida",
-                        operation: operation,
-                        description: 'Salida del cuarto => ' + cuartoId,
-                        user: user._id,
-                        session
-                    }
-                );
-            })
-
-            procesoEventEmitter.emit("server_event", {
-                action: "lista_empaque_update",
-            });
-            procesoEventEmitter.emit("listaempaque_update");
-
-            return true
-
-        } catch (err) {
-            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
-            console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        } finally {
-            await session.endSession();
-            if (log) {
-                await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-            }
-        }
-    }
 
     static async get_inventarios_ordenVaceo() {
         try {
@@ -791,7 +611,7 @@ export class InventariosRepository {
                     }
 
                     await LotesHelper.actualizar_lotes_helper(
-                        _id, queryLote,
+                        { _id: _id }, queryLote,
                         { user: user._id, action: action, session: session, softNotFound: true })
                     await registrarPasoLog(log._id, "LotesHelper.actualizar_lotes_helper", "Completado");
 

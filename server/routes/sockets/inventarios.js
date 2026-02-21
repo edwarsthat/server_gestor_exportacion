@@ -1,6 +1,7 @@
 import { CalidadRepository } from "../../api/Calidad.js";
 import { ComercialRepository } from "../../api/Comercial.js";
 import { InventariosRepository } from "../../api/inventarios.js";
+import { InventarioCuartoFriosController } from "../../api/inventarios/inventarioCuartoFrios.js";
 import { InventarioDescarteController } from "../../api/inventarios/inventarioDescarte.js";
 import { InventarioFrutaSinProcesarController } from "../../api/inventarios/inventarioFrutaSinProcesar.js";
 import { OrdenVaceoController } from "../../api/inventarios/ordenVaceo.js";
@@ -56,6 +57,23 @@ export const apiSocketInventarios = {
 
     //#endregion
 
+    //#region cuartos frios
+    get_inventarios_cuartosFrios: async () => {
+        const response = await InventarioCuartoFriosController.get_inventarios_cuartosFrios()
+        return successResponseRoutes(response)
+    },
+    get_inventarios_cuartosFrios_detalles: async (data) => {
+        const response = await InventarioCuartoFriosController.get_inventarios_cuartosFrios_detalles(data)
+        return successResponseRoutes(response)
+    },
+    get_inventarios_cuartosFrios_listaEmpaque: async () => {
+        const response = await InventarioCuartoFriosController.get_inventarios_cuartosFrios_listaEmpaque()
+        return successResponseRoutes(response)
+    },
+    put_inventarios_cuartosFrios_salida_item: async (data) => {
+        await InventarioCuartoFriosController.put_inventarios_cuartosFrios_salida_item(data)
+        return successResponseRoutes()
+    },
     //·region Orden de vaceo
     get_inventarios_ordenVaceo_inventario: async () => {
         const resultado = await OrdenVaceoController.get_inventarios_ordenVaceo_inventario();
@@ -138,26 +156,8 @@ export const apiSocketInventarios = {
         await InventariosRepository.put_inventarios_frutaDesverdizado_mover(data)
         return successResponseRoutes()
     },
-    put_inventarios_pallet_eviarCuartoFrio: async (data) => {
-        await InventariosRepository.put_inventarios_pallet_eviarCuartoFrio(data)
-        return successResponseRoutes()
-    },
-    get_inventarios_cuartosFrios_listaEmpaque: async () => {
-        const response = await InventariosRepository.get_inventarios_cuartosFrios_listaEmpaque()
-        return successResponseRoutes(response)
-    },
-    get_inventarios_cuartosFrios: async () => {
-        const response = await InventariosRepository.get_inventarios_cuartosFrios()
-        return successResponseRoutes(response)
-    },
-    get_inventarios_cuartosFrios_detalles: async (data) => {
-        const response = await InventariosRepository.get_inventarios_cuartosFrios_detalles(data)
-        return successResponseRoutes(response)
-    },
-    put_inventarios_cuartosFrios_salida_item: async (data) => {
-        await InventariosRepository.put_inventarios_cuartosFrios_salida_item(data)
-        return successResponseRoutes()
-    },
+
+
     get_inventarios_descarteMaquila: async (data) => {
         const response = await InventariosRepository.get_inventarios_descarteMaquila(data)
         return successResponseRoutes(response)
