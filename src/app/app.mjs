@@ -25,6 +25,7 @@ import { fileURLToPath } from 'url';
 import { routerTransporte } from '../../server/routes/https/transporte.js';
 import { sp32 } from '../../server/routes/https/sp32.js';
 import { routerTalentoHumano } from '../../server/routes/https/talentoHumano.js';
+import { routerEvents } from '../../server/routes/https/Events.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -118,6 +119,7 @@ app.use("/sp32", sp32)
 app.use("/API", routerAPI)
 app.use("/forms", formsAPI)
 app.use("/talentoHumano", routerTalentoHumano)
+app.use("/events", routerEvents)
 app.get("/", (req, res) => {
     res.sendFile(path.join(
         __dirname,
