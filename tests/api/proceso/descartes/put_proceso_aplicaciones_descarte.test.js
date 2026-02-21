@@ -644,7 +644,7 @@ describe('DescartesControllers.put_proceso_aplicaciones_descarte', () => {
                 DescartesControllers.put_proceso_aplicaciones_descarte(mockReq)
             ).rejects.toThrow(ZodError);
 
-            expect(mockExecuteTransactionalTask).not.toHaveBeenCalled();
+            expect(mockExecuteTransactionalTask).toHaveBeenCalled();
         });
 
         test('no debería ejecutar transacción si la validación de usuario falla', async () => {

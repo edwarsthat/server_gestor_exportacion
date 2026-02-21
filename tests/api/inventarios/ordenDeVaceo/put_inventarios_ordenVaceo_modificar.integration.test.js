@@ -47,7 +47,8 @@ jest.unstable_mockModule('../../../../src/config/index.js', () => ({
 }));
 
 jest.unstable_mockModule('../../../../events/eventos.js', () => ({
-    procesoEventEmitter: mockEventEmitter
+    procesoEventEmitter: mockEventEmitter,
+    dashboardEventEmitter: mockEventEmitter
 }));
 
 jest.unstable_mockModule('../../../../server/Class/LogsSistema.js', () => ({

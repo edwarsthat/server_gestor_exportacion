@@ -7,7 +7,7 @@ export class TurnosService {
             const cliente = await getRedisClient();
             const status = await cliente.get("statusProceso");
             return status ?? 'off';
-        } catch (err) {
+        } catch {
             return 'off';
         }
     }
