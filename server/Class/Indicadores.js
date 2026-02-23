@@ -1,7 +1,11 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError } from "../../Error/ConnectionErrors.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-export class IndicadoresRepository {
+export class IndicadoresRepository extends BaseRepository {
+    static get model() { return db.Indicadores; }
+    static modelName = 'Indicadores';
+
     static async get_cantidad_indicadores() {
         try {
             const count = await db.Indicadores.countDocuments();
@@ -59,9 +63,9 @@ export class IndicadoresRepository {
     }
     static async actualizar_indicador(filter, update, options = {}) {
         const finalOptions = {
-            returnDocument: "after",  
+            returnDocument: "after",
             runValidators: true,
-            ...options                 
+            ...options
         };
 
         try {

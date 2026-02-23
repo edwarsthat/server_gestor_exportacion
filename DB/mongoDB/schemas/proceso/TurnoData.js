@@ -11,7 +11,8 @@ export const defineTurnoData = async (conn) => {
     }, { _id: false, strict: false });
 
     const TurnoDataSchema = new Schema({
-        horaInicio: { type: Date, default: Date.now },
+        createdAt: { type: Date, default: Date.now },
+        horaInicio: { type: Date },
         tiempoTrabajado: { type: Number, default: 0 },
         tiempoPausa: { type: Number, default: 0 },
         horaFin: Date,

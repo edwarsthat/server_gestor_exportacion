@@ -28,6 +28,7 @@ import { FileService } from "../services/helpers/FileService.js";
 import { InventariosHistorialRepository } from "../Class/Inventarios.js";
 import { IndicadoresAPIRepository } from "./IndicadoresAPI.js";
 import { DescartesRepository } from "../Class/Descartes.js";
+import { TurnosService } from "../services/proceso/turnos.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1093,31 +1094,27 @@ export class ProcesoRepository {
     }
     static async sp32_funcionamiento_maquina(data) {
         let estado_maquina = false
-        const status_proceso = await VariablesDelSistema.obtener_status_proceso()
-        if (Number(data) >= 1925) {
+        const status_proceso = await TurnosService.obtenerStatusProceso()
+        console.log("status_proceso", status_proceso)
+        if (Number(data) >= 1000) {
             estado_maquina = true
         }
         //al inicio maquina apagada, status off
         if (estado_maquina && status_proceso === 'off') {
-            await VariablesDelSistema.set_hora_inicio_proceso();
-
-            //se prende la maquina , continua el proceso
-        } else if (estado_maquina && status_proceso === 'pause') {
-            //se reanuda el proces cuando se prende la maquina
-            await VariablesDelSistema.set_hora_reanudar_proceso();
-            //se pausa la maquina
+            await TurnosService.iniciarTurno();
         } else if (!estado_maquina && status_proceso === 'on') {
-            await VariablesDelSistema.set_hora_pausa_proceso()
+            //se reanuda el proces cuando se prende la maquina
+            await TurnosService.pausarTurno();
+            //se pausa la maquina
+        } else if (estado_maquina && status_proceso === 'pause') {
+            await TurnosService.reiniciarTurno()
         }
 
-        const new_status_proceso = await VariablesDelSistema.obtener_status_proceso()
+        const new_status_proceso = await TurnosService.obtenerStatusProceso()
 
         procesoEventEmitter.emit("status_proceso", {
             status: new_status_proceso
         });
     }
-    //? lista de empaque
-
-    //#endregion
 
 }

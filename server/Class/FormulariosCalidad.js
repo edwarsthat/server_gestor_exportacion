@@ -220,5 +220,134 @@ export class FormulariosCalidadRepository {
         if (bussyIds.has(id)) throw new ItemBussyError(413, "Elemento no disponible por el momento");
         bussyIds.add(id)
     }
+
+
+    //NUEVO JP
+    //#region historial concentraciones
+    static async get_historial_concentraciones(options = {}) {
+        const {
+            query = {},
+            // select = {},
+            populate = [],
+            skip = 0,
+            limit = 0,
+            sort = {}
+        } = options;
+
+        try {
+            const HistorialConcentraciones = db.HistorialConcentraciones;
+            
+            let queryBuilder = HistorialConcentraciones.find(query);
+            
+            // if (Object.keys(select).length > 0) {
+            //     queryBuilder = queryBuilder.select(select);
+            // }
+            
+            if (populate.length > 0) {
+                populate.forEach(pop => {
+                    queryBuilder = queryBuilder.populate(pop);
+                });
+            }
+            
+            if (Object.keys(sort).length > 0) {
+                queryBuilder = queryBuilder.sort(sort);
+            }
+            
+            if (skip > 0) queryBuilder = queryBuilder.skip(skip);
+            if (limit > 0) queryBuilder = queryBuilder.limit(limit);
+            
+            const registros = await queryBuilder.lean();
+            return registros;
+            
+        } catch (err) {
+            console.error('Error en get_historial_concentraciones:', err);
+            throw new Error(`Error al obtener historial de concentraciones: ${err.message}`);
+        }
+    }
+
+    static async crear_historial_concentracion(data) {
+        try {
+            const HistorialConcentraciones = db.HistorialConcentraciones;
+            
+            const nuevoRegistro = new HistorialConcentraciones(data);
+            await nuevoRegistro.save();
+            
+            // Retornar el registro completo con populate
+            const registroCompleto = await HistorialConcentraciones.findById(nuevoRegistro._id)
+                .populate('tipoFruta', 'tipoFruta')
+                .populate('usuario', 'nombre apellido')
+                .lean();
+            
+            return registroCompleto;
+            
+        } catch (err) {
+            console.error('Error en crear_historial_concentracion:', err);
+            throw new Error(`Error al crear registro de concentración: ${err.message}`);
+        }
+    }
+
+    static async actualizar_historial_concentracion(_id, updateData) {
+        try {
+            const HistorialConcentraciones = db.HistorialConcentraciones;
+            
+            const registroActualizado = await HistorialConcentraciones.findByIdAndUpdate(
+                _id,
+                { $set: updateData },
+                { new: true, runValidators: true }
+            )
+            .populate('tipoFruta', 'tipoFruta')
+            .populate('usuario', 'nombre apellido')
+            .lean();
+            
+            if (!registroActualizado) {
+                throw new Error('Registro no encontrado');
+            }
+            
+            return registroActualizado;
+            
+        } catch (err) {
+            console.error('Error en actualizar_historial_concentracion:', err);
+            throw new Error(`Error al actualizar registro de concentración: ${err.message}`);
+        }
+    }
+
+    static async eliminar_historial_concentracion(_id) {
+        try {
+            const HistorialConcentraciones = db.HistorialConcentraciones;
+            
+            // Soft delete
+            const registroDesactivado = await HistorialConcentraciones.findByIdAndUpdate(
+                _id,
+                { $set: { activo: false } },
+                { new: true }
+            ).lean();
+            
+            if (!registroDesactivado) {
+                throw new Error('Registro no encontrado');
+            }
+            
+            return registroDesactivado;
+            
+        } catch (err) {
+            console.error('Error en eliminar_historial_concentracion:', err);
+            throw new Error(`Error al eliminar registro de concentración: ${err.message}`);
+        }
+    }
+
+    static async get_calidad_formularios_historialConcentraciones_numeroElementos(filtro = {}) {
+        try {
+            const HistorialConcentraciones = db.HistorialConcentraciones;
+            
+            const query = { activo: true, ...filtro };
+            const count = await HistorialConcentraciones.countDocuments(query);
+            
+            return count;
+            
+        } catch (err) {
+            console.error('Error en get_calidad_formularios_historialConcentraciones_numeroElementos:', err);
+            throw new Error(`Error al contar registros: ${err.message}`);
+        }
+    }
+    //#endregion
 }
 

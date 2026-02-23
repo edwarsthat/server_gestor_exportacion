@@ -8,6 +8,7 @@ import { InventariosValidations } from "../../validations/inventarios.js";
 import { InventariosService } from "../../services/inventarios.js";
 import { registrarPasoLog } from "../helper/logs.js";
 import { procesoEventEmitter } from "../../../events/eventos.js";
+import { EventsController } from "../events.js";
 import { InventariosRepository } from "../inventarios.js";
 
 
@@ -93,6 +94,9 @@ export class OrdenVaceoController {
             );
             await registrarPasoLog(log._id, "IndicadoresAPIRepository.put_indicadores_actualizar_indicador", "Completado", `Se actualizó el indicador kilos_vaciados con ${kilosVaciados} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
         })
+
+        //para el dashboard/SmartTV
+        EventsController.emitSnapshot();
 
         //para lista de empaque
         procesoEventEmitter.emit("predio_vaciado", {

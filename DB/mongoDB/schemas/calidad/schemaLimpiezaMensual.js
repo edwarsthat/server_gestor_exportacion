@@ -6,7 +6,7 @@ export const defineLimpiezaMensual = async (conn) => {
     const elementoSchema = new Schema({
         status: Boolean,
         observaciones: String,
-        responsable: { type: Schema.Types.ObjectId, ref: "Usuarios" },
+        responsable: { type: Schema.Types.ObjectId, ref: "usuario" },
         createdAt: { type: Date, default: Date.now },
     }, { _id: false })
 
@@ -56,7 +56,9 @@ export const defineLimpiezaMensual = async (conn) => {
         estibadores: elementoSchema,
         escaleras: elementoSchema,
         carritos: elementoSchema,
-        herramientas: elementoSchema
+        herramientas: elementoSchema,
+        puertas: elementoSchema,
+        ventanas_ventilaciones: elementoSchema
     }, { _id: false })
 
     const pasillosSchema = new Schema({
@@ -90,7 +92,7 @@ export const defineLimpiezaMensual = async (conn) => {
 
     const LimpiezaMensualSchema = new Schema({
         createdAt: { type: Date, default: () => new Date() },
-        responsable: { type: Schema.Types.ObjectId, ref: "Usuarios" },
+        responsable: { type: Schema.Types.ObjectId, ref: "usuario" },
         fechaFin: Date,
         fechaInicio: Date,
         ID: { type: String, require: true },

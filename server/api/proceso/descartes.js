@@ -8,6 +8,7 @@ import { ProcesoService } from "../../services/proceso.js";
 import { registrarPasoLog } from "../helper/logs.js";
 import { procesoEventEmitter } from "../../../events/eventos.js";
 import { InventariosHistorialRepository } from "../../Class/Inventarios.js";
+import { EventsController } from "../events.js";
 
 export class DescartesControllers {
     static async put_proceso_aplicaciones_descarte(req) {
@@ -107,6 +108,8 @@ export class DescartesControllers {
                 "Completado",
                 `Se modificó el inventario de descarte y la métrica kilosProcesadosHoy con ${kilos} kilos del tipo de fruta ${lote.tipoFruta._id.toString()}`);
         });
+
+        EventsController.emitSnapshot();
 
         procesoEventEmitter.emit("server_event", {
             action: "descarte_change",

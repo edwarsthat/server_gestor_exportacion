@@ -23,5 +23,6 @@ export default {
     ENCRYPTION_KEY: process.env.ENCRYPTION_KEY || "encryption_key",
     URL_CELIFRUT: process.env.URL_CELIFRUT || "https://www.celifrut.com",
     DIR_OPERACIONES: process.env.DIR_OPERACIONES || "",
-    COORDINADOR_PRODUCCION: process.env.COORDINADOR_PRODUCCION || ""
+    COORDINADOR_PRODUCCION: process.env.COORDINADOR_PRODUCCION || "",
+    CLIENTE_PROACOL: process.env.CLIENTE_PROACOL || "68b87bb095a45e4b46698c05"
 };

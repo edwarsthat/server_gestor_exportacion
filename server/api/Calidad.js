@@ -133,6 +133,163 @@ export class CalidadRepository {
         }
     }
     //#endregion
+
+    //NUEVO JP --------------------------------------------------------------------------------------------------------------------------------
+    //#region historial concentraciones
+    static async get_calidad_formulario_historialConcentraciones(req) {
+        try {
+            const { fechaInicio, fechaFin } = req.data;
+            
+            // Construir query con filtros
+            let query = { activo: true };
+
+            // Si hay filtros de fecha, agregarlos
+            if (fechaInicio || fechaFin) {
+                query.fecha = {};
+                
+                if (fechaInicio) {
+                    query.fecha.$gte = new Date(fechaInicio);
+                }
+                
+                if (fechaFin) {
+                    // Agregar un día completo para incluir registros del día final
+                    const fechaFinDate = new Date(fechaFin);
+                    fechaFinDate.setHours(23, 59, 59, 999);
+                    query.fecha.$lte = fechaFinDate;
+                }
+            }
+
+            // Obtener datos con populate de referencias
+            const registros = await FormulariosCalidadRepository.get_historial_concentraciones({
+                query: query,
+                sort: { fecha: -1 }, // Ordenar por fecha descendente
+                populate: [
+                    { path: 'tipoFruta', select: 'tipoFruta' },
+                    { path: 'responsable', select: 'nombre apellido' },
+                    { path: 'usuario', select: 'nombre apellido' }
+                ]
+            });
+
+            return registros;
+
+        } catch (err) {
+            if (err.status === 522) {
+                throw err;
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`);
+        }
+    }
+
+    static async post_calidad_formulario_historialConcentraciones(req) {
+        try {
+            const { user } = req;
+            const { data } = req.data;
+
+            // Validar datos con Zod
+            CalidadValidationsRepository.post_calidad_formulario_historialConcentraciones().parse(req.data);
+            // Obtener el usuario de la sesión
+            const usuarioId = user._id;
+            
+            if (!usuarioId) {
+                throw new CalidadLogicError(401, 'Usuario no autenticado');
+            }
+
+            // Preparar datos del registro
+            const registroData = {
+                fecha: new Date(data.fecha),
+                kilosProcesados: Number(data.kilosProcesados),
+                tipoFruta: data.tipoFruta,
+                concentracionPPM: data.concentracionPPM.trim(),
+                observaciones: data.observaciones?.trim() || '',
+                responsable: data.responsable,
+                usuario: usuarioId,
+                activo: true
+            };
+
+            // Crear el registro
+            await FormulariosCalidadRepository.crear_historial_concentracion(registroData);
+
+        } catch (err) {
+            // if (err.status === 506) {
+            //     throw err;
+            // }
+            if (err instanceof z.ZodError) {
+                const errores = err.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(" | ");
+                throw new CalidadLogicError(480, `Error de validación: ${errores}`);
+            }
+            if (err.status === 506) {
+                throw err;
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`);
+        }
+    }
+
+    static async put_calidad_formulario_historialConcentraciones(req) {
+        try {
+             // Validar datos con Zod
+            CalidadValidationsRepository.put_calidad_formulario_historialConcentraciones().parse(req.data);
+
+            const { data } = req.data;
+            const { _id, updateData } = data;
+
+            // if (!_id) {
+            //     throw new CalidadLogicError(400, 'ID de registro requerido');
+            // }
+
+            // Preparar datos de actualización
+            const update = {};
+            
+            if (updateData.fecha) update.fecha = new Date(updateData.fecha);
+            if (updateData.kilosProcesados !== undefined) {
+                update.kilosProcesados = Number(updateData.kilosProcesados);
+            }
+            if (updateData.tipoFruta) update.tipoFruta = updateData.tipoFruta;
+            if (updateData.concentracionPPM) update.concentracionPPM = updateData.concentracionPPM.trim();
+            if (updateData.observaciones !== undefined) update.observaciones = updateData.observaciones.trim();
+            if (updateData.responsable) update.responsable = updateData.responsable;
+
+            // Actualizar registro
+            await FormulariosCalidadRepository.actualizar_historial_concentracion(_id, update);
+
+        } catch (err) {
+            if (err instanceof z.ZodError) {
+                const errores = err.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(" | ");
+                throw new CalidadLogicError(480, `Error de validación: ${errores}`);
+            }
+            if (err.status === 523) {
+                throw err;
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`);
+        }
+    }
+
+    static async delete_calidad_formulario_historialConcentraciones(req) {
+        try {
+            // Validar datos con Zod
+            CalidadValidationsRepository.delete_calidad_formulario_historialConcentraciones().parse(req.data);
+
+            const { _id } = req.data;
+
+            // if (!_id) {
+            //     throw new CalidadLogicError(400, 'ID de registro requerido');
+            // }
+
+            // Desactivar registro (soft delete)
+            await FormulariosCalidadRepository.eliminar_historial_concentracion(_id);
+
+        } catch (err) {
+            if (err instanceof z.ZodError) {
+                const errores = err.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(" | ");
+                throw new CalidadLogicError(480, `Error de validación: ${errores}`);
+            }
+            if (err.status === 523) {
+                throw err;
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`);
+        }
+    }
+    //#endregion
+//----------------------------------------------------------------------------------------------------------------------------------------------
     //#region informes
     static async get_calidad_informes_lotesInformesProveedor(req) {
         try {

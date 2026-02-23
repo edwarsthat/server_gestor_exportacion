@@ -34,7 +34,7 @@ jest.unstable_mockModule('../../../server/Class/Inventarios.js', () => ({ Invent
 jest.unstable_mockModule('../../../server/helper/lotes.js', () => ({ LotesHelper: mockLotesHelper }));
 jest.unstable_mockModule('../../../server/services/inventarios.js', () => ({ InventariosService: mockInventariosService }));
 jest.unstable_mockModule('../../../server/api/IndicadoresAPI.js', () => ({ IndicadoresAPIRepository: mockIndicadoresAPIRepository }));
-jest.unstable_mockModule('../../../events/eventos.js', () => ({ procesoEventEmitter: mockEventEmitter }));
+jest.unstable_mockModule('../../../events/eventos.js', () => ({ procesoEventEmitter: mockEventEmitter, dashboardEventEmitter: mockEventEmitter }));
 
 // Importación dinámica del controlador
 const { OrdenVaceoController } = await import('../../../server/api/inventarios/ordenVaceo.js');

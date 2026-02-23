@@ -50,7 +50,8 @@ jest.unstable_mockModule('../../../../DB/mongoDB/config/init.js', () => ({
 }));
 
 jest.unstable_mockModule('../../../../events/eventos.js', () => ({
-    procesoEventEmitter: mockEventEmitter
+    procesoEventEmitter: mockEventEmitter,
+    dashboardEventEmitter: mockEventEmitter
 }));
 
 jest.unstable_mockModule('../../../../server/Class/LogsSistema.js', () => ({

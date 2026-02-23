@@ -168,8 +168,26 @@ export const apiSocketCalidad = {
     get_calidad_formulario_controlPlagas_numeroElementos: async () => {
         const response = await CalidadRepository.get_calidad_formulario_controlPlagas_numeroElementos();
         return successResponseRoutes(response)
-
     },
+    //NUEVO JP
+    //#region historial concentraciones
+    get_calidad_formulario_historialConcentraciones: async (data) => {
+        const response = await CalidadRepository.get_calidad_formulario_historialConcentraciones(data);
+        return successResponseRoutes(response);
+    },
+    post_calidad_formulario_historialConcentraciones: async (data) => {
+        await CalidadRepository.post_calidad_formulario_historialConcentraciones(data);
+        return successResponseRoutes();
+    },
+    put_calidad_formulario_historialConcentraciones: async (data) => {
+        await CalidadRepository.put_calidad_formulario_historialConcentraciones(data);
+        return successResponseRoutes();
+    },
+    delete_calidad_formulario_historialConcentraciones: async (data) => {
+        await CalidadRepository.delete_calidad_formulario_historialConcentraciones(data);
+        return successResponseRoutes();
+    },
+
     //#endregion
     //#region reclamaciones
     get_calidad_reclamaciones_contenedores_numeroElementos: async () => {

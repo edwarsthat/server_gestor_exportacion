@@ -104,14 +104,14 @@ export class VariablesDelSistema {
 
       const canastillasJSON = fs.readFileSync(canastillasPath);
       const canastillas = JSON.parse(canastillasJSON);
-       
+
       const canastillasActual = canastillas[tipo] ?? 0;
 
       if (canastillasActual + nCanastillas < 0) {
         throw new ProcessError(523, `Error modificando el inventario canastillas, no hay suficientes canastillas ${tipo}`)
       }
 
-       
+
       canastillas[tipo] += nCanastillas;
       const newCanastillasJSON = JSON.stringify(canastillas);
       fs.writeFileSync(canastillasPath, newCanastillasJSON);
@@ -131,21 +131,9 @@ export class VariablesDelSistema {
     }
   }
 
- // estado del proceso (usado por validaciones de acciones como agrupar fletes). Jp
-  static async obtener_status_proceso() {
-    try {
-      const cliente = await getRedisClient();
-      const status = await cliente.get("statusProceso");
+  // estado del proceso (usado por validaciones de acciones como agrupar fletes). Jp
 
-      // normalizamos valores nulos
-      if (!status) return 'off';
+  static async set_hora_inicio_proceso() {
 
-      // Si no existe estado, asumimos permitido
-      return status;
-    } catch  {
-      // fallback seguro: no bloquear acciones por error de redis
-      // console.error("Error obteniendo statusProceso:", err);
-      return 'off';
-    }
   }
 }

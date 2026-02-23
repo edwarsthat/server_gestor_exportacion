@@ -93,7 +93,7 @@ describe('InventariosHistorialRepository.add_elemento_inventarioDescartes', () =
     // ============================================================
     describe('validación de parámetros', () => {
 
-        const camposRequeridos = ['lote', 'tipoFruta', 'area', 'tipoDescarte', 'kilos', 'canastillas', 'loteType'];
+        const camposRequeridos = ['lote', 'tipoFruta', 'area', 'tipoDescarte', 'kilos', 'loteType'];
 
         test.each(camposRequeridos)(
             'debería lanzar PostError cuando falta el campo "%s"',

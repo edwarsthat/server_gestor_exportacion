@@ -929,12 +929,35 @@ export class InventariosRepository {
     }
     static async get_inventarios_registros_fruta_descompuesta(req) {
         try {
-            const { data } = req;
-            const { page } = data
+            // const { data } = req;
+            // const { page } = data
+            const { page = 1, filtro } = req.data || {};
+            const { fechaInicio, fechaFin } = filtro || {};
+
+            const currentPage = Number(page);
+            if (isNaN(currentPage) || currentPage < 1) {
+                throw new InventariosLogicError(400, "Número de página inválido");
+            }
+
             const resultsPerPage = 50;
 
+            const skip = (currentPage - 1) * resultsPerPage;
+
+            let query = {};
+
+            if (filtro) {
+                query = filtroFechaInicioFin(
+                    fechaInicio,
+                    fechaFin,
+                    query,
+                    "createdAt" // ⚠️ verifica que este sea el campo correcto en tu modelo
+                );
+            }
+
             const registros = await FrutaDescompuestaRepository.get_fruta_descompuesta({
-                skip: (page - 1) * resultsPerPage,
+                query,
+                skip, 
+                // (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
             })
 
@@ -947,9 +970,18 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_inventarios_numero_registros_fruta_descompuesta() {
+    static async get_inventarios_numero_registros_fruta_descompuesta(req) {
         try {
-            const registros = await FrutaDescompuestaRepository.get_numero_fruta_descompuesta()
+            //nuevo JP
+            const { filtro } = req.data || {};
+            let query = {};
+
+            if(filtro) {
+                const { fechaInicio, fechaFin } = filtro;
+                query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "createdAt");
+            }
+            //---
+            const registros = await FrutaDescompuestaRepository.get_numero_fruta_descompuesta(query);
             return registros
 
         } catch (err) {

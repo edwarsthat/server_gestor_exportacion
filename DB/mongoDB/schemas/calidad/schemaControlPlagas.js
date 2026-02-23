@@ -7,7 +7,7 @@ export const defineControlPlagas = async (conn) => {
         status: Boolean,
         observaciones: String,
         createdAt: { type: Date, default: Date.now },
-        responsable: { type: Schema.Types.ObjectId, ref: "Usuarios" },
+        responsable: { type: Schema.Types.ObjectId, ref: "usuario" },
     }, { _id: false })
 
     const controlSchema = new Schema({
@@ -44,7 +44,7 @@ export const defineControlPlagas = async (conn) => {
 
     const ControlPlagasSchema = new Schema({
         createdAt: { type: Date, default: () => new Date() },
-        responsable: { type: Schema.Types.ObjectId, ref: "Usuarios" },
+        responsable: { type: Schema.Types.ObjectId, ref: "usuario" },
         fechaFin: Date,
         fechaInicio: Date,
         ID: { type: String, require: true },

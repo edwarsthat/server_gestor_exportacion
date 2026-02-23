@@ -103,10 +103,17 @@ export class InformesContabilidadController {
             if (calidadesExportDocs.length === 0) throw new Error("No se encontraron configuraciones de calidades")
             if (tiposDescartesDocs.length === 0) throw new Error("No se encontraron configuraciones de descartes")
 
+
+
             const [lote, itemsPallet, calidadesExport, tiposDescartes] = [loteDocs[0], itemsPalletDocs, calidadesExportDocs, tiposDescartesDocs]
             const contenedores = lote.salidaExportacion?.contenedores || []
             const porCalidad = lote.salidaExportacion?.porCalidad || {}
             let out = ""
+
+            const frutaNacional = tiposDescartes.find(item => item.nombre === 'frutaNacional')?._id
+            if (!frutaNacional) {
+                throw new Error("Fruta nacional no encontrada");
+            }
 
             const itemsMap = new Map();
             itemsPallet.forEach(i => {
