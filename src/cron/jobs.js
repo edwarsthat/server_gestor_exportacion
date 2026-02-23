@@ -19,7 +19,7 @@ export function initCronJobs() {
     });
 
     //nuevos datos diarios
-    cron.schedule('32 11 * * *', async () => {
+    cron.schedule('0 5 * * *', async () => {
         try { await InventariosRepository.crear_snapshot_inventario_descartes(); }
         catch (err) { console.error('[cron 05:01] crear_snapshot_inventario_descartes:', err.message); }
 
