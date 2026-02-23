@@ -43,7 +43,7 @@ export const apiSocketProceso = {
         return successResponseRoutes(response)
     },
     put_proceso_aplicaciones_listaEmpaque_agregarItem: async (data) => {
-        const response = await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_agregarItem(data);
+        const response = await ListaEmpaqueController.put_proceso_aplicaciones_listaEmpaque_agregarItem(data);
         return successResponseRoutes(response)
     },
     put_proceso_aplicaciones_listaEmpaque_addSettings: async (data) => {
@@ -63,7 +63,7 @@ export const apiSocketProceso = {
         return successResponseRoutes(response)
     },
     put_proceso_aplicaciones_listaEmpaque_moverItems: async (data) => {
-        await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_moverItems(data);
+        await ListaEmpaqueController.put_proceso_aplicaciones_listaEmpaque_moverItems(data);
         return successResponseRoutes()
     },
     put_proceso_aplicaciones_listaEmpaque_liberarPallet: async (data) => {

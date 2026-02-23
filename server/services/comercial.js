@@ -1,7 +1,7 @@
-
+import mongoose from "mongoose";
 
 export class ComercialService {
-    static async crear_contenedor(data) {
+    static crear_contenedor(data) {
         return {
             numeroContenedor: Number(data.numeroContenedor),
             infoContenedor: {
@@ -27,6 +27,8 @@ export class ComercialService {
                 maquila: data.maquila,
             },
             pallets: 0,
+            GGN: data.GGN,
+            pais_destino: new mongoose.Types.ObjectId(data.paisDestino),
         }
     }
     static async poner_precio_lotes(itemPallets, calidades) {

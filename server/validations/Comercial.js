@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { requiredSafeString, safeString, optionalSafeString, objectIdString } from "./utils/validationFunctions.js";
 
 export class ComercialValidationsRepository {
     static val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro) {
@@ -41,78 +42,46 @@ export class ComercialValidationsRepository {
 
         return query
     }
-    static val_proveedores_informacion_post_put_data(data) {
-        //Validaciones
-        const requiredFieldsAll = [
-            "CODIGO INTERNO",
-            "PREDIO",
-            "ICA.code",
-            "ICA.tipo_fruta",
-            "ICA.fechaVencimiento",
-            "GGN.code",
-            "GGN.fechaVencimiento",
-            "GGN.paises",
-            "GGN.tipo_fruta",
-            "nit_facturar",
-            "razon_social",
-            "propietario",
-            "telefono_propietario",
-            "correo_informes",
-            "contacto_finca",
-            "telefono_predio",
-            "tipo_fruta",
-            "activo",
-            "SISPAP",
-            "departamento",
-            "municipio",
-            "flete"
-        ];
-        const requiredFields = [
-            "CODIGO INTERNO",
-            "PREDIO",
-            "ICA.code",
-            "ICA.tipo_fruta",
-            "ICA.fechaVencimiento",
-            "nit_facturar",
-            "razon_social",
-            "propietario",
-            "telefono_propietario",
-            "correo_informes",
-            "contacto_finca",
-            "telefono_predio",
-            "tipo_fruta",
+    static val_proveedores_informacion_post_put_data() {
+        return z.object({
+            // Campos obligatorios
+            PREDIO: requiredSafeString("PREDIO"),
+            "ICA.code": requiredSafeString("ICA.code"),
+            "ICA.fechaVencimiento": z.string()
+                .min(1, "El campo ICA.fechaVencimiento es obligatorio")
+                .refine(val => !isNaN(Date.parse(val)), "La fecha de vencimiento ICA no es válida"),
+            "ICA.tipo_fruta": z.array(z.any())
+                .min(1, "Debe seleccionar al menos un tipo de fruta en ICA"),
+            nit_facturar: requiredSafeString("nit_facturar"),
+            razon_social: requiredSafeString("razon_social"),
+            propietario: requiredSafeString("propietario"),
 
-        ];
-
-        requiredFields.forEach((field) => {
-            const fieldValue = Reflect.get(data, field)
-            if (!fieldValue || fieldValue === "") {
-                throw new Error(`El campo ${field} es obligatorio.`)
-            }
-
-            if (field === "CODIGO INTERNO") {
-                const numValue = Number(Reflect.get(data, field))
-                if (isNaN(numValue)) {
-                    throw new Error(`El campo ${field} debe ser un numero.`)
-                }
-                Reflect.set(data, field, numValue)
-            }
-        });
-
-        Object.keys(data).forEach((key) => {
-            if (!requiredFieldsAll.includes(key)) {
-                throw new Error(`El campo ${key} no es permitido.`);
-            }
-        });
-
-        if (typeof data.tipo_fruta !== 'object') {
-            throw new Error(`El campo tipoFruta debe ser un arreglo.`);
-        }
-
-        if (Object.keys(data.tipo_fruta) <= 0) {
-            throw new Error(`El campo tipoFruta debe tener al menos un valor.`);
-        }
-
+            // Campos opcionales
+            SISPAP: z.boolean({ message: "El campo SISPAP debe ser un booleano" }).optional(),
+            activo: z.boolean({ message: "El campo activo debe ser un booleano" }).optional(),
+            "GGN.code": optionalSafeString("GGN.code"),
+            "GGN.fechaVencimiento": z.string()
+                .optional()
+                .refine(val => {
+                    if (val === undefined || val === null || val.trim() === '') return true;
+                    return !isNaN(Date.parse(val));
+                }, "La fecha de vencimiento GGN no es válida"),
+            "GGN.tipo_fruta": z.array(z.any()).optional(),
+            "GGN.paises": z.array(z.any()).optional(),
+            telefono_propietario: optionalSafeString("telefono_propietario"),
+            correo_informes: z.string()
+                .optional()
+                .refine(val => {
+                    if (val === undefined || val === null || val.trim() === '') return true;
+                    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+                }, "El correo de informes no es válido"),
+            contacto_finca: optionalSafeString("contacto_finca"),
+            telefono_predio: optionalSafeString("telefono_predio"),
+            departamento: optionalSafeString("departamento"),
+            municipio: optionalSafeString("municipio"),
+            flete: z.any().nullable().optional(),
+            tipo_fruta: z.record(z.any()).optional(),
+        }).strict();
     }
     static val_get_sys_proveedores(data) {
         const valoresValidos = ['activos', 'all'];
@@ -232,23 +201,88 @@ export class ComercialValidationsRepository {
     }
     static post_comercial_contenedor() {
         return z.object({
-            clienteInfo: z.string().min(1, "El cliente es obligatorio"),
-            numeroContenedor: z.string().min(1, "El número de contenedor es obligatorio")
-                .refine(val => !isNaN(Number(val)) && Number(val) > 0, "El número de contenedor debe ser un número válido mayor a cero"),
-            tipoFruta: z.array(z.string()).min(1, "Debe seleccionar al menos un tipo de fruta"),
-            fechaInicioProceso: z.string().min(1, "La fecha de inicio de proceso es obligatoria"),
-            fechaEstimadaCargue: z.string().min(1, "La fecha estimada de cargue es obligatoria"),
-            calidad: z.array(z.string()).min(1, "Debe seleccionar al menos una opción de calidad"),
-            calibres: z.array(z.string()).min(1, "Debe seleccionar al menos un calibre"),
-            tipoCaja: z.array(z.string()).min(1, "Debe seleccionar al menos un tipo de caja"),
-            sombra: z.string().optional(),
-            defecto: z.string().optional(),
-            mancha: z.string().optional(),
-            verdeManzana: z.string().optional(),
-            cajasTotal: z.string().min(1, "El total de cajas es obligatorio")
-                .refine(val => !isNaN(Number(val)) && Number(val) > 0, "El total de cajas debe ser un número válido mayor a cero"),
-            RTO: z.string().optional(),
-            observaciones: z.string().min(1, "Las observaciones son obligatorias")
+            action: z.literal("post_comercial_contenedor"),
+            data: z.object({
+                clienteInfo: objectIdString("clienteInfo"),
+                paisDestino: objectIdString("paisDestino"),
+                GGN: z.boolean({ message: "El campo GGN debe ser un booleano" }),
+                numeroContenedor: requiredSafeString("numeroContenedor")
+                    .pipe(z.string().refine(
+                        val => !isNaN(Number(val)) && Number(val) > 0,
+                        "El número de contenedor debe ser un número válido mayor a cero"
+                    )),
+                tipoFruta: z.array(objectIdString("tipoFruta"))
+                    .min(1, "Debe seleccionar al menos un tipo de fruta"),
+                fechaInicioProceso: z.string()
+                    .min(1, "La fecha de inicio de proceso es obligatoria")
+                    .refine(val => !isNaN(Date.parse(val)), "La fecha de inicio de proceso no es válida"),
+                fechaEstimadaCargue: z.string()
+                    .min(1, "La fecha estimada de cargue es obligatoria")
+                    .refine(val => !isNaN(Date.parse(val)), "La fecha estimada de cargue no es válida"),
+                calidad: z.array(objectIdString("calidad"))
+                    .min(1, "Debe seleccionar al menos una opción de calidad"),
+                calibres: z.array(safeString("calibres").pipe(z.string().min(1, "El calibre no puede estar vacío")))
+                    .min(1, "Debe seleccionar al menos un calibre"),
+                tipoCaja: z.array(safeString("tipoCaja").pipe(z.string().min(1, "El tipo de caja no puede estar vacío")))
+                    .min(1, "Debe seleccionar al menos un tipo de caja"),
+                sombra: optionalSafeString("sombra"),
+                defecto: optionalSafeString("defecto"),
+                mancha: optionalSafeString("mancha"),
+                verdeManzana: optionalSafeString("verdeManzana"),
+                cajasTotal: requiredSafeString("cajasTotal")
+                    .pipe(z.string().refine(
+                        val => !isNaN(Number(val)) && Number(val) > 0,
+                        "El total de cajas debe ser un número válido mayor a cero"
+                    )),
+                rtoEstimado: optionalSafeString("rtoEstimado"),
+                observaciones: optionalSafeString("observaciones"),
+                maquila: z.boolean({ message: "El campo maquila debe ser un booleano" }),
+            })
+        })
+    }
+    static post_comercial_clientes() {
+        return z.object({
+            action: z.literal("post_comercial_clientes"),
+            data: z.object({
+                CLIENTE: requiredSafeString("CLIENTE"),
+                CORREO: z.string()
+                    .min(1, "El campo CORREO es obligatorio")
+                    .email("El campo CORREO debe ser un correo válido"),
+                DIRECCIÓN: requiredSafeString("DIRECCIÓN"),
+                PAIS_DESTINO: z.array(
+                    z.object({
+                        codigo: objectIdString("codigo"),
+                        requiereGGN: z.boolean({ message: "El campo requiereGGN debe ser un booleano" })
+                    })
+                ).min(1, "Debe seleccionar al menos un país de destino"),
+                TELEFONO: safeString("TELEFONO")
+                    .pipe(z.string().min(1, "El campo TELEFONO es obligatorio")),
+                ID: safeString("ID")
+                    .pipe(z.string().min(1, "El campo ID es obligatorio")),
+            })
+        })
+    }
+    static put_comercial_clientes() {
+        return z.object({
+            _id: objectIdString("_id"),
+            action: z.literal("put_comercial_clientes"),
+            data: z.object({
+                CLIENTE: requiredSafeString("CLIENTE"),
+                CORREO: z.string()
+                    .min(1, "El campo CORREO es obligatorio")
+                    .email("El campo CORREO debe ser un correo válido"),
+                DIRECCIÓN: requiredSafeString("DIRECCIÓN"),
+                PAIS_DESTINO: z.array(
+                    z.object({
+                        codigo: objectIdString("codigo"),
+                        requiereGGN: z.boolean({ message: "El campo requiereGGN debe ser un booleano" })
+                    })
+                ).min(1, "Debe seleccionar al menos un país de destino"),
+                TELEFONO: safeString("TELEFONO")
+                    .pipe(z.string().min(1, "El campo TELEFONO es obligatorio")),
+                ID: safeString("ID")
+                    .pipe(z.string().min(1, "El campo ID es obligatorio")),
+            })
         })
     }
 }

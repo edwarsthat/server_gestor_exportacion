@@ -20,13 +20,15 @@ class ProcesoService {
         }
 
         //se obtienen los datos
-        const contenedor = await ContenedoresRepository.get_Contenedores_sin_lotes({
+        const contenedor = await ContenedoresRepository.get_data({
             ids: [ContenedorID],
-            select: { infoContenedor: 1, pallets: 1 },
-            populate: {
-                path: 'infoContenedor.clienteInfo',
-                select: 'CLIENTE PAIS_DESTINO',
-            }
+            select: { infoContenedor: 1, pallets: 1, GGN: 1, pais_destino: 1 },
+            populate: [
+                {
+                    path: 'infoContenedor.clienteInfo',
+                    select: 'CLIENTE PAIS_DESTINO',
+                }
+            ]
         }, { session });
 
         // Validar que se encontró el contenedor y tiene la estructura esperada
@@ -46,7 +48,7 @@ class ProcesoService {
         }
         return { contenedor, lotes };
     }
-    static async modificarLoteListaEmpaqueAddItem(item, kilos, _id, logData, session) {
+    static async modificarLoteListaEmpaqueAddItem(item, kilos, _id, user, session) {
 
         const { lote, calidad, calibre, cajas } = item
 
@@ -66,10 +68,9 @@ class ProcesoService {
         await LotesHelper.actualizar_lotes_helper(
             { _id: lote },
             query,
-            { user: logData.user._id, action: logData.action, session }
+            { user, action: "modificarLoteListaEmpaqueAddItem", session }
         )
 
-        await registrarPasoLog(logData.logId, "ProcesoService.modificarLoteListaEmpaqueAddItem", "Completado");
         return true
     }
     static async eliminar_items_contenedor(seleccion, logContext, session) {
@@ -316,8 +317,8 @@ class ProcesoService {
         }
         return true;
     }
-    static async modifiarContenedorPalletsListaEmpaque(lotes, pallet, item, kilos, _id, GGN, logData, session) {
-        const { user } = logData
+    static async modifiarContenedorPalletsListaEmpaque(lotes, pallet, item, kilos, _id, GGN, user, session) {
+
         // Actualizar contenedor con pallets modificados
         const { cajas } = item
         let tipoLote = ""
@@ -330,7 +331,7 @@ class ProcesoService {
 
         const itemnuevo = {
             ...item,
-            user: user._id,
+            user: user,
             loteType: tipoLote,
             pallet: pallet,
             kilos: kilos,
@@ -348,9 +349,7 @@ class ProcesoService {
             },
             { session, skipAudit: true }
         );
-
-        await registrarPasoLog(logData.logId, "ProcesoService.modifiarContenedorPalletsListaEmpaque", "Completado");
-        return { GGN, }
+        return { GGN }
     }
     static async modificarContenedorModificarItemListaEmpaque(palletsModificados, palletSeleccionado, itemSeleccionadoOld, copiaPallet, item, logData = null, session = null) {
 

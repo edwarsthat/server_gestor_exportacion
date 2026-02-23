@@ -7,7 +7,9 @@ import { FileService } from "../services/helpers/FileService.js";
 import { BaseRepository } from "./base/BaseRepository.js";
 
 
-export class ContenedoresRepository {
+export class ContenedoresRepository extends BaseRepository {
+    static get model() { return db.Contenedores; }
+    static modelName = 'Contenedores';
 
     static async crearContenedor(data, user) {
         try {

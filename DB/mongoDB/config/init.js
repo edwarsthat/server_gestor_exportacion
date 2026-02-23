@@ -68,6 +68,7 @@ import { defineAuditCargosPersonal } from '../schemas/audit/AuditCargosPersonal.
 import { defineAuditPersonal } from '../schemas/audit/AuditPersonal.js';
 //.Jp
 import { defineTarifaPredio } from "../schemas/tarifas/schemaTarifasPredio.js";
+import { definePaises } from '../schemas/catalogs/schemaPaises.js';
 import { defineHistorialConcentraciones } from '../schemas/calidad/schemaHistorialConcentraciones.js';
 
 export const db = {};
@@ -259,6 +260,12 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("✅ Inventarios Simples definidos");
         db.AreasFisicas = await defineSchemaAreasFisicas(sysConn);
         console.log("✅ Areas Fisicas definidos");
+        //#endregion
+
+        //#region Catalogos
+        console.log("⚡ Definiendo Paises...");
+        db.Paises = await definePaises(sysConn);
+        console.log("✅ Paises definidos");
         //#endregion
 
 

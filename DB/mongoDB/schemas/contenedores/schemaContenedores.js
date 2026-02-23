@@ -122,6 +122,8 @@ export const defineContenedores = async (conn, AuditLog) => {
     totalKilos: Number,
     totalCajas: Number,
     pallets: Number,
+    GGN: Boolean,
+    pais_destino: { type: Schema.Types.ObjectId, ref: "Pais" },
     infoContenedor: infoContenedorSchema,
     infoTractoMula: schemaInfoMula,
     infoExportacion: schemaInfoExportacion,
@@ -129,6 +131,7 @@ export const defineContenedores = async (conn, AuditLog) => {
     inspeccion_mula: inspeccionMulasSchema,
     reclamacionCalidad: reclamacionSchema,
     registrosSalidas: [{ type: Schema.Types.ObjectId, ref: "salidaVehiculo" }],
+    user: { type: Schema.Types.ObjectId, ref: 'usuario' }
   });
 
   listaEmpaqueSchema.index({ reclamacionCalidad: 1, entregaPrecinto: 1 });

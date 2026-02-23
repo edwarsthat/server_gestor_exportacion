@@ -89,17 +89,6 @@ export class ConstantesDelSistema {
             throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`);
         }
     }
-    static async get_constantes_sistema_paises_GGN() {
-        try {
-            const dataJSON = fs.readFileSync(paises_GGN_path);
-            const data = JSON.parse(dataJSON);
-
-            return data;
-
-        } catch (err) {
-            throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`)
-        }
-    }
     static async get_constantes_carnets() {
         try {
             return CARNET_ENUMS;
@@ -116,6 +105,10 @@ export class ConstantesDelSistema {
     }
     static get_constantes_sistema_tiposIdentificacion() {
         return TIPOS_IDENTIFICACION_ENUMS;
+    }
+    static async get_constantes_sistema_paises_Exportacion() {
+        const docs = await db.Paises.find({})
+        return docs
     }
 }
 

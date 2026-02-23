@@ -65,72 +65,31 @@ export class ComercialRepository {
             throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_comercial_proveedores_elementos(req) {
-        try {
-            const { data, user } = req || {};
-            const { page, filtro } = data || {}
-            const resultsPerPage = 25;
-            let filter
-            let query
 
-            if (filtro) {
-                ComercialValidationsRepository
-                    .val_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
-                filter = ComercialValidationsRepository
-                    .query_comercial_proveedores_informacion_proveedores_cantidad_datos(filtro);
-
-                if (user.Rol > 2) {
-                    filter = {
-                        ...filter,
-                        activo: true
-                    }
-                }
-
-                query = {
-                    skip: (page - 1) * resultsPerPage,
-                    query: filter,
-                }
-            } else {
-                query = {
-                    limit: 0
-                }
-            }
-
-
-            const registros = await ProveedoresRepository.get_proveedores(query)
-
-            return registros
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
 
     //se obtiene el detalle de un proveedor por id. Jp
     static async get_comercial_proveedor_detalle(req) {
-    try {
-        const { id } = req.data;
+        try {
+            const { id } = req.data;
 
-        if (!id) {
-            throw new Error("ID de proveedor no enviado");
-        }
+            if (!id) {
+                throw new Error("ID de proveedor no enviado");
+            }
 
-        const proveedor = await ProveedoresRepository.get_proveedor_by_id(id);
+            const proveedor = await ProveedoresRepository.get_proveedor_by_id(id);
 
-        return proveedor;
+            return proveedor;
         } catch (err) {
             if (err.status === 522) {
                 throw err;
-        }
+            }
             throw new ComercialLogicError(
                 480,
-            `   Error ${err.type ?? "detalle_proveedor"}: ${err.message}`
+                `   Error ${err.type ?? "detalle_proveedor"}: ${err.message}`
             );
         }
     }
-//------------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------------
     static async get_comercial_precios_proveedores_registros() {
         try {
             const query = {
@@ -174,86 +133,44 @@ export class ComercialRepository {
             throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
-    // El cambio: ya NO guarda el campo "flete" en el documento del
-    // proveedor. Así cada año tiene su propia tarifa en TarifaPredio
-    // y no se pisan entre sí.
-    static async put_comercial_proveedores_modify_proveedor(req) {
-        try {
-            const { data: datos, user } = req
-            const { _id, data, action } = datos
-            ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data)
-            // El flete ya no se guarda en el documento del proveedor.
-            // Solo se guarda en TarifaPredio por año (lo hace el modal).
-            
-            // Crear una copia de data sin el campo flete
-            const dataWithoutFlete = {...data};
-            delete dataWithoutFlete.flete;
 
-            const proveedorOld = await ProveedoresRepository.get_proveedores({
-                ids: [_id]
-            })
-            //usa dataWithoutFlete en lugar de data
-            const newProveedor = await ProveedoresRepository.actualizar_proveedor(
-                { _id },
-                // data             //antes
-                dataWithoutFlete    //ahora
-            );
 
-            await RecordModificacionesRepository.post_record_modification(
-                action,
-                user,
-                {
-                    modelo: "Proveedor",
-                    documentoId: newProveedor._id,
-                    descripcion: `Se modifico el proveedor `,
-                },
-                proveedorOld[0],
-                newProveedor,
-                { _id, data, action }
-            );
-        } catch (err) {
-            if (err.status === 523 || err.status === 522) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
 
     //GUARDAR/ACTUALIZAR TARIFA
-static async post_comercial_tarifa_predio(req) {
-    try {
-        const datosReales = req.data?.data || req.data;
-        const { predio, year, tipo = "FIJA", valor } = datosReales;
+    static async post_comercial_tarifa_predio(req) {
+        try {
+            const datosReales = req.data?.data || req.data;
+            const { predio, year, tipo = "FIJA", valor } = datosReales;
             // Validaciones básicas
-        if (!predio || !year || valor === undefined || valor === null) {
-            throw new ComercialLogicError(470, "Faltan campos obligatorios: predio, year, valor");
-        }
+            if (!predio || !year || valor === undefined || valor === null) {
+                throw new ComercialLogicError(470, "Faltan campos obligatorios: predio, year, valor");
+            }
 
-        const resultado = await db.TarifaPredio.findOneAndUpdate(
-            { predio, year, tipo },             //filtro de busqueda
-            {$set: { valor, activo: true } },  //que actualizar
-            { upsert: true, new: true}        //upsert + retrona el doc actualizado
-        );
+            const resultado = await db.TarifaPredio.findOneAndUpdate(
+                { predio, year, tipo },             //filtro de busqueda
+                { $set: { valor, activo: true } },  //que actualizar
+                { upsert: true, new: true }        //upsert + retrona el doc actualizado
+            );
 
-        return resultado;
+            return resultado;
 
-    } catch (err) {
-        if (err.status) {
+        } catch (err) {
+            if (err.status) {
                 throw err; // si ya es un error custom, lo re-lanza
             }
-        throw new ComercialLogicError( 480, `Error al guardar tarifa del predio: ${err.message}`);
+            throw new ComercialLogicError(480, `Error al guardar tarifa del predio: ${err.message}`);
+        }
     }
-}
 
 
     // Obtener la tarifa de un predio para un año específico.
     // La usa el modal del proveedor para cargar el valor al abrirse.
-static async get_comercial_tarifa_predio(req) {
-    try {
-        const datosReales = req.data?.data || req.data;
-        const { predio, year, tipo ="FIJA" } = datosReales;
+    static async get_comercial_tarifa_predio(req) {
+        try {
+            const datosReales = req.data?.data || req.data;
+            const { predio, year, tipo = "FIJA" } = datosReales;
 
-        const tarifa = await db.TarifaPredio.findOne({
+            const tarifa = await db.TarifaPredio.findOne({
                 predio,
                 year,
                 tipo,
@@ -262,166 +179,22 @@ static async get_comercial_tarifa_predio(req) {
 
             return tarifa; //retorna null si no existe
 
-    } catch (err) {
-        if (err.status) {
+        } catch (err) {
+            if (err.status) {
                 throw err;
             }
-        throw new ComercialLogicError(480,`Error obteniendo tarifa predio: ${err.message}`
-        );
-    }
-}
-
-    static async post_comercial_proveedores_add_proveedor(req) {
-        try {
-            const { data: datos, user } = req
-            const { data } = datos
-
-            console.log(data)
-            const predio = await ProveedoresRepository.get_proveedores({
-                query: { "CODIGO INTERNO": 0 }
-            })
-
-            ComercialValidationsRepository.val_proveedores_informacion_post_put_data(data);
-
-            const nuevoPredioConPrecio = {
-                ...data,
-                precio: predio[0].precio
-            }
-
-            // Se crea el registro
-            const proveedor = await ProveedoresRepository.addProveedor(nuevoPredioConPrecio, user._id);
-
-            const documento = {
-                modelo: "Proveedor",
-                _id: proveedor._id,
-            }
-
-            await RecordCreacionesRepository.post_record_creaciones(
-                "post_comercial_proveedores_add_proveedor",
-                user,
-                documento,
-                proveedor,
-                "Creacion de proveedor"
-            )
-
-        } catch (err) {
-
-            if (err.status === 521) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
+            throw new ComercialLogicError(480, `Error obteniendo tarifa predio: ${err.message}`
+            );
         }
     }
+
+
     //#region Precios
     //#region clientes
-    static async get_comercial_clientes() {
-        try {
-            return await ClientesRepository.get_data();
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async post_comercial_clientes(req) {
-        try {
-            const { user } = req
-            const { data } = req.data
-            const cliente = await ClientesRepository.post_cliente(data, user)
 
-            const documento = {
-                modelo: "Cliente",
-                _id: cliente._id,
-            }
-            await RecordCreacionesRepository.post_record_creaciones(
-                "post_comercial_clientes",
-                user,
-                documento,
-                cliente,
-                "Creacion de cliente"
-            )
-        } catch (err) {
-            if (err.status === 521) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async put_comercial_clientes(req) {
-        try {
-            const { user } = req
-            const { _id, data, action } = req.data
-            delete data._id
-            const clienteOld = await ClientesRepository.get_data({
-                ids: [_id]
-            })
 
-            const newCliente = await ClientesRepository.actualizar_cliente(
-                { _id },
-                data
-            );
-            // Registrar modificación Clientes
-            const modificado = Object.keys(data).reduce((acu, item) => acu += item + " - ", "")
 
-            await RecordModificacionesRepository.post_record_modification(
-                action,
-                user,
-                {
-                    modelo: "Cliente",
-                    documentoId: newCliente._id,
-                    descripcion: `Se modifico ${modificado} `,
-                },
-                clienteOld[0],
-                newCliente,
-                { _id, data, action }
-            );
 
-        } catch (err) {
-            if (err.status === 521) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async put_comercial_clientes_estado(req) {
-        try {
-            const { user } = req
-            const { _id, action } = req.data
-
-            const clienteOld = await ClientesRepository.get_data({
-                ids: [_id]
-            })
-
-            const newCliente = await ClientesRepository.actualizar_cliente(
-                { _id },
-                {
-                    $set: {
-                        activo: clienteOld[0].activo ? false : true
-                    }
-                }
-            );
-
-            await RecordModificacionesRepository.post_record_modification(
-                action,
-                user,
-                {
-                    modelo: "Cliente",
-                    documentoId: newCliente._id,
-                    descripcion: `Se modifico el estado del cliente`,
-                },
-                clienteOld[0],
-                newCliente,
-                { _id, action }
-            );
-
-        } catch (err) {
-            if (err.status === 521) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async get_comercial_clientesNacionales() {
         try {
             const [clientes, numeroClientes] = await Promise.all([
@@ -496,36 +269,7 @@ static async get_comercial_tarifa_predio(req) {
     }
     //#regionend
     //#region ingresos
-    static async post_comercial_contenedor(req) {
-        try {
-            const { user } = req
-            const { data, action } = req.data
 
-            ComercialValidationsRepository.post_comercial_contenedor().parse(data);
-
-            const objCont = await ComercialService.crear_contenedor(data)
-            const newCont = await ContenedoresRepository.crearContenedor(objCont, user._id);
-
-            const documento = {
-                modelo: "Cliente",
-                _id: newCont._id,
-            }
-
-            await RecordCreacionesRepository.post_record_creaciones(
-                action,
-                user,
-                documento,
-                newCont,
-                `Creacion de contenedor ${newCont.numeroContenedor}`
-            )
-
-        } catch (err) {
-            if (err.status === 521) {
-                throw err
-            }
-            throw new ComercialLogicError(480, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async post_comercial_clienteNacional(req) {
         const { user } = req
         const { data, action } = req.data
