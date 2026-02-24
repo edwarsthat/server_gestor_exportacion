@@ -38,17 +38,6 @@ import { tipoFrutaCache } from "../cache/tipoFruta.js";
 
 export class InventariosRepository {
     //#region inventarios
-    static async get_inventarios_canastillas_canastillasCelifrut() {
-        try {
-            const response = await VariablesDelSistema.obtener_canastillas_inventario()
-            return response
-        } catch (err) {
-            if (err.status === 518 || err.status === 413) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async get_inventarios_frutaSinProcesar_frutaEnInventario() {
         try {
             const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
@@ -956,7 +945,7 @@ export class InventariosRepository {
 
             const registros = await FrutaDescompuestaRepository.get_fruta_descompuesta({
                 query,
-                skip, 
+                skip,
                 // (page - 1) * resultsPerPage,
                 limit: resultsPerPage,
             })
@@ -976,7 +965,7 @@ export class InventariosRepository {
             const { filtro } = req.data || {};
             let query = {};
 
-            if(filtro) {
+            if (filtro) {
                 const { fechaInicio, fechaFin } = filtro;
                 query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "createdAt");
             }

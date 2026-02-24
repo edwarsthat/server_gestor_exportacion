@@ -83,16 +83,6 @@ export class VariablesDelSistema {
   }
 
   //#region Constantes
-  //canastillas
-  static async obtener_canastillas_inventario() {
-    try {
-      const canastillasJSON = fs.readFileSync(canastillasPath);
-      const canastillas = JSON.parse(canastillasJSON);
-      return canastillas;
-    } catch (err) {
-      throw new ProcessError(522, `Error Obteniendo inventario canastillas ${err.name}`)
-    }
-  }
   static async modificar_canastillas_inventario(nCanastillas, tipo) {
     try {
       if (!["canastillas", "canastillasPrestadas"].includes(tipo)) {

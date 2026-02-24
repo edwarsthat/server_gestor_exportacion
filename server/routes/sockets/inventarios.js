@@ -1,6 +1,7 @@
 import { CalidadRepository } from "../../api/Calidad.js";
 import { ComercialRepository } from "../../api/Comercial.js";
 import { InventariosRepository } from "../../api/inventarios.js";
+import { CanastillasController } from "../../api/inventarios/canastillas.js";
 import { InventarioCuartoFriosController } from "../../api/inventarios/inventarioCuartoFrios.js";
 import { InventarioDescarteController } from "../../api/inventarios/inventarioDescarte.js";
 import { InventarioFrutaSinProcesarController } from "../../api/inventarios/inventarioFrutaSinProcesar.js";
@@ -106,6 +107,12 @@ export const apiSocketInventarios = {
         return successResponseRoutes()
     },
     //#endregion
+    //#region canastillas
+    get_inventarios_canastillas_canastillasCelifrut: async () => {
+        const response = await CanastillasController.get_inventarios_canastillas_canastillasCelifrut()
+        return successResponseRoutes(response)
+    },
+    //#endregion
 
     //#region inventarios
     get_inventarios_frutaSinProcesar_frutaEnInventario: async () => {
@@ -151,10 +158,7 @@ export const apiSocketInventarios = {
         await InventariosRepository.put_inventarios_frutaDesverdizado_finalizar(data)
         return successResponseRoutes()
     },
-    get_inventarios_canastillas_canastillasCelifrut: async () => {
-        const response = await InventariosRepository.get_inventarios_canastillas_canastillasCelifrut()
-        return successResponseRoutes(response)
-    },
+
     put_inventarios_canastillas_celifrut: async (data) => {
         await InventariosRepository.put_inventarios_canastillas_celifrut(data)
         return successResponseRoutes()
