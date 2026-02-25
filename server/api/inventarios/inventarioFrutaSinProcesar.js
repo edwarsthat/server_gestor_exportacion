@@ -11,7 +11,7 @@ import { ConstantesDelSistema } from "../../Class/ConstantesDelSistema.js";
 import { dataService } from "../../services/data.js";
 import { dataRepository } from "../data.js";
 import { CanastillasRepository } from "../../Class/CanastillasRegistros.js";
-import { VariablesDelSistema } from "../../Class/VariablesDelSistema.js";
+import { CanastillasService } from "../../services/inventarios/canastillas.js";
 
 
 export class InventarioFrutaSinProcesarController {
@@ -115,7 +115,6 @@ export class InventarioFrutaSinProcesarController {
     }
     static async post_inventarios_ingreso_lote(req) {
         const { user } = req;
-
         await executeTransactionalTask(req, async (session, log) => {
             if (!user && !user._id) {
                 throw new Error("No se encontró el usuario en la base de datos");
@@ -189,14 +188,104 @@ export class InventarioFrutaSinProcesarController {
             await dataRepository.incrementar_serial("EF1-", session);
             await registrarPasoLog(log._id, "dataService.incrementar_serial", "Completado");
 
-            //este metodo tambien toca mejorarlo, que no sea un json y que sea parte del mongo para transacciones
-            await VariablesDelSistema
-                .modificar_canastillas_inventario(dataCanastillas.canastillasPrestadas, "canastillasPrestadas")
+            await CanastillasService.modificar_inventario_canastillas({
+                canastillas_propias: Number(dataCanastillas.canastillasPropias || 0),
+                canastillasPrestadas: Number(dataCanastillas.canastillasPrestadas || 0),
+                prestamistaId: datosValidados.predio,
+            }, session);
             await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");
         })
 
         procesoEventEmitter.emit("server_event", {
             action: "add_lote",
         });
+    }
+    static async post_inventarios_ingreso_maquila(req) {
+        const { user } = req;
+        if (!user && !user._id) {
+            throw new Error("No se encontró el usuario en la base de datos");
+        }
+        const inventarioID = config.INVENTARIO_FRUTA_SIN_PROCESAR;
+        await executeTransactionalTask(req, async (session, log) => {
+            const { data, action } = req;
+
+            const datosValidados = InventariosValidations.post_inventarios_ingreso_maquila().parse(data)
+            await registrarPasoLog(log._id, "InventariosValidations.post_inventarios_ingreso_maquila", "Completado");
+
+            const {dataLote, dataCanastillas  } = datosValidados
+
+            const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(dataLote.tipoFruta)
+
+            const [{ precioId, proveedor }, ef10] = await Promise.all([
+                InventariosService.obtenerPrecioProveedor(dataLote.predio, tipoFruta[0]._id, session),
+                dataService.get_ef10_serial(dataLote.fecha_estimada_llegada, log._id, session),
+            ])
+            await registrarPasoLog(log._id, "Promise.all obtener precio, proveedor, ef1 y tipo de fruta", "Completado");
+
+
+            if (dataLote.GGN)
+                InventariosService.validarGGN(proveedor, tipoFruta[0].tipoFruta, user, session)
+
+            const query = await InventariosService.construirQueryIngresoLoteMaquila(dataLote, ef10, precioId, tipoFruta[0], user);
+
+            //Se crean los datos del registro de canastillas
+            const dataRegistro = InventariosService.crearRegistroInventarioCanastillas({
+                destino: "65c27f3870dd4b7f03ed9857",
+                origen: dataLote.predio,
+                observaciones: "ingreso lote maquila",
+                fecha: dataLote.fecha_estimada_llegada,
+                canastillas: dataCanastillas.canastillasPropias,
+                canastillasPrestadas: dataCanastillas.canastillasPrestadas,
+                accion: "ingreso",
+                user
+            })
+            await registrarPasoLog(log._id, "InventariosService.crearRegistroInventarioCanastillas", "Completado");
+
+            let lote
+
+            lote = await LotesRepository.post_data(query, { session: session, user: user._id, action: action });
+            await registrarPasoLog(log._id, "LotesRepository.post_data", "Completado");
+
+            // await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
+            await InventariosHistorialRepository.put_inventarioSimple(
+                { _id: inventarioID },
+                { $push: { inventarioMaquila: { lote: lote._id, canastillas: Number(lote.canastillas) } }, $inc: { __v: 1 } },
+                { session, user: user._id, action: "ingreso_lote", operation: "ingreso", skipAudit: false }
+            );
+            await registrarPasoLog(log._id, "VariablesDelSistema.ingresarInventario", "Completado");
+
+            await InventariosService
+                .ajustarCanastillasProveedorCliente(dataLote.predio, -Number(dataCanastillas.canastillasPropias), user, session)
+            await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+
+            await InventariosService
+                .ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", Number(dataCanastillas.canastillasPropias), user, session)
+            await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+
+            await CanastillasService.modificar_inventario_canastillas({
+                canastillas_propias: Number(dataCanastillas.canastillasPropias || 0),
+                canastillasPrestadas: Number(dataCanastillas.canastillasPrestadas || 0),
+                prestamistaId: dataLote.predio,
+            }, session);
+            await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");
+
+            await CanastillasRepository.post_data(dataRegistro, { session: session, user: user._id, action: action })
+            await registrarPasoLog(log._id, "CanastillasRepository.post_registro", "Completado");
+
+            await dataRepository.incrementar_ef10_serial(session)
+            await registrarPasoLog(log._id, "dataService.incrementar_ef10_serial", "Completado");
+
+        }, {
+            readConcern: { level: "snapshot" },
+            writeConcern: { w: 1 },
+            maxTimeMS: 10000
+        })
+
+
+        procesoEventEmitter.emit("server_event", {
+            action: "add_lote",
+        });
+
+
     }
 }

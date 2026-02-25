@@ -25,6 +25,10 @@ export const apiSocketInventarios = {
         await InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote(data);
         return successResponseRoutes()
     },
+        post_inventarios_maquila: async (data) => {
+        await InventarioFrutaSinProcesarController.post_inventarios_ingreso_maquila(data);
+        return successResponseRoutes()
+    },
     //#endregion
 
     //#region inventario descartes
@@ -290,10 +294,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes(response)
     },
 
-    post_inventarios_maquila: async (data) => {
-        await InventariosRepository.post_inventarios_ingreso_maquila(data);
-        return successResponseRoutes()
-    },
+
 
     //#endregion
     //#region insumos
