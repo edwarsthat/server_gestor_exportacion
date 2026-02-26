@@ -8,6 +8,7 @@ import { AreasAccesoRepository } from "../Class/systemData/AreasAcceso.js";
 import { CargosPersonalRepository } from "../Class/talentoHumano/CargosPersonal.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { dataService } from "../services/data.js";
+import { CanastillasService } from "../services/inventarios/canastillas.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
 import { CuartosFrios } from "../store/CuartosFrios.js";
 import { executeQueryTask } from "../utils/wrappers.js";
@@ -319,6 +320,12 @@ export class dataRepository {
             return Object.fromEntries(entries);
         })
 
+    }
+    static async get_data_canastillas_canastillasCelifrut() {
+        return await executeQueryTask(async () => {
+            const total = await CanastillasService.get_totales_canastillas()
+            return [total]
+        })
     }
 }
 

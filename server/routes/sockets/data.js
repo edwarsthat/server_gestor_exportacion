@@ -58,5 +58,9 @@ export const apiSocketData = {
     get_data_bootstrap: async () => {
         const response = await dataRepository.get_data_bootstrap()
         return successResponseRoutes(response)
+    },
+    get_data_canastillas_canastillasCelifrut: async () => {
+        const response = await dataRepository.get_data_canastillas_canastillasCelifrut()
+        return successResponseRoutes(response)
     }
 }
