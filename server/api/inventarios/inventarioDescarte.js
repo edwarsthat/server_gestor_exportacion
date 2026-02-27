@@ -1,6 +1,7 @@
 import { db } from "../../../DB/mongoDB/config/init.js";
 import { InventariosLogicError } from "../../../Error/logicLayerError.js";
 import { procesoEventEmitter } from "../../../events/eventos.js";
+import { CanastillasRepository } from "../../Class/CanastillasRegistros.js";
 import { DespachoDescartesRepository } from "../../Class/DespachoDescarte.js";
 import { FrutaDescompuestaRepository } from "../../Class/FrutaDescompuesta.js";
 import { InventarioDescartesRepository } from "../../Class/Inventarios.js";
@@ -20,6 +21,7 @@ import { IndicadoresService } from "../../services/indicadores.js";
 import { HistorialInventariosService } from "../../services/inventarios/historialInventarios.js";
 import { ServiceError } from "../../models/ErrorModels.js";
 import { CanastillasService } from "../../services/inventarios/canastillas.js";
+import config from "../../../src/config/index.js";
 
 export class InventarioDescarteController {
     static async get_inventarios_historiales_registros_ingresosDescartes(req) {
@@ -156,7 +158,6 @@ export class InventarioDescarteController {
     static async put_inventarios_frutaDescarte_despachoDescarte(req) {
         const { user } = req;
         if (!user || !user._id) throw new Error("No se proporciono un usuario valido");
-
         const parsedData = InventariosValidations.put_inventarios_frutaDescarte_despachoDescarte().parse(req.data)
         const { data, inventario } = parsedData;
 
@@ -173,6 +174,43 @@ export class InventarioDescarteController {
                 descartes: inventario,
                 canastillas: totalCanastillas,
                 kilos: totalKilos
+            }
+            if (data.enCanastillas) {
+                if((data.canastillasPropias + data.canastillasPrestadas )> totalCanastillas){
+                    throw new Error("La cantidad de canastillas vacías no puede ser mayor a la cantidad total de canastillas")
+                }
+                if (data.canastillasPropias > 0) {
+                    await InventariosService
+                        .ajustarCanastillasProveedorCliente(config.ID_CELIFRUT, Number(-data.canastillasPropias || 0), user, session);
+                    await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+                    await InventariosService
+                        .ajustarCanastillasProveedorCliente(data.cliente, Number(data.canastillasPropias || 0), user, session);
+                    await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+                }
+                if (data.canastillasPrestadas > 0) {
+                    await CanastillasService
+                        .modificar_inventario_canastillas({
+                            canastillasPrestadas: Number(- data.canastillasPrestadas || 0),
+                            prestamistaId: data.cliente,
+                        }, session);
+                    await registrarPasoLog(log._id, "CanastillasService.modificar_inventario_canastillas", "Completado");
+                }
+
+                const dataRegistroCanastillas = InventariosService.crearRegistroInventarioCanastillas({
+                    origen: config.ID_CELIFRUT,
+                    destino: data.cliente,
+                    accion: "salida",
+                    canastillas: Number(data.canastillasPropias || 0),
+                    canastillasPrestadas: Number(data.canastillasPrestadas || 0),
+                    remitente: config.ID_CELIFRUT,
+                    destinatario: data.cliente,
+                    observaciones: `Despacho descarte - remisión: ${data.remision}`,
+                    fecha: new Date(),
+                    user
+                });
+                await CanastillasRepository.post_data(dataRegistroCanastillas, { session, user: user._id });
+                await registrarPasoLog(log._id, "CanastillasRepository.post_data despacho descarte", "Completado");
+
             }
             await DespachoDescartesRepository.post_data(newDespacho, { user: user._id, session })
             await registrarPasoLog(log._id, "DespachoDescartesRepository.post_data", "Completado");

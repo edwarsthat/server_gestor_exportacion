@@ -7,7 +7,7 @@ import { colombiaToUTC } from "../api/utils/fechas.js";
 import { filtroFechaInicioFin } from "../api/utils/filtros.js";
 import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
 import { CanastillasRepository } from "../Class/CanastillasRegistros.js";
-import { ClientesRepository, ClientesNacionalesRepository } from "../Class/Clientes.js";
+import {  ClientesNacionalesRepository } from "../Class/Clientes.js";
 import { DespachoDescartesRepository } from "../Class/DespachoDescarte.js";
 import { FrutaDescompuestaRepository } from "../Class/FrutaDescompuesta.js";
 import { InventarioDescartesRepository, InventariosHistorialRepository } from "../Class/Inventarios.js";
@@ -167,28 +167,32 @@ export class InventariosService {
         if (!user?._id) {
             throw new Error('El user._id es requerido para ajustar canastillas');
         }
+        if (!mongoose.Types.ObjectId.isValid(_id)) {
+            throw new Error('El _id debe ser un ObjectId válido');
+        }
+        const objectId = _id instanceof mongoose.Types.ObjectId ? _id : new mongoose.Types.ObjectId(_id);
 
         // Si cantidad es 0, no hay nada que hacer (esto sí es válido retornar)                                                                         
         if (cantidad === 0) return null;
 
-        const prov = await ProveedoresRepository.actualizar_data(
-            { _id: _id },
-            { $inc: { canastillas: cantidad } },
-            { session, user: user._id },
-        );
+        try {
+            const prov = await ProveedoresRepository.actualizar_data(
+                { _id: objectId },
+                { $inc: { canastillas: cantidad } },
+                { session, user: user._id },
+            );
 
-        if (prov) {
-            return prov;
-        }
+            return prov
+        } catch  {
+            const cli = await ClientesNacionalesRepository.actualizar_data(
+                { _id: objectId },
+                { $inc: { canastillas: cantidad } },
+                { session, user: user._id },
+            )
 
-        const cli = await ClientesRepository.actualizar_data(
-            { _id: _id },
-            { $inc: { canastillas: cantidad } },
-            { session, user: user._id },
-        )
-
-        if (cli) {
-            return cli;
+            if (cli) {
+                return cli;
+            }
         }
 
         throw new ConnectionDBError(404, "No existe proveedor/cliente o el ajuste dejaría canastillas en negativo");

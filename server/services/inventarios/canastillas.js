@@ -52,15 +52,54 @@ export class CanastillasService {
 
         //se modifica el inventario general
         const inventarioID = config.INVENTARIO_CANASTILLAS;
-        const update = {
-            $inc:{}
-        };
+        const update = {};
 
         if( canastillas_propias ){
+            update.$inc = update.$inc || {};
             update.$inc.canastillas_propias = canastillas_propias;
         }
-        if( canastillasPrestadas ){
-            update.$inc[`canastillasPrestadas.${prestamistaId}`] = canastillasPrestadas;
+        if (canastillasPrestadas) {
+            if (!prestamistaId) {
+                throw new Error("prestamistaId es obligatorio para modificar canastillas prestadas");
+            }
+
+            const valorCambio = Number(canastillasPrestadas);
+            if (!Number.isFinite(valorCambio)) {
+                throw new Error("canastillasPrestadas debe ser un número válido");
+            }
+
+            const inventario = await InventariosHistorialRepository.get_data(
+                {
+                    ids: [inventarioID],
+                    select: { canastillasPrestadas: 1 }
+                },
+                { session }
+            );
+            if (inventario.length === 0) throw new Error("No se encontro el inventario de canastillas");
+
+            const mapPrestadas = inventario[0].canastillasPrestadas;
+            const actual = Number(
+                mapPrestadas?.get?.(prestamistaId) ??
+                mapPrestadas?.[prestamistaId] ??
+                0
+            );
+            const nuevoTotal = actual + valorCambio;
+
+            if (nuevoTotal < 0) {
+                throw new Error("El ajuste dejaría las canastillas prestadas en negativo");
+            }
+
+            if (valorCambio < 0 && nuevoTotal === 0) {
+                update.$unset = update.$unset || {};
+                update.$unset[`canastillasPrestadas.${prestamistaId}`] = "";
+            } else {
+                update.$inc = update.$inc || {};
+                update.$inc[`canastillasPrestadas.${prestamistaId}`] = valorCambio;
+            }
+        }
+
+        if (Object.keys(update).length === 0) {
+            return null;
         }
 
         await InventariosHistorialRepository.actualizar_data(
