@@ -232,15 +232,11 @@ export const apiSocket = {
     },
 
 
-
-
-
     modificar_mi_password: async (req) => {
         const { data, user } = req
         await SistemaRepository.modificar_mi_password(data, user)
         return { status: 200, message: 'Ok' }
     },
-
 
 
     lote_no_pagar_balin: async (req) => {
@@ -265,12 +261,12 @@ export const apiSocket = {
         return { status: 200, message: 'Ok' }
     },
 
-    //update flete proveedor. Jp
-    // update_flete_proveedor: async (req) => {
-    //     const response = await ContabilidadRepository.update_flete_proveedor(req);
-    //     return { status: 200, message: 'Ok', data: response };
-    // }
-    //#endregion
+    //update tarifa congelada. Jp
+    put_tarifa_congelada_lote: async (req) => {
+        const { data, user } = req;
+        const response = await ContabilidadRepository.put_tarifa_congelada(data, user);
+        return { status: 200, message: 'Ok', data: response }
+    }
 }
 
 

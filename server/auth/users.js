@@ -22,6 +22,8 @@ const permisos_generales = new Set([
     "put_calidad_formulario_historialConcentraciones",
     "delete_calidad_formulario_historialConcentraciones",
     "get_calidad_formularios_historialConcentraciones_numeroElementos",
+    //permiso tarifa congelada
+    "put_tarifa_congelada_lote",
 
     "obtener_cantidad_usuarios",
     "obtener_cantidad_historial_espera_descargue",

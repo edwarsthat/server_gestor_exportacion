@@ -140,6 +140,16 @@ export const defineLotes = async (conn, AuditLog) => {
     infoSalidaDirectoNacional: salidaDirectoNacionalSchema,
     kilos_estimados: Number,
     kilos: Number,
+    // 🔹 Tarifa aplicada congelada para este lote
+    tarifaCongelada: { type: Number, default: null },
+
+    // 🔹 Override manual SOLO para este lote
+    // overrideTarifa: {
+    //   valor: { type: Number },
+    //   motivo: { type: String },
+    //   fecha: { type: Date },
+    //   usuario: { type: Schema.Types.ObjectId, ref: 'usuario' }
+    // },
     kilosReprocesados: { type: Number, default: 0 },
     kilosVaciados: { type: Number, default: 0 },
     kilosProcesados: { type: Number, default: 0 },
