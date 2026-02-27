@@ -19,6 +19,7 @@ import { tipoFrutaCache } from "../../cache/tipoFruta.js";
 import { IndicadoresService } from "../../services/indicadores.js";
 import { HistorialInventariosService } from "../../services/inventarios/historialInventarios.js";
 import { ServiceError } from "../../models/ErrorModels.js";
+import { CanastillasService } from "../../services/inventarios/canastillas.js";
 
 export class InventarioDescarteController {
     static async get_inventarios_historiales_registros_ingresosDescartes(req) {
@@ -344,15 +345,18 @@ export class InventarioDescarteController {
             const registroCanastillas = await InventariosService.ingresarCanastillas(data, user, session);
             await registrarPasoLog(log._id, "InventariosService.ingresarCanastillas", "Completado");
 
+            await CanastillasService.modificar_inventario_canastillas({
+                canastillas_propias: Number(data.canastillasPropias || 0) + Number(data.canastillasVaciasPropias || 0),
+                canastillasPrestadas: Number(data.canastillasPrestadas || 0) + Number(data.canastillasVaciasPrestadas || 0),
+                prestamistaId: data.predio,
+            }, session);
+
             const registroEF8 = await LotesEF8Repository.post_data(
                 { ...loteEF8, registroCanastillas: registroCanastillas._id },
                 { session, user: user._id }
             );
             await registrarPasoLog(log._id, "LotesEF8Repository.post_data", "Completado");
 
-            console.log(tipoFrutaObj)
-            console.log(data)
-            console.log(registroEF8)
             await InventariosService.ingresarDescarteEf8(registroEF8, data, tipoFrutaObj, user._id, session)
             await registrarPasoLog(log._id, "InventariosService.ingresarDescarteEf8", "Completado");
 

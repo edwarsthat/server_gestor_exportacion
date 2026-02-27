@@ -740,6 +740,32 @@ export class InventarioDescartesRepository extends BaseRepository {
 
         return resultado;
     }
+
+    static async get_total_canastillas_inventario_descarte(options = {}) {
+        const { session } = options;
+        const resultado = await db.InventarioActualDescarte.aggregate([
+            {
+                '$match': {
+                    estado: 'ACTIVO',
+                }
+            },
+            {
+                '$group': {
+                    '_id': null,
+                    'totalCanastillasActuales': {
+                        '$sum': '$canastillasActuales'
+                    }
+                }
+            },
+            {
+                '$project': {
+                    '_id': 0,
+                    'totalCanastillasActuales': 1
+                }
+            }
+        ], { session });
+        return resultado;
+    }
 }
 
 export class CuartosFriosRepository extends BaseRepository {

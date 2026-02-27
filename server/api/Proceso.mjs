@@ -29,6 +29,7 @@ import { InventariosHistorialRepository } from "../Class/Inventarios.js";
 import { IndicadoresAPIRepository } from "./IndicadoresAPI.js";
 import { DescartesRepository } from "../Class/Descartes.js";
 import { TurnosService } from "../services/proceso/turnos.js";
+import { EventsController } from "./events.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1093,24 +1094,28 @@ export class ProcesoRepository {
         });
     }
     static async sp32_funcionamiento_maquina(data) {
-        let estado_maquina = false
+        console.log(typeof data)
+        let estado_maquina = Boolean(Number(data))
         const status_proceso = await TurnosService.obtenerStatusProceso()
         console.log("status_proceso", status_proceso)
-        if (Number(data) >= 1000) {
-            estado_maquina = true
-        }
+        console.log("estado_maquina", estado_maquina)
+
         //al inicio maquina apagada, status off
         if (estado_maquina && status_proceso === 'off') {
             await TurnosService.iniciarTurno();
+
         } else if (!estado_maquina && status_proceso === 'on') {
             //se reanuda el proces cuando se prende la maquina
             await TurnosService.pausarTurno();
+
             //se pausa la maquina
         } else if (estado_maquina && status_proceso === 'pause') {
             await TurnosService.reiniciarTurno()
         }
 
         const new_status_proceso = await TurnosService.obtenerStatusProceso()
+
+        EventsController.emitSnapshot();
 
         procesoEventEmitter.emit("status_proceso", {
             status: new_status_proceso

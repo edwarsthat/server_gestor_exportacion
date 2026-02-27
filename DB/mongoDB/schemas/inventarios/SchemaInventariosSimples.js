@@ -21,6 +21,13 @@ export const defineInventarioSimple = async (conn, AuditInventariosSimples) => {
         inventario: { type: [ItemInventarioSchema], default: [] },
         inventarioMaquila: { type: [ItemInventarioMaquilaSchema], default: [] },
         ordenVaceo: [{ type: Schema.Types.ObjectId, ref: "Lote" }],
+        canastillasTotal: { type: Number, min: 0, default: 0 },
+        canastillas_propias: { type: Number, min: 0, default: 0 },
+        canastillasPrestadas: {
+            type: Map,
+            of: Number,
+            default: new Map()
+        }
     }, {
         timestamps: { updatedAt: 'updatedAt', createdAt: false },
         versionKey: '__v'

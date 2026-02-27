@@ -24,5 +24,6 @@ export default {
     URL_CELIFRUT: process.env.URL_CELIFRUT || "https://www.celifrut.com",
     DIR_OPERACIONES: process.env.DIR_OPERACIONES || "",
     COORDINADOR_PRODUCCION: process.env.COORDINADOR_PRODUCCION || "",
-    CLIENTE_PROACOL: process.env.CLIENTE_PROACOL || "68b87bb095a45e4b46698c05"
+    CLIENTE_PROACOL: process.env.CLIENTE_PROACOL || "68b87bb095a45e4b46698c05",
+    INVENTARIO_CANASTILLAS: process.env.INVENTARIO_CANASTILLAS || "68cecc4cff82bb2930e43d05"
 };

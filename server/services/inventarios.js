@@ -171,7 +171,7 @@ export class InventariosService {
         // Si cantidad es 0, no hay nada que hacer (esto sí es válido retornar)                                                                         
         if (cantidad === 0) return null;
 
-        const prov = await ProveedoresRepository.actualizar_proveedores(
+        const prov = await ProveedoresRepository.actualizar_data(
             { _id: _id },
             { $inc: { canastillas: cantidad } },
             { session, user: user._id },
@@ -181,7 +181,7 @@ export class InventariosService {
             return prov;
         }
 
-        const cli = await ClientesRepository.actualizar_clienteNacional(
+        const cli = await ClientesRepository.actualizar_data(
             { _id: _id },
             { $inc: { canastillas: cantidad } },
             { session, user: user._id },
@@ -1136,7 +1136,6 @@ export class InventariosService {
         await this.ajustarCanastillasProveedorCliente(datos.predio, -canastillasPropias, user, session)
         await this.ajustarCanastillasProveedorCliente(config.ID_CELIFRUT, canastillasPropias, user, session)
         const registroCanastillas = await CanastillasRepository.post_data(dataRegistro, { session, user: user._id })
-        await VariablesDelSistema.modificar_canastillas_inventario(canastillasPrestadas, "canastillasPrestadas")
         return registroCanastillas;
 
     }

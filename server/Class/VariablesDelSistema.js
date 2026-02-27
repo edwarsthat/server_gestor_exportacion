@@ -10,7 +10,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const pathIDs = path.join(__dirname, '..', '..', 'inventory', 'seriales.json');
-const canastillasPath = path.join(__dirname, '..', '..', 'inventory', 'canastillas.json');
 
 export class VariablesDelSistema {
 
@@ -82,58 +81,4 @@ export class VariablesDelSistema {
     }
   }
 
-  //#region Constantes
-  //canastillas
-  static async obtener_canastillas_inventario() {
-    try {
-      const canastillasJSON = fs.readFileSync(canastillasPath);
-      const canastillas = JSON.parse(canastillasJSON);
-      return canastillas;
-    } catch (err) {
-      throw new ProcessError(522, `Error Obteniendo inventario canastillas ${err.name}`)
-    }
-  }
-  static async modificar_canastillas_inventario(nCanastillas, tipo) {
-    try {
-      if (!["canastillas", "canastillasPrestadas"].includes(tipo)) {
-        throw new ProcessError(400, `Tipo inválido de canastillas: ${tipo}`);
-      }
-      if (!Number.isInteger(nCanastillas)) {
-        throw new ProcessError(400, `La cantidad debe ser un número entero.`);
-      }
-
-      const canastillasJSON = fs.readFileSync(canastillasPath);
-      const canastillas = JSON.parse(canastillasJSON);
-
-      const canastillasActual = canastillas[tipo] ?? 0;
-
-      if (canastillasActual + nCanastillas < 0) {
-        throw new ProcessError(523, `Error modificando el inventario canastillas, no hay suficientes canastillas ${tipo}`)
-      }
-
-
-      canastillas[tipo] += nCanastillas;
-      const newCanastillasJSON = JSON.stringify(canastillas);
-      fs.writeFileSync(canastillasPath, newCanastillasJSON);
-    } catch (err) {
-      throw new ProcessError(523, `Error modificando el inventario canastillas ${err.message}`)
-    }
-  }
-  static async set_canastillas_inventario(nCanastillas) {
-    try {
-      const canastillasJSON = fs.readFileSync(canastillasPath);
-      const canastillas = JSON.parse(canastillasJSON);
-      canastillas["canastillasPrestadas"] = nCanastillas;
-      const newCanastillasJSON = JSON.stringify(canastillas);
-      fs.writeFileSync(canastillasPath, newCanastillasJSON);
-    } catch (err) {
-      throw new ProcessError(523, `Error modificando el inventario canastillas ${err.message}`)
-    }
-  }
-
-  // estado del proceso (usado por validaciones de acciones como agrupar fletes). Jp
-
-  static async set_hora_inicio_proceso() {
-
-  }
 }
