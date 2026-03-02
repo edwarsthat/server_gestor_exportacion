@@ -5,7 +5,7 @@ import { LotesRepository } from "../Class/Lotes.js";
 import mongoose from 'mongoose';
 //jp
 import { db } from "../../DB/mongoDB/config/init.js";
-
+// import { nan } from "zod";
 
 // import { VehiculoRegistro } from "../Class/VehiculosRegistros.js";
 // const TarifaPredio = db.TarifaPredio;
@@ -251,7 +251,8 @@ export class ContabilidadRepository {
                     // conductor: 1
                     esFleteCompuesto: 1,
                     grupoFlete: 1,
-                    totalFlete: 1
+                    totalFlete: 1,
+                    tarifaCongelada: 1 //nueva tarifa solo para ese viaje 
                 },
                 populate: [
                     { path: "predio", select: "PREDIO GGN tarifaFleteKg flete" }
@@ -292,11 +293,15 @@ export class ContabilidadRepository {
 
                 // Tarifa por Kg (sale del predio), 
                 // se ajusta la lógica por que se guarda en flete y se utiliza tarifaFleteKg .Jp
-                const tarifaKg = Number(
+                const tarifaBase = Number(
                     tarifaPredio?.valor ??          // ← NUEVO: busca primero en historial
                     lote.predio?.tarifaFleteKg ??   // fallback al campo del proveedor
                     lote.predio?.flete ??           //otro fallback
                     NaN
+                );
+
+                const tarifaKg = Number(
+                    lote.tarifaCongelada ?? tarifaBase
                 );
 
                 // Kilos facturables (mínimo 5000Kg), si es mayor se factura peso actual X tarifa lote.Jp
@@ -331,6 +336,7 @@ export class ContabilidadRepository {
                     totalKilosTransportados,
                     tarifaKg: isNaN(tarifaKg) ?'SIN TARIFA' : tarifaKg,
                     totalFlete,
+                    tarifaEsCongelada: Boolean(lote.tarifaCongelada),
                     placa: lote.placa ?? 'N/A',
                     // conductor: lote.conductor ?? 'N/A',
                     semana,
@@ -468,6 +474,29 @@ export class ContabilidadRepository {
             475,
             `Error agrupando flete compuesto: ${err.message}`
         );
+    }
+
+    static async put_tarifa_congelada(req) {
+        try {
+            const { loteId, nuevaTarifa } = req.data;
+
+            const tarifaNumerica = Number(nuevaTarifa);
+
+            if (isNaN(tarifaNumerica)) {
+                throw new Error("Tarifa inválida");
+            }
+
+            await LotesRepository.actualizar_lote(
+                {_id: loteId},
+                { $set: { tarifaCongelada: tarifaNumerica } },
+                { calculateFields: false }
+            );
+
+            return { message: "Tarifa congelada guardada correctamente" };
+
+        } catch (err) {
+            throw new Error(err.message);
+        }
     }
 }
 //------------------------------------------------------------------------------
