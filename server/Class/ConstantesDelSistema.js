@@ -13,7 +13,6 @@ const __dirname = path.dirname(__filename);
 const inspeccion_calidad_path = path.join(__dirname, '..', '..', 'constants', 'inspeccionCalidad.json');
 const observaciones_calidad_path = path.join(__dirname, '..', '..', 'constants', 'observacionesCalidad.json');
 const tipo_fruta_path = path.join(__dirname, '..', '..', 'constants', 'tipo_fruta.json');
-const paises_GGN_path = path.join(__dirname, '..', '..', 'constants', 'paisesEXP.json');
 
 
 export class ConstantesDelSistema {

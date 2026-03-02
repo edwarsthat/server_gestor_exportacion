@@ -1,12 +1,10 @@
 import Mongoose from 'mongoose'
 import { ProcessError } from "../../Error/ProcessError.js";
-import { procesoEventEmitter } from "../../events/eventos.js";
 import { IndicadoresRepository } from "../Class/Indicadores.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { LotesRepository } from "../Class/Lotes.js";
 // import { LotesRepository } from "../Class/Lotes.js";
 // import { UsuariosRepository } from "../Class/Usuarios.js";
-import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { IndicadoresService } from "../services/indicadores.js";
 import { IndicadoresValidations } from "../validations/indicadores.js";
 import { registrarPasoLog } from "./helper/logs.js";
@@ -143,49 +141,6 @@ export class IndicadoresAPIRepository {
         return indicador
 
 
-    }
-    static async reiniciarValores_proceso() {
-        let log
-        try {
-            log = await LogsRepository.create({
-                user: "66b62fc3777ac9bdcc5050ed",
-                action: "reiniciarValores_proceso",
-                acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-            })
-            await VariablesDelSistema.reiniciarValores_proceso();
-            await registrarPasoLog(log._id, "Se obtiene los kilos procesados", "Completado");
-
-            procesoEventEmitter.emit("proceso_event", {});
-        } catch (err) {
-            await registrarPasoLog(log._id, "Error", "Fallido", err.message);
-
-            if (err.status === 525) {
-                throw err
-            }
-            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
-        } finally {
-            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-        }
-    }
-    static async sys_indicadores_eficiencia_fruta_kilos_procesados() {
-        try {
-            const indicador = await IndicadoresRepository.get_indicadores({
-                sort: { fecha_creacion: -1 },
-                limit: 1
-            })
-            const kilos_exportacion = await VariablesDelSistema.get_kilos_exportacion_hoy2()
-
-            await IndicadoresRepository.put_indicador(indicador[0]._id, {
-                kilos_exportacion: kilos_exportacion
-            })
-
-
-        } catch (err) {
-            if (err.status === 525) {
-                throw err
-            }
-            throw new ProcessError(475, `Error ${err.type}: ${err.message}`)
-        }
     }
     static async get_indicadores_operaciones_rendimientoPredios(req) {
         const startTime = Date.now();

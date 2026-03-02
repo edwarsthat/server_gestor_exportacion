@@ -7,23 +7,17 @@ import { FormulariosCalidadRepository } from "../Class/FormulariosCalidad.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
-import fs from 'fs';
-import path from 'path';
 import { filtroFechaInicioFin } from "./utils/filtros.js";
 import { CalidadValidationsRepository } from "../validations/calidad.js";
 import { z } from "zod";
 
-import { fileURLToPath } from 'url';
 import { CalidadService } from "../services/calidad.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { ErrorCalidadLogicHandlers } from "./utils/errorsHandlers.js";
 import { LotesHelper } from "../helper/lotes.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
-const tipoFormulariosCalidadPath = path.join(__dirname, '../../constants/formularios_calidad.json')
 export class CalidadRepository {
 
     //#region historial calidad
@@ -1022,53 +1016,8 @@ export class CalidadRepository {
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_calidad_ingresos_tiposFormularios() {
-        try {
-            const dataJSON = fs.readFileSync(tipoFormulariosCalidadPath);
-            const data = JSON.parse(dataJSON);
-            return data;
 
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async post_calidad_ingresos_crearFormulario(req) {
-        try {
-            const user = req.user._id
-            const { data } = req.data;
-            const { tipoSeleccionado, fechaInicio, fechaFin } = data;
-            const codigo = await VariablesDelSistema.generar_codigo_informe_calidad()
 
-            switch (tipoSeleccionado) {
-                case 'limpieza_diaria':
-                    await FormulariosCalidadRepository.crear_formulario_limpieza_diaria(
-                        codigo, fechaInicio, fechaFin
-                    )
-                    break;
-                case 'limpieza_mensual':
-                    await FormulariosCalidadRepository.crear_formulario_limpieza_mensual(
-                        codigo, fechaInicio, fechaFin, user
-                    )
-                    break;
-                case 'control_plagas':
-                    await FormulariosCalidadRepository.crear_formulario_control_plagas(
-                        codigo, fechaInicio, fechaFin, user
-                    )
-                    break;
-                default:
-                    throw new Error("Error en el switch de creacion de formulario calidad")
-            }
-            await VariablesDelSistema.incrementar_codigo_informes_calidad()
-        } catch (err) {
-            if (err.status === 506) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async get_calidad_ingresos_formulariosCalidad() {
         try {
             const now = new Date()

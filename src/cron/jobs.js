@@ -1,7 +1,6 @@
 import cron from 'node-cron';
 import { IndicadoresAPIRepository } from '../../server/api/IndicadoresAPI.js';
 // import { ProcesoRepository } from '../../server/api/Proceso.mjs';
-import { VariablesDelSistema } from '../../server/Class/VariablesDelSistema.js';
 import { FormulariosCalidadRepository } from '../../server/Class/FormulariosCalidad.js';
 import { InventariosRepository } from '../../server/api/inventarios.js';
 import { TurnosService } from '../../server/services/proceso/turnos.js';
@@ -32,9 +31,9 @@ export function initCronJobs() {
         try {
             const inicio = new Date().setHours(0, 0, 0, 0);
             const fin = new Date().setHours(23, 59, 59, 59);
-            const codigo = await VariablesDelSistema.generar_codigo_informe_calidad();
-            await FormulariosCalidadRepository.crear_formulario_limpieza_diaria(codigo, inicio, fin);
-            await VariablesDelSistema.incrementar_codigo_informes_calidad();
+            // const codigo = await VariablesDelSistema.generar_codigo_informe_calidad();
+            // await FormulariosCalidadRepository.crear_formulario_limpieza_diaria(codigo, inicio, fin);
+            // await VariablesDelSistema.incrementar_codigo_informes_calidad();
         } catch (err) { console.error('[cron 05:01] formulario_limpieza_diaria:', err.message); }
     });
 

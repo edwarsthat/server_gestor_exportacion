@@ -119,10 +119,6 @@ export const apiSocketCalidad = {
         await CalidadRepository.post_calidad_ingresos_higienePersonal(data)
         return successResponseRoutes()
     },
-    get_calidad_ingresos_tiposFormularios: async () => {
-        const response = await CalidadRepository.get_calidad_ingresos_tiposFormularios();
-        return successResponseRoutes(response)
-    },
     post_calidad_ingresos_crearFormulario: async (data) => {
         await CalidadRepository.post_calidad_ingresos_crearFormulario(data)
         return successResponseRoutes()

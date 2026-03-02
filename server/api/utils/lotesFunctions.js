@@ -87,14 +87,23 @@ const checkFinalizadoLote = lote => lote?.finalizado;
 
 function descarte_nopago_pago(lote, tiposDescartes) {
     const descartes = tiposDescartes.map(item => item)
+    const frutaNacional = tiposDescartes.find(item => item.nombre === 'frutaNacional')?._id
+    if (!frutaNacional) {
+        throw new Error("Fruta nacional no encontrada");
+    }
+
     let pago = 0
     let noPago = 0
-    for (const [key, value] of Object.entries(lote.descartesDevueltos)) {
+    let nacional = 0
+
+    for (const [key, value] of Object.entries(lote.descartes)) {
         const descarte = descartes.find(item => item._id === key)
         if (descarte && !descarte.pago) {
-            noPago += value;
+            noPago += (value);
+        } else if (key === frutaNacional) {
+            nacional += (value);
         } else {
-            pago += value;
+            pago += (value);
         }
     }
     let deshidratacion = 0
@@ -108,7 +117,7 @@ function descarte_nopago_pago(lote, tiposDescartes) {
         pago += deshidratacion
     }
 
-    return { pago, noPago }
+    return { pago, noPago, nacional }
 }
 
 

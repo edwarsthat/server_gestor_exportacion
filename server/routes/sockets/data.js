@@ -1,3 +1,4 @@
+import { IngresosCalidadController } from "../../api/calidad/ingresosCalidad.js";
 import { dataRepository } from "../../api/data.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
@@ -62,5 +63,9 @@ export const apiSocketData = {
     get_data_canastillas_canastillasCelifrut: async () => {
         const response = await dataRepository.get_data_canastillas_canastillasCelifrut()
         return successResponseRoutes(response)
-    }
+    },
+    get_data_ingresos_tiposFormularios: async () => {
+        const response = await IngresosCalidadController.get_data_ingresos_tiposFormularios();
+        return successResponseRoutes(response)
+    },
 }
