@@ -19,13 +19,14 @@ export class TurnosService {
             throw new Error(err);
         }
     }
-    static async iniciarTurno() {
+    static async iniciarTurno(opts = {}) {
         try {
+            const { horaInicio = new Date() } = opts;
             const cliente = await getRedisClient();
 
             await TurnoDatarepository.actualizar_data(
                 {},
-                { horaInicio: new Date() },
+                { horaInicio: horaInicio },
                 { sort: { createdAt: -1 } }
             );
             await cliente.set("statusProceso", "on");
@@ -34,11 +35,18 @@ export class TurnosService {
             throw new Error(err);
         }
     }
-    static async pausarTurno() {
+    static async pausarTurno(opts = {}) {
         try {
+            const { hora = new Date() } = opts;
+
             const cliente = await getRedisClient();
+            const status_proceso = await this.obtenerStatusProceso();
+            if (status_proceso === 'pause') {
+                throw new Error("Ya hay una pausa activa en curso.");
+            }
+
             const newStop = {
-                inicioPausa: new Date(),
+                inicioPausa: hora,
                 finalPausa: null,
                 Observacion: null,
             }
@@ -53,13 +61,14 @@ export class TurnosService {
             throw new Error(err);
         }
     }
-    static async reiniciarTurno() {
+    static async reiniciarTurno(opts = {}) {
         try {
+            const { hora = new Date() } = opts;
             const cliente = await getRedisClient();
 
             await TurnoDatarepository.actualizar_data(
                 {},
-                { $set: { "pausaProceso.$[pausa].finalPausa": new Date() } },
+                { $set: { "pausaProceso.$[pausa].finalPausa": hora } },
                 {
                     sort: { createdAt: -1 },
                     arrayFilters: [{ "pausa.finalPausa": null }]
@@ -75,11 +84,42 @@ export class TurnosService {
     static async finalizarTurno() {
         try {
             const cliente = await getRedisClient();
-            await TurnoDatarepository.actualizar_data(
-                {},
-                { horaFin: new Date() },
-                { sort: { createdAt: -1 } }
-            );
+            const status_proceso = await this.obtenerStatusProceso()
+
+            const turno = await TurnoDatarepository.get_data({}, {}, { sort: { createdAt: -1 } })
+            if (turno.length === 0) {
+                throw new Error("No se encontró un turno activo para finalizar.");
+            }
+
+            if (status_proceso === 'pause') {
+                const array = turno[0].pausaProceso
+                if (!array || array.length === 0) {
+                    throw new Error("No se encontró una pausa activa para finalizar.");
+                }
+                const ultimaPausa = array[array.length - 1].inicioPausa;
+                if (!ultimaPausa) {
+                    throw new Error("La última pausa no tiene una hora de inicio válida.");
+                }
+
+                await TurnoDatarepository.actualizar_data(
+                    {},
+                    {
+                        $set: { horaFin: ultimaPausa },
+                        $pop: { pausaProceso: 1 }
+                    },
+                    { sort: { createdAt: -1 } }
+                );
+            } else if (status_proceso === 'on') {
+                await TurnoDatarepository.actualizar_data(
+                    {},
+                    { horaFin: new Date() },
+                    { sort: { createdAt: -1 } }
+                );
+            } else {
+                // Sin proceso activo, no hay datos que actualizar
+            }
+
+
             await cliente.set("statusProceso", "off");
             return true
         } catch (err) {

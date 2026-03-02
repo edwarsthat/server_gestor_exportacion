@@ -14,8 +14,8 @@ export function initCronJobs() {
         try { await InventariosRepository.snapshot_inventario_descartes(); }
         catch (err) { console.error('[cron 04:59] snapshot_inventario_descartes:', err.message); }
 
-        try { await IndicadoresAPIRepository.reiniciarValores_proceso(); }
-        catch (err) { console.error('[cron 04:59] reiniciarValores_proceso:', err.message); }
+        try { await TurnosService.finalizarTurno(); }
+        catch (err) { console.error('[cron 04:59] finalizarTurno:', err.message); }
     });
 
     //nuevos datos diarios

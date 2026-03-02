@@ -1094,23 +1094,22 @@ export class ProcesoRepository {
         });
     }
     static async sp32_funcionamiento_maquina(data) {
-        console.log(typeof data)
-        let estado_maquina = Boolean(Number(data))
+        let estado_maquina = Boolean(Number(data.estado))
+        const ts = data.ts
+        const fecha = new Date(ts * 1000);
         const status_proceso = await TurnosService.obtenerStatusProceso()
-        console.log("status_proceso", status_proceso)
-        console.log("estado_maquina", estado_maquina)
 
         //al inicio maquina apagada, status off
         if (estado_maquina && status_proceso === 'off') {
-            await TurnosService.iniciarTurno();
+            await TurnosService.iniciarTurno({ horaInicio: fecha });
 
         } else if (!estado_maquina && status_proceso === 'on') {
-            //se reanuda el proces cuando se prende la maquina
-            await TurnosService.pausarTurno();
+            //se pausa el proceso
+            await TurnosService.pausarTurno({ hora: fecha });
 
-            //se pausa la maquina
         } else if (estado_maquina && status_proceso === 'pause') {
-            await TurnosService.reiniciarTurno()
+            //se reanuda el proceso
+            await TurnosService.reiniciarTurno({ hora: fecha });
         }
 
         const new_status_proceso = await TurnosService.obtenerStatusProceso()
