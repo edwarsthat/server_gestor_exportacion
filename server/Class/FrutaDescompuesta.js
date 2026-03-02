@@ -15,7 +15,7 @@ export class FrutaDescompuestaRepository extends BaseRepository {
             sort = { createdAt: -1 },
             limit = 0,
             populate = [
-                { path: 'tipoFruta', select: "tipoFruta" },
+                { path: 'tipoFruta', select: "tipoFruta" }, //Jp
                 { path: 'user', select: "usuario" },
             ],
             skip = 0,
