@@ -89,6 +89,7 @@ const permisos_generales = new Set([
     "get_data_cargosPersonal",
     "get_data_canastillas_canastillasCelifrut",
     "get_data_ingresos_tiposFormularios",
+    "get_data_formularios_calidad_campos",
 
     "get_proceso_aplicaciones_listaEmpaque_pallets",
     "get_proceso_aplicaciones_listaEmpaque_itemsPallet",

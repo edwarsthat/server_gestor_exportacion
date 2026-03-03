@@ -1,3 +1,4 @@
+import { control_plagas_campos, limpieza_diaria_campos, limpieza_mensual_campos } from "../../constants/formularios_calidad.js";
 import { DataLogicError } from "../../Error/logicLayerError.js";
 import { ClientesRepository, ClientesNacionalesRepository } from "../Class/Clientes.js";
 import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
@@ -326,6 +327,13 @@ export class dataRepository {
             const total = await CanastillasService.get_totales_canastillas()
             return [total]
         })
+    }
+    static async get_data_formularios_calidad_campos() {
+        return {
+            limpieza_diaria: limpieza_diaria_campos,
+            limpieza_mensual: limpieza_mensual_campos,
+            control_plagas: control_plagas_campos
+        }
     }
 }
 

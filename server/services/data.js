@@ -136,4 +136,49 @@ export class dataService {
         }
         return idCelifrut.name + idCelifrut.serial;
     }
+    static async get_formatoCalidad_serial(options = {}) {
+        let { fecha = null, session = null } = options;
+        const CADocs = await Seriales.get_seriales("CA-", session);
+        if (!CADocs || CADocs.length === 0) {
+            throw new Error("No se encontraron registros de CA");
+        }
+        if (CADocs.length > 1) {
+            throw new Error("Se encontraron múltiples registros de CA, se esperaba uno solo");
+        }
+        const CA = CADocs[0];
+        if (!Number.isFinite(CA.serial) || CA.serial < 0) {
+            throw new Error("El campo 'serial' no es un número válido en el registro de CA");
+        }
+        if (!CA.name || typeof CA.name !== 'string') {
+            throw new Error("El campo 'name' no existe o no es válido");
+        }
+        if (fecha) {
+            fecha = new Date(fecha);
+            if (isNaN(fecha.getTime())) {
+                throw new Error("Fecha inválida proporcionada");
+            }
+        } else {
+            fecha = new Date();
+        }
+        let year = fecha.getFullYear().toString().slice(-2);
+        let month = String(fecha.getMonth() + 1).padStart(2, "0");
+        let codigo;
+        if (CA.serial < 10) {
+            codigo = CA.name + year + month + "0" + CA.serial;
+        } else {
+            codigo = CA.name + year + month + CA.serial;
+        }
+
+        return codigo;
+    }
+    static async modificar_formatoCalidad_serial(serial, logId = null) {
+        await Seriales.modificar_seriales(
+            { name: "CA-" },
+            { $set: { serial: serial } },
+        )
+
+        if (logId) {
+            await registrarPasoLog(logId, "dataService.modificar_formatoCalidad_serial", "Completado");
+        }
+    }
 }

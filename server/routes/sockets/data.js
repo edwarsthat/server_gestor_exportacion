@@ -68,4 +68,8 @@ export const apiSocketData = {
         const response = await IngresosCalidadController.get_data_ingresos_tiposFormularios();
         return successResponseRoutes(response)
     },
+    get_data_formularios_calidad_campos: async () => {
+        const response = await dataRepository.get_data_formularios_calidad_campos();
+        return successResponseRoutes(response)
+    }
 }

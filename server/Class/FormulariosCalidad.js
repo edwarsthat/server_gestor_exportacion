@@ -1,6 +1,7 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PutError } from "../../Error/ConnectionErrors.js";
 import { ItemBussyError } from "../../Error/ProcessError.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
 let bussyIds = new Set();
 
@@ -351,3 +352,17 @@ export class FormulariosCalidadRepository {
     //#endregion
 }
 
+export class FormularioCalidadLimpiezaDiariaRepository extends BaseRepository {
+    static get model() { return db.LimpiezaDiaria; }
+    static modelName = 'LimpiezaDiaria';
+}
+
+export class FormularioCalidadLimpiezaMensualRepository extends BaseRepository {
+    static get model() { return db.LimpiezaMensual; }
+    static modelName = 'LimpiezaMensual';
+}
+
+export class FormularioCalidadControlPlagasRepository extends BaseRepository {
+    static get model() { return db.ControlPlagas; }
+    static modelName = 'ControlPlagas';
+}

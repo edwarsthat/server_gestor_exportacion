@@ -17,7 +17,6 @@ import { ProveedoresRepository } from "../Class/Proveedores.js";
 import { RedisRepository } from "../Class/RedisData.js";
 import { UnionsRepository } from "../Class/Unions.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
-import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
 import config from "../../src/config/index.js";
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
@@ -102,9 +101,6 @@ export class InventariosService {
             user: user._id,
             precio: precioId,
         };
-    }
-    static async incrementarEF() {
-        VariablesDelSistema.incrementarEF1();
     }
     static crearRegistroInventarioCanastillas(
         {
@@ -244,12 +240,6 @@ export class InventariosService {
                 Object.values(descarteEncerado).reduce((acu, item) => acu -= item, 0)
 
         return kilosDescarteLavado + kilosDescarteEncerado;
-    }
-    static async modificarInventariosDescarteReprocesoPredio(_id, descarteLavado, descarteEncerado) {
-        if (descarteLavado)
-            await VariablesDelSistema.modificar_inventario_descarte(_id, descarteLavado, 'descarteLavado');
-        if (descarteEncerado)
-            await VariablesDelSistema.modificar_inventario_descarte(_id, descarteEncerado, 'descarteEncerado');
     }
     static validarGGN(proveedor, tipoFruta, user) {
         if (!proveedor) throw new Error("No se proporcionaron proveedores");
@@ -790,7 +780,6 @@ export class InventariosService {
         console.info(`[INVENTARIO DESCARTES] Inicio modificación ingreso desverdizado ${canastillas}, en el cuarto ${cuartoId}, lote: ${loteId}`);
 
         await Promise.all([
-            VariablesDelSistema.modificarInventario(loteId, canastillas),
             RedisRepository.update_inventarioDesverdizado(cuartoId, loteId, (canastillas),)
         ])
     }
@@ -844,11 +833,8 @@ export class InventariosService {
     static async devolverDesverdizadoInventarioFrutaSinprocesar(cuarto, _id) {
         console.info(`[INVENTARIO DESCARTES] Inicio devolución desverdizado fruta sin procesar: ${_id}, en el cuarto ${cuarto}`);
 
-        const datosCrudos = await RedisRepository.get_inventario_desverdizado(cuarto, _id);
-        const canastillas = datosCrudos?.inventarioDesverdizado?.[cuarto]?.[_id];
 
         await Promise.all([
-            VariablesDelSistema.modificarInventario(_id, -canastillas),
             RedisRepository.delete_inventarioDesverdizado_registro(cuarto, _id)
         ])
 
@@ -868,7 +854,6 @@ export class InventariosService {
             canastillas === cantidad ?
                 RedisRepository.delete_inventarioDesverdizado_registro(cuarto, _id) :
                 RedisRepository.update_inventarioDesverdizado(cuarto, _id, -cantidad),
-            VariablesDelSistema.modificarInventario(_id, -cantidad),
         ])
     }
     static async move_entre_cuartos_desverdizados(cuartoOrigen, cuartoDestino, _id, cantidad) {

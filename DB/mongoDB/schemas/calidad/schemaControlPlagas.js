@@ -48,7 +48,8 @@ export const defineControlPlagas = async (conn) => {
         fechaFin: Date,
         fechaInicio: Date,
         ID: { type: String, require: true },
-        formulario: { type: String, default: "Control de plagas" },
+        user: { type: Schema.Types.ObjectId, ref: "usuario" },
+        formulario: { type: String, default: "control_plagas" },
         control: controlSchema,
         cebo: ceboSchema,
         hallazgos: hallazgosSchema
