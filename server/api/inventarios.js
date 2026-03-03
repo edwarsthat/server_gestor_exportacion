@@ -905,7 +905,7 @@ export class InventariosRepository {
             // const { data } = req;
             // const { page } = data
             const { page = 1, filtro } = req.data || {};
-            const { fechaInicio, fechaFin } = filtro || {};
+            const { fechaInicio, fechaFin, tipoFruta } = filtro || {}; //tipo fruta agregado. Jp
 
             const currentPage = Number(page);
             if (isNaN(currentPage) || currentPage < 1) {
@@ -925,6 +925,11 @@ export class InventariosRepository {
                     query,
                     "createdAt" // ⚠️ verifica que este sea el campo correcto en tu modelo
                 );
+            }
+
+            //Filtro por tipo de fruta. jp
+            if (tipoFruta && tipoFruta !== '') {
+                query.tipoFruta = tipoFruta; //listo Jp
             }
 
             const registros = await FrutaDescompuestaRepository.get_fruta_descompuesta({
@@ -950,8 +955,13 @@ export class InventariosRepository {
             let query = {};
 
             if (filtro) {
-                const { fechaInicio, fechaFin } = filtro;
+                const { fechaInicio, fechaFin, tipoFruta } = filtro;
                 query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "createdAt");
+
+            //nuevo filtro tipo fruta. Jp
+            if (tipoFruta && tipoFruta !== ''){
+                query.tipoFruta = tipoFruta; //listo Jp
+                }
             }
             //---
             const registros = await FrutaDescompuestaRepository.get_numero_fruta_descompuesta(query);
