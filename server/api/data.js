@@ -162,6 +162,19 @@ export class dataRepository {
             throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
         }
     }
+    static async get_data_proveedores2() {
+        try {
+
+            return await ProveedoresRepository.get_data({
+                query: { activo: true }
+            });
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
     static async get_data_cuartosDesverdizados() {
         try {
             return await CuartosDesverdizados.get_cuartosDesverdizados();
@@ -334,6 +347,13 @@ export class dataRepository {
             limpieza_mensual: limpieza_mensual_campos,
             control_plagas: control_plagas_campos
         }
+    }
+    static async get_data_versiones(req) {
+        return await executeQueryTask(async () => {
+            const { data } = req.data
+            if (typeof data !== 'string') throw new Error('data debe ser un string')
+            return await dataService.obtenerVersion({ key: data })
+        })
     }
 }
 

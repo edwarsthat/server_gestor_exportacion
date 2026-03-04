@@ -28,6 +28,10 @@ export const apiSocketData = {
         const response = await dataRepository.get_data_proveedores(req)
         return successResponseRoutes(response)
     },
+    get_data_proveedores2: async () => {
+        const response = await dataRepository.get_data_proveedores2()
+        return successResponseRoutes(response)
+    },
     get_data_cuartosDesverdizados: async () => {
         const response = await dataRepository.get_data_cuartosDesverdizados()
         return successResponseRoutes(response)
@@ -71,5 +75,9 @@ export const apiSocketData = {
     get_data_formularios_calidad_campos: async () => {
         const response = await dataRepository.get_data_formularios_calidad_campos();
         return successResponseRoutes(response)
-    }
+    },
+    get_data_versiones: async (req) => {
+        const response = await dataRepository.get_data_versiones(req);
+        return successResponseRoutes(response)
+    },
 }

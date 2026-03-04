@@ -1,3 +1,4 @@
+import { getRedisClient } from "../../DB/redis/init.js";
 import { registrarPasoLog } from "../api/helper/logs.js";
 import { Seriales } from "../Class/Seriales.js";
 
@@ -180,5 +181,21 @@ export class dataService {
         if (logId) {
             await registrarPasoLog(logId, "dataService.modificar_formatoCalidad_serial", "Completado");
         }
+    }
+    static async obtenerVersion(options = {}){
+        const { key = "" } = options
+        if (key === "") throw new Error("key no puede ser vacío")
+        const cliente = await getRedisClient()
+        const redisKey = `${key}Version`
+
+        let version = await cliente.get(redisKey)
+        if (version === null) {
+            await cliente.set(redisKey, 0)
+            version = 0
+        } else {
+            version = Number(version)
+        }
+
+        return version
     }
 }
