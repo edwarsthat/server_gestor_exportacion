@@ -144,23 +144,7 @@ export class InventariosRepository {
     }
 
 
-    static async put_inventarios_canastillas_celifrut(req) {
-        try {
-            const { canastillas } = req.data
-            if (canastillas) {
-                await InventariosService
-                    .ajustarCanastillasProveedorCliente(
-                        "65c27f3870dd4b7f03ed9857", Number(canastillas)
-                    )
-            }
 
-        } catch (err) {
-            if (err.status === 523) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async post_inventarios_canastillas_registro(req) {
         try {
             const { user } = req

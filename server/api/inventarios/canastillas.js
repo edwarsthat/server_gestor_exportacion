@@ -1,7 +1,8 @@
-import { executeQueryTask } from "../../utils/wrappers.js";
+import { executeQueryTask, executeTransactionalTask } from "../../utils/wrappers.js";
 import { ProveedoresRepository } from "../../Class/Proveedores.js";
 import { CanastillasService } from "../../services/inventarios/canastillas.js";
 import { ClientesNacionalesRepository } from "../../Class/Clientes.js";
+import { InventariosValidations } from "../../validations/inventarios.js";
 export class CanastillasController {
     static async get_inventarios_canastillas_canastillasCelifrut() {
         return await executeQueryTask(async () => {
@@ -43,6 +44,16 @@ export class CanastillasController {
                 proveedores: proveedores || [],
                 clientes: clientes || []
             }]
+        })
+    }
+    static async put_inventarios_canastillas_celifrut(req) {
+        const { user } = req
+        if(!user || !user._id) throw new Error("Usuario no existe")
+
+        await executeTransactionalTask(req, async (session, log) => {
+            const parseData = InventariosValidations.put_inventarios_canastillas_celifrut().parse(req.data)
+            const { id, destino, origen, observaciones, fecha, canastillas, canastillasPrestadas, accion, remitente, destinatario } = parseData
+
         })
     }
 }
