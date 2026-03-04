@@ -82,8 +82,9 @@ export class TurnosService {
         }
     }
     static async finalizarTurno() {
+        const cliente = await getRedisClient();
+
         try {
-            const cliente = await getRedisClient();
             const status_proceso = await this.obtenerStatusProceso()
 
             const turno = await TurnoDatarepository.get_data({}, {}, { sort: { createdAt: -1 } })
@@ -120,10 +121,12 @@ export class TurnosService {
             }
 
 
-            await cliente.set("statusProceso", "off");
             return true
         } catch (err) {
             throw new Error(err);
+        } finally {
+            await cliente.set("statusProceso", "off");
+
         }
     }
 }
