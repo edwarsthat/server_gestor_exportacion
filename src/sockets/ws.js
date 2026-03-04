@@ -83,7 +83,7 @@ export function initSockets(io) {
 
         const authenticatedUser = socket.user;
 
-        const handleRequest = async (data, callback, repository) => {
+        const handleRequest = async (data, callback, repository, dominio = "") => {
             try {
 
                 data.user = authenticatedUser;
@@ -91,13 +91,15 @@ export function initSockets(io) {
                 // Añadir la conexión de mongoose al objeto data .Jp
                 data.conn = mongoose.connection;
 
-                const autorizado2 = await UserRepository.autentificacionPermisos2(data);
-                if (!autorizado2) {
-                    throw new AccessError(412, `Acceso no autorizado ${data.data.action}`);
-                }
+                if (dominio !== "data") {
+                    const autorizado2 = await UserRepository.autentificacionPermisos2(data);
+                    if (!autorizado2) {
+                        throw new AccessError(412, `Acceso no autorizado ${data.data.action}`);
+                    }
 
-                if (!Object.prototype.hasOwnProperty.call(repository, data.data.action)) {
-                    throw new BadGetwayError(501, `Error badGetWay: la acción ${data.data.action} no existe`);
+                    if (!Object.prototype.hasOwnProperty.call(repository, data.data.action)) {
+                        throw new BadGetwayError(501, `Error badGetWay: la acción ${data.data.action} no existe`);
+                    }
                 }
 
                 const response = await repository[data.data.action](data, sendData);
@@ -133,7 +135,7 @@ export function initSockets(io) {
             } else if (dominio === "proceso") {
                 handleRequest(data, callback, apiSocketProceso);
             } else if (dominio === "data") {
-                handleRequest(data, callback, apiSocketData);
+                handleRequest(data, callback, apiSocketData, dominio);
             } else if (dominio === "gestionCuentas") {
                 handleRequest(data, callback, apiSocketGestionCuentas);
             } else if (dominio === "transporte") {
