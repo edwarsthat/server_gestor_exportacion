@@ -114,7 +114,7 @@ export class UserRepository {
        * @return {void}
        */
         if (typeof user.password !== "string") throw new ValidationUserError(402, "El password debe ser texto")
-        if (user.password.length < 8) throw new ValidationUserError(402, "La contraseña debe tener al menos 8 caracteres")
+        if (user.password.length < 4) throw new ValidationUserError(402, "La contraseña debe tener al menos 8 caracteres")
     }
     static async validate_userName(user) {
         if (typeof user.user !== "string") throw new ValidationUserError(401, "El usuario debe ser texto")
