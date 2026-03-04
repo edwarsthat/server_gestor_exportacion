@@ -1007,16 +1007,15 @@ export class ProcesoRepository {
         }
 
     }
-    static async set_hora_pausa_proceso() {
-        await VariablesDelSistema.set_hora_pausa_proceso();
-        procesoEventEmitter.emit("status_proceso", {
-            status: "pause"
-        });
-    }
+
     static async sp32_funcionamiento_maquina(data) {
         let estado_maquina = Boolean(Number(data.estado))
         const ts = data.ts
-        const fecha = new Date(ts * 1000);
+        console.log("desde el metodo estado maquina", estado_maquina)
+
+        const fecha = new Date(Number(ts) * 1000);
+        console.log("desde el metodo fecha", fecha)
+
         const status_proceso = await TurnosService.obtenerStatusProceso()
 
         //al inicio maquina apagada, status off
