@@ -1,4 +1,6 @@
 import { CalidadRepository } from "../../api/Calidad.js";
+import { formulariosCalidadController } from "../../api/calidad/formulariosCalidad.js";
+import { IngresosCalidadController } from "../../api/calidad/ingresosCalidad.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketCalidad = {
@@ -119,20 +121,16 @@ export const apiSocketCalidad = {
         await CalidadRepository.post_calidad_ingresos_higienePersonal(data)
         return successResponseRoutes()
     },
-    get_calidad_ingresos_tiposFormularios: async () => {
-        const response = await CalidadRepository.get_calidad_ingresos_tiposFormularios();
-        return successResponseRoutes(response)
-    },
     post_calidad_ingresos_crearFormulario: async (data) => {
-        await CalidadRepository.post_calidad_ingresos_crearFormulario(data)
+        await IngresosCalidadController.post_calidad_ingresos_crearFormulario(data)
         return successResponseRoutes()
     },
     get_calidad_ingresos_formulariosCalidad: async () => {
-        const response = await CalidadRepository.get_calidad_ingresos_formulariosCalidad();
+        const response = await IngresosCalidadController.get_calidad_ingresos_formulariosCalidad();
         return successResponseRoutes(response)
     },
     put_calidad_ingresos_formulariosCalidad: async (data) => {
-        await CalidadRepository.put_calidad_ingresos_formulariosCalidad(data);
+        await IngresosCalidadController.put_calidad_ingresos_formulariosCalidad(data);
         return successResponseRoutes()
     },
     //#endregion
@@ -146,27 +144,27 @@ export const apiSocketCalidad = {
         return successResponseRoutes(response)
     },
     get_calidad_formulario_limpiezaDiaria: async (data) => {
-        const response = await CalidadRepository.get_calidad_formulario_limpiezaDiaria(data);
+        const response = await formulariosCalidadController.get_calidad_formulario_limpiezaDiaria(data);
         return successResponseRoutes(response)
     },
     get_calidad_formulario_limpiezaDiaria_numeroElementos: async () => {
-        const response = await CalidadRepository.get_calidad_formulario_limpiezaDiaria_numeroElementos();
+        const response = await formulariosCalidadController.get_calidad_formulario_limpiezaDiaria_numeroElementos();
         return successResponseRoutes(response)
     },
     get_calidad_formulario_limpiezaMensual: async (data) => {
-        const response = await CalidadRepository.get_calidad_formulario_limpiezaMensual(data);
+        const response = await formulariosCalidadController.get_calidad_formulario_limpiezaMensual(data);
         return successResponseRoutes(response)
     },
     get_calidad_formulario_limpiezaMensual_numeroElementos: async () => {
-        const response = await CalidadRepository.get_calidad_formulario_limpiezaMensual_numeroElementos();
+        const response = await formulariosCalidadController.get_calidad_formulario_limpiezaMensual_numeroElementos();
         return successResponseRoutes(response)
     },
     get_calidad_formulario_controlPlagas: async (data) => {
-        const response = await CalidadRepository.get_calidad_formulario_controlPlagas(data);
+        const response = await formulariosCalidadController.get_calidad_formulario_controlPlagas(data);
         return successResponseRoutes(response)
     },
     get_calidad_formulario_controlPlagas_numeroElementos: async () => {
-        const response = await CalidadRepository.get_calidad_formulario_controlPlagas_numeroElementos();
+        const response = await formulariosCalidadController.get_calidad_formulario_controlPlagas_numeroElementos();
         return successResponseRoutes(response)
     },
     //NUEVO JP

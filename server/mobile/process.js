@@ -1,7 +1,7 @@
 import express from 'express';
 import { UserRepository } from "../auth/users.js";
 import { ProcesoRepository } from "../api/Proceso.mjs";
-import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
+// import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { AccessError } from '../../Error/ValidationErrors.js';
 
 
@@ -95,8 +95,8 @@ routerProceso.get("/obtenerEF1", async (req, res) => {
     try {
         const token = req.headers['authorization'];
         await UserRepository.authenticateToken(token);
-        const data = await VariablesDelSistema.generarEF1()
-        res.json({ status: 200, message: 'Ok', data: data });
+        // const data = await VariablesDelSistema.generarEF1()
+        res.json({ status: 200, message: 'Ok', data: "" });
     } catch (err) {
         console.log(`Code ${err.status}: ${err.message}`)
         res.json({ status: err.status, message: err.message })
@@ -119,17 +119,6 @@ routerProceso.get("/data_obtener_foto_calidad", async (req, res) => {
     }
 })
 
-routerProceso.get("/getInventario", async (req, res) => {
-    try {
-        const token = req.headers['authorization'];
-        await UserRepository.authenticateToken(token);
-        const data = await ProcesoRepository.getInventario()
-        res.json({ status: 200, message: 'Ok', data: data });
-    } catch (err) {
-        console.log(`Code ${err.status}: ${err.message}`)
-        res.json({ status: err.status, message: err.message })
-    }
-})
 routerProceso.get("/getInventarioDesverdizado", async (req, res) => {
     try {
         const token = req.headers['authorization'];
@@ -159,8 +148,8 @@ routerProceso.get("/getOrdenVaceo", async (req, res) => {
         const token = req.headers['authorization'];
         await UserRepository.authenticateToken(token);
 
-        const oredenVaceo = await VariablesDelSistema.getOrdenVaceo()
-        res.json({ status: 200, message: 'Ok', data: oredenVaceo });
+        // const oredenVaceo = await VariablesDelSistema.getOrdenVaceo()
+        res.json({ status: 200, message: 'Ok', data: "" });
     } catch (err) {
         console.log(`Code ${err.status}: ${err.message}`)
         res.json({ status: err.status, message: err.message })

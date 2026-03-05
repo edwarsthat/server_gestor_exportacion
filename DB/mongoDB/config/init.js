@@ -431,6 +431,24 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("✅ Carnets definido");
         //#endregion
 
+        //#region informes calidad
+        console.log("⚡ Definiendo ControlPlagas...");
+        db.ControlPlagas = await defineControlPlagas(sysConn);
+        console.log("✅ ControlPlagas definido");
+
+        console.log("⚡ Definiendo HigienePersonal...");
+        db.HigienePersonal = await defineHigienePersonal(sysConn);
+        console.log("✅ HigienePersonal definido");
+
+        console.log("⚡ Definiendo LimpiezaDiaria...");
+        db.LimpiezaDiaria = await defineLimpiezaDiaria(sysConn);
+        console.log("✅ LimpiezaDiaria definido");
+
+        console.log("⚡ Definiendo LimpiezaMensual...");
+        db.LimpiezaMensual = await defineLimpiezaMensual(sysConn);
+        console.log("✅ LimpiezaMensual definido");
+        // #endregion
+
         procesoConn = sysConn;
         console.log("🎉 Todos los schemas de proceso han sido definidos correctamente.")
 
@@ -476,21 +494,7 @@ const defineSchemasSistema = async (sysConn) => {
         db.recordUsuario = await defineRecordusuario(sysConn);
         console.log("✅ recordUsuario definido");
 
-        console.log("⚡ Definiendo ControlPlagas...");
-        db.ControlPlagas = await defineControlPlagas(sysConn);
-        console.log("✅ ControlPlagas definido");
 
-        console.log("⚡ Definiendo HigienePersonal...");
-        db.HigienePersonal = await defineHigienePersonal(sysConn);
-        console.log("✅ HigienePersonal definido");
-
-        console.log("⚡ Definiendo LimpiezaDiaria...");
-        db.LimpiezaDiaria = await defineLimpiezaDiaria(sysConn);
-        console.log("✅ LimpiezaDiaria definido");
-
-        console.log("⚡ Definiendo LimpiezaMensual...");
-        db.LimpiezaMensual = await defineLimpiezaMensual(sysConn);
-        console.log("✅ LimpiezaMensual definido");
 
         console.log("⚡ Definiendo VolanteCalidad...");
         db.VolanteCalidad = await defineVolanteCalidad(sysConn);

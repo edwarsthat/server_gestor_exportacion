@@ -7,7 +7,7 @@ import { colombiaToUTC } from "../api/utils/fechas.js";
 import { filtroFechaInicioFin } from "../api/utils/filtros.js";
 import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
 import { CanastillasRepository } from "../Class/CanastillasRegistros.js";
-import { ClientesRepository, ClientesNacionalesRepository } from "../Class/Clientes.js";
+import {  ClientesNacionalesRepository } from "../Class/Clientes.js";
 import { DespachoDescartesRepository } from "../Class/DespachoDescarte.js";
 import { FrutaDescompuestaRepository } from "../Class/FrutaDescompuesta.js";
 import { InventarioDescartesRepository, InventariosHistorialRepository } from "../Class/Inventarios.js";
@@ -17,7 +17,6 @@ import { ProveedoresRepository } from "../Class/Proveedores.js";
 import { RedisRepository } from "../Class/RedisData.js";
 import { UnionsRepository } from "../Class/Unions.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
-import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
 import config from "../../src/config/index.js";
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
@@ -103,9 +102,6 @@ export class InventariosService {
             precio: precioId,
         };
     }
-    static async incrementarEF() {
-        VariablesDelSistema.incrementarEF1();
-    }
     static crearRegistroInventarioCanastillas(
         {
             origen = '',
@@ -121,7 +117,7 @@ export class InventariosService {
 
         }
     ) {
-        if (!user || !user._id) {
+        if (!user) {
             throw new Error("user y user._id son requeridos");
         }
         if (!fecha) {
@@ -148,10 +144,7 @@ export class InventariosService {
             referencia: "C1",
             tipoMovimiento: accion,
             estado: estado,
-            usuario: {
-                id: user._id,
-                user: user.user
-            },
+            usuario: user,
             remitente: remitente,
             destinatario: destinatario
         }
@@ -167,28 +160,32 @@ export class InventariosService {
         if (!user?._id) {
             throw new Error('El user._id es requerido para ajustar canastillas');
         }
+        if (!mongoose.Types.ObjectId.isValid(_id)) {
+            throw new Error('El _id debe ser un ObjectId válido');
+        }
+        const objectId = _id instanceof mongoose.Types.ObjectId ? _id : new mongoose.Types.ObjectId(_id);
 
         // Si cantidad es 0, no hay nada que hacer (esto sí es válido retornar)                                                                         
         if (cantidad === 0) return null;
 
-        const prov = await ProveedoresRepository.actualizar_data(
-            { _id: _id },
-            { $inc: { canastillas: cantidad } },
-            { session, user: user._id },
-        );
+        try {
+            const prov = await ProveedoresRepository.actualizar_data(
+                { _id: objectId },
+                { $inc: { canastillas: cantidad } },
+                { session, user: user._id },
+            );
 
-        if (prov) {
-            return prov;
-        }
+            return prov
+        } catch  {
+            const cli = await ClientesNacionalesRepository.actualizar_data(
+                { _id: objectId },
+                { $inc: { canastillas: cantidad } },
+                { session, user: user._id },
+            )
 
-        const cli = await ClientesRepository.actualizar_data(
-            { _id: _id },
-            { $inc: { canastillas: cantidad } },
-            { session, user: user._id },
-        )
-
-        if (cli) {
-            return cli;
+            if (cli) {
+                return cli;
+            }
         }
 
         throw new ConnectionDBError(404, "No existe proveedor/cliente o el ajuste dejaría canastillas en negativo");
@@ -240,12 +237,6 @@ export class InventariosService {
                 Object.values(descarteEncerado).reduce((acu, item) => acu -= item, 0)
 
         return kilosDescarteLavado + kilosDescarteEncerado;
-    }
-    static async modificarInventariosDescarteReprocesoPredio(_id, descarteLavado, descarteEncerado) {
-        if (descarteLavado)
-            await VariablesDelSistema.modificar_inventario_descarte(_id, descarteLavado, 'descarteLavado');
-        if (descarteEncerado)
-            await VariablesDelSistema.modificar_inventario_descarte(_id, descarteEncerado, 'descarteEncerado');
     }
     static validarGGN(proveedor, tipoFruta, user) {
         if (!proveedor) throw new Error("No se proporcionaron proveedores");
@@ -786,7 +777,6 @@ export class InventariosService {
         console.info(`[INVENTARIO DESCARTES] Inicio modificación ingreso desverdizado ${canastillas}, en el cuarto ${cuartoId}, lote: ${loteId}`);
 
         await Promise.all([
-            VariablesDelSistema.modificarInventario(loteId, canastillas),
             RedisRepository.update_inventarioDesverdizado(cuartoId, loteId, (canastillas),)
         ])
     }
@@ -840,11 +830,8 @@ export class InventariosService {
     static async devolverDesverdizadoInventarioFrutaSinprocesar(cuarto, _id) {
         console.info(`[INVENTARIO DESCARTES] Inicio devolución desverdizado fruta sin procesar: ${_id}, en el cuarto ${cuarto}`);
 
-        const datosCrudos = await RedisRepository.get_inventario_desverdizado(cuarto, _id);
-        const canastillas = datosCrudos?.inventarioDesverdizado?.[cuarto]?.[_id];
 
         await Promise.all([
-            VariablesDelSistema.modificarInventario(_id, -canastillas),
             RedisRepository.delete_inventarioDesverdizado_registro(cuarto, _id)
         ])
 
@@ -864,7 +851,6 @@ export class InventariosService {
             canastillas === cantidad ?
                 RedisRepository.delete_inventarioDesverdizado_registro(cuarto, _id) :
                 RedisRepository.update_inventarioDesverdizado(cuarto, _id, -cantidad),
-            VariablesDelSistema.modificarInventario(_id, -cantidad),
         ])
     }
     static async move_entre_cuartos_desverdizados(cuartoOrigen, cuartoDestino, _id, cantidad) {
@@ -1130,7 +1116,7 @@ export class InventariosService {
             canastillas: canastillasPropias,
             canastillasPrestadas: canastillasPrestadas,
             accion: "ingreso",
-            user
+            user: user._id
         })
 
         await this.ajustarCanastillasProveedorCliente(datos.predio, -canastillasPropias, user, session)

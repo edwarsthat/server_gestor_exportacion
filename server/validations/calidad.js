@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { objectIdString, requiredSafeString } from "./utils/validationFunctions.js";
 
 export class CalidadValidationsRepository {
     static put_calidad_ingresos_clasificacionDescarte() {
@@ -95,6 +96,43 @@ export class CalidadValidationsRepository {
                     })
                 }
             })
+    }
+    static post_calidad_ingresos_crearFormulario() {
+        const dateString = z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/, "La fecha debe tener el formato YYYY-MM-DD")
+            .refine((val) => !isNaN(Date.parse(val)), "Fecha inválida");
+
+        return z.object({
+            data: z.object({
+                tipoSeleccionado: z.enum(
+                    ['limpieza_diaria', 'limpieza_mensual', 'control_plagas'],
+                    { errorMap: () => ({ message: "El tipo seleccionado debe ser: limpieza_diaria, limpieza_mensual o control_plagas" }) }
+                ),
+                fechaInicio: dateString,
+                fechaFin: dateString,
+            }).refine(
+                (data) => new Date(data.fechaFin) >= new Date(data.fechaInicio),
+                { message: "La fecha de fin no puede ser anterior a la fecha de inicio", path: ["fechaFin"] }
+            )
+        });
+    }
+    static put_calidad_ingresos_formulariosCalidad() {
+        const elementoSchema = z.object({
+            status: z.boolean(),
+            observaciones: z.string(),
+        });
+
+        return z.object({
+            _id: objectIdString("_id"),
+            tipoFormulario: z.enum(
+                ['limpieza_diaria', 'limpieza_mensual', 'control_plagas'],
+                { errorMap: () => ({ message: "El tipoFormulario debe ser: limpieza_diaria, limpieza_mensual o control_plagas" }) }
+            ),
+            area: requiredSafeString("area"),
+            data: z.record(z.string(), elementoSchema)
+                .refine((obj) => Object.keys(obj).length > 0, "El campo data no puede estar vacío"),
+        });
     }
 
     //NUEVO JP

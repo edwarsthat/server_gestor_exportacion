@@ -3,7 +3,6 @@ import { procesoEventEmitter } from "../../events/eventos.js";
 import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
 import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { LotesRepository } from "../Class/Lotes.js";
-import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 // import { insumos_contenedor } from "../functions/insumos.js";
 // import { InsumosRepository } from "../Class/Insumos.js";
 
@@ -671,72 +670,6 @@ export class ProcesoRepository {
     }
     //#endregion
 
-    static async getInventario() {
-
-        //JS SERVER
-
-        const inventario = await VariablesDelSistema.getInventario();
-        const inventarioKeys = Object.keys(inventario)
-
-        const lotes = await LotesRepository.getLotes({
-            ids: inventarioKeys,
-            select: {
-                __v: 1,
-                clasificacionCalidad: 1,
-                nombrePredio: 1,
-                fecha_ingreso_patio: 1,
-                fecha_salida_patio: 1,
-                fecha_ingreso_inventario: 1,
-                fecha_creacion: 1,
-                fecha_estimada_llegada: 1,
-                observaciones: 1,
-                tipoFruta: 1,
-                promedio: 1,
-                enf: 1,
-                kilosVaciados: 1,
-                not_pass: 1
-            }
-        });
-
-        // se agrega las canastillas en inventario
-        const resultado = inventarioKeys.map(id => {
-            const lote = lotes.find(lote => lote._id.toString() === id.toString());
-
-            if (lote) {
-                return {
-                    ...lote,
-                    inventario: Reflect.get(inventario, id)
-                }
-            }
-            return null
-        }).filter(item => item !== null);
-
-        const query_lotes_camino = {
-            fecha_ingreso_inventario: { $exists: false },
-            fechaIngreso: { $exists: false },
-        }
-
-        const lotes_camino = await LotesRepository.getLotes({
-            query: query_lotes_camino,
-            select: {
-                fecha_ingreso_patio: 1,
-                fecha_salida_patio: 1,
-                fecha_ingreso_inventario: 1,
-                fecha_creacion: 1,
-                fecha_estimada_llegada: 1,
-                __v: 1,
-                clasificacionCalidad: 1,
-                nombrePredio: 1,
-                observaciones: 1,
-                tipoFruta: 1,
-                kilosVaciados: 1,
-                kilos_estimados: 1,
-                canastillas_estimadas: 1
-            }
-        })
-
-        return [...resultado, ...lotes_camino]
-    }
     static async obtener_historial_decarte_lavado_proceso(user) {
         const recordLotes = await RecordLotesRepository.getRecordLotes({
             query: {
@@ -924,18 +857,7 @@ export class ProcesoRepository {
         })
         return result
     }
-    static async obtener_status_proceso() {
-        const status = await VariablesDelSistema.obtener_status_proceso()
-        return status
-    }
-    static async get_status_pausa_proceso() {
-        const status = VariablesDelSistema.get_status_pausa_proceso()
-        return status
-    }
-    static async obtener_predio_procesando() {
-        const predio = await VariablesDelSistema.obtener_predio_procesando()
-        return predio
-    }
+
     static async obtenerHistorialLotes(data) {
         try {
 
@@ -1078,8 +1000,6 @@ export class ProcesoRepository {
                 { new: true, user: user, action: action }
             );
 
-            await VariablesDelSistema.ingresarInventario(lote, Number(query.canastillas));
-
 
 
         } catch (err) {
@@ -1087,30 +1007,31 @@ export class ProcesoRepository {
         }
 
     }
-    static async set_hora_pausa_proceso() {
-        await VariablesDelSistema.set_hora_pausa_proceso();
-        procesoEventEmitter.emit("status_proceso", {
-            status: "pause"
-        });
-    }
+
     static async sp32_funcionamiento_maquina(data) {
-        console.log(typeof data)
-        let estado_maquina = Boolean(Number(data))
+        let estado_maquina = Boolean(Number(data.estado))
+        const ts = data.ts
+        console.log("desde el metodo estado maquina", estado_maquina)
+
+        const fecha = new Date(Number(ts) * 1000);
+        console.log("desde el metodo fecha", fecha)
+
+        const hora = fecha.getHours();
+        if (hora >= 5 && hora < 10) return;
+
         const status_proceso = await TurnosService.obtenerStatusProceso()
-        console.log("status_proceso", status_proceso)
-        console.log("estado_maquina", estado_maquina)
 
         //al inicio maquina apagada, status off
         if (estado_maquina && status_proceso === 'off') {
-            await TurnosService.iniciarTurno();
+            await TurnosService.iniciarTurno({ horaInicio: fecha });
 
         } else if (!estado_maquina && status_proceso === 'on') {
-            //se reanuda el proces cuando se prende la maquina
-            await TurnosService.pausarTurno();
+            //se pausa el proceso
+            await TurnosService.pausarTurno({ hora: fecha });
 
-            //se pausa la maquina
         } else if (estado_maquina && status_proceso === 'pause') {
-            await TurnosService.reiniciarTurno()
+            //se reanuda el proceso
+            await TurnosService.reiniciarTurno({ hora: fecha });
         }
 
         const new_status_proceso = await TurnosService.obtenerStatusProceso()

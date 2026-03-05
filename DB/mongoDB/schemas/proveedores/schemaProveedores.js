@@ -1,6 +1,16 @@
 
 import mongoose from "mongoose";
+import { getRedisClient } from "../../../redis/init.js";
 const { Schema } = mongoose;
+
+const incrementarProveedoresVersion = async () => {
+  try {
+    const cliente = await getRedisClient();
+    await cliente.incr("proveedoresVersion");
+  } catch (err) {
+    console.error("[Redis] Error incrementando proveedoresVersion:", err.message);
+  }
+};
 
 export const defineproveedores = async (conn) => {
 
@@ -83,6 +93,10 @@ export const defineproveedores = async (conn) => {
     }
     next();
   });
+
+  PredioSchema.post('save', incrementarProveedoresVersion);
+  PredioSchema.post('findOneAndUpdate', incrementarProveedoresVersion);
+  PredioSchema.post('updateMany', incrementarProveedoresVersion);
 
   const Proveedores = conn.model("Proveedor", PredioSchema);
   return Proveedores;

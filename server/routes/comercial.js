@@ -1,6 +1,7 @@
 import express from 'express';
 import { UserRepository } from '../auth/users.js';
 import { ComercialRepository } from '../api/Comercial.js';
+import { ProveedoresCrontroller } from '../api/comercial/proveedores.js';
 export const routerComercial = express.Router();
 
 routerComercial.get("/", (req, res) => {
@@ -32,7 +33,7 @@ routerComercial.get("/get_comercial_proveedores_elementos", async (req, res) => 
         const user = await UserRepository.authenticateToken(token);
         await UserRepository.autentificacionPermisosHttps(user.cargo, "get_comercial_proveedores_elementos")
 
-        const response = await ComercialRepository.get_comercial_proveedores_elementos()
+        const response = await ProveedoresCrontroller.get_comercial_proveedores_elementos()
 
         res.send({ status: 200, message: 'Ok', data: response })
     } catch (err) {

@@ -345,6 +345,17 @@ export class InventariosValidations {
                 cedula: z.string().min(1, "La cédula es obligatoria"),
                 remision: z.string().min(1, "La remisión es obligatoria"),
                 kilos: z.number().min(1, "Los kilos deben ser mayores a 0"),
+                canastillasPropias: z.string()
+                    .transform(val => Number(val))
+                    .refine(val => !isNaN(val), { message: "Las canastillas propias deben ser un número válido" })
+                    .refine(val => val >= 0, { message: "Las canastillas propias no pueden ser negativas" })
+                    .optional(),
+                enCanastillas: z.boolean(),
+                canastillasPrestadas: z.string()
+                    .transform(val => Number(val))
+                    .refine(val => !isNaN(val), { message: "Las canastillas prestadas deben ser un número válido" })
+                    .refine(val => val >= 0, { message: "Las canastillas prestadas no pueden ser negativas" })
+                    .optional(),
             }),
             inventario: z.object({
                 // Validamos la propiedad fija primero
@@ -719,7 +730,18 @@ export class InventariosValidations {
                 nombreConductor: z.string().min(1, "El nombre del conductor es obligatorio"),
                 telefono: z.string().min(1, "El teléfono es obligatorio"),
                 cedula: z.string().min(1, "La cédula es obligatoria"),
-                remision: z.string().min(1, "La remisión es obligatoria")
+                remision: z.string().min(1, "La remisión es obligatoria"),
+                enCanastillas: z.boolean(),
+                canastillasPropias: z.string()
+                    .transform(val => Number(val))
+                    .refine(val => !isNaN(val), { message: "Las canastillas propias deben ser un número válido" })
+                    .refine(val => val >= 0, { message: "Las canastillas propias no pueden ser negativas" })
+                    .optional(),
+                canastillasPrestadas: z.string()
+                    .transform(val => Number(val))
+                    .refine(val => !isNaN(val), { message: "Las canastillas prestadas deben ser un número válido" })
+                    .refine(val => val >= 0, { message: "Las canastillas prestadas no pueden ser negativas" })
+                    .optional(),
             }),
             lote: z.object({
                 _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id del lote debe ser un ObjectId válido")
@@ -757,5 +779,25 @@ export class InventariosValidations {
                 .min(1, "La fecha es obligatoria")
                 .refine(val => !isNaN(Date.parse(val)), "La fecha no tiene un formato válido"),
         })
+    }
+    static put_inventarios_canastillas_celifrut() {
+        return z.object({
+            destino: requiredSafeString("destino"),
+            origen: requiredSafeString("origen"),
+            observaciones: optionalSafeString("observaciones"),
+            fecha: requiredSafeString("fecha").refine(
+                fecha => !isNaN(new Date(fecha).getTime()),
+                'La fecha no tiene un formato válido.'
+            ),
+            canastillas: z
+                .string()
+                .min(1, "Las canastillas son obligatorias")
+                .transform(val => Number(val))
+                .refine(val => !isNaN(val), { message: "Las canastillas deben ser un número válido" })
+                .refine(val => Number.isInteger(val), { message: "Las canastillas deben ser un número entero" })
+                .refine(val => val >= 0, { message: "Las canastillas deben ser positivas" }),
+            remitente: requiredSafeString("remitente"),
+            destinatario: requiredSafeString("destinatario"),
+        });
     }
 }

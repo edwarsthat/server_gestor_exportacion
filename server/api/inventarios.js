@@ -9,7 +9,6 @@ import { DespachoDescartesRepository } from "../Class/DespachoDescarte.js";
 import { FrutaDescompuestaRepository } from "../Class/FrutaDescompuesta.js";
 import { InsumosRepository } from "../Class/Insumos.js";
 import { LotesRepository } from "../Class/Lotes.js";
-import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
 import { InventariosValidations } from "../validations/inventarios.js";
 import { filtroFechaInicioFin } from "./utils/filtros.js";
 import { InventariosService } from "../services/inventarios.js";
@@ -145,25 +144,7 @@ export class InventariosRepository {
     }
 
 
-    static async put_inventarios_canastillas_celifrut(req) {
-        try {
-            const { canastillasPrestadas, canastillas } = req.data
-            if (canastillas) {
-                await InventariosService
-                    .ajustarCanastillasProveedorCliente(
-                        "65c27f3870dd4b7f03ed9857", Number(canastillas)
-                    )
-            }
-            if (canastillasPrestadas) {
-                await VariablesDelSistema.set_canastillas_inventario(canastillasPrestadas, "canastillasPrestadas")
-            }
-        } catch (err) {
-            if (err.status === 523) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
+
     static async post_inventarios_canastillas_registro(req) {
         try {
             const { user } = req
@@ -194,7 +175,7 @@ export class InventariosRepository {
                 accion,
                 remitente,
                 destinatario,
-                user
+                user: user._id
             })
             await CanastillasRepository.post_registro(dataRegistro)
 
@@ -202,11 +183,7 @@ export class InventariosRepository {
             await InventariosService.ajustarCanastillasProveedorCliente(origen, Number(-canastillas));
             await InventariosService.ajustarCanastillasProveedorCliente(destino, Number(canastillas));
 
-            if (accion === 'ingreso') {
-                await VariablesDelSistema.set_canastillas_inventario(Number(canastillasPrestadas))
-            } else if (accion === "salida") {
-                await VariablesDelSistema.set_canastillas_inventario(Number(-canastillasPrestadas))
-            }
+
 
             return true
         } catch (err) {
@@ -638,12 +615,6 @@ export class InventariosRepository {
 
                         await InventariosService.ajustarCanastillasProveedorCliente("65c27f3870dd4b7f03ed9857", Number(data.canastillas))
                         await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
-
-                        await VariablesDelSistema.modificar_canastillas_inventario(-Number(registroIngresoCanastillas[0].cantidad.prestadas), "canastillasPrestadas")
-                        await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");
-
-                        await VariablesDelSistema.modificar_canastillas_inventario(Number(data.canastillasPrestadas), "canastillasPrestadas")
-                        await registrarPasoLog(log._id, "VariablesDelSistema.modificar_canastillas_inventario", "Completado");
 
                     }
 
@@ -1361,23 +1332,6 @@ export class InventariosRepository {
         }
     }
 
-
-    //#endregion
-    //#region ingresos
-    static async get_inventarios_ingresos_ef() {
-        try {
-            const enf1 = await VariablesDelSistema.generarEF1();
-            return { ef1: enf1 }
-        }
-        catch (err) {
-            if (err.status === 506) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
-
- 
 
     //#endregion
 

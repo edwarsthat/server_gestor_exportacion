@@ -72,21 +72,24 @@ const permisos_generales = new Set([
     "get_constantes_sistema_tipo_frutas",
     "get_constantes_sistema_paises_GGN",
     "get_comercial_clientesNacionales",
-    "get_data_bootstrap",
+    // "get_data_bootstrap",
     //se obtiene datos del sistema
     "Get_info_update_app_desktop",
 
     //obtener los proveedores para desplegables
     "get_sys_proveedores",
-    "get_data_tipoFruta",
-    "get_data_clientes",
-    "get_data_cargos",
-    "get_data_clientesNacionales",
-    "get_data_proveedores",
-    "get_data_cuartosFrios",
-    "get_data_tipoFruta2",
-    "get_data_areasAcceso",
-    "get_data_cargosPersonal",
+    // "get_data_tipoFruta",
+    // "get_data_clientes",
+    // "get_data_cargos",
+    // "get_data_clientesNacionales",
+    // "get_data_proveedores",
+    // "get_data_cuartosFrios",
+    // "get_data_tipoFruta2",
+    // "get_data_areasAcceso",
+    // "get_data_cargosPersonal",
+    // "get_data_canastillas_canastillasCelifrut",
+    // "get_data_ingresos_tiposFormularios",
+    // "get_data_formularios_calidad_campos",
 
     "get_proceso_aplicaciones_listaEmpaque_pallets",
     "get_proceso_aplicaciones_listaEmpaque_itemsPallet",
@@ -111,7 +114,7 @@ export class UserRepository {
        * @return {void}
        */
         if (typeof user.password !== "string") throw new ValidationUserError(402, "El password debe ser texto")
-        if (user.password.length < 8) throw new ValidationUserError(402, "La contraseña debe tener al menos 8 caracteres")
+        if (user.password.length < 4) throw new ValidationUserError(402, "La contraseña debe tener al menos 8 caracteres")
     }
     static async validate_userName(user) {
         if (typeof user.user !== "string") throw new ValidationUserError(401, "El usuario debe ser texto")

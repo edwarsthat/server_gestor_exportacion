@@ -1,3 +1,4 @@
+import { control_plagas_campos, limpieza_diaria_campos, limpieza_mensual_campos } from "../../constants/formularios_calidad.js";
 import { DataLogicError } from "../../Error/logicLayerError.js";
 import { ClientesRepository, ClientesNacionalesRepository } from "../Class/Clientes.js";
 import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
@@ -8,6 +9,7 @@ import { AreasAccesoRepository } from "../Class/systemData/AreasAcceso.js";
 import { CargosPersonalRepository } from "../Class/talentoHumano/CargosPersonal.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { dataService } from "../services/data.js";
+import { CanastillasService } from "../services/inventarios/canastillas.js";
 import { CuartosDesverdizados } from "../store/CuartosDesverdizados.js";
 import { CuartosFrios } from "../store/CuartosFrios.js";
 import { executeQueryTask } from "../utils/wrappers.js";
@@ -153,6 +155,19 @@ export class dataRepository {
             }
 
             return await ProveedoresRepository.get_proveedores(query);
+        } catch (err) {
+            if (err.status === 522) {
+                throw err
+            }
+            throw new DataLogicError(480, `Error ${err.type}: ${err.message}`)
+        }
+    }
+    static async get_data_proveedores2() {
+        try {
+
+            return await ProveedoresRepository.get_data({
+                query: { activo: true }
+            });
         } catch (err) {
             if (err.status === 522) {
                 throw err
@@ -319,6 +334,26 @@ export class dataRepository {
             return Object.fromEntries(entries);
         })
 
+    }
+    static async get_data_canastillas_canastillasCelifrut() {
+        return await executeQueryTask(async () => {
+            const total = await CanastillasService.get_totales_canastillas()
+            return [total]
+        })
+    }
+    static async get_data_formularios_calidad_campos() {
+        return {
+            limpieza_diaria: limpieza_diaria_campos,
+            limpieza_mensual: limpieza_mensual_campos,
+            control_plagas: control_plagas_campos
+        }
+    }
+    static async get_data_versiones(req) {
+        return await executeQueryTask(async () => {
+            const { data } = req.data
+            if (typeof data !== 'string') throw new Error('data debe ser un string')
+            return await dataService.obtenerVersion({ key: data })
+        })
     }
 }
 

@@ -6,24 +6,17 @@ import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { FormulariosCalidadRepository } from "../Class/FormulariosCalidad.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
-import { VariablesDelSistema } from "../Class/VariablesDelSistema.js";
-import fs from 'fs';
-import path from 'path';
 import { filtroFechaInicioFin } from "./utils/filtros.js";
 import { CalidadValidationsRepository } from "../validations/calidad.js";
 import { z } from "zod";
 
-import { fileURLToPath } from 'url';
 import { CalidadService } from "../services/calidad.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { ErrorCalidadLogicHandlers } from "./utils/errorsHandlers.js";
 import { LotesHelper } from "../helper/lotes.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
-const tipoFormulariosCalidadPath = path.join(__dirname, '../../constants/formularios_calidad.json')
 export class CalidadRepository {
 
     //#region historial calidad
@@ -1026,126 +1019,10 @@ export class CalidadRepository {
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_calidad_ingresos_tiposFormularios() {
-        try {
-            const dataJSON = fs.readFileSync(tipoFormulariosCalidadPath);
-            const data = JSON.parse(dataJSON);
-            return data;
 
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async post_calidad_ingresos_crearFormulario(req) {
-        try {
-            const user = req.user._id
-            const { data } = req.data;
-            const { tipoSeleccionado, fechaInicio, fechaFin } = data;
-            const codigo = await VariablesDelSistema.generar_codigo_informe_calidad()
 
-            switch (tipoSeleccionado) {
-                case 'limpieza_diaria':
-                    await FormulariosCalidadRepository.crear_formulario_limpieza_diaria(
-                        codigo, fechaInicio, fechaFin
-                    )
-                    break;
-                case 'limpieza_mensual':
-                    await FormulariosCalidadRepository.crear_formulario_limpieza_mensual(
-                        codigo, fechaInicio, fechaFin, user
-                    )
-                    break;
-                case 'control_plagas':
-                    await FormulariosCalidadRepository.crear_formulario_control_plagas(
-                        codigo, fechaInicio, fechaFin, user
-                    )
-                    break;
-                default:
-                    throw new Error("Error en el switch de creacion de formulario calidad")
-            }
-            await VariablesDelSistema.incrementar_codigo_informes_calidad()
-        } catch (err) {
-            if (err.status === 506) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_calidad_ingresos_formulariosCalidad() {
-        try {
-            const now = new Date()
 
-            const limpieza_diaria = await FormulariosCalidadRepository.get_formularios_calidad_limpieza_diaria({
-                query: {
-                    $and: [
-                        { fechaInicio: { $lte: now } },
-                        { fechaFin: { $gt: now } }
-                    ]
-                }
-            })
-            const limpieza_mensual = await FormulariosCalidadRepository.get_formularios_calidad_limpieza_mensual({
-                query: {
-                    $and: [
-                        { fechaInicio: { $lte: now } },
-                        { fechaFin: { $gt: now } }
-                    ]
-                }
-            })
 
-            const control_plagas = await FormulariosCalidadRepository.get_formularios_calidad_control_plagas({
-                query: {
-                    $and: [
-                        { fechaInicio: { $lte: now } },
-                        { fechaFin: { $gt: now } }
-                    ]
-                }
-            })
-
-            return [
-                ...limpieza_diaria,
-                ...limpieza_mensual,
-                ...control_plagas
-            ];
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async put_calidad_ingresos_formulariosCalidad(req) {
-        try {
-            const user = req.user._id
-            const { tipoFormulario, _id, area, data } = req.data
-
-            let query = Object.create(null);
-            Object.keys(data).forEach(item => {
-
-                Reflect.set(query, `${area}.${item}.status`, Reflect.get(Reflect.get(data, item), 'status'));
-                Reflect.set(query, `${area}.${item}.observaciones`, Reflect.get(Reflect.get(data, item), 'observaciones'));
-                Reflect.set(query, `${area}.${item}.responsable`, user);
-
-            })
-
-            if (tipoFormulario === "Limpieza diaría") {
-                await FormulariosCalidadRepository.modificar_limpieza_diaria(_id, query)
-                return
-            } else if (tipoFormulario === "Limpieza mensual") {
-                await FormulariosCalidadRepository.modificar_limpieza_mensual(_id, query)
-                return
-            } else if (tipoFormulario === "Control de plagas") {
-                await FormulariosCalidadRepository.modificar_control_plagas(_id, query)
-                return
-            }
-        } catch (err) {
-            if (err.status === 523) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
     //#endregion
     //#region formulario
     static async get_calidad_formulario_volanteCalidad(req) {
@@ -1198,90 +1075,11 @@ export class CalidadRepository {
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_calidad_formulario_limpiezaDiaria(req) {
-        try {
-            const { page } = req.data
-            const resultsPerPage = 30;
-            const limpieza_diaria = await FormulariosCalidadRepository.get_formularios_calidad_limpieza_diaria({
-                skip: (page - 1) * resultsPerPage,
-                limit: resultsPerPage,
-                sort: { createdAt: -1 }
-            })
-            return limpieza_diaria
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_calidad_formulario_limpiezaDiaria_numeroElementos() {
-        try {
-            const count = await FormulariosCalidadRepository.get_calidad_formulario_limpiezaDiaria_numeroElementos()
-            return count
-        } catch (err) {
-            if (err.status === 524) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_calidad_formulario_limpiezaMensual(req) {
-        try {
-            const { page } = req.data
-            const resultsPerPage = 30;
-            const limpieza_diaria = await FormulariosCalidadRepository.get_formularios_calidad_limpieza_mensual({
-                skip: (page - 1) * resultsPerPage,
-                limit: resultsPerPage,
-                sort: { createdAt: -1 }
-            })
-            return limpieza_diaria
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_calidad_formulario_limpiezaMensual_numeroElementos() {
-        try {
-            const count = await FormulariosCalidadRepository.get_calidad_formularios_limpiezaMensual_numeroElementos()
-            return count
-        } catch (err) {
-            if (err.status === 524) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_calidad_formulario_controlPlagas(req) {
-        try {
-            const { page } = req.data
-            const resultsPerPage = 30;
-            const limpieza_diaria = await FormulariosCalidadRepository.get_formularios_calidad_control_plagas({
-                skip: (page - 1) * resultsPerPage,
-                limit: resultsPerPage,
-                sort: { createdAt: -1 }
-            })
-            return limpieza_diaria
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_calidad_formulario_controlPlagas_numeroElementos() {
-        try {
-            const count = await FormulariosCalidadRepository.get_calidad_formularios_controlPlagas_numeroElementos()
-            return count
-        } catch (err) {
-            if (err.status === 524) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
+
+
+
+
+
     //#region reclamaciones
     static async get_calidad_reclamaciones_contenedores(req) {
         try {
@@ -1379,7 +1177,7 @@ export class CalidadRepository {
     }
     static async lotes_devolver_lote(req) {
         const { data, user } = req
-        const { _id, canastillas, observaciones, action } = data
+        const { _id, observaciones, action } = data
 
         const query = {
             observaciones: observaciones + " | Devuelto debido a la mala calidad de la fruta",
@@ -1396,7 +1194,6 @@ export class CalidadRepository {
                 action: action
             }
         );
-        await VariablesDelSistema.modificarInventario(_id, Number(canastillas));
         procesoEventEmitter.emit("server_event", {
             action: "derogar_lote",
             data: {}

@@ -8,11 +8,9 @@ import { UserRepository } from '../auth/users.js';
 import { ValidationUserError } from '../../Error/ValidationErrors.js';
 import { ConstantesDelSistema } from '../Class/ConstantesDelSistema.js';
 import { ProcessError } from '../../Error/ProcessError.js';
-import { VariablesDelSistema } from '../Class/VariablesDelSistema.js';
 import { SistemaLogicError } from '../../Error/logicLayerError.js';
 import { filtroFechaInicioFin } from './utils/filtros.js';
 import { LotesRepository } from '../Class/Lotes.js';
-import { procesoEventEmitter } from '../../events/eventos.js';
 import { db } from '../../DB/mongoDB/config/init.js';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -94,92 +92,9 @@ export class SistemaRepository {
             throw new SistemaLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async put_sistema_proceso_inicioHoraProceso() {
-        try {
-            const date = await VariablesDelSistema.set_hora_inicio_proceso();
-            procesoEventEmitter.emit("status_proceso", {
-                status: true
-            });
-            return date
-        } catch (err) {
-            if (err.status === 532) {
-                throw err
-            }
-            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_sistema_proceso_inicioHoraProceso() {
-        try {
-            const fecha = VariablesDelSistema.obtener_fecha_inicio_proceso()
-            return fecha
-        } catch (err) {
-            if (err.status === 531) {
-                throw err
-            }
-            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async put_sistema_proceso_finalizarProceso() {
-        try {
-            const status_proceso = await VariablesDelSistema.obtener_status_proceso()
 
-            if (status_proceso === 'pause') {
-                await VariablesDelSistema.set_hora_reanudar_proceso();
-            }
-            await VariablesDelSistema.set_hora_fin_proceso();
-            procesoEventEmitter.emit("status_proceso", {
-                status: "off"
-            });
-        } catch (err) {
-            if (err.status === 532 || err.status === 531) {
-                throw err
-            }
-            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async put_sistema_proceso_pausaProceso() {
-        try {
-            await VariablesDelSistema.set_hora_pausa_proceso();
-            procesoEventEmitter.emit("status_proceso", {
-                status: "pause"
-            });
-        } catch (err) {
-            if (err.status === 532) {
-                throw err
-            }
-            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async put_sistema_proceso_reanudarProceso() {
-        try {
-            await VariablesDelSistema.set_hora_reanudar_proceso();
-            procesoEventEmitter.emit("status_proceso", {
-                status: "on"
-            });
-        } catch (err) {
-            if (err.status === 532) {
-                throw err
-            }
-            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_sistema_proceso_dataProceso() {
-        try {
-            const predio = await VariablesDelSistema.obtenerEF1proceso();
-            const kilosProcesadosHoy = await VariablesDelSistema.get_kilos_procesados_hoy2();
-            const kilosExportacionHoy = await VariablesDelSistema.get_kilos_exportacion_hoy2();
-            return {
-                predio: predio,
-                kilosProcesadosHoy: kilosProcesadosHoy,
-                kilosExportacionHoy: kilosExportacionHoy
-            }
-        } catch (err) {
-            if (err.status === 531) {
-                throw err
-            }
-            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
+
+
     static async get_sistema_habilitarInstancias_lotes() {
         try {
             const lotes = await LotesRepository.getLotes({
@@ -306,51 +221,7 @@ export class SistemaRepository {
 
     //-----------------------------------------------------------------------------------------------
 
-    static async put_sistema_reiniciar_orden_vaceo() {
-        try {
-            await VariablesDelSistema.put_inventario_inventarios_orden_vaceo_modificar([])
-        } catch (err) {
-            if (err.status === 531) {
-                throw err
-            }
-            throw new SistemaLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    //#endregion
-    //#region modificar seriales
-    static async get_sistema_parametros_configuracionSeriales_EF1() {
-        try {
-            const enf = await VariablesDelSistema.generarEF1()
-            return enf
-        } catch (err) {
-            if (err.status === 506) {
-                throw err
-            }
-            throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async put_sistema_parametros_configuracionSeriales_EF1(req) {
-        try {
-            const { serial } = req.data
-            await VariablesDelSistema.modificar_serial(serial, "enf")
-        } catch (err) {
-            if (err.status === 523) {
-                throw err
-            }
-            throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_sistema_parametros_configuracionSeriales_EF8() {
-        try {
-            const enf = await VariablesDelSistema.generarEF8()
-            return enf
-        } catch (err) {
-            if (err.status === 506) {
-                throw err
-            }
-            throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
-        }
-    }
+   
     static async put_sistema_parametros_configuracionSeriales_EF8(req) {
         let log
         try {
@@ -371,28 +242,6 @@ export class SistemaRepository {
             throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
         } finally {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-        }
-    }
-    static async get_sistema_parametros_configuracionSeriales_Celifrut() {
-        try {
-            const enf = await VariablesDelSistema.generar_codigo_celifrut()
-            return enf
-        } catch (err) {
-            if (err.status === 506) {
-                throw err
-            }
-            throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async put_sistema_parametros_configuracionSeriales_Celifrut(req) {
-        try {
-            const { serial } = req.data
-            await VariablesDelSistema.modificar_serial(serial, "idCelifrut")
-        } catch (err) {
-            if (err.status === 523) {
-                throw err
-            }
-            throw new SistemaLogicError(472, `Error ${err.type}: ${err.message}`)
         }
     }
     //#endregion
@@ -423,7 +272,6 @@ export class SistemaRepository {
         if (!user[0]) throw new ValidationUserError(401, "Error usuario no encontrado");
 
         const codigo = await UserRepository.generarTokenRecuperacion()
-        await VariablesDelSistema.guardar_codigo_recuperacion_password(user[0]._id, codigo)
         return codigo
     }
     static async isNewVersion() {

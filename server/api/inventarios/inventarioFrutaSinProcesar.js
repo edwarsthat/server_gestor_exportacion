@@ -18,13 +18,12 @@ export class InventarioFrutaSinProcesarController {
 
     static async put_inventarios_frutaSinProcesar_directoNacional(req) {
         const { user } = req;
-        InventariosValidations.put_inventarios_frutaSinProcesar_directoNacional().parse(req.data);
-
+        const parsedData = InventariosValidations.put_inventarios_frutaSinProcesar_directoNacional().parse(req.data);
         await executeTransactionalTask(req, async (session, log) => {
             if (!user._id) {
                 throw new Error("No se encontró el usuario en la base de datos");
             }
-            const { data, lote, action, __v } = req.data
+            const { data, lote, action, __v } = parsedData
             const loteId = lote._id || data.lote;
 
             const checkVersion = await InventariosService.check_inventarioVersion(config.INVENTARIO_FRUTA_SIN_PROCESAR, __v)
@@ -72,6 +71,45 @@ export class InventarioFrutaSinProcesarController {
 
             const descripcion = `Directo Nacional - Canastillas decrementadas: ${data.canastillas}`
             await InventariosService.modificarRestarInventarioFrutaSinProocesar(data.canastillas, user, action, lote, session, descripcion);
+
+            if (data.enCanastillas) {
+                console.log("data.canastillasPropias", data.canastillasPropias)
+                console.log("canastillasPrestadas", data.canastillasPrestadas)
+                if ((data.canastillasPropias + data.canastillasPrestadas) > data.canastillas) {
+                    throw new Error("La cantidad de canastillas vacías no puede ser mayor a la cantidad total de canastillas");
+                }
+                if (data.canastillasPropias > 0) {
+                    await InventariosService
+                        .ajustarCanastillasProveedorCliente(config.ID_CELIFRUT, Number(-data.canastillasPropias || 0), user, session);
+                    await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+                    await InventariosService
+                        .ajustarCanastillasProveedorCliente(data.cliente, Number(data.canastillasPropias || 0), user, session);
+                    await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+                }
+                if (data.canastillasPrestadas > 0) {
+                    await CanastillasService
+                        .modificar_inventario_canastillas({
+                            canastillasPrestadas: Number(-data.canastillasPrestadas || 0),
+                            prestamistaId: data.cliente,
+                        }, session);
+                    await registrarPasoLog(log._id, "CanastillasService.modificar_inventario_canastillas", "Completado");
+                }
+
+                const dataRegistroCanastillas = InventariosService.crearRegistroInventarioCanastillas({
+                    origen: config.ID_CELIFRUT,
+                    destino: data.cliente,
+                    accion: "salida",
+                    canastillas: Number(data.canastillasPropias || 0),
+                    canastillasPrestadas: Number(data.canastillasPrestadas || 0),
+                    remitente: config.ID_CELIFRUT,
+                    destinatario: data.cliente,
+                    observaciones: `Directo Nacional - remisión: ${data.remision}`,
+                    fecha: new Date(),
+                    user: user._id
+                });
+                await CanastillasRepository.post_data(dataRegistroCanastillas, { session, user: user._id });
+                await registrarPasoLog(log._id, "CanastillasRepository.post_data directo nacional", "Completado");
+            }
         });
 
         procesoEventEmitter.emit("server_event", {
@@ -157,7 +195,7 @@ export class InventarioFrutaSinProcesarController {
                 canastillas: dataCanastillas.canastillasPropias,
                 canastillasPrestadas: dataCanastillas.canastillasPrestadas,
                 accion: "ingreso",
-                user
+                user: user._id
             })
             await registrarPasoLog(log._id, "InventariosService.crearRegistroInventarioCanastillas", "Completado");
 
@@ -237,7 +275,7 @@ export class InventarioFrutaSinProcesarController {
                 canastillas: dataCanastillas.canastillasPropias,
                 canastillasPrestadas: dataCanastillas.canastillasPrestadas,
                 accion: "ingreso",
-                user
+                user: user._id
             })
             await registrarPasoLog(log._id, "InventariosService.crearRegistroInventarioCanastillas", "Completado");
 

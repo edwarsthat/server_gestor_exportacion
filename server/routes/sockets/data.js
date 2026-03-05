@@ -1,3 +1,4 @@
+import { IngresosCalidadController } from "../../api/calidad/ingresosCalidad.js";
 import { dataRepository } from "../../api/data.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
@@ -25,6 +26,10 @@ export const apiSocketData = {
     },
     get_data_proveedores: async (req) => {
         const response = await dataRepository.get_data_proveedores(req)
+        return successResponseRoutes(response)
+    },
+    get_data_proveedores2: async () => {
+        const response = await dataRepository.get_data_proveedores2()
         return successResponseRoutes(response)
     },
     get_data_cuartosDesverdizados: async () => {
@@ -58,5 +63,21 @@ export const apiSocketData = {
     get_data_bootstrap: async () => {
         const response = await dataRepository.get_data_bootstrap()
         return successResponseRoutes(response)
-    }
+    },
+    get_data_canastillas_canastillasCelifrut: async () => {
+        const response = await dataRepository.get_data_canastillas_canastillasCelifrut()
+        return successResponseRoutes(response)
+    },
+    get_data_ingresos_tiposFormularios: async () => {
+        const response = await IngresosCalidadController.get_data_ingresos_tiposFormularios();
+        return successResponseRoutes(response)
+    },
+    get_data_formularios_calidad_campos: async () => {
+        const response = await dataRepository.get_data_formularios_calidad_campos();
+        return successResponseRoutes(response)
+    },
+    get_data_versiones: async (req) => {
+        const response = await dataRepository.get_data_versiones(req);
+        return successResponseRoutes(response)
+    },
 }

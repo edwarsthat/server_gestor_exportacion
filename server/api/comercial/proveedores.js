@@ -8,9 +8,9 @@ export class ProveedoresCrontroller {
     static async get_comercial_proveedores_elementos(req) {
         return await executeQueryTask(async () => {
             const { data, user } = req || {};
-            if (!user || !user._id) {
-                throw new Error("Usuario no autenticado")
-            }
+            // if (!user || !user._id) {
+            //     throw new Error("Usuario no autenticado")
+            // }
 
             const { page, filtro } = data || {}
             const resultsPerPage = 25;
@@ -52,7 +52,7 @@ export class ProveedoresCrontroller {
         if (!user || !user._id) {
             throw new Error("Usuario no autenticado")
         }
-        await executeTransactionalTask(req, async (session, log) => {
+        await executeTransactionalTask(req, async (session) => {
             const data = ComercialValidationsRepository.val_proveedores_informacion_post_put_data().parse(req.data.data)
             const predio = await ProveedoresRepository.get_data({
                 query: { "CODIGO INTERNO": 0 }
@@ -80,7 +80,7 @@ export class ProveedoresCrontroller {
         })
     }
     static async put_comercial_proveedores_modify_proveedor(req) {
-        await executeTransactionalTask(req, async (session, log) => {
+        await executeTransactionalTask(req, async (session) => {
             const { user } = req
             if (!user || !user._id) {
                 throw new Error("Usuario no autenticado")
