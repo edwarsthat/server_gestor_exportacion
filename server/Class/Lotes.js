@@ -14,7 +14,7 @@ export class LotesRepository extends BaseRepository {
         try {
             const year = new Date(data.fecha_ingreso_inventario).getFullYear()
 
-            const tarifa = await db.tarifapredios.finOne({
+            const tarifa = await db.tarifapredios.findOne({
                 predio: data.predio,
                 year,
                 tipo: "FIJA",
