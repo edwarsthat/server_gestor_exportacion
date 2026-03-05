@@ -14,7 +14,6 @@ const incrementarProveedoresVersion = async () => {
 
 export const defineproveedores = async (conn) => {
 
-
   const PrecioSchema = new Schema({
     any: {
       type: Map,
