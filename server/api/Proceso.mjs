@@ -1016,6 +1016,9 @@ export class ProcesoRepository {
         const fecha = new Date(Number(ts) * 1000);
         console.log("desde el metodo fecha", fecha)
 
+        const hora = fecha.getHours();
+        if (hora >= 5 && hora < 10) return;
+
         const status_proceso = await TurnosService.obtenerStatusProceso()
 
         //al inicio maquina apagada, status off

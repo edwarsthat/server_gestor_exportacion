@@ -120,22 +120,23 @@ export class TurnosService {
 
                 await TurnoDatarepository.actualizar_data(
                     {},
-                    {
-                        $set: { horaFin: ultimaPausa },
-                        $pop: { pausaProceso: 1 }
-                    },
+                    { $set: { horaFin: ultimaPausa } },
+                    { sort: { createdAt: -1 } }
+                );
+                await TurnoDatarepository.actualizar_data(
+                    {},
+                    { $pop: { pausaProceso: 1 } },
                     { sort: { createdAt: -1 } }
                 );
             } else if (status_proceso === 'on') {
                 await TurnoDatarepository.actualizar_data(
                     {},
-                    { horaFin: new Date() },
+                    { $set: { horaFin: new Date() } },
                     { sort: { createdAt: -1 } }
                 );
             } else {
                 // Sin proceso activo, no hay datos que actualizar
             }
-
 
             return true
         } catch (err) {
