@@ -160,6 +160,18 @@ export const apiSocket = {
         return { status: 200, message: 'Ok', data: data }
     },
 
+    // TALENTO HUMANO - CONTRATOS PERSONAL
+
+    get_talentoHumano_contratosPersonal_numeroRegistros: async () => {
+        const cantidad = await SistemaRepository.get_talentoHumano_contratosPersonal_numeroRegistros()
+        return { status: 200, message: 'Ok', data: cantidad }
+    },
+
+    get_talentoHumano_contratosPersonal_registros: async (req) => {
+        const { data } = req
+        const registros = await SistemaRepository.get_talentoHumano_contratosPersonal_registros(data)
+        return { status: 200, message: 'Ok', data: registros }
+},
     //!constantes del sistema, formularios y otras cosas
     get_info_formulario_inspeccion_fruta: async () => {
         const formulario = await CalidadRepository.get_info_formulario_inspeccion_fruta()
