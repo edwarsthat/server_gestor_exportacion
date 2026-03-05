@@ -2,6 +2,7 @@ import { CargosPersonalControllerRepository } from "../../api/talentoHumano/Carg
 import { DotacionCarnetsControllerRepository } from "../../api/talentoHumano/dotacion/carnets.js"
 import { PersonalControllerRepository } from "../../api/talentoHumano/Personal.js"
 import { successResponseRoutes } from "../helpers/responses.js"
+import { ContratosPersonalControllerRepository } from "../../api/talentoHumano/ContratosPersonal.js"
 
 export const apiSocketTalentoHumano = {
     post_talentoHumano_personal_ingresoPersonal: async (req) => {
@@ -82,6 +83,27 @@ export const apiSocketTalentoHumano = {
     },
     put_talentoHumano_upload_document: async (req) => {
         await PersonalControllerRepository.put_talentoHumano_upload_document(req)
+        return successResponseRoutes()
+    },
+
+    //para contratos personal
+    post_talentoHumano_contratosPersonal: async (req) => {
+        await ContratosPersonalControllerRepository.post_talentoHumano_contratosPersonal(req)
+        return successResponseRoutes()
+    },
+
+    get_talentoHumano_contratosPersonal_registros: async (req) => {
+        const data = await ContratosPersonalControllerRepository.get_talentoHumano_contratosPersonal_registros(req)
+        return successResponseRoutes(data)
+    },
+
+    get_talentoHumano_contratosPersonal_numeroRegistros: async (req) => {
+        const data = await ContratosPersonalControllerRepository.get_talentoHumano_contratosPersonal_numeroRegistros(req)
+        return successResponseRoutes(data)
+    },
+
+    put_talentoHumano_contratosPersonal: async (req) => {
+        await ContratosPersonalControllerRepository.put_talentoHumano_contratosPersonal(req)
         return successResponseRoutes()
     },
 }

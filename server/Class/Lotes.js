@@ -12,6 +12,21 @@ export class LotesRepository extends BaseRepository {
     static async addLote(data, opts = {}) {
         const { session, user, action } = opts;
         try {
+            const year = new Date(data.fecha_ingreso_inventario).getFullYear()
+
+            const tarifa = await db.tarifapredios.finOne({
+                predio: data.predio,
+                year,
+                tipo: "FIJA",
+                activo: true
+            })
+
+            if (!tarifa) {
+                throw new Error("No hay tarifa configurada para este predio en ese año")
+            }
+
+            data. tarifaAplicada = tarifa.valor
+//-------------------------------------------------------------------------------------------
             const lote = new db.Lotes(data);
             lote._user = user;
 

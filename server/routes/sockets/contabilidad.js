@@ -45,8 +45,8 @@ export const apiSocketContabilidad = {
         return successResponseRoutes(response);
     },
 
-    put_tarifa_aplicada_lote: async (data) => {
-        const response = await ContabilidadRepository.put_tarifa_aplicada(data);
+    put_tarifa_congelada_lote: async (data) => {
+        const response = await ContabilidadRepository.put_tarifa_congelada(data);
         return successResponseRoutes(response);
     },
 

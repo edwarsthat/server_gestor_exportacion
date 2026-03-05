@@ -194,9 +194,13 @@ export class CalidadRepository {
                 throw new CalidadLogicError(401, 'Usuario no autenticado');
             }
 
+            //Ajustar fecha sumando 5 horas para compensar UTC. Jp
+            const fechaRecibida = new Date(data.fecha);
+            const OFFSET_COLOMBIA_MS = 5 * 60 * 60 * 1000; //5 horas en milisegundos
+            const fechaAjustada = new Date(fechaRecibida.getTime() + OFFSET_COLOMBIA_MS);
             // Preparar datos del registro
             const registroData = {
-                fecha: new Date(data.fecha),
+                fecha: fechaAjustada,
                 kilosProcesados: Number(data.kilosProcesados),
                 tipoFruta: data.tipoFruta,
                 concentracionPPM: data.concentracionPPM.trim(),
