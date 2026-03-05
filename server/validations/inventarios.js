@@ -796,21 +796,6 @@ export class InventariosValidations {
                 .refine(val => !isNaN(val), { message: "Las canastillas deben ser un número válido" })
                 .refine(val => Number.isInteger(val), { message: "Las canastillas deben ser un número entero" })
                 .refine(val => val >= 0, { message: "Las canastillas deben ser positivas" }),
-            canastillasPrestadas: z
-                .string()
-                .min(1, "Las canastillas prestadas son obligatorias")
-                .transform(val => Number(val))
-                .refine(val => !isNaN(val), { message: "Las canastillas prestadas deben ser un número válido" })
-                .refine(val => Number.isInteger(val), { message: "Las canastillas prestadas deben ser un número entero" })
-                .refine(val => val >= 0, { message: "Las canastillas prestadas deben ser positivas" }),
-            accion: requiredSafeString("accion")
-                .transform(accion => accion.trim().toLowerCase())
-                .refine(
-                    accion => ACCIONES_VALIDAS.includes(accion),
-                    accion => ({
-                        message: `La acción '${accion}' no es válida. Usa: ${ACCIONES_VALIDAS.join(", ")}`
-                    })
-                ),
             remitente: requiredSafeString("remitente"),
             destinatario: requiredSafeString("destinatario"),
         });

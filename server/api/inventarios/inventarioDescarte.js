@@ -206,7 +206,7 @@ export class InventarioDescarteController {
                     destinatario: data.cliente,
                     observaciones: `Despacho descarte - remisión: ${data.remision}`,
                     fecha: new Date(),
-                    user
+                    user: user._id
                 });
                 await CanastillasRepository.post_data(dataRegistroCanastillas, { session, user: user._id });
                 await registrarPasoLog(log._id, "CanastillasRepository.post_data despacho descarte", "Completado");

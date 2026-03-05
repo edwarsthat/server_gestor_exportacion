@@ -117,7 +117,7 @@ export class InventariosService {
 
         }
     ) {
-        if (!user || !user._id) {
+        if (!user) {
             throw new Error("user y user._id son requeridos");
         }
         if (!fecha) {
@@ -144,10 +144,7 @@ export class InventariosService {
             referencia: "C1",
             tipoMovimiento: accion,
             estado: estado,
-            usuario: {
-                id: user._id,
-                user: user.user
-            },
+            usuario: user,
             remitente: remitente,
             destinatario: destinatario
         }
@@ -1119,7 +1116,7 @@ export class InventariosService {
             canastillas: canastillasPropias,
             canastillasPrestadas: canastillasPrestadas,
             accion: "ingreso",
-            user
+            user: user._id
         })
 
         await this.ajustarCanastillasProveedorCliente(datos.predio, -canastillasPropias, user, session)

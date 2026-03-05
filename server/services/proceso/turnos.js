@@ -66,14 +66,30 @@ export class TurnosService {
             const { hora = new Date() } = opts;
             const cliente = await getRedisClient();
 
-            await TurnoDatarepository.actualizar_data(
-                {},
-                { $set: { "pausaProceso.$[pausa].finalPausa": hora } },
-                {
-                    sort: { createdAt: -1 },
-                    arrayFilters: [{ "pausa.finalPausa": null }]
-                }
-            );
+            const turno = await TurnoDatarepository.get_data({}, {}, { sort: { createdAt: -1 } });
+            const pausas = turno?.[0]?.pausaProceso ?? [];
+            const ultimaPausa = pausas[pausas.length - 1];
+
+            const diferenciaMs = ultimaPausa?.inicioPausa
+                ? hora - new Date(ultimaPausa.inicioPausa)
+                : Infinity;
+
+            if (diferenciaMs < 2 * 60 * 1000) {
+                await TurnoDatarepository.actualizar_data(
+                    {},
+                    { $pop: { pausaProceso: 1 } },
+                    { sort: { createdAt: -1 } }
+                );
+            } else {
+                await TurnoDatarepository.actualizar_data(
+                    {},
+                    { $set: { "pausaProceso.$[pausa].finalPausa": hora } },
+                    {
+                        sort: { createdAt: -1 },
+                        arrayFilters: [{ "pausa.finalPausa": null }]
+                    }
+                );
+            }
 
             await cliente.set("statusProceso", "on");
             return true

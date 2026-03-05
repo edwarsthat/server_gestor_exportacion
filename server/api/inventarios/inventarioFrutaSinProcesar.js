@@ -19,7 +19,6 @@ export class InventarioFrutaSinProcesarController {
     static async put_inventarios_frutaSinProcesar_directoNacional(req) {
         const { user } = req;
         const parsedData = InventariosValidations.put_inventarios_frutaSinProcesar_directoNacional().parse(req.data);
-        console.log("parsedData", parsedData)
         await executeTransactionalTask(req, async (session, log) => {
             if (!user._id) {
                 throw new Error("No se encontró el usuario en la base de datos");
@@ -106,7 +105,7 @@ export class InventarioFrutaSinProcesarController {
                     destinatario: data.cliente,
                     observaciones: `Directo Nacional - remisión: ${data.remision}`,
                     fecha: new Date(),
-                    user
+                    user: user._id
                 });
                 await CanastillasRepository.post_data(dataRegistroCanastillas, { session, user: user._id });
                 await registrarPasoLog(log._id, "CanastillasRepository.post_data directo nacional", "Completado");
@@ -196,7 +195,7 @@ export class InventarioFrutaSinProcesarController {
                 canastillas: dataCanastillas.canastillasPropias,
                 canastillasPrestadas: dataCanastillas.canastillasPrestadas,
                 accion: "ingreso",
-                user
+                user: user._id
             })
             await registrarPasoLog(log._id, "InventariosService.crearRegistroInventarioCanastillas", "Completado");
 
@@ -276,7 +275,7 @@ export class InventarioFrutaSinProcesarController {
                 canastillas: dataCanastillas.canastillasPropias,
                 canastillasPrestadas: dataCanastillas.canastillasPrestadas,
                 accion: "ingreso",
-                user
+                user: user._id
             })
             await registrarPasoLog(log._id, "InventariosService.crearRegistroInventarioCanastillas", "Completado");
 

@@ -175,7 +175,7 @@ export class InventariosRepository {
                 accion,
                 remitente,
                 destinatario,
-                user
+                user: user._id
             })
             await CanastillasRepository.post_registro(dataRegistro)
 

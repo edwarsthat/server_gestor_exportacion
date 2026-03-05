@@ -18,12 +18,15 @@ export const defineRegistroCanastillas = async (conn) => {
         origen: String,
         cantidad: cantidadSchema,
         observaciones: String,
-        usuario: {
-            id: { type: String, required: true},
-            user: { type: String, required: true },
-        },
+        usuario: { type: Schema.Types.ObjectId, ref: 'usuario' },
         referencia: String,
-        tipoMovimiento: String,
+        tipoMovimiento: {
+            type: String,
+            enum: {
+                values: ['ingreso', 'salida', 'traslado', 'retiro', 'cancelado'],
+                message: '{VALUE} no es un tipo de registro válido'
+            }
+        },
         estado: String,
         remitente: String,
         destinatario: String,
