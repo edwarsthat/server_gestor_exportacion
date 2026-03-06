@@ -21,6 +21,13 @@ import { defineInventarioDescarte } from '../../DB/mongoDB/schemas/inventarios/S
 import { defineClientes } from '../../DB/mongoDB/schemas/clientes/schemaClientes.js';
 import { defineSeriales } from '../../DB/mongoDB/schemas/seriales/SerialesSchema.js';
 import { definePaises } from '../../DB/mongoDB/schemas/catalogs/schemaPaises.js';
+import { defineContenedores } from '../../DB/mongoDB/schemas/contenedores/schemaContenedores.js';
+import { defineItemPallet } from '../../DB/mongoDB/schemas/contenedores/schemaItemsPallet.js';
+import { defineSchemaPallet } from '../../DB/mongoDB/schemas/contenedores/schemaPallet.js';
+import { defineCalidades } from '../../DB/mongoDB/schemas/catalogs/schemaCalidades.js';
+import { defineProveedores } from '../../DB/mongoDB/schemas/proveedores/schemaProveedores.js';
+import { definePaises } from '../../DB/mongoDB/schemas/catalogs/schemaPaises.js'
+import { defineCargo } from '../../DB/mongoDB/schemas/usuarios/schemaCargos.js'
 
 let replSet = null;
 let testConnection = null;
@@ -78,10 +85,6 @@ export async function defineTestSchemas(conn) {
     const SchemaCarnets = await defineSchemaCarnets(conn, AuditInventariosSimples);
     testDb.SchemaCarnets = SchemaCarnets;
 
-    // Definir schema de tipoFrutas (catálogo, sin dependencias)
-    const TipoFrutas = await defineTipoFrutas(conn);
-    testDb.TipoFrutas = TipoFrutas;
-
     // Definir schema de Lotes (requiere AuditLog para plugin de auditoría)
     const Lotes = await defineLotes(conn, AuditInventariosSimples);
     testDb.Lotes = Lotes;
@@ -92,11 +95,26 @@ export async function defineTestSchemas(conn) {
     testDb.InventarioMovimientoDescarte = await defineInventarioMovimientosDescarte(conn);
     testDb.Logs = await defineAuditSistemaLogs(conn);
     testDb.Descartes = await defineDescartes(conn);
-    testDb.Usuarios = await defineUser(conn);
     testDb.InventarioDescarte = await defineInventarioDescarte(conn);
-    testDb.Clientes = await defineClientes(conn);
     testDb.Seriales = await defineSeriales(conn);
     testDb.Paises = await definePaises(conn);
+    testDb.Contenedores = await defineContenedores(conn, AuditContenedores);
+    testDb.ItemPallet = await defineItemPallet(conn, AuditContenedores);
+    testDb.Pallets = await defineSchemaPallet(conn);
+    testDb.Calidades = await defineCalidades(conn);
+    testDb.Proveedores = await defineProveedores(conn);
+
+    //sin relacion
+    testDb.Paises = await definePaises(conn);
+    testDb.Cargo = await defineCargo(conn);
+    testDb.TipoFrutas = await defineTipoFrutas(conn);
+
+    //1 relacion
+    testDb.Usuarios = await defineUser(conn);
+
+    //2 relaciones
+    testDb.Clientes = await defineClientes(conn);
+
 
     return testDb;
 }

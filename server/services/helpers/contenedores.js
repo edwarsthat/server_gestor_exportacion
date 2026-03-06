@@ -34,16 +34,11 @@ export function isPaisesCaribe(contenedor) {
 }
 export function resumenCalidad(itemsPallet, calidad = "") {
     const outMap = new Map();
+
     let totalCajas = 0;
-    let totalPallets = 0;
 
-    // 1️⃣ Agrupar por calibre y calcular totales
     for (const item of itemsPallet) {
-        // total pallets (máximo número, como en tu diseño original)
-        if (item.pallet.numeroPallet > totalPallets) {
-            totalPallets = item.pallet.numeroPallet;
-        }
-
+        const kilos = parseMultTipoCaja(item.tipoCaja);
         totalCajas += item.cajas;
 
         if (
@@ -51,38 +46,17 @@ export function resumenCalidad(itemsPallet, calidad = "") {
             item.calidad._id.toString() === calidad._id.toString()
         ) {
             if (!outMap.has(item.calibre)) {
-                outMap.set(item.calibre, { cantidad: 0 });
+                outMap.set(item.calibre, { cantidad: 0, kilos: 0});
             }
-
-            outMap.get(item.calibre).cantidad += item.cajas;
+            const entry = outMap.get(item.calibre);
+            entry.cantidad += item.cajas;
+            entry.kilos += kilos * item.cajas;
         }
     }
 
-    // 2️⃣ Calcular valor ideal, piso y residuo
-    let palletsAsignados = 0;
-
-    outMap.forEach(value => {
-        value.ideal = (value.cantidad * totalPallets) / totalCajas;
-        value.pallets = Math.floor(value.ideal);
-        value.residuo = value.ideal - value.pallets;
-        value.porcentage = (value.cantidad * 100) / totalCajas;
-
-        palletsAsignados += value.pallets;
-    });
-
-    // 3️⃣ Repartir pallets faltantes según mayor residuo
-    let faltan = totalPallets - palletsAsignados;
-
-    [...outMap.values()]
-        .sort((a, b) => b.residuo - a.residuo)
-        .slice(0, faltan)
-        .forEach(v => v.pallets++);
-
-    // 4️⃣ Limpiar campos internos si no los quieres exponer
-    outMap.forEach(v => {
-        delete v.ideal;
-        delete v.residuo;
-    });
+    for (const entry of outMap.values()) {
+        entry.porcentage = (entry.cantidad * 100) / totalCajas;
+    }
 
     return Object.fromEntries(outMap);
 }

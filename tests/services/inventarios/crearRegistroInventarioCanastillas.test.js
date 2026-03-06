@@ -26,7 +26,7 @@ describe('InventariosService.crearRegistroInventarioCanastillas', () => {
         canastillasPrestadas: 20,
         remitente: 'Finca Test',
         destinatario: 'Bodega Principal',
-        user: { _id: '507f1f77bcf86cd799439033', user: 'testuser' },
+        user: '507f1f77bcf86cd799439033',
         fecha: new Date(2025, 5, 15),
         observaciones: 'Test de canastillas',
         ...opciones
@@ -64,8 +64,7 @@ describe('InventariosService.crearRegistroInventarioCanastillas', () => {
                 destinatario: 'Bodega Principal'
             });
             expect(result.fecha).toBeInstanceOf(Date);
-            expect(result.usuario.id).toBe(datos.user._id);
-            expect(result.usuario.user).toBe(datos.user.user);
+            expect(result.usuario).toBe(datos.user);
         });
 
         test('debería asignar estado ENTREGADA para accion ingreso', () => {
@@ -128,7 +127,7 @@ describe('InventariosService.crearRegistroInventarioCanastillas', () => {
 
         test('debería usar valores por defecto para campos opcionales', () => {
             const datosMinimos = {
-                user: { _id: 'user123', user: 'testuser' },
+                user: 'user123',
                 fecha: new Date(2025, 5, 15),
                 accion: 'ingreso'
             };
@@ -172,34 +171,19 @@ describe('InventariosService.crearRegistroInventarioCanastillas', () => {
                 .toThrow('user y user._id son requeridos');
         });
 
-        test('debería lanzar error si user no tiene _id', () => {
-            const datos = crearDatosValidos({ user: { user: 'testuser' } });
+        test('debería lanzar error si user es string vacío', () => {
+            const datos = crearDatosValidos({ user: '' });
 
             expect(() => InventariosService.crearRegistroInventarioCanastillas(datos))
                 .toThrow('user y user._id son requeridos');
         });
 
-        test('debería lanzar error si user._id es null', () => {
-            const datos = crearDatosValidos({ user: { _id: null, user: 'testuser' } });
-
-            expect(() => InventariosService.crearRegistroInventarioCanastillas(datos))
-                .toThrow('user y user._id son requeridos');
-        });
-
-        test('debería lanzar error si user._id es string vacío', () => {
-            const datos = crearDatosValidos({ user: { _id: '', user: 'testuser' } });
-
-            expect(() => InventariosService.crearRegistroInventarioCanastillas(datos))
-                .toThrow('user y user._id son requeridos');
-        });
-
-        test('debería aceptar user sin propiedad user (solo _id requerido)', () => {
-            const datos = crearDatosValidos({ user: { _id: 'user123' } });
+        test('debería aceptar user como string válido', () => {
+            const datos = crearDatosValidos({ user: '507f1f77bcf86cd799439033' });
 
             const result = InventariosService.crearRegistroInventarioCanastillas(datos);
 
-            expect(result.usuario.id).toBe('user123');
-            expect(result.usuario.user).toBeUndefined();
+            expect(result.usuario).toBe('507f1f77bcf86cd799439033');
         });
     });
 
@@ -377,8 +361,6 @@ describe('InventariosService.crearRegistroInventarioCanastillas', () => {
             expect(result).toHaveProperty('tipoMovimiento');
             expect(result).toHaveProperty('estado');
             expect(result).toHaveProperty('usuario');
-            expect(result).toHaveProperty('usuario.id');
-            expect(result).toHaveProperty('usuario.user');
             expect(result).toHaveProperty('remitente');
             expect(result).toHaveProperty('destinatario');
         });
@@ -418,14 +400,13 @@ describe('InventariosService.crearRegistroInventarioCanastillas', () => {
             expect(result.observaciones).toBe('Observación con "comillas" y <tags> y émojis 🎉');
         });
 
-        test('debería manejar user.user con caracteres especiales', () => {
-            const datos = crearDatosValidos({
-                user: { _id: 'id123', user: 'user@example.com' }
-            });
+        test('debería manejar user como ObjectId string', () => {
+            const userId = '507f1f77bcf86cd799439099';
+            const datos = crearDatosValidos({ user: userId });
 
             const result = InventariosService.crearRegistroInventarioCanastillas(datos);
 
-            expect(result.usuario.user).toBe('user@example.com');
+            expect(result.usuario).toBe(userId);
         });
     });
 

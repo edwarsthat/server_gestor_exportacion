@@ -71,7 +71,8 @@ jest.unstable_mockModule('../../../../events/eventos.js', () => ({
 
 // Mocks adicionales requeridos por el controlador
 jest.unstable_mockModule('../../../../server/Class/Inventarios.js', () => ({
-    InventariosHistorialRepository: {}
+    InventariosHistorialRepository: {},
+    InventarioDescartesRepository: {}
 }));
 
 jest.unstable_mockModule('../../../../server/helper/lotes.js', () => ({
@@ -106,7 +107,8 @@ describe('InventarioFrutaSinProcesarController.put_inventarios_frutaSinProcesar_
                 nombreConductor: 'Juan Pérez',
                 telefono: '3001234567',
                 cedula: '12345678',
-                remision: 'REM-001'
+                remision: 'REM-001',
+                enCanastillas: false
             },
             lote: {
                 _id: VALID_OBJECT_ID_2,
