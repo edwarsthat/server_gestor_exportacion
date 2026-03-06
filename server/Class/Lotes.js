@@ -14,7 +14,7 @@ export class LotesRepository extends BaseRepository {
         try {
             const year = new Date(data.fecha_ingreso_inventario).getFullYear()
 
-            const tarifa = await db.tarifapredios.findOne({
+            const tarifa = await db.tarifaPredio.findOne({
                 predio: data.predio,
                 year,
                 tipo: "FIJA",
@@ -25,7 +25,7 @@ export class LotesRepository extends BaseRepository {
                 throw new Error("No hay tarifa configurada para este predio en ese año")
             }
 
-            data. tarifaAplicada = tarifa.valor
+            data.tarifaAplicada = tarifa.valor
 //-------------------------------------------------------------------------------------------
             const lote = new db.Lotes(data);
             lote._user = user;
