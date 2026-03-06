@@ -5,6 +5,7 @@ import { CanastillasController } from "../../api/inventarios/canastillas.js";
 import { InventarioCuartoFriosController } from "../../api/inventarios/inventarioCuartoFrios.js";
 import { InventarioDescarteController } from "../../api/inventarios/inventarioDescarte.js";
 import { InventarioFrutaSinProcesarController } from "../../api/inventarios/inventarioFrutaSinProcesar.js";
+import { ListaEmpaqueController } from "../../api/inventarios/listasEmpaque.js";
 import { OrdenVaceoController } from "../../api/inventarios/ordenVaceo.js";
 import { ProgramacionesController } from "../../api/inventarios/programaciones.js";
 import { ModificarRepository } from "../../api/ModificarData.js";
@@ -278,7 +279,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes(response)
     },
     get_inventarios_historiales_listaDeEmpaque_crearDocumento: async (data) => {
-        const response = await InventariosRepository.get_inventarios_historiales_listaDeEmpaque_crearDocumento(data)
+        const response = await ListaEmpaqueController.get_inventarios_historiales_listaDeEmpaque_crearDocumento(data)
         return successResponseRoutes(response)
     },
 
