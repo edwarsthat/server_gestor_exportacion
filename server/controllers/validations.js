@@ -11,14 +11,14 @@ function have_lote_GGN_export(lote, contenedor) {
             return false;
         }
         if (!contenedor.GGN) {
-            return true;
+            return false;
         }
 
         return PAIS_DESTINO &&
             GGN.paises.some(pais => pais.equals(PAIS_DESTINO))
 
     } catch (err) {
-        console.error("Error en validación GGN:", { error: err.message, predio: lote.predio?.GGN, tipoFruta: item?.tipoFruta });
+        console.error("Error en validación GGN:", { error: err.message, predio: lote.predio?.GGN, tipoFruta: lote.tipoFruta });
         return false;
     }
 }

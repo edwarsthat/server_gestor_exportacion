@@ -9,10 +9,6 @@ import fs from "fs";
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import config from "../../src/config/index.js";
-// import Docxtemplater from "docxtemplater";
-// import { numeroALetras } from "../utils/numeroALetras.js";
-// import { nombreTipoFruta2 } from "../utils/nombreTipoFruta.js";
-// import { tipoFrutas } from "../data/tipoFrutas.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 

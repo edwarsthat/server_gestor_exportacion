@@ -35,11 +35,11 @@ export function isPaisesCaribe(contenedor) {
 export function resumenCalidad(itemsPallet, calidad = "") {
     const outMap = new Map();
 
-    let totalCajas = 0;
+    let totalKilos = 0;
 
     for (const item of itemsPallet) {
         const kilos = parseMultTipoCaja(item.tipoCaja);
-        totalCajas += item.cajas;
+        totalKilos += item.cajas * kilos;
 
         if (
             calidad === "" ||
@@ -55,7 +55,7 @@ export function resumenCalidad(itemsPallet, calidad = "") {
     }
 
     for (const entry of outMap.values()) {
-        entry.porcentage = (entry.cantidad * 100) / totalCajas;
+        entry.porcentage = (entry.kilos * 100) / totalKilos;
     }
 
     return Object.fromEntries(outMap);
