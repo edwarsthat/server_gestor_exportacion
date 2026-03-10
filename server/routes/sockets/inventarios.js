@@ -113,12 +113,24 @@ export const apiSocketInventarios = {
     },
     //#endregion
     //#region canastillas
+    get_inventarios_historiales_canastillas_registros: async (data) => {
+        const response = await CanastillasController.get_inventarios_historiales_canastillas_registros(data)
+        return successResponseRoutes(response)
+    },
+    get_inventarios_historiales_numeroCanastillas_registros: async (data) => {
+        const response = await CanastillasController.get_inventarios_historiales_numeroCanastillas_registros(data)
+        return successResponseRoutes(response)
+    },
     get_inventarios_canastillas_canastillasCelifrut: async () => {
         const response = await CanastillasController.get_inventarios_canastillas_canastillasCelifrut()
         return successResponseRoutes(response)
     },
     put_inventarios_canastillas_celifrut: async (data) => {
         await CanastillasController.put_inventarios_canastillas_celifrut(data)
+        return successResponseRoutes()
+    },
+    put_inventarios_historiales_canastillas_modificarRegistro: async (data) => {
+        await CanastillasController.put_inventarios_historiales_canastillas_modificarRegistro(data)
         return successResponseRoutes()
     },
     //#endregion
@@ -248,14 +260,8 @@ export const apiSocketInventarios = {
         const response = await InventariosRepository.get_inventarios_numero_registros_fruta_descompuesta(data)
         return successResponseRoutes(response)
     },
-    get_inventarios_historiales_canastillas_registros: async (data) => {
-        const response = await InventariosRepository.get_inventarios_historiales_canastillas_registros(data)
-        return successResponseRoutes(response)
-    },
-    get_inventarios_historiales_numeroCanastillas_registros: async (data) => {
-        const response = await InventariosRepository.get_inventarios_historiales_numeroCanastillas_registros(data)
-        return successResponseRoutes(response)
-    },
+
+
 
 
     get_inventarios_historiales_registros_inventarioDescartes: async (data) => {

@@ -6,6 +6,7 @@ import { InventariosValidations } from "../../validations/inventarios.js";
 import { registrarPasoLog } from "../helper/logs.js";
 import { InventariosService } from "../../services/inventarios.js";
 import { CanastillasRepository } from "../../Class/CanastillasRegistros.js";
+import { filtroFechaInicioFin } from "../utils/filtros.js";
 export class CanastillasController {
     static async get_inventarios_canastillas_canastillasCelifrut() {
         return await executeQueryTask(async () => {
@@ -49,10 +50,46 @@ export class CanastillasController {
             }]
         })
     }
+    static async get_inventarios_historiales_canastillas_registros(req) {
+        return await executeQueryTask(async () => {
+
+            const { page = 1, filtro } = req.data || {}
+            const { fechaInicio, fechaFin } = filtro || {}
+
+            const currentPage = Number(page);
+            if (isNaN(currentPage) || currentPage < 1) {
+                throw new Error("Número de página inválido");
+            }
+
+            const resultsPerPage = 50;
+            let skip = (currentPage - 1) * resultsPerPage
+
+            const query = filtro ? filtroFechaInicioFin(fechaInicio, fechaFin, {}, "createdAt") : {}
+
+            const registros = await CanastillasRepository.get_registros_canastillas({ query: query, skip })
+
+            return registros
+
+        })
+    }
+    static async get_inventarios_historiales_numeroCanastillas_registros(req) {
+        return await executeQueryTask(async () => {
+            const { filtro } = req.data || {}
+            let query = {}
+
+            if (filtro) {
+                const { fechaInicio, fechaFin } = filtro
+                InventariosValidations.validarFiltroBusquedaFechaPaginacion(req.data)
+                query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "createdAt")
+            }
+            const registros = await CanastillasRepository.get_numero_registros(query)
+            return registros
+
+        })
+    }
     static async put_inventarios_canastillas_celifrut(req) {
         const { user } = req
         if (!user || !user._id) throw new Error("Usuario no existe")
-        console.log(req.data)
         await executeTransactionalTask(req, async (session, log) => {
             const parseData = InventariosValidations.put_inventarios_canastillas_celifrut().parse(req.data.data)
             const {
@@ -83,6 +120,13 @@ export class CanastillasController {
             });
             await CanastillasRepository.post_data(dataRegistroCanastillas, { session, user: user._id });
             await registrarPasoLog(log._id, "Registro de canastillas creado", "Completado");
+        })
+    }
+    static async put_inventarios_historiales_canastillas_modificarRegistro(req) {
+        const { user } = req
+        if (!user || !user._id) throw new Error("Usuario no existe")
+        await executeTransactionalTask(req, async (session, log) => {
+            console.log(req.data)
         })
     }
 }

@@ -61,7 +61,7 @@ async function main() {
         console.log('Actualizando canastillas a cero para todos los proveedores...');
         const result = await proveedoresCollection.updateMany(
             {},
-            { $set: { canastillas: 0 } }
+            { $set: { canastillas: 1000 } }
         );
 
         console.log(`Se actualizaron ${result.modifiedCount} proveedores.`);

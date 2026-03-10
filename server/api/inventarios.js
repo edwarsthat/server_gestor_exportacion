@@ -887,64 +887,8 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_inventarios_historiales_numeroCanastillas_registros(req) {
-        try {
 
-            const { filtro } = req.data || {}
-            let query = {}
 
-            if (filtro) {
-                const { fechaInicio, fechaFin } = filtro
-                InventariosValidations.validarFiltroBusquedaFechaPaginacion(req.data)
-                query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "createdAt") // no pases `query` si no lo necesita
-            }
-            const registros = await CanastillasRepository.get_numero_registros(query)
-
-            return registros
-
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new InventariosLogicError(
-                470,
-                `Error ${err?.type || 'desconocido'}: ${err?.message || 'sin mensaje'}`
-            )
-        }
-    }
-    static async get_inventarios_historiales_canastillas_registros(req) {
-        try {
-            const { page = 1, filtro } = req.data || {}
-            const { fechaInicio, fechaFin } = filtro || {}
-
-            const currentPage = Number(page);
-            if (isNaN(currentPage) || currentPage < 1) {
-                throw new InventariosLogicError(400, "Número de página inválido");
-            }
-
-            const resultsPerPage = 50;
-            let skip = (currentPage - 1) * resultsPerPage
-
-            const query = filtro ? filtroFechaInicioFin(fechaInicio, fechaFin, {}, "createdAt") : {}
-
-            const registros = await CanastillasRepository.get_registros_canastillas({ query: query, skip })
-
-            const newRegistros = await InventariosService
-                .encontrarDestinoOrigenRegistroCanastillas(registros)
-
-            return newRegistros
-
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-
-            const tipoError = err.type || err.name || "ErrorDesconocido";
-            const mensaje = err.message || "Sin mensaje definido";
-
-            throw new InventariosLogicError(470, `Error ${tipoError}: ${mensaje}`);
-        }
-    }
     static async get_inventarios_lotes_infoLotes(req) {
         try {
             const { data } = req
