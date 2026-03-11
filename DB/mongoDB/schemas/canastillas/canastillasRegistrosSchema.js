@@ -23,7 +23,7 @@ export const defineRegistroCanastillas = async (conn) => {
         tipoMovimiento: {
             type: String,
             enum: {
-                values: ['ingreso', 'salida', 'traslado', 'retiro', 'cancelado'],
+                values: ['ingreso', 'salida', 'traslado', 'retiro', 'cancelado', 'creacion'],
                 message: '{VALUE} no es un tipo de registro válido'
             }
         },

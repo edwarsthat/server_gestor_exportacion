@@ -800,4 +800,52 @@ export class InventariosValidations {
             destinatario: requiredSafeString("destinatario"),
         });
     }
+    static post_inventarios_canastillas_agregar() {
+        return z.object({
+            canastillas: z.string()
+                .min(1, "Las canastillas son obligatorias")
+                .transform(val => Number(val))
+                .refine(val => !isNaN(val), { message: "Las canastillas deben ser un número válido" })
+                .refine(val => Number.isInteger(val), { message: "Las canastillas deben ser un número entero" })
+                .refine(val => val > 0, { message: "Las canastillas deben ser mayores a cero" })
+                .refine(val => val <= 50_000, { message: "Las canastillas no pueden exceder 50.000" }),
+            remitente: requiredSafeString("remitente"),
+            destinatario: requiredSafeString("destinatario"),
+            observaciones: optionalSafeString("observaciones"),
+        })
+    }
+    static put_inventarios_historiales_canastillas_modificarRegistro() {
+        return z.object({
+            action: z.literal("put_inventarios_historiales_canastillas_modificarRegistro"),
+            type: requiredSafeString("type"),
+            _id: objectIdString("_id"),
+            data: z.object({
+                origen: objectIdString("origen"),
+                destino: objectIdString("destino"),
+                cantidad: z.string()
+                    .transform(val => Number(val))
+                    .refine(val => !isNaN(val), { message: "La cantidad debe ser un número válido" })
+                    .refine(val => Number.isInteger(val), { message: "La cantidad debe ser un número entero" })
+                    .refine(val => val >= 0, { message: "La cantidad no puede ser negativa" })
+                    .optional(),
+                cantidadPrestadas: z.string()
+                    .transform(val => Number(val))
+                    .refine(val => !isNaN(val), { message: "La cantidad prestadas debe ser un número válido" })
+                    .refine(val => Number.isInteger(val), { message: "La cantidad prestadas debe ser un número entero" })
+                    .refine(val => val >= 0, { message: "La cantidad prestadas no puede ser negativa" })
+                    .optional(),
+                observaciones: optionalSafeString("observaciones"),
+            }).superRefine((val, ctx) => {
+                const tieneCantidad = val.cantidad !== undefined && val.cantidad > 0;
+                const tienePrestadas = val.cantidadPrestadas !== undefined && val.cantidadPrestadas > 0;
+                if (!tieneCantidad && !tienePrestadas) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: "Debe ingresar cantidad o cantidadPrestadas mayor a cero",
+                        path: ["cantidad"],
+                    });
+                }
+            })
+        })
+    }
 }

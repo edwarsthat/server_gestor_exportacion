@@ -25,8 +25,8 @@ export const defineInventarioSimple = async (conn, AuditInventariosSimples) => {
         canastillas_propias: { type: Number, min: 0, default: 0 },
         canastillasPrestadas: {
             type: Map,
-            of: Number,
-            default: new Map()
+            of: { type: Number, min: [0, 'Las canastillas prestadas no pueden ser negativas'] },
+            default: () => new Map()
         }
     }, {
         timestamps: { updatedAt: 'updatedAt', createdAt: false },

@@ -6,7 +6,9 @@ import { InventariosValidations } from "../../validations/inventarios.js";
 import { registrarPasoLog } from "../helper/logs.js";
 import { InventariosService } from "../../services/inventarios.js";
 import { CanastillasRepository } from "../../Class/CanastillasRegistros.js";
-import { filtroFechaInicioFin } from "../utils/filtros.js";
+import { buildDateRangeFilter } from "../utils/filtros.js";
+import { InventariosHistorialRepository } from "../../Class/Inventarios.js";
+import config from "../../../src/config/index.js";
 export class CanastillasController {
     static async get_inventarios_canastillas_canastillasCelifrut() {
         return await executeQueryTask(async () => {
@@ -64,9 +66,9 @@ export class CanastillasController {
             const resultsPerPage = 50;
             let skip = (currentPage - 1) * resultsPerPage
 
-            const query = filtro ? filtroFechaInicioFin(fechaInicio, fechaFin, {}, "createdAt") : {}
+            const query = buildDateRangeFilter(fechaInicio, fechaFin, 'createdAt', {})
 
-            const registros = await CanastillasRepository.get_registros_canastillas({ query: query, skip })
+            const registros = await CanastillasRepository.get_data({ query: query, skip: skip, limit: resultsPerPage, sort: { createdAt: -1 } })
 
             return registros
 
@@ -79,8 +81,7 @@ export class CanastillasController {
 
             if (filtro) {
                 const { fechaInicio, fechaFin } = filtro
-                InventariosValidations.validarFiltroBusquedaFechaPaginacion(req.data)
-                query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "createdAt")
+                query = buildDateRangeFilter(fechaInicio, fechaFin, 'createdAt', query)
             }
             const registros = await CanastillasRepository.get_numero_registros(query)
             return registros
@@ -126,7 +127,82 @@ export class CanastillasController {
         const { user } = req
         if (!user || !user._id) throw new Error("Usuario no existe")
         await executeTransactionalTask(req, async (session, log) => {
-            console.log(req.data)
+            const parseData = InventariosValidations.put_inventarios_historiales_canastillas_modificarRegistro().parse(req.data)
+            const { _id, data } = parseData
+            const { origen, destino, cantidad, cantidadPrestadas, observaciones } = data
+
+            const registro = await CanastillasRepository.get_data({
+                query: { _id }
+            })
+
+            if (registro.length === 0) throw new Error("No se encontró el registro")
+            const setUpdate = { origen, destino, observaciones }
+
+            if (cantidad !== undefined) {
+                const newCanastillas = (registro[0].cantidad.propias - cantidad) * (-1)
+                await InventariosService
+                    .ajustarCanastillasProveedorCliente(origen, -newCanastillas, user, session);
+                await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente (origen)", "Completado");
+
+                await InventariosService
+                    .ajustarCanastillasProveedorCliente(destino, newCanastillas, user, session);
+                await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente (destino)", "Completado");
+
+                setUpdate['cantidad.propias'] = cantidad
+            }
+
+            if (cantidadPrestadas !== undefined && cantidadPrestadas !== registro[0].cantidad.prestadas) {
+                const newCanastillasPrestadas = (registro[0].cantidad.prestadas - cantidadPrestadas) * (-1)
+
+                await InventariosHistorialRepository.actualizar_data(
+                    { _id: config.INVENTARIO_CANASTILLAS },
+                    { $inc: { [`canastillasPrestadas.${origen}`]: newCanastillasPrestadas } },
+                    { session, user: user._id }
+                )
+
+                setUpdate['cantidad.prestadas'] = cantidadPrestadas
+            }
+
+            await CanastillasRepository.actualizar_data(
+                { _id },
+                { $set: setUpdate },
+                { session, user: user._id }
+            )
+            await registrarPasoLog(log._id, "CanastillasRepository.actualizar_data", "Completado");
+
+        })
+    }
+    static async post_inventarios_canastillas_agregar(req) {
+        const { user } = req
+        if (!user || !user._id) throw new Error("Usuario no existe")
+        await executeTransactionalTask(req, async (session, log) => {
+            const { canastillas, remitente, destinatario, observaciones } = InventariosValidations.post_inventarios_canastillas_agregar().parse(req.data.data)
+
+            await InventariosHistorialRepository.actualizar_data(
+                { _id: config.INVENTARIO_CANASTILLAS },
+                { $inc: { canastillasTotal: canastillas } },
+                { session, user: user._id }
+            )
+            await registrarPasoLog(log._id, "InventariosHistorialRepository.actualizar_data", "Completado")
+
+            await InventariosService
+                .ajustarCanastillasProveedorCliente(config.ID_CELIFRUT, canastillas, user, session);
+            await registrarPasoLog(log._id, "InventariosService.ajustarCanastillasProveedorCliente", "Completado");
+
+            const dataRegistroCanastillas = InventariosService.crearRegistroInventarioCanastillas({
+                origen: config.ID_CELIFRUT,
+                destino: config.ID_CELIFRUT,
+                accion: "creacion",
+                canastillas,
+                canastillasPrestadas: 0,
+                remitente,
+                destinatario,
+                observaciones,
+                fecha: new Date(),
+                user: user._id
+            });
+            await CanastillasRepository.post_data(dataRegistroCanastillas, { session, user: user._id });
+            await registrarPasoLog(log._id, "CanastillasRepository.post_data", "Completado");
         })
     }
 }

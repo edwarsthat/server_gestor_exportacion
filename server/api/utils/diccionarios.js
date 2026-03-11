@@ -5,8 +5,8 @@ const obtenerEstadoDesdeAccionCanastillasInventario = (accion) => {
         salida: "ENVIADA",
         traslado: "ENVIADA",
         retiro: "RETIRADA",
-        cancelado: "CANCELADA"
-        // Puedes agregar más si algún día decides que las canastillas también reencarnan
+        cancelado: "CANCELADA",
+        creacion: "CREADA"
     };
 
     const estado = ESTADOS[accion?.toLowerCase()];

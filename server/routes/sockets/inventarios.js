@@ -133,6 +133,10 @@ export const apiSocketInventarios = {
         await CanastillasController.put_inventarios_historiales_canastillas_modificarRegistro(data)
         return successResponseRoutes()
     },
+    post_inventarios_canastillas_agregar: async (data) => {
+        await CanastillasController.post_inventarios_canastillas_agregar(data)
+        return successResponseRoutes()
+    },
     //#endregion
 
     //#region inventarios
