@@ -172,6 +172,99 @@ export class CanastillasController {
 
         })
     }
+    static async put_inventarios_darBaja_canastillas(req) {
+        const { user } = req
+        if (!user || !user._id) throw new Error("Usuario no existe")
+        await executeTransactionalTask(req, async (session, log) => {
+            const { canastillas, observaciones } = InventariosValidations.put_inventarios_darBaja_canastillas().parse(req.data.data)
+
+            const total_canastillas = await CanastillasService.get_totales_canastillas()
+            const canastillas_vacias = total_canastillas.canastillas_propias - total_canastillas.canastillas_llenas
+
+            if (canastillas_vacias < canastillas) throw new Error(`No hay suficientes canastillas en inventario. Disponibles: ${canastillas_vacias}`)
+
+            await InventariosHistorialRepository.actualizar_data(
+                { _id: config.INVENTARIO_CANASTILLAS },
+                { $inc: { canastillasTotal: Number(-canastillas) } },
+                { session, user: user._id }
+            )
+            await registrarPasoLog(log._id, "InventariosHistorialRepository.actualizar_data", "Completado")
+
+            const dataRegistroCanastillas = InventariosService.crearRegistroInventarioCanastillas({
+                origen: config.ID_CELIFRUT,
+                destino: config.ID_CELIFRUT,
+                accion: "retiro",
+                canastillas,
+                canastillasPrestadas: 0,
+                remitente: "N/A",
+                destinatario: "N/A",
+                observaciones,
+                fecha: new Date(),
+                user: user._id
+            });
+            await CanastillasRepository.post_data(dataRegistroCanastillas, { session, user: user._id });
+            await registrarPasoLog(log._id, "CanastillasRepository.post_data", "Completado");
+
+            await InventariosService.ajustarCanastillasProveedorCliente(config.ID_CELIFRUT, Number(-canastillas), user, session);
+            await registrarPasoLog(log._id, "Inventarios ajustados (origen/destino)", "Completado", `se eliminan ${canastillas}`)
+
+        })
+    }
+    static async put_inventarios_devolverCanastillas_prestadas(req) {
+        const { user } = req
+        if (!user || !user._id) throw new Error("Usuario no existe")
+        await executeTransactionalTask(req, async (session, log) => {
+            const {
+                destino,
+                canastillas,
+                remitente,
+                destinatario,
+                observaciones
+            } = InventariosValidations.put_inventarios_devolverCanastillas_prestadas().parse(req.data.data)
+            
+            
+            const inventarioPrestadas = await InventariosHistorialRepository.get_data(
+                { ids: [config.INVENTARIO_CANASTILLAS], select: { canastillasPrestadas: 1 } },
+                { session }
+            )
+            if (inventarioPrestadas.length === 0) throw new Error("No se encontró el inventario de canastillas")
+
+            const mapPrestadas = inventarioPrestadas[0].canastillasPrestadas
+            const actual = Number(mapPrestadas?.get?.(destino) ?? mapPrestadas?.[destino] ?? 0)
+            const nuevoTotal = actual - canastillas
+
+            if (nuevoTotal < 0) throw new Error(`No hay suficientes canastillas prestadas para devolver. Disponibles: ${actual}`)
+
+            const updatePrestadas = nuevoTotal === 0
+                ? { $unset: { [`canastillasPrestadas.${destino}`]: "" } }
+                : { $inc: { [`canastillasPrestadas.${destino}`]: -canastillas } }
+
+            const response = await InventariosHistorialRepository.actualizar_data(
+                { _id: config.INVENTARIO_CANASTILLAS },
+                updatePrestadas,
+                { session, user: user._id }
+            )
+            await registrarPasoLog(log._id, "InventariosHistorialRepository.actualizar_data", "Completado")
+
+            if (!response) throw new Error("No se pudo actualizar el inventario de canastillas prestadas")
+            
+            const dataRegistroCanastillas = InventariosService.crearRegistroInventarioCanastillas({
+                origen: config.ID_CELIFRUT,
+                destino: destino,
+                accion: "traslado",
+                canastillas: 0,
+                canastillasPrestadas: canastillas,
+                remitente,
+                destinatario,
+                observaciones,
+                fecha: new Date(),
+                user: user._id
+            });
+            await CanastillasRepository.post_data(dataRegistroCanastillas, { session, user: user._id });
+            await registrarPasoLog(log._id, "CanastillasRepository.post_data", "Completado");
+
+        })
+    }
     static async post_inventarios_canastillas_agregar(req) {
         const { user } = req
         if (!user || !user._id) throw new Error("Usuario no existe")

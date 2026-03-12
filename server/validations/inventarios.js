@@ -848,4 +848,31 @@ export class InventariosValidations {
             })
         })
     }
+    static put_inventarios_darBaja_canastillas(){
+        return z.object({
+            canastillas: z
+                .string()
+                .min(1, "Las canastillas son obligatorias")
+                .transform(val => Number(val))
+                .refine(val => !isNaN(val), { message: "Las canastillas deben ser un número válido" })
+                .refine(val => Number.isInteger(val), { message: "Las canastillas deben ser un número entero" })
+                .refine(val => val > 0, { message: "Las canastillas deben ser mayores a cero" }),
+            observaciones: optionalSafeString("observaciones"),
+        })
+    }
+    static put_inventarios_devolverCanastillas_prestadas() {
+        return z.object({
+            destino: objectIdString("destino"),
+            canastillas: z
+                .string()
+                .min(1, "Las canastillas son obligatorias")
+                .transform(val => Number(val))
+                .refine(val => !isNaN(val), { message: "Las canastillas deben ser un número válido" })
+                .refine(val => Number.isInteger(val), { message: "Las canastillas deben ser un número entero" })
+                .refine(val => val > 0, { message: "Las canastillas deben ser mayores a cero" }),
+            remitente: requiredSafeString("remitente"),
+            destinatario: requiredSafeString("destinatario"),
+            observaciones: optionalSafeString("observaciones"),
+        })
+    }
 }

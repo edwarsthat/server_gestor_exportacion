@@ -57,14 +57,24 @@ async function main() {
     try {
         const database = await connectProcesoDB();
         const proveedoresCollection = database.collection('proveedors');
+        const clientesnacionalesCollection = database.collection('clientesnacionales');
+
 
         console.log('Actualizando canastillas a cero para todos los proveedores...');
         const result = await proveedoresCollection.updateMany(
             {},
-            { $set: { canastillas: 1000 } }
+            { $set: { canastillas: 0 } }
         );
 
         console.log(`Se actualizaron ${result.modifiedCount} proveedores.`);
+
+        console.log('Actualizando canastillas a cero para todos los clientes nacionales...');
+        const resultClientes = await clientesnacionalesCollection.updateMany(
+            {},
+            { $set: { canastillas: 0 } }
+        );
+
+        console.log(`Se actualizaron ${resultClientes.modifiedCount} clientes nacionales.`);
 
     } catch (error) {
         console.error('Error en el proceso:', error.message);
