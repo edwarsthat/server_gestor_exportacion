@@ -785,7 +785,7 @@ class ProcesoService {
         const { _id: id2 } = contenedor2
         const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
             ids: [id2],
-            select: { infoContenedor: 1, numeroContenedor: 1, pallets: 1 },
+            select: { infoContenedor: 1, numeroContenedor: 1, pallets: 1, GGN:1, pais_destino:1 },
             populate: {
                 path: 'infoContenedor.clienteInfo',
                 select: 'CLIENTE PAIS_DESTINO',
