@@ -1,5 +1,6 @@
 import { InventarioDescartesRepository, InventariosHistorialRepository } from "../../Class/Inventarios.js";
 import config from "../../../src/config/index.js";
+import { ProveedoresRepository } from "../../Class/Proveedores.js";
 
 export class CanastillasService {
     static async get_totales_canastillas() {
@@ -10,13 +11,7 @@ export class CanastillasService {
         if (inventario.length === 0) throw new Error("No se encontro el inventario de canastillas")
 
         if (inventario[0].canastillasPrestadas == null) throw new Error("No se encontro el inventario de canastillas prestadas")
-        if (inventario[0].canastillas_propias == null) throw new Error("No se encontro el inventario de canastillas propias")
         if (inventario[0].canastillasTotal == null) throw new Error("No se encontro el inventario de canastillas total")
-
-        const invetario_frutaSinProcesar = await InventariosHistorialRepository.get_data({
-            ids: [config.INVENTARIO_FRUTA_SIN_PROCESAR],
-        });
-        if (invetario_frutaSinProcesar.length === 0) throw new Error("No se encontro el inventario de fruta sin procesar")
 
         //se obtienen lascanastillas llenas en inventario
         const inventarioIDfrutaSinProcesar = config.INVENTARIO_FRUTA_SIN_PROCESAR;
@@ -34,12 +29,16 @@ export class CanastillasService {
 
         const total_descarte = inventarioDescarte[0]?.totalCanastillasActuales || 0
 
+        const celifrut = await ProveedoresRepository.get_data({
+            ids: [config.ID_CELIFRUT],
+            select: { canastillas: 1 }
+        })
+
         return {
-            canastillasPrestadas: inventario[0].canastillasPrestadas,
-            canastillas_propias: inventario[0].canastillas_propias,
             canastillasTotal: inventario[0].canastillasTotal,
-            total_frutaSinProcesar: total_frutaSinProcesar,
-            canastillas_llenas: total_descarte + total_frutaSinProcesar
+            canastillas_propias: celifrut[0].canastillas,
+            canastillasPrestadas: inventario[0].canastillasPrestadas,
+            canastillas_llenas: total_descarte + total_frutaSinProcesar,
         }
 
     }
@@ -54,7 +53,7 @@ export class CanastillasService {
         const inventarioID = config.INVENTARIO_CANASTILLAS;
         const update = {};
 
-        if( canastillas_propias ){
+        if (canastillas_propias) {
             update.$inc = update.$inc || {};
             update.$inc.canastillas_propias = canastillas_propias;
         }
@@ -103,7 +102,7 @@ export class CanastillasService {
         }
 
         await InventariosHistorialRepository.actualizar_data(
-            {_id: inventarioID,}, 
+            { _id: inventarioID, },
             update,
             { session }
         );

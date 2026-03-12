@@ -69,7 +69,6 @@ export class OrdenVaceoController {
 
             const descripcion = `Vaceo - Canastillas decrementadas: ${item.canastillas}`
             await InventariosService.modificarRestarInventarioFrutaSinProocesar(parseInt(item.canastillas), user, action, lote, session, descripcion);
-            console.log("item", item)
             await InventariosHistorialRepository.put_borrar_item_ordenVaceo(item.lote, session);
             await registrarPasoLog(
                 log._id,
