@@ -9,6 +9,7 @@ import { registrarPasoLog } from "../helper/logs.js";
 import { procesoEventEmitter } from "../../../events/eventos.js";
 import { InventariosHistorialRepository } from "../../Class/Inventarios.js";
 import { EventsController } from "../events.js";
+import { CanastillasService } from "../../services/inventarios/canastillas.js";
 
 export class DescartesControllers {
     static async put_proceso_aplicaciones_descarte(req) {
@@ -51,6 +52,17 @@ export class DescartesControllers {
                     [`descartes.${descarte}`]: kilos
                 }
             };
+
+            //se verifica que existan canastillas vacias 
+            const total_canastillas = await CanastillasService.get_totales_canastillas()
+            const canastillas_vacias =
+                total_canastillas.canastillas_propias +
+                total_canastillas.total_prestadas -
+                total_canastillas.canastillas_llenas
+
+            if (canastillas_vacias < 0) throw new Error("Error en el inventario de canastillas, llenas mas que las totales")
+            if (canastillas_vacias - canastillas < 0) throw new Error("No hay suficientes canastillas vacias")
+
             //se modifica el lote
             const lote = await ProcesoService.modificarLotedescartes(registroProceso.loteId, query, user, action, session)
             await registrarPasoLog(log._id, "ProcesoService.modificarLotedescartes", "Completado", `Lote ID: ${registroProceso.loteId},`);

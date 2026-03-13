@@ -179,7 +179,11 @@ export class CanastillasController {
             const { canastillas, observaciones } = InventariosValidations.put_inventarios_darBaja_canastillas().parse(req.data.data)
 
             const total_canastillas = await CanastillasService.get_totales_canastillas()
-            const canastillas_vacias = total_canastillas.canastillas_propias - total_canastillas.canastillas_llenas
+            const canastillas_vacias = 
+                total_canastillas.canastillas_propias +
+                total_canastillas.total_prestadas -
+                total_canastillas.canastillas_llenas
+
 
             if (canastillas_vacias < canastillas) throw new Error(`No hay suficientes canastillas en inventario. Disponibles: ${canastillas_vacias}`)
 
@@ -221,8 +225,8 @@ export class CanastillasController {
                 destinatario,
                 observaciones
             } = InventariosValidations.put_inventarios_devolverCanastillas_prestadas().parse(req.data.data)
-            
-            
+
+
             const inventarioPrestadas = await InventariosHistorialRepository.get_data(
                 { ids: [config.INVENTARIO_CANASTILLAS], select: { canastillasPrestadas: 1 } },
                 { session }
@@ -247,7 +251,7 @@ export class CanastillasController {
             await registrarPasoLog(log._id, "InventariosHistorialRepository.actualizar_data", "Completado")
 
             if (!response) throw new Error("No se pudo actualizar el inventario de canastillas prestadas")
-            
+
             const dataRegistroCanastillas = InventariosService.crearRegistroInventarioCanastillas({
                 origen: config.ID_CELIFRUT,
                 destino: destino,

@@ -424,6 +424,9 @@ export class CalidadRepository {
                     query: { contenedor: { $in: lote[0].salidaExportacion.contenedores } }
                 })
 
+                const contenedores = new Set([...itemPallets.values()].map(c => c.contenedor._id))
+                query['salidaExportacion.contenedores']  = [...contenedores]
+
                 await registrarPasoLog(logData.logId, "getLotes AND get_Contenedores_sin_lotes", "Completado");
                 const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id, logData);
                 if (lote[0].salidaExportacion.totalKilos !== exportacion) {
@@ -434,6 +437,7 @@ export class CalidadRepository {
                 }
 
             }
+            console.log(query)
             await LotesRepository.actualizar_lote(
                 { _id },
                 query,
@@ -652,6 +656,10 @@ export class CalidadRepository {
                     query: { contenedor: { $in: lote[0].salidaExportacion.contenedores } }
                 })
                 await registrarPasoLog(logData.logId, "getLotes AND get_Contenedores_sin_lotes", "Completado");
+
+                const contenedores = new Set([...itemPallets.values()].map(c => c.contenedor._id))
+                update['salidaExportacion.contenedores']  = [...contenedores]
+
 
                 const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id);
                 await registrarPasoLog(logData.logId, "CalidadService.obtenerExportacionContenedores", "Completado");

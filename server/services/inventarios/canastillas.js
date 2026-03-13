@@ -33,18 +33,19 @@ export class CanastillasService {
             ids: [config.ID_CELIFRUT],
             select: { canastillas: 1 }
         })
+        const total_prestadas = [...inventario[0].canastillasPrestadas.values()].reduce((acu, item) => acu + item, 0)
 
         return {
             canastillasTotal: inventario[0].canastillasTotal,
             canastillas_propias: celifrut[0].canastillas,
             canastillasPrestadas: inventario[0].canastillasPrestadas,
             canastillas_llenas: total_descarte + total_frutaSinProcesar,
+            total_prestadas
         }
 
     }
     static async modificar_inventario_canastillas(opts = {}, session = {}) {
         const {
-            canastillas_propias = null,
             canastillasPrestadas = null,
             prestamistaId = null,
         } = opts;
@@ -53,10 +54,6 @@ export class CanastillasService {
         const inventarioID = config.INVENTARIO_CANASTILLAS;
         const update = {};
 
-        if (canastillas_propias) {
-            update.$inc = update.$inc || {};
-            update.$inc.canastillas_propias = canastillas_propias;
-        }
         if (canastillasPrestadas) {
             if (!prestamistaId) {
                 throw new Error("prestamistaId es obligatorio para modificar canastillas prestadas");
