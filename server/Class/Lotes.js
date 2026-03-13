@@ -14,19 +14,21 @@ export class LotesRepository extends BaseRepository {
         try {
             const year = new Date(data.fecha_ingreso_inventario).getFullYear()
 
-            const tarifa = await db.tarifaPredio.findOne({
+            const tarifa = await db.TarifaPredio.findOne({
                 predio: data.predio,
                 year,
                 tipo: "FIJA",
                 activo: true
             })
 
-            if (!tarifa) {
-                throw new Error("No hay tarifa configurada para este predio en ese año")
+            if (tarifa) {
+                // throw new Error("No hay tarifa configurada para este predio en ese año") //Bloquea ingreso de fruta
+                data.tarifaAplicada = tarifa.valor
+                } else {
+                    console.warn( `⚠️ No hay tarifa configurada para predio ${data.predio} año ${year}` ) 
+                    data.tarifaAplicada = null;
             }
 
-            data.tarifaAplicada = tarifa.valor
-//-------------------------------------------------------------------------------------------
             const lote = new db.Lotes(data);
             lote._user = user;
 
