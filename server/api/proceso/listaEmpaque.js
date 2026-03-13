@@ -266,7 +266,7 @@ export class ListaEmpaqueController {
                 cajas: cajas,
                 kilos: kilos,
                 fecha: oldItemPallet[0].fecha,
-                usuario: user._id,
+                user: user._id,
                 GGN: GGN,
                 SISPAP: oldItemPallet[0].SISPAP,
                 loteType: oldItemPallet[0].loteType,

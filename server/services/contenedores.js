@@ -136,63 +136,38 @@ export class ContenedoresService {
     }
     static obtenerResumenPredios = (itemPallets) => {
         const predios = new Map();
+        const tiposCaja = new Map();
         for (const item of itemPallets) {
             const loteId = item.lote._id;
-
-            if (!predios.has(loteId)) {
-                predios.set(loteId, {
-                    enf: item.lote.enf,
-                    predio: item.lote.predio,
-                    tipoFruta: item.tipoFruta._id,
-                    cont: new Map(),
-                    calibres: new Map()
-                })
-            }
-
-            const predioData = predios.get(loteId);
             const contenedorId = item.contenedor._id;
+            const calidadId = item.calidad._id
+            const itemId = loteId + ":" + contenedorId + ":" + calidadId;
+            const [code, serial] = item.lote.enf.split("-")
 
-            console.log(predioData)
-            // Inicializar contenedor si no existe
-            if (!predioData.cont.has(contenedorId)) {
-                predioData.cont.set(contenedorId, {
-                    numero: item.contenedor.numeroContenedor,
-                    kilos: 0,
-                    cajas: 0
+            if(!tiposCaja.has(item.tipoCaja)){
+                tiposCaja.set(item.tipoCaja, Number(item.tipoCaja.split("-")[1]))
+            }
+            if (!predios.has(itemId)) {
+                predios.set(itemId, {
+                    enf: code,
+                    serial: serial,
+                    predio: item.lote.predio.PREDIO,
+                    tipoFruta: item.tipoFruta._id,
+                    cont: `PCONT${item.contenedor.numeroContenedor}`,
+                    tipo: item.calidad._id,
+                    kilos:0,
+                    cajas:0
                 })
             }
-            // Inicializar calibre si no existe
-            if (!predioData.calibres.has(item.calibre)) {
-                predioData.calibres.set(item.calibre, {
-                    kilos: 0,
-                    cajas: 0
-                })
-            }
-            // Actualizar valores si hay tipoCaja
             if (item.tipoCaja !== null) {
-                const contenedorData = predioData.cont.get(contenedorId);
-                const calibreData = predioData.calibres.get(item.calibre);
-                const kilos = item.kilos;
+                const predioData = predios.get(itemId);
+                predioData.cajas = (predioData.cajas || 0) + item.cajas;
+                predioData.kilos = (predioData.kilos || 0) + ((tiposCaja.get(item.tipoCaja) * item.cajas) || 0)
 
-                contenedorData.cajas += item.cajas;
-                contenedorData.kilos += kilos;
-
-                calibreData.cajas += item.cajas;
-                calibreData.kilos += kilos;
             }
-
         }
 
-        const result = {};
-        for (const [loteId, predioData] of predios) {
-            result[loteId] = {
-                enf: predioData.enf,
-                predio: predioData.predio,
-                tipoFruta: predioData.tipoFruta,
-                cont: Object.fromEntries(predioData.cont),
-                calibres: Object.fromEntries(predioData.calibres)
-            };
-        }
-        return result
+
+        return Object.fromEntries(predios)
     }
 }

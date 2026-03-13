@@ -24,7 +24,6 @@ import { db } from "../../DB/mongoDB/config/init.js";
 import { ErrorInventarioLogicHandlers } from "./utils/errorsHandlers.js";
 import config from "../../src/config/index.js";
 import { IndicadoresAPIRepository } from "./IndicadoresAPI.js";
-import { CrearDocumentosRepository } from "../services/crearDocumentos.js";
 import { LotesHelper } from "../helper/lotes.js";
 import { InventarioSimpleHelper } from "../helper/inventarioSimple.js";
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
@@ -759,77 +758,7 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_inventarios_historiales_listaDeEmpaque_crearDocumento(req) {
-        try {
-            const { contenedor, tipo } = req.data
-            const contenedorData = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                query: { _id: contenedor },
-                select: { infoContenedor: 1, __v: 1, numeroContenedor: 1 },
-                populate: [
-                    {
-                        path: 'infoContenedor.clienteInfo',
-                        select: 'CLIENTE PAIS_DESTINO',
-                    },
-                    {
-                        path: 'infoContenedor.tipoFruta',
-                        select: 'tipoFruta',
-                    },
-                    {
-                        path: 'infoContenedor.calidad',
-                        select: 'nombre descripcion',
-                    },
-                ]
-            });
-            const itemsPallet = await ContenedoresRepository.getItemsPallets({
-                query: { contenedor: contenedor },
-                populate:
-                    [
-                        { path: 'calidad', select: 'nombre descripcion' },
-                        { path: 'pallet', select: 'numeroPallet' },
-                        { path: 'contenedor', select: 'numeroContenedor infoContenedor' },
-                        { path: 'tipoFruta', select: 'tipoFruta' },
-                        {
-                            path: 'lote',
-                            select: 'enf predio finalizado GGN',
-                            populate: {
-                                path: 'predio',
-                                select: 'PREDIO GGN ICA',
-                            }
-                        }
-                    ],
-                sort: { 'pallet.numeroPallet': 1 }
-            })
-            // console.log(itemsPallet)
-            const sortItemsPallet = itemsPallet.sort((a, b) => {
-                return a.pallet.numeroPallet - b.pallet.numeroPallet;
-            });
-            let buffer
-            if (tipo === "listaEmpaque") {
-                buffer = await CrearDocumentosRepository.crear_listas_de_empaque(contenedorData[0], sortItemsPallet)
-                const base64 = buffer.toString('base64');
 
-                return {
-                    file: base64,
-                    filename: `lista_empaque_${contenedorData[0].numeroContenedor}_${Date.now()}.xlsx`,
-                    mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                }
-            } else if (tipo === "reportePredios") {
-                buffer = await CrearDocumentosRepository.crear_reporte_predios_contenedor(contenedorData[0], sortItemsPallet)
-                const base64 = buffer.toString('base64');
-
-                return {
-                    file: base64,
-                    filename: `reporte_predios_${contenedorData[0].numeroContenedor}_${Date.now()}.xlsx`,
-                    mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                }
-            }
-        } catch (err) {
-            if (err.status === 523) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async get_inventarios_historiales_listasDeEmpaque_numeroRegistros() {
         const cantidad = await ContenedoresRepository.obtener_cantidad_contenedores()
         return cantidad
@@ -958,64 +887,8 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_inventarios_historiales_numeroCanastillas_registros(req) {
-        try {
 
-            const { filtro } = req.data || {}
-            let query = {}
 
-            if (filtro) {
-                const { fechaInicio, fechaFin } = filtro
-                InventariosValidations.validarFiltroBusquedaFechaPaginacion(req.data)
-                query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "createdAt") // no pases `query` si no lo necesita
-            }
-            const registros = await CanastillasRepository.get_numero_registros(query)
-
-            return registros
-
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new InventariosLogicError(
-                470,
-                `Error ${err?.type || 'desconocido'}: ${err?.message || 'sin mensaje'}`
-            )
-        }
-    }
-    static async get_inventarios_historiales_canastillas_registros(req) {
-        try {
-            const { page = 1, filtro } = req.data || {}
-            const { fechaInicio, fechaFin } = filtro || {}
-
-            const currentPage = Number(page);
-            if (isNaN(currentPage) || currentPage < 1) {
-                throw new InventariosLogicError(400, "Número de página inválido");
-            }
-
-            const resultsPerPage = 50;
-            let skip = (currentPage - 1) * resultsPerPage
-
-            const query = filtro ? filtroFechaInicioFin(fechaInicio, fechaFin, {}, "createdAt") : {}
-
-            const registros = await CanastillasRepository.get_registros_canastillas({ query: query, skip })
-
-            const newRegistros = await InventariosService
-                .encontrarDestinoOrigenRegistroCanastillas(registros)
-
-            return newRegistros
-
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-
-            const tipoError = err.type || err.name || "ErrorDesconocido";
-            const mensaje = err.message || "Sin mensaje definido";
-
-            throw new InventariosLogicError(470, `Error ${tipoError}: ${mensaje}`);
-        }
-    }
     static async get_inventarios_lotes_infoLotes(req) {
         try {
             const { data } = req

@@ -73,8 +73,6 @@ export class InventarioFrutaSinProcesarController {
             await InventariosService.modificarRestarInventarioFrutaSinProocesar(data.canastillas, user, action, lote, session, descripcion);
 
             if (data.enCanastillas) {
-                console.log("data.canastillasPropias", data.canastillasPropias)
-                console.log("canastillasPrestadas", data.canastillasPrestadas)
                 if ((data.canastillasPropias + data.canastillasPrestadas) > data.canastillas) {
                     throw new Error("La cantidad de canastillas vacías no puede ser mayor a la cantidad total de canastillas");
                 }

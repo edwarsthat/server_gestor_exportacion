@@ -1,5 +1,15 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
+import { getRedisClient } from "../../../redis/init.js";
+
+const incrementarClientesVersion = async () => {
+  try {
+    const cliente = await getRedisClient();
+    await cliente.incr("clientesVersion");
+  } catch (err) {
+    console.error("[Redis] Error incrementando proveedoresVersion:", err.message);
+  }
+};
 
 export const defineClientes = async (conn) => {
   const PaisDestinoSchema = new Schema({
@@ -20,6 +30,10 @@ export const defineClientes = async (conn) => {
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
   });
+
+  ClienteSchema.post('save', incrementarClientesVersion);
+  ClienteSchema.post('findOneAndUpdate', incrementarClientesVersion);
+  ClienteSchema.post('updateMany', incrementarClientesVersion);
 
   const Clientes = conn.model("Cliente", ClienteSchema);
   return Clientes;

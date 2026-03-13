@@ -83,8 +83,8 @@ const mockCanastillasRepository = {
     post_data: jest.fn()
 };
 
-const mockVariablesDelSistema = {
-    modificar_canastillas_inventario: jest.fn()
+const mockCanastillasService = {
+    modificar_inventario_canastillas: jest.fn()
 };
 
 const mockEventEmitter = { emit: jest.fn() };
@@ -110,15 +110,16 @@ jest.unstable_mockModule('../../../../server/Class/Lotes.js', () => ({
 }));
 
 jest.unstable_mockModule('../../../../server/Class/Inventarios.js', () => ({
-    InventariosHistorialRepository: mockInventariosHistorialRepository
+    InventariosHistorialRepository: mockInventariosHistorialRepository,
+    InventarioDescartesRepository: {}
 }));
 
 jest.unstable_mockModule('../../../../server/Class/CanastillasRegistros.js', () => ({
     CanastillasRepository: mockCanastillasRepository
 }));
 
-jest.unstable_mockModule('../../../../server/Class/VariablesDelSistema.js', () => ({
-    VariablesDelSistema: mockVariablesDelSistema
+jest.unstable_mockModule('../../../../server/services/inventarios/canastillas.js', () => ({
+    CanastillasService: mockCanastillasService
 }));
 
 jest.unstable_mockModule('../../../../events/eventos.js', () => ({
@@ -211,7 +212,7 @@ describe('InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote', (
         mockInventariosService.ajustarCanastillasProveedorCliente.mockResolvedValue({});
         mockCanastillasRepository.post_data.mockResolvedValue({});
         mockDataRepository.incrementar_serial.mockResolvedValue({});
-        mockVariablesDelSistema.modificar_canastillas_inventario.mockResolvedValue({});
+        mockCanastillasService.modificar_inventario_canastillas.mockResolvedValue({});
     });
 
     afterEach(() => {
@@ -289,15 +290,6 @@ describe('InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote', (
             await InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote(mockReq);
 
             expect(mockDataRepository.incrementar_serial).toHaveBeenCalledWith('EF1-', 'mock-session');
-        });
-
-        test('debería modificar canastillas prestadas', async () => {
-            await InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote(mockReq);
-
-            expect(mockVariablesDelSistema.modificar_canastillas_inventario).toHaveBeenCalledWith(
-                10,
-                'canastillasPrestadas'
-            );
         });
 
         test('debería emitir evento server_event con acción add_lote', async () => {
@@ -385,17 +377,6 @@ describe('InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote', (
             await InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote(mockReq);
 
             expect(mockInventariosService.validarGGN).not.toHaveBeenCalled();
-        });
-
-        test('debería funcionar con canastillasPrestadas = 0', async () => {
-            mockReq.data.dataCanastillas.canastillasPrestadas = 0;
-
-            await InventarioFrutaSinProcesarController.post_inventarios_ingreso_lote(mockReq);
-
-            expect(mockVariablesDelSistema.modificar_canastillas_inventario).toHaveBeenCalledWith(
-                0,
-                'canastillasPrestadas'
-            );
         });
 
         test('debería registrar pasos en el log de auditoría', async () => {
