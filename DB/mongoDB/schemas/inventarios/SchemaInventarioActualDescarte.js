@@ -127,11 +127,10 @@ export const defineInventarioActualDescarte = async (conn) => {
     });
 
     InventarioActualDescarteSchema.index(
-        { lote: 1, tipoDescarte: 1, tipoFruta: 1, loteType: 1, area: 1, estado: 1 },
+        { lote: 1, tipoDescarte: 1, tipoFruta: 1, loteType: 1, area: 1 },
         {
             unique: true,
-            name: 'idx_inventario_unico',
-            partialFilterExpression: { estado: 'ACTIVO' }
+            name: 'idx_inventario_unico'
         }
     );
 

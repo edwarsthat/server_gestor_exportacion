@@ -318,8 +318,6 @@ export class InventariosService {
 
             let kilos = value.kilos;
             let canastillas = value.canastillas;
-            console.log(key)
-            console.log(value)
 
             const registros = await InventarioDescartesRepository.get_data({
                 query: {
@@ -330,8 +328,8 @@ export class InventariosService {
                     loteType: { $in: ["Lote", "Loteef8"] }
                 },
                 sort: { fechaIngreso: -1 },
+                limit: 100
             }, { session })
-            console.log(registros)
             if (registros.length === 0) throw new Error("No hay inventario suficiente")
 
             for (const registro of registros) {
@@ -515,12 +513,6 @@ export class InventariosService {
             const restanteKilos = kilosTotalTipo - kilosEliminar;
             const restanteCanastillas = canastillasTotalTipo - canastillasEliminar;
 
-            // Error si: (Kilos es 0 Y Canastillas > 0) O (Kilos > 0 Y Canastillas es 0)
-            if ((restanteKilos === 0) !== (restanteCanastillas === 0)) {
-                throw new Error("Inconsistencia: No pueden quedar kilos sin canastillas o viceversa.");
-            }
-
-            // Validación adicional: No permitir valores negativos (opcional pero recomendado)
             if (restanteKilos < 0 || restanteCanastillas < 0) {
                 throw new Error("El descuento supera el inventario disponible.");
             }
