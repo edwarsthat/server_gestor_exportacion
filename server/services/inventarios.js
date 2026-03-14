@@ -311,24 +311,27 @@ export class InventariosService {
             registroExistente[campoDestino] = valorNumerico;
             dataMap.set(llaveUnica, registroExistente);
         }
-        console
+        console.log("dataMap", dataMap)
         //se recorre el mapa para descontar los kilos y canastillas
         for (const [key, value] of dataMap) {
             const [area, descarteId] = key.split(":");
 
             let kilos = value.kilos;
             let canastillas = value.canastillas;
+            console.log(key)
+            console.log(value)
 
             const registros = await InventarioDescartesRepository.get_data({
                 query: {
                     tipoFruta: tipoFruta,
                     area: area,
                     tipoDescarte: descarteId,
-                    estado: "ACTIVO",
+                    estado: "AGOTADO",
                     loteType: { $in: ["Lote", "Loteef8"] }
                 },
                 sort: { fechaIngreso: -1 },
             }, { session })
+            console.log(registros)
             if (registros.length === 0) throw new Error("No hay inventario suficiente")
 
             for (const registro of registros) {
