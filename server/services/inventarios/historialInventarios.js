@@ -75,9 +75,13 @@ export class HistorialInventariosService {
 
     }
     static async verificar_modificacion_del_inventario_descartes(changesDescartes, cambioFruta, user, session) {
+        console.log("changesDescartes",changesDescartes)
+        console.log("cambioFruta",cambioFruta)
 
         const outOBjSumar = crear_arreglo_modificar_descartes_sumar(changesDescartes);
+        console.log("outOBjSumar",outOBjSumar)
         await InventariosService.procesar_formulario_inventario_descarte_sumar(outOBjSumar, cambioFruta.old, session, user);
+        console.log("InventariosService", InventariosService)
 
         // se obtienen los totales del inventario DESPUES del sumar para validar con datos actualizados
         const result = await InventarioDescartesRepository.get_totales_inventario_descarte({

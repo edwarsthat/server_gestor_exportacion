@@ -56,7 +56,7 @@ export class CanastillasController {
         return await executeQueryTask(async () => {
 
             const { page = 1, filtro } = req.data || {}
-            const { fechaInicio, fechaFin } = filtro || {}
+            const { fechaInicio, fechaFin, origen, destino } = filtro || {}
 
             const currentPage = Number(page);
             if (isNaN(currentPage) || currentPage < 1) {
@@ -67,6 +67,14 @@ export class CanastillasController {
             let skip = (currentPage - 1) * resultsPerPage
 
             const query = buildDateRangeFilter(fechaInicio, fechaFin, 'createdAt', {})
+
+            if (origen) {
+                query.origen = origen
+            }
+
+            if (destino) {
+                query.destino = destino
+            }
 
             const registros = await CanastillasRepository.get_data({ query: query, skip: skip, limit: resultsPerPage, sort: { createdAt: -1 } })
 
@@ -80,7 +88,13 @@ export class CanastillasController {
             let query = {}
 
             if (filtro) {
-                const { fechaInicio, fechaFin } = filtro
+                const { fechaInicio, fechaFin, origen, destino } = filtro || {}
+                if (origen) {
+                    query.origen = origen
+                }
+                if (destino) {
+                    query.destino = destino
+                }
                 query = buildDateRangeFilter(fechaInicio, fechaFin, 'createdAt', query)
             }
             const registros = await CanastillasRepository.get_numero_registros(query)
@@ -179,7 +193,7 @@ export class CanastillasController {
             const { canastillas, observaciones } = InventariosValidations.put_inventarios_darBaja_canastillas().parse(req.data.data)
 
             const total_canastillas = await CanastillasService.get_totales_canastillas()
-            const canastillas_vacias = 
+            const canastillas_vacias =
                 total_canastillas.canastillas_propias +
                 total_canastillas.total_prestadas -
                 total_canastillas.canastillas_llenas

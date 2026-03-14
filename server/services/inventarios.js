@@ -311,6 +311,7 @@ export class InventariosService {
             registroExistente[campoDestino] = valorNumerico;
             dataMap.set(llaveUnica, registroExistente);
         }
+        console
         //se recorre el mapa para descontar los kilos y canastillas
         for (const [key, value] of dataMap) {
             const [area, descarteId] = key.split(":");
@@ -409,6 +410,7 @@ export class InventariosService {
 
 
         }
+        
         //se recorre el mapa para descontar los kilos y canastillas
         for (const [key, value] of dataMap) {
             const [area, descarteId] = key.split(":");

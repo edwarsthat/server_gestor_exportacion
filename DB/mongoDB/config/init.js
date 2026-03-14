@@ -70,7 +70,7 @@ import { defineAuditPersonal } from '../schemas/audit/AuditPersonal.js';
 import { defineTarifaPredio } from "../schemas/tarifas/schemaTarifasPredio.js";
 import { definePaises } from '../schemas/catalogs/schemaPaises.js';
 import { defineHistorialConcentraciones } from '../schemas/calidad/schemaHistorialConcentraciones.js';
-import { defineSchemaContratosPersonal } from '../schemas/gestionLaboral/schemaContratosPersonal.js'
+// import { defineSchemaContratosPersonal } from '../schemas/gestionLaboral/schemaContratosPersonal.js'
 
 export const db = {};
 export const connections = {};
@@ -430,9 +430,9 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Carnets...");
         db.Carnet = await defineSchemaCarnets(sysConn);
         console.log("✅ Carnets definido");
-        console.log("⚡ Definiendo Contratos Personal...")
-        db.ContratosPersonal = await defineSchemaContratosPersonal(sysConn);
-        console.log("✅ Contratos Personal definido")
+        // console.log("⚡ Definiendo Contratos Personal...")
+        // db.ContratosPersonal = await defineSchemaContratosPersonal(sysConn);
+        // console.log("✅ Contratos Personal definido")
         //#endregion
 
         //#region informes calidad
