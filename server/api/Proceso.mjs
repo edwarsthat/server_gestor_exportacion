@@ -75,11 +75,7 @@ export class ProcesoRepository {
             const base64Data = foto.replace(/^data:image\/\w+;base64,/, "");
 
             // eslint-disable-next-line security/detect-non-literal-fs-filename
-            fs.writeFileSync(fotoPath, base64Data, { encoding: "base64" }, err => {
-                if (err) {
-                    throw new ProcessError(422, `Error guardando fotos ${err.message}`)
-                }
-            });
+            await fs.promises.writeFile(fotoPath, base64Data, { encoding: "base64" });
             const fotos = {}
             fotos[`calidad.fotosCalidad.${fotoName}`] = fotoPath;
             const query = {
@@ -106,42 +102,25 @@ export class ProcesoRepository {
             haceUnMes.setMonth(haceUnMes.getMonth() - 1);
             const hoyAM = hoy.setHours(0, 0, 0, 0);
             const hoyPM = hoy.setHours(23, 59, 59, 999);
-            const lotes = await LotesRepository.getLotes({
-                query: {
-                    $and: [
-                        {
-                            $or: [
-                                { 'calidad.fotosCalidad': { $exists: false } },
-                                { 'calidad.fotosCalidad.fechaIngreso': { $gte: new Date(hoyAM), $lt: new Date(hoyPM) } }
-                            ]
-                        },
-                        { enf: { $regex: '^E', $options: 'i' } },
-                    ],
-                    $or: [
-                        { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
-                        { fecha_creacion: { $gte: new Date(haceUnMes) } }
-                    ]
-                },
-                select: { enf: 1, fecha_creacion: 1, tipoFruta: 1 }
-            });
-            const lotesMaquila = await LotesRepository.getLotesMaquila({
-                query: {
-                    $and: [
-                        {
-                            $or: [
-                                { 'calidad.fotosCalidad': { $exists: false } },
-                                { 'calidad.fotosCalidad.fechaIngreso': { $gte: new Date(hoyAM), $lt: new Date(hoyPM) } }
-                            ]
-                        },
-                        { enf: { $regex: '^E', $options: 'i' } },
-                    ],
-                    $or: [
-                        { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
-                        { fecha_creacion: { $gte: new Date(haceUnMes) } }
-                    ]
-                },
-                select: { enf: 1, fecha_creacion: 1, tipoFruta: 1 }
-            });
+            const queryLotes = {
+                $and: [
+                    {
+                        $or: [
+                            { 'calidad.fotosCalidad': { $exists: false } },
+                            { 'calidad.fotosCalidad.fechaIngreso': { $gte: new Date(hoyAM), $lt: new Date(hoyPM) } }
+                        ]
+                    },
+                    { enf: { $regex: '^E', $options: 'i' } },
+                ],
+                $or: [
+                    { fecha_ingreso_inventario: { $gte: new Date(haceUnMes) } },
+                    { fecha_creacion: { $gte: new Date(haceUnMes) } }
+                ]
+            };
+            const [lotes, lotesMaquila] = await Promise.all([
+                LotesRepository.getLotes({ query: queryLotes, select: { enf: 1, fecha_creacion: 1, tipoFruta: 1 } }),
+                LotesRepository.getLotesMaquila({ query: queryLotes, select: { enf: 1, fecha_creacion: 1, tipoFruta: 1 } })
+            ]);
             const result = [...lotes, ...lotesMaquila];
             const resultOrdered = result.sort((a, b) => a.fecha_creacion - b.fecha_creacion)
             return resultOrdered

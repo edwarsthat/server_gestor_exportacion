@@ -1,5 +1,5 @@
 
-import puppeteer from 'puppeteer';
+import { browserPool } from './browserPool.js';
 
 export class HtmlToImage {
     static async convertToImage(html, options = {}) {
@@ -16,9 +16,11 @@ export class HtmlToImage {
             baseUrl = null // Ruta base para resolver archivos locales (imágenes, etc)
         } = options;
 
-        let browser = null;
+        let page = null;
 
         try {
+            page = await browserPool.acquire();
+
             // Inyectar etiqueta <base> si se proporciona baseUrl para resolver recursos locales
             let finalHtml = html;
             if (baseUrl) {
@@ -29,18 +31,6 @@ export class HtmlToImage {
                     finalHtml = `${baseTag}${finalHtml}`;
                 }
             }
-
-            // Iniciar navegador
-            browser = await puppeteer.launch({
-                headless: 'new',
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage'
-                ]
-            });
-
-            const page = await browser.newPage();
 
             // Configurar viewport
             await page.setViewport({
@@ -57,45 +47,31 @@ export class HtmlToImage {
             // Configurar opciones de screenshot
             const screenshotOptions = {
                 type,
-                fullPage
+                fullPage,
+                ...(outputPath && { path: outputPath }),
+                ...(type === 'jpeg' && { quality })
             };
-
-            // Si se especifica un path, guardar en disco
-            if (outputPath) {
-                screenshotOptions.path = outputPath;
-            }
-
-            // Agregar calidad si es JPEG
-            if (type === 'jpeg') {
-                screenshotOptions.quality = quality;
-            }
 
             // Capturar imagen
             let imageBuffer;
             if (selector) {
-                // Capturar solo un elemento específico
                 const element = await page.$(selector);
-                if (!element) {
-                    throw new Error(`Elemento con selector "${selector}" no encontrado`);
-                }
+                if (!element) throw new Error(`Elemento "${selector}" no encontrado`);
                 imageBuffer = await element.screenshot(screenshotOptions);
             } else {
-                // Capturar página completa o viewport
                 imageBuffer = await page.screenshot(screenshotOptions);
             }
 
-            await browser.close();
-
-            // Retornar buffer o path según corresponda
             return outputPath || imageBuffer;
 
         } catch (error) {
-            if (browser) {
-                await browser.close();
-            }
             throw new Error(`Error al convertir HTML a imagen: ${error.message}`);
+        } finally {
+            if (page) await browserPool.release(page);
         }
     }
+
+
     static async convertToBuffer(html, options = {}) {
         return await this.convertToImage(html, { ...options, outputPath: null });
     }

@@ -871,9 +871,9 @@ export class InventariosRepository {
                 const { fechaInicio, fechaFin, tipoFruta } = filtro;
                 query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "createdAt");
 
-            //nuevo filtro tipo fruta. Jp
-            if (tipoFruta && tipoFruta !== ''){
-                query.tipoFruta = tipoFruta; //listo Jp
+                //nuevo filtro tipo fruta. Jp
+                if (tipoFruta && tipoFruta !== '') {
+                    query.tipoFruta = tipoFruta; //listo Jp
                 }
             }
             //---
@@ -984,8 +984,10 @@ export class InventariosRepository {
                 limit: "all"
             });
 
+            const usuariosMap = new Map(usuarios.map(u => [u._id.toString(), u]));
+
             historial.forEach(item => {
-                const user = usuarios.find(user => user._id.toString() === item.user.toString());
+                const user = usuariosMap.get(item.user.toString());
                 item.user = user?.nombre || "" + " " + user?.apellido || ""
             })
 
@@ -1034,11 +1036,12 @@ export class InventariosRepository {
                     const kilosObj = Reflect.get(newObj, kilosKeys);
 
                     for (const [frutasKeys, value] of Object.entries(valueKilos)) {
-                        const fruta = tipoFrutaCache.getTipoFruta(frutasKeys) ? tipoFrutaCache.getTipoFruta(frutasKeys).tipoFruta : ""
+
+                        const fruta = tipoFrutaCache.getTipoFruta(frutasKeys)?.tipoFruta;
                         if (!fruta) continue;
+
                         Reflect.set(kilosObj, fruta, Object.create(null));
                         const frutaObj = Reflect.get(kilosObj, fruta);
-
 
                         for (const [areaKey, valueArea] of Object.entries(value)) {
                             Reflect.set(frutaObj, areaKey, Object.create(null));
