@@ -350,7 +350,78 @@ export class FormulariosCalidadRepository {
         }
     }
     //#endregion
+    
+     // //#region Control Limpieza EPP
+    static async crear_control_limpieza_epp(data) {
+        try {
+
+            const formulario = new db.ControlLimpiezaEPP({
+                fecha: new Date(data.fecha),
+                codigoCareta: data.codigoCareta,
+                estadoCareta: data.estadoCareta,
+                tipoLimpieza: data.tipoLimpieza?.charAt(0).toUpperCase() + data.tipoLimpieza?.slice(1),
+                retiroCartuchos: data.retiroCartuchos,
+                limpiezaRealizada: data.limpiezaRealizada === true || data.limpiezaRealizada === "si",
+                cargo: data.cargo,
+                observaciones: data.observaciones || "",
+                responsable: data.responsable,
+                usuario: data.usuario
+            });
+
+            await formulario.save();
+
+            return formulario;
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error creando formulario control limpieza EPP ${err.message}`);
+        }
+    }
+    static async get_control_limpieza_epp(options = {}) {
+
+    const {
+        ids = [],
+        query = {},
+        select = {},
+        sort = { fechaIngreso: -1 },
+        limit = 50,
+        skip = 0
+    } = options;
+
+        try {
+
+            let newQuery = { ...query };
+
+            if (ids.length > 0) {
+                newQuery._id = { $in: ids };
+            }
+
+            const formularios = await db.ControlLimpiezaEPP.find(newQuery)
+                .populate("usuario", "nombre apellido")
+                .select(select)
+                .sort(sort)
+                .limit(limit)
+                .skip(skip)
+                .exec();
+
+            return formularios;
+
+        } catch (err) {
+            throw new ConnectionDBError(522, `Error obteniendo formularios control limpieza EPP ${err.message}`);
+        }
+    }
+    static async get_calidad_formularios_controlLimpiezaEPP_numeroElementos() {
+        try {
+
+            const count = await db.ControlLimpiezaEPP.countDocuments();
+
+            return count;
+
+        } catch (err) {
+            throw new ConnectionDBError(524, `Error contando formularios control limpieza EPP ${err.message}`);
+        }
+    }
 }
+
 
 export class FormularioCalidadLimpiezaDiariaRepository extends BaseRepository {
     static get model() { return db.LimpiezaDiaria; }
