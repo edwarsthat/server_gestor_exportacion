@@ -70,7 +70,8 @@ import { defineAuditPersonal } from '../schemas/audit/AuditPersonal.js';
 import { defineTarifaPredio } from "../schemas/tarifas/schemaTarifasPredio.js";
 import { definePaises } from '../schemas/catalogs/schemaPaises.js';
 import { defineHistorialConcentraciones } from '../schemas/calidad/schemaHistorialConcentraciones.js';
-// import { defineSchemaContratosPersonal } from '../schemas/gestionLaboral/schemaContratosPersonal.js'
+//import { defineSchemaContratosPersonal } from '../schemas/gestionLaboral/schemaContratosPersonal.js'
+import { defineControlLimpiezaEPP } from '../schemas/calidad/schemaControlLimpiezaEPP.js';
 
 export const db = {};
 export const connections = {};
@@ -298,7 +299,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.Proveedores = await defineproveedores(sysConn);
         console.log("✅ Proveedores definido");
 
-        //.Jp
+        //.Jp ----------------------------------------
         console.log("⚡ Definiendo TarifaPredio...");
         db.tarifaPredio = await defineTarifaPredio(sysConn);
         console.log("✅ TarifaPredio definido");
@@ -451,6 +452,10 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo LimpiezaMensual...");
         db.LimpiezaMensual = await defineLimpiezaMensual(sysConn);
         console.log("✅ LimpiezaMensual definido");
+
+        console.log("⚡ Definiendo ControlLimpiezaEPP...");
+        db.ControlLimpiezaEPP = await defineControlLimpiezaEPP(sysConn);
+        console.log("✅ ControlLimpiezaEPP definido");
         // #endregion
 
         procesoConn = sysConn;

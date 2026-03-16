@@ -127,7 +127,7 @@ export class CalidadRepository {
     }
     //#endregion
 
-    //NUEVO JP --------------------------------------------------------------------------------------------------------------------------------
+    //NUEVO JP 
     //#region historial concentraciones
     static async get_calidad_formulario_historialConcentraciones(req) {
         try {
@@ -286,7 +286,78 @@ export class CalidadRepository {
         }
     }
     //#endregion
-//----------------------------------------------------------------------------------------------------------------------------------------------
+
+    static async post_calidad_formulario_controlLimpiezaEPP(req) {
+        try {
+
+            const { user } = req;
+            const { data } = req.data;
+            //ajuste para UTC-5
+            const [year, month, day] = data.fecha.split("-");
+
+            const fecha = new Date(
+                Number(year),
+                Number(month) - 1,
+                Number(day)
+            )
+
+            console.log("DATA RECIBIDA:", data);
+
+            const registro = {
+                fecha: fecha,
+                responsable: data.responsable,
+                cargo: data.cargo,
+                codigoCareta: data.codigoCareta,
+                tipoLimpieza: data.tipoLimpieza,
+                estadoCareta: data.estadoCareta,
+                retiroCartuchos: data.retiroCartuchos,
+                observaciones: data.observaciones || "",
+                usuario: user._id,
+                activo: true
+            };
+
+            await FormulariosCalidadRepository.crear_control_limpieza_epp(registro);
+
+            return { message: "Registro creado correctamente" };
+
+        } catch (err) {
+            throw new CalidadLogicError(470, err.message);
+        }
+    }
+    static async get_calidad_formulario_controlLimpiezaEPP(req) {
+        try {
+
+            const { fechaInicio, fechaFin } = req.data || {};
+
+            let query = { activo: true };
+
+            if (fechaInicio || fechaFin) {
+                query.fecha = {};
+
+                if (fechaInicio) {
+                    query.fecha.$gte = new Date(fechaInicio);
+                }
+
+                if (fechaFin) {
+                    const fechaFinDate = new Date(fechaFin);
+                    fechaFinDate.setHours(23, 59, 59, 999);
+                    query.fecha.$lte = fechaFinDate;
+                }
+            }
+
+            const registros = await FormulariosCalidadRepository.get_control_limpieza_epp({
+                query: query,
+                sort: { fecha: -1 }
+            });
+
+            return registros;
+
+        } catch (err) {
+            throw new CalidadLogicError(471, err.message);
+        }
+    }
+    //#endregion
+
     //#region informes
     static async get_calidad_informes_lotesInformesProveedor(req) {
         try {

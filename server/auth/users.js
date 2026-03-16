@@ -22,6 +22,9 @@ const permisos_generales = new Set([
     "put_calidad_formulario_historialConcentraciones",
     "delete_calidad_formulario_historialConcentraciones",
     "get_calidad_formularios_historialConcentraciones_numeroElementos",
+    //permisos Control Limpieza EPP. Jp
+    "get_calidad_formulario_controlLimpiezaEPP",
+    "post_calidad_formulario_controlLimpiezaEPP",
     //permiso tarifa congelada
     "put_tarifa_congelada_lote",
 
