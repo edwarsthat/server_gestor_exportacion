@@ -311,6 +311,7 @@ export class InventariosService {
             registroExistente[campoDestino] = valorNumerico;
             dataMap.set(llaveUnica, registroExistente);
         }
+        console.log("dataMap", dataMap)
         //se recorre el mapa para descontar los kilos y canastillas
         for (const [key, value] of dataMap) {
             const [area, descarteId] = key.split(":");
@@ -323,10 +324,11 @@ export class InventariosService {
                     tipoFruta: tipoFruta,
                     area: area,
                     tipoDescarte: descarteId,
-                    estado: "ACTIVO",
+                    estado: "AGOTADO",
                     loteType: { $in: ["Lote", "Loteef8"] }
                 },
                 sort: { fechaIngreso: -1 },
+                limit: 100
             }, { session })
             if (registros.length === 0) throw new Error("No hay inventario suficiente")
 
@@ -409,6 +411,7 @@ export class InventariosService {
 
 
         }
+        
         //se recorre el mapa para descontar los kilos y canastillas
         for (const [key, value] of dataMap) {
             const [area, descarteId] = key.split(":");
@@ -510,12 +513,6 @@ export class InventariosService {
             const restanteKilos = kilosTotalTipo - kilosEliminar;
             const restanteCanastillas = canastillasTotalTipo - canastillasEliminar;
 
-            // Error si: (Kilos es 0 Y Canastillas > 0) O (Kilos > 0 Y Canastillas es 0)
-            if ((restanteKilos === 0) !== (restanteCanastillas === 0)) {
-                throw new Error("Inconsistencia: No pueden quedar kilos sin canastillas o viceversa.");
-            }
-
-            // Validación adicional: No permitir valores negativos (opcional pero recomendado)
             if (restanteKilos < 0 || restanteCanastillas < 0) {
                 throw new Error("El descuento supera el inventario disponible.");
             }

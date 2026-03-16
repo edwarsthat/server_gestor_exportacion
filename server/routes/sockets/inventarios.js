@@ -5,6 +5,7 @@ import { CanastillasController } from "../../api/inventarios/canastillas.js";
 import { InventarioCuartoFriosController } from "../../api/inventarios/inventarioCuartoFrios.js";
 import { InventarioDescarteController } from "../../api/inventarios/inventarioDescarte.js";
 import { InventarioFrutaSinProcesarController } from "../../api/inventarios/inventarioFrutaSinProcesar.js";
+import { ListaEmpaqueController } from "../../api/inventarios/listasEmpaque.js";
 import { OrdenVaceoController } from "../../api/inventarios/ordenVaceo.js";
 import { ProgramacionesController } from "../../api/inventarios/programaciones.js";
 import { ModificarRepository } from "../../api/ModificarData.js";
@@ -112,12 +113,36 @@ export const apiSocketInventarios = {
     },
     //#endregion
     //#region canastillas
+    get_inventarios_historiales_canastillas_registros: async (data) => {
+        const response = await CanastillasController.get_inventarios_historiales_canastillas_registros(data)
+        return successResponseRoutes(response)
+    },
+    get_inventarios_historiales_numeroCanastillas_registros: async (data) => {
+        const response = await CanastillasController.get_inventarios_historiales_numeroCanastillas_registros(data)
+        return successResponseRoutes(response)
+    },
     get_inventarios_canastillas_canastillasCelifrut: async () => {
         const response = await CanastillasController.get_inventarios_canastillas_canastillasCelifrut()
         return successResponseRoutes(response)
     },
     put_inventarios_canastillas_celifrut: async (data) => {
         await CanastillasController.put_inventarios_canastillas_celifrut(data)
+        return successResponseRoutes()
+    },
+    put_inventarios_historiales_canastillas_modificarRegistro: async (data) => {
+        await CanastillasController.put_inventarios_historiales_canastillas_modificarRegistro(data)
+        return successResponseRoutes()
+    },
+    put_inventarios_darBaja_canastillas: async (data) => {
+        await CanastillasController.put_inventarios_darBaja_canastillas(data)
+        return successResponseRoutes()
+    },
+    put_inventarios_devolverCanastillas_prestadas: async (data) => {
+        await CanastillasController.put_inventarios_devolverCanastillas_prestadas(data)
+        return successResponseRoutes()
+    },
+    post_inventarios_canastillas_agregar: async (data) => {
+        await CanastillasController.post_inventarios_canastillas_agregar(data)
         return successResponseRoutes()
     },
     //#endregion
@@ -247,14 +272,8 @@ export const apiSocketInventarios = {
         const response = await InventariosRepository.get_inventarios_numero_registros_fruta_descompuesta(data)
         return successResponseRoutes(response)
     },
-    get_inventarios_historiales_canastillas_registros: async (data) => {
-        const response = await InventariosRepository.get_inventarios_historiales_canastillas_registros(data)
-        return successResponseRoutes(response)
-    },
-    get_inventarios_historiales_numeroCanastillas_registros: async (data) => {
-        const response = await InventariosRepository.get_inventarios_historiales_numeroCanastillas_registros(data)
-        return successResponseRoutes(response)
-    },
+
+
 
 
     get_inventarios_historiales_registros_inventarioDescartes: async (data) => {
@@ -278,7 +297,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes(response)
     },
     get_inventarios_historiales_listaDeEmpaque_crearDocumento: async (data) => {
-        const response = await InventariosRepository.get_inventarios_historiales_listaDeEmpaque_crearDocumento(data)
+        const response = await ListaEmpaqueController.get_inventarios_historiales_listaDeEmpaque_crearDocumento(data)
         return successResponseRoutes(response)
     },
 

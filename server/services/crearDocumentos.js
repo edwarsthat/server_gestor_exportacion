@@ -1,5 +1,6 @@
 import { isPaisesCaribe, resumenCalidad, resumenPredios } from "./helpers/contenedores.js";
 import ExcelJS from "exceljs";
+import writeXlsxFile from 'write-excel-file/node';
 import path from "path";
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -7,10 +8,7 @@ import { formatearFecha, labelListaEmpaque, mostrarKilose, numeroALetras, setCel
 import fs from "fs";
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
-// import Docxtemplater from "docxtemplater";
-// import { numeroALetras } from "../utils/numeroALetras.js";
-// import { nombreTipoFruta2 } from "../utils/nombreTipoFruta.js";
-// import { tipoFrutas } from "../data/tipoFrutas.js";
+import config from "../../src/config/index.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -30,388 +28,285 @@ export class CrearDocumentosRepository {
                 throw new Error('itemsPallet debe ser un array');
             }
 
+            const isCOC = cont.infoContenedor.clienteInfo._id === config.CLIENTE_KONGELATO;
             const isNotCaribe = isPaisesCaribe(cont);
-            // const proveedores = data.proveedores
-            const fuente = 16
-            const alto_celda = 50
+            const fuente = 16;
+            const alto = 50;
+            const GREEN = '#5FD991';
+            const numCols = isCOC ? 11 : 10;
 
-            let coc_flag = false;
-            let row1Cells;
-            let row2cells;
-            let row3Cells;
+            const coc_flag = itemsPallet.some(item => item.GGN);
+            const fechaStr = new Date(cont.infoContenedor.fechaFinalizado).toLocaleDateString('es-ES', {
+                day: '2-digit', month: '2-digit', year: 'numeric'
+            });
+            const tipoFrutaStr = cont.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - ", "");
+            const cocValue = coc_flag ? "4063061801296" : "N/A";
 
-            if (cont.infoContenedor.clienteInfo._id === "659dbd9a347a42d89929340e") {
-                row1Cells = [
-                    { cell: 'C1', value: "PACKING LIST REPORT", font: 24, bold: true },
-                    { cell: 'K1', value: "Codigo: PC-CAL-FOR-05", font: fuente, bold: true },
-                ]
-
-                row2cells = [
-                    { cell: 'A2', value: "CLIENTE", font: fuente, bold: true },
-                    { cell: 'B2', value: cont.infoContenedor.clienteInfo.CLIENTE, font: fuente, bold: false },
-                    { cell: 'D2', value: "TEMP. SET POINT:", font: fuente, bold: true },
-                    { cell: 'E2', value: "44,6F", font: fuente, bold: false },
-                    { cell: 'F2', value: "FREIGHT:", font: fuente, bold: true },
-                    { cell: 'G2', value: "", font: fuente, bold: false },
-                    { cell: 'H2', value: "CONTAINER NUMBER:", font: fuente, bold: true },
-                    { cell: 'I2', value: cont.numeroContenedor, font: fuente, bold: false },
-                    { cell: 'J2', value: "REFERENCE N°:", font: fuente, bold: true },
-                    { cell: 'K2', value: cont.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - ", ""), font: fuente, bold: false },
-                ]
-
-                row3Cells = [
-                    { cell: 'A3', value: "TEMP RECORDER LOCATION:", font: fuente, bold: true },
-                    { cell: 'C3', value: "PALLET 10", font: fuente, bold: false },
-                    { cell: 'D3', value: "TEMP RECORDER ID: ", font: fuente, bold: true },
-                    { cell: 'F3', value: "SS-0085719", font: fuente, bold: false },
-                    { cell: 'G3', value: "DATE: ", font: fuente, bold: true },
-                    {
-                        cell: 'H3', value: new Date(cont.infoContenedor.fechaFinalizado).toLocaleDateString('es-ES', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                        }), font: fuente, bold: false
-                    },
-                    { cell: 'J3', value: "CoC: ", font: fuente, bold: true },
-                    { cell: 'K3', value: "N/A", font: fuente, bold: false },
-                ]
-            } else {
-                row1Cells = [
-                    { cell: 'C1', value: "PACKING LIST REPORT", font: 24, bold: true },
-                    { cell: 'J1', value: "Codigo: PC-CAL-FOR-05", font: fuente, bold: true },
-                ]
-
-                row2cells = [
-                    { cell: 'A2', value: "CLIENTE", font: fuente, bold: true },
-                    { cell: 'B2', value: cont.infoContenedor.clienteInfo.CLIENTE, font: fuente, bold: false },
-                    { cell: 'D2', value: "TEMP. SET POINT:", font: fuente, bold: true },
-                    { cell: 'E2', value: "44,6F", font: fuente, bold: false },
-                    { cell: 'F2', value: "FREIGHT:", font: fuente, bold: true },
-                    { cell: 'G2', value: "CONTAINER NUMBER:", font: fuente, bold: true },
-                    { cell: 'H2', value: cont.numeroContenedor, font: fuente, bold: false },
-                    { cell: 'I2', value: "REFERENCE N°:", font: fuente, bold: true },
-                    { cell: 'J2', value: cont.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - ", ""), font: fuente, bold: false },
-                ]
-
-                row3Cells = [
-                    { cell: 'A3', value: "TEMP RECORDER LOCATION:", font: fuente, bold: true },
-                    { cell: 'C3', value: "PALLET 10", font: fuente, bold: false },
-                    { cell: 'D3', value: "TEMP RECORDER ID: ", font: fuente, bold: true },
-                    { cell: 'F3', value: "SS-0085719", font: fuente, bold: false },
-                    { cell: 'G3', value: "DATE: ", font: fuente, bold: true },
-                    {
-                        cell: 'H3', value: new Date(cont.infoContenedor.fechaFinalizado).toLocaleDateString('es-ES', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                        }), font: fuente, bold: false
-                    },
-                    { cell: 'I3', value: "CoC: ", font: fuente, bold: true },
-                    { cell: 'J3', value: "N/A", font: fuente, bold: false },
-                ]
-            }
-
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet("Lista empaque")
-
-
-            worksheet.getRow(1).height = 80
-            for (let i = 1; i <= 12; i++) {
-                worksheet.getColumn(i).width = 20.33
-                worksheet.getColumn(i).height = alto_celda
-            }
-
-            worksheet.getRow(2).height = alto_celda
-            worksheet.getRow(3).height = alto_celda
-
-            //? logo
-            const logo = worksheet.getCell('A1')
-
-            logo.border = styleNormalCell
-            logo.alignment = { horizontal: 'center', vertical: 'middle' }
-
-            const imageId = workbook.addImage({
-                filename: imagePath,
-                extension: 'png'
-            })
-
-            worksheet.addImage(imageId, {
-                tl: { col: 0, row: 0 },
-                ext: { width: 100, height: 100 }
+            // Helper: crea un objeto-celda con estilos base
+            const c = (value, opts = {}) => ({
+                value,
+                align: 'center',
+                alignVertical: 'middle',
+                borderStyle: 'medium',
+                fontSize: fuente,
+                ...opts,
             });
 
-            const cellImage = worksheet.getCell("A1")
-            cellImage.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-
-            //? titulo
-            row1Cells.forEach(item => {
-                const cell = worksheet.getCell(item.cell)
-                setCellProperties(cell, item.value, item.font, item.bold)
-            })
-            row2cells.forEach(item => {
-                const cell = worksheet.getCell(item.cell)
-                setCellProperties(cell, item.value, item.font, item.bold)
-            })
-            row3Cells.forEach(item => {
-                const cell = worksheet.getCell(item.cell)
-                setCellProperties(cell, item.value, item.font, item.bold)
-            })
-
-            if (cont.infoContenedor.clienteInfo._id === "659dbd9a347a42d89929340e") {
-
-                worksheet.mergeCells(`A1:B1`);
-                worksheet.mergeCells(`C1:J1`);
-                worksheet.mergeCells('B2:C2');
-                worksheet.mergeCells('A3:B3');
-                worksheet.mergeCells('D3:E3');
-                worksheet.mergeCells('H3:I3');
+            // ---- Fila 1 ----
+            let row1, row2, row3;
+            if (isCOC) {
+                // 11 columnas (A-K)
+                row1 = [
+                    c("", { span: 2, height: 80 }), null,
+                    c("PACKING LIST REPORT", { span: 8, fontSize: 24, fontWeight: 'bold' }), null, null, null, null, null, null, null,
+                    c("Codigo: PC-CAL-FOR-05", { fontWeight: 'bold' }),
+                ];
+                row2 = [
+                    c("CLIENTE", { fontWeight: 'bold', height: alto }),
+                    c(cont.infoContenedor.clienteInfo.CLIENTE, { span: 2 }), null,
+                    c("TEMP. SET POINT:", { fontWeight: 'bold' }),
+                    c("44,6F"),
+                    c("FREIGHT:", { fontWeight: 'bold' }),
+                    c(""),
+                    c("CONTAINER NUMBER:", { fontWeight: 'bold' }),
+                    c(cont.numeroContenedor),
+                    c("REFERENCE N°:", { fontWeight: 'bold' }),
+                    c(tipoFrutaStr),
+                ];
+                row3 = [
+                    c("TEMP RECORDER LOCATION:", { fontWeight: 'bold', span: 2, height: alto }), null,
+                    c("PALLET 10"),
+                    c("TEMP RECORDER ID:", { fontWeight: 'bold', span: 2 }), null,
+                    c("SS-0085719"),
+                    c("DATE:", { fontWeight: 'bold' }),
+                    c(fechaStr, { span: 2 }), null,
+                    c("CoC:", { fontWeight: 'bold' }),
+                    c(cocValue),
+                ];
             } else {
-                worksheet.mergeCells(`A1:B1`);
-                worksheet.mergeCells(`C1:I1`);
-                worksheet.mergeCells('B2:C2');
-                worksheet.mergeCells('A3:B3');
-                worksheet.mergeCells('D3:E3');
+                // 10 columnas (A-J)
+                row1 = [
+                    c("", { span: 2, height: 80 }), null,
+                    c("PACKING LIST REPORT", { span: 7, fontSize: 24, fontWeight: 'bold' }), null, null, null, null, null, null,
+                    c("Codigo: PC-CAL-FOR-05", { fontWeight: 'bold' }),
+                ];
+                row2 = [
+                    c("CLIENTE", { fontWeight: 'bold', height: alto }),
+                    c(cont.infoContenedor.clienteInfo.CLIENTE, { span: 2 }), null,
+                    c("TEMP. SET POINT:", { fontWeight: 'bold' }),
+                    c("44,6F"),
+                    c("FREIGHT:", { fontWeight: 'bold' }),
+                    c("CONTAINER NUMBER:", { fontWeight: 'bold' }),
+                    c(cont.numeroContenedor),
+                    c("REFERENCE N°:", { fontWeight: 'bold' }),
+                    c(tipoFrutaStr),
+                ];
+                row3 = [
+                    c("TEMP RECORDER LOCATION:", { fontWeight: 'bold', span: 2, height: alto }), null,
+                    c("PALLET 10"),
+                    c("TEMP RECORDER ID:", { fontWeight: 'bold', span: 2 }), null,
+                    c("SS-0085719"),
+                    c("DATE:", { fontWeight: 'bold' }),
+                    c(fechaStr),
+                    c("CoC:", { fontWeight: 'bold' }),
+                    c(cocValue),
+                ];
             }
 
-            //? los headers de la tabla
-            const headers = cont.infoContenedor.clienteInfo._id === "659dbd9a347a42d89929340e" ? [
-                "PALLET ID",
-                "PACKING DATE",
-                "VARIETY",
-                "PRODUCT",
-                "WEIGHT",
-                "CATEGORY",
-                "SIZE",
-                "QTY",
-                "FARM CODE",
-                "N° GG",
-                "EXPIRATION DATE"
+            // ---- Fila de headers ----
+            const headersData = isCOC ? [
+                "PALLET ID", "PACKING DATE", "VARIETY", "PRODUCT", "WEIGHT",
+                "CATEGORY", "SIZE", "QTY", "FARM CODE", "N° GG", "EXPIRATION DATE"
             ] : [
-                "PALLET ID",
-                "PACKING DATE",
-                "VARIETY",
-                "WEIGHT",
-                "CATEGORY",
-                "SIZE",
-                "QTY",
-                "FARM CODE",
-                "N° GG",
-                "EXPIRATION DATE"
-            ]
-            const headerRow = worksheet.insertRow(4, headers)
-            headerRow.height = alto_celda
+                "PALLET ID", "PACKING DATE", "VARIETY", "WEIGHT",
+                "CATEGORY", "SIZE", "QTY", "FARM CODE", "N° GG", "EXPIRATION DATE"
+            ];
+            const headerRow = headersData.map((h, i) =>
+                c(h, { fontWeight: 'bold', fontSize: 15, backgroundColor: GREEN, height: alto, ...(i > 0 ? {} : {}) })
+            );
 
-            const len = cont.infoContenedor.clienteInfo._id === "659dbd9a347a42d89929340e" ? 11 : 10;
-            for (let i = 1; i <= len; i++) {
-                const cell = worksheet.getCell(4, i);
-                cell.font = { bold: true, size: 15 };
-                cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FF5FD991' }
-                }
-                cell.border = styleNormalCell
-            }
-            let totalCajas = 0
-            let row = 5
-
+            // ---- Filas de datos ----
+            let totalCajas = 0;
+            const dataRows = [];
             for (const item of itemsPallet) {
-                if (cont.infoContenedor.clienteInfo._id === "659dbd9a347a42d89929340e") {
-                    const newRow = worksheet.insertRow(row, [
-                        String(item.pallet.numeroPallet) + String(cont.numeroContenedor),
-                        formatearFecha(item.fecha instanceof Date ? item.fecha.toISOString() : item.fecha, true),
-                        labelListaEmpaque[item.tipoFruta.tipoFruta],
-                        "COL-" + mostrarKilose(item) + (item.tipoFruta === 'Limon' ? 'Limes' : 'Oranges') + item.calibre + "ct",
-                        mostrarKilose(item),
-                        isNotCaribe ? (item?.calidad?.descripcion || "N/A") : "Caribe",
-                        item.calibre,
-                        item.cajas,
-                        item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
-                        item.GGN ? item.lote.predio.GGN.code : "N/A",
-                        item.GGN ? item.lote.predio.GGN.fechaVencimiento : "N/A",
-                    ])
-
-                    newRow.height = alto_celda;
-                    newRow.width = 20;
-
-                } else {
-                    const newRow = worksheet.insertRow(row, [
-                        String(item.pallet.numeroPallet) + String(cont.numeroContenedor),
-                        formatearFecha(item.fecha instanceof Date ? item.fecha.toISOString() : item.fecha, true),
-                        labelListaEmpaque[item.tipoFruta.tipoFruta],
-                        mostrarKilose(item),
-                        isNotCaribe ? (item?.calidad?.descripcion || "N/A") : "Caribe",
-                        item.calibre,
-                        item.cajas,
-                        item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
-                        item.GGN ? item.lote.predio.GGN.code : "N/A",
-                        item.GGN ? item.lote.predio.GGN.fechaVencimiento : "N/A",
-                    ])
-
-                    newRow.height = alto_celda;
-                    newRow.width = 20.33;
-                }
-
-                if (!coc_flag && item.GGN) {
-                    coc_flag = true
-                }
+                const values = isCOC ? [
+                    String(item.pallet.numeroPallet) + String(cont.numeroContenedor),
+                    formatearFecha(item.fecha instanceof Date ? item.fecha.toISOString() : item.fecha, true),
+                    labelListaEmpaque[item.tipoFruta.tipoFruta],
+                    "COL-" + mostrarKilose(item) + (item.tipoFruta === 'Limon' ? 'Limes' : 'Oranges') + item.calibre + "ct",
+                    mostrarKilose(item),
+                    isNotCaribe ? (item?.calidad?.descripcion || "N/A") : "Caribe",
+                    item.calibre,
+                    item.cajas,
+                    item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
+                    item.GGN ? item.lote.predio.GGN.code : "N/A",
+                    item.GGN ? item.lote.predio.GGN.fechaVencimiento : "N/A",
+                ] : [
+                    String(item.pallet.numeroPallet) + String(cont.numeroContenedor),
+                    formatearFecha(item.fecha instanceof Date ? item.fecha.toISOString() : item.fecha, true),
+                    labelListaEmpaque[item.tipoFruta.tipoFruta],
+                    mostrarKilose(item),
+                    isNotCaribe ? (item?.calidad?.descripcion || "N/A") : "Caribe",
+                    item.calibre,
+                    item.cajas,
+                    item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
+                    item.GGN ? item.lote.predio.GGN.code : "N/A",
+                    item.GGN ? item.lote.predio.GGN.fechaVencimiento : "N/A",
+                ];
+                dataRows.push(values.map((v, i) => c(v ?? "", {
+                    wrap: true,
+                    ...(i === 0 ? { height: alto } : {}),
+                })));
                 totalCajas += item.cajas;
-                for (let i = 1; i <= len; i++) {
-                    const cell = worksheet.getCell(row, i);
-                    cell.font = { size: fuente };
-                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-                    cell.border = styleNormalCell
-                }
-                row++;
-
             }
 
-            const totalLabel = worksheet.getCell(row, 1)
-            totalLabel.value = "TOTAL"
-            worksheet.getRow(row).height = alto_celda
+            // ---- Fila de total ----
+            const totalRow = isCOC ? [
+                c("TOTAL", { span: 6, fontWeight: 'bold', backgroundColor: GREEN, fontSize: 12, height: alto }), null, null, null, null, null,
+                c(totalCajas, { span: 5, fontWeight: 'bold', backgroundColor: GREEN, fontSize: 12 }), null, null, null, null,
+            ] : [
+                c("TOTAL", { span: 5, fontWeight: 'bold', backgroundColor: GREEN, fontSize: 12, height: alto }), null, null, null, null,
+                c(totalCajas, { span: 5, fontWeight: 'bold', backgroundColor: GREEN, fontSize: 12 }), null, null, null, null,
+            ];
 
-            if (cont.infoContenedor.clienteInfo._id === "659dbd9a347a42d89929340e") {
-                worksheet.mergeCells(`A${row}:F${row}`);
-                worksheet.mergeCells(`G${row}:K${row}`);
-
-            } else {
-                worksheet.mergeCells(`A${row}:E${row}`);
-                worksheet.mergeCells(`F${row}:J${row}`);
-
-            }
-            totalLabel.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-            totalLabel.font = { size: 12 }
-            totalLabel.border = styleNormalCell
-            totalLabel.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FF5FD991' }
-            }
-
-            const total = worksheet.getCell(row, 7)
-            total.value = totalCajas
-            total.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-            total.font = { size: 12 }
-            total.border = styleNormalCell
-            total.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FF5FD991' }
-            }
-            //?las tablas de resumen por calidad
-
-            row += 2;
-            worksheet.getRow(row).height = alto_celda
-
+            // ---- Tablas de resumen por calidad ----
+            const summaryRows = [[]]; // fila en blanco separadora
             for (const calidad of cont.infoContenedor.calidad) {
-                //head
-                worksheet.insertRow(row, [
-                    "SUMMARY CATEGORY",
-                    isNotCaribe ? (calidad?.descripcion || "N/A") : "Caribe",
-
-                ])
-                for (let i = 1; i <= 4; i++) {
-                    const cell = worksheet.getCell(row, i);
-                    cell.font = { bold: true, size: fuente };
-                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                    cell.fill = {
-                        type: 'pattern',
-                        pattern: 'solid',
-                        fgColor: { argb: 'FF5FD991' }
-                    }
-                    cell.border = styleNormalCell
+                // cabecera de calidad
+                summaryRows.push([
+                    c("SUMMARY CATEGORY", { fontWeight: 'bold', backgroundColor: GREEN, height: alto }),
+                    c(isNotCaribe ? (calidad?.descripcion || "N/A") : "Caribe", { fontWeight: 'bold', backgroundColor: GREEN }),
+                    c("", { fontWeight: 'bold', backgroundColor: GREEN }),
+                    c("", { fontWeight: 'bold', backgroundColor: GREEN }),
+                ]);
+                // columnas
+                summaryRows.push([
+                    c("SIZE", { fontWeight: 'bold', backgroundColor: GREEN, height: alto }),
+                    c("QTY", { fontWeight: 'bold', backgroundColor: GREEN }),
+                    c("KILOS", { fontWeight: 'bold', backgroundColor: GREEN }),
+                    c("% PERCENTAGE", { fontWeight: 'bold', backgroundColor: GREEN }),
+                ]);
+                // datos
+                const resumen = isNotCaribe ? resumenCalidad(itemsPallet, calidad) : resumenCalidad(itemsPallet);
+                for (const [calibre, val] of Object.entries(resumen)) {
+                    summaryRows.push([
+                        c(calibre, { fontSize: 12, height: alto }),
+                        c(val.cantidad, { fontSize: 12 }),
+                        c(val.kilos, { fontSize: 12 }),
+                        c(val.porcentage.toFixed(2) + "%", { fontSize: 12 }),
+                    ]);
                 }
-                row++;
-                worksheet.getRow(row).height = alto_celda
-
-                //columnas
-                worksheet.insertRow(row, [
-                    "SIZE",
-                    "QTY",
-                    "N.PALLETS",
-                    "% PERCENTAGE",
-                ])
-
-                for (let i = 1; i <= 4; i++) {
-                    const cell = worksheet.getCell(row, i);
-                    cell.font = { bold: true, size: fuente };
-                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                    cell.fill = {
-                        type: 'pattern',
-                        pattern: 'solid',
-                        fgColor: { argb: 'FF5FD991' }
-                    }
-                    cell.border = styleNormalCell
-                }
-                row++;
-                worksheet.getRow(row).height = alto_celda
-
-                const resumen = isNotCaribe ? resumenCalidad(itemsPallet, calidad) : resumenCalidad(itemsPallet)
-                //datos
-                Object.entries(resumen).forEach(([key, value]) => {
-                    worksheet.insertRow(row, [
-                        key,
-                        value.cantidad,
-                        value.pallets,
-                        value.porcentage.toFixed(2) + "%",
-                    ])
-                    for (let i = 1; i <= 4; i++) {
-                        const cell = worksheet.getCell(row, i);
-                        cell.font = { size: 12 };
-                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                        cell.border = styleNormalCell
-                    }
-
-                    row++;
-                    worksheet.getRow(row).height = alto_celda
-
-                })
-
-                worksheet.insertRow(row, [
-                    "TOTAL",
-                    Object.keys(resumen).reduce((acu, item) => acu += resumen[item].cantidad, 0),
-                    Object.keys(resumen).reduce((acu, item) => acu += resumen[item].pallets, 0),
-                    resumen && Object.keys(resumen).reduce((acu, item) => acu += resumen[item].porcentage, 0).toFixed(2) + "%",
-                ])
-                for (let i = 1; i <= 4; i++) {
-                    const cell = worksheet.getCell(row, i);
-                    cell.font = { bold: true, size: 12 };
-                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                    cell.fill = {
-                        type: 'pattern',
-                        pattern: 'solid',
-                        fgColor: { argb: 'FF5FD991' }
-                    }
-                    cell.border = styleNormalCell
-                }
-
-                row += 2;
-                worksheet.getRow(row).height = alto_celda
-
-                if (coc_flag) {
-                    if (cont.infoContenedor.clienteInfo._id === "659dbd9a347a42d89929340e") {
-                        const cell = worksheet.getCell("K3")
-                        cell.value = "4063061801296"
-                        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-                        cell.font = { size: fuente, bold: false }
-                        cell.border = styleNormalCell
-                    } else {
-                        const cell = worksheet.getCell("J3")
-                        cell.value = "4063061801296"
-                        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-                        cell.font = { size: fuente, bold: false }
-                        cell.border = styleNormalCell
-                    }
-
-                }
+                // total resumen
+                const resumenVals = Object.values(resumen);
+                summaryRows.push([
+                    c("TOTAL", { fontWeight: 'bold', fontSize: 12, backgroundColor: GREEN, height: alto }),
+                    c(resumenVals.reduce((acu, v) => acu + v.cantidad, 0), { fontWeight: 'bold', fontSize: 12, backgroundColor: GREEN }),
+                    c(resumenVals.reduce((acu, v) => acu + v.kilos, 0), { fontWeight: 'bold', fontSize: 12, backgroundColor: GREEN }),
+                    c(resumenVals.reduce((acu, v) => acu + v.porcentage, 0).toFixed(2) + "%", { fontWeight: 'bold', fontSize: 12, backgroundColor: GREEN }),
+                ]);
+                summaryRows.push([]); // separador entre calidades
 
                 if (!isNotCaribe) break;
-
             }
 
-            const buffer = await workbook.xlsx.writeBuffer();
-            return buffer;
+            const data = [row1, row2, row3, headerRow, ...dataRows, totalRow, ...summaryRows];
+            const columns = Array.from({ length: numCols }, () => ({ width: 20.33 }));
+
+            const xlsxBuffer = await writeXlsxFile(data, {
+                columns,
+                sheet: 'Lista empaque',
+                buffer: true,
+            });
+
+            // ---- Inyección del logo via PizZip ----
+            // xlsx es un ZIP con XML; PizZip ya está en el proyecto para docxtemplater
+            const zip = new PizZip(xlsxBuffer);
+            const imageData = fs.readFileSync(imagePath);
+
+            // 1. Agrega la imagen al directorio media
+            zip.file('xl/media/image1.png', imageData);
+
+            // 2. Drawing XML: imagen anclada en A1:B1 (twoCellAnchor llena el área fusionada)
+            const drawingXml = [
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+                '<xdr:wsDr',
+                '  xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"',
+                '  xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"',
+                '  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">',
+                '  <xdr:twoCellAnchor editAs="twoCell">',
+                '    <xdr:from><xdr:col>0</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>',
+                '    <xdr:to><xdr:col>2</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>1</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>',
+                '    <xdr:pic>',
+                '      <xdr:nvPicPr>',
+                '        <xdr:cNvPr id="2" name="Logo"/>',
+                '        <xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr>',
+                '      </xdr:nvPicPr>',
+                '      <xdr:blipFill>',
+                '        <a:blip r:embed="rId1"/>',
+                '        <a:stretch><a:fillRect/></a:stretch>',
+                '      </xdr:blipFill>',
+                '      <xdr:spPr>',
+                '        <a:xfrm><a:off x="0" y="0"/><a:ext cx="1" cy="1"/></a:xfrm>',
+                '        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>',
+                '      </xdr:spPr>',
+                '    </xdr:pic>',
+                '    <xdr:clientData/>',
+                '  </xdr:twoCellAnchor>',
+                '</xdr:wsDr>',
+            ].join('\n');
+            zip.file('xl/drawings/drawing1.xml', drawingXml);
+
+            // 3. Relaciones del drawing → imagen
+            const drawingRelsXml = [
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">',
+                '  <Relationship Id="rId1"',
+                '    Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"',
+                '    Target="../media/image1.png"/>',
+                '</Relationships>',
+            ].join('\n');
+            zip.file('xl/drawings/_rels/drawing1.xml.rels', drawingRelsXml);
+
+            // 4. Relaciones de sheet1 → drawing
+            const sheetRelsXml = [
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">',
+                '  <Relationship Id="rId1"',
+                '    Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing"',
+                '    Target="../drawings/drawing1.xml"/>',
+                '</Relationships>',
+            ].join('\n');
+            zip.file('xl/worksheets/_rels/sheet1.xml.rels', sheetRelsXml);
+
+            // 5. Agrega referencia al drawing en el worksheet XML
+            let sheetXml = zip.file('xl/worksheets/sheet1.xml').asText();
+            // Asegura el namespace r: en el elemento raíz
+            if (!sheetXml.includes('xmlns:r=')) {
+                sheetXml = sheetXml.replace(
+                    '<worksheet ',
+                    '<worksheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+                );
+            }
+            sheetXml = sheetXml.replace('</worksheet>', '<drawing r:id="rId1"/></worksheet>');
+            zip.file('xl/worksheets/sheet1.xml', sheetXml);
+
+            // 6. Registra tipos de contenido
+            let contentTypesXml = zip.file('[Content_Types].xml').asText();
+            if (!contentTypesXml.includes('image/png')) {
+                contentTypesXml = contentTypesXml.replace(
+                    '</Types>',
+                    '<Default Extension="png" ContentType="image/png"/></Types>'
+                );
+            }
+            if (!contentTypesXml.includes('drawing+xml')) {
+                contentTypesXml = contentTypesXml.replace(
+                    '</Types>',
+                    '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/></Types>'
+                );
+            }
+            zip.file('[Content_Types].xml', contentTypesXml);
+
+            return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
         } catch (error) {
             console.error('Error en crear_listas_de_empaque:', error);
             throw error;
