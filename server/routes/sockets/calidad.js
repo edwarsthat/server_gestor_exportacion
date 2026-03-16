@@ -187,6 +187,19 @@ export const apiSocketCalidad = {
     },
 
     //#endregion
+
+    //#region Control Limpieza EPP
+    get_calidad_formulario_controlLimpiezaEPP: async (data) => {
+        const response = await CalidadRepository.get_calidad_formulario_controlLimpiezaEPP(data);
+        return successResponseRoutes(response);
+    },
+
+    post_calidad_formulario_controlLimpiezaEPP: async (data) => {
+        await CalidadRepository.post_calidad_formulario_controlLimpiezaEPP(data);
+        return successResponseRoutes();
+    },
+    //#endregion
+
     //#region reclamaciones
     get_calidad_reclamaciones_contenedores_numeroElementos: async () => {
         const response = await CalidadRepository.get_calidad_reclamaciones_contenedores_numeroElementos();
