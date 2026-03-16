@@ -210,5 +210,27 @@ export class CalidadValidationsRepository {
         });
     }
 //-----------------------------------------------------------------------------------------------------------------------------------
+//Control Limpieza EPP
+    static post_calidad_formulario_controlLimpiezaEPP() {
+        return z.object({
+            data: z.object({
+                fecha: z.string()
+                    .min(1, "La fecha es obligatoria")
+                    .refine((val) => !isNaN(Date.parse(val)), "Fecha inválida"),
+
+                area: z.string().trim().min(1, "El área es obligatoria"),
+
+                responsable: z.string().trim().min(1, "El responsable es obligatorio"),
+
+                elementos: z.record(
+                    z.string(),
+                    z.object({
+                        status: z.boolean(),
+                        observaciones: z.string().optional().default("")
+                    })
+                )
+            })
+        });
+    }
 }
 
