@@ -301,7 +301,7 @@ const defineSchemasProceso = async (sysConn) => {
 
         //.Jp ----------------------------------------
         console.log("⚡ Definiendo TarifaPredio...");
-        db.tarifaPredio = await defineTarifaPredio(sysConn);
+        db.TarifaPredio = await defineTarifaPredio(sysConn);
         console.log("✅ TarifaPredio definido");
 
 
