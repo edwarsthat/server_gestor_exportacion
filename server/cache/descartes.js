@@ -18,8 +18,6 @@ export class descarteCache {
                     Reflect.set(descarteMap, id, item);
                 });
 
-                console.log(`[CACHE] Descarte cache cargado exitosamente en intento ${intento}`);
-                console.log(descarteMap);
                 return;
 
             } catch (err) {

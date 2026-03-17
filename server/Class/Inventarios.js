@@ -745,11 +745,12 @@ export class InventarioDescartesRepository extends BaseRepository {
     static async get_total_canastillas_inventario_descarte(options = {}) {
         const { session } = options;
         const idsSinInventario = descarteCache.getDescartesSinInventario().map(d => d._id.toString());
+        console.log(idsSinInventario)
         const resultado = await db.InventarioActualDescarte.aggregate([
             {
                 '$match': {
                     estado: 'ACTIVO',
-                    ...(idsSinInventario.length > 0 && { tipoDescarte: { $nin: idsSinInventario } }),
+                    ...(idsSinInventario.length > 0 && { tipoDescarte: { $nin: idsSinInventario.map(id => new mongoose.Types.ObjectId(id)) } }),
                 }
             },
             {
