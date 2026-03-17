@@ -1,5 +1,24 @@
 
 import puppeteer from "puppeteer";
+import { platform } from "os";
+import { existsSync } from "fs";
+
+const getChromePath = () => {
+    if (platform() === 'win32') {
+        return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+    }
+    if (platform() === 'darwin') {
+        return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+    }
+    // Linux: buscar la primera ruta que exista
+    const linuxPaths = [
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/chromium-browser',
+        '/usr/bin/chromium',
+    ];
+    return linuxPaths.find(p => existsSync(p)) ?? null;
+}
 
 class BrowserPool {
     constructor() {
@@ -9,9 +28,10 @@ class BrowserPool {
     }
 
     async init(size = 3) {
+        const executablePath = getChromePath()
         this.browser = await puppeteer.launch({
             headless: 'new',
-            executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            ...(executablePath && { executablePath }),
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',

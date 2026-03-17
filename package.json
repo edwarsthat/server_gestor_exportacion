@@ -13,7 +13,8 @@
     "iniciar-inventario": "node scripts/InicializarInventario.js",
     "start-db": "powershell -ExecutionPolicy Bypass -File ./config/start-databases.ps1",
     "stop-db": "powershell -Command \"Stop-Process -Name mongod -Force\"",
-    "mongo:start": "sudo bash ./config/start-mongo-rs.sh"
+    "mongo:start": "sudo bash ./config/start-mongo-rs.sh",
+    "postinstall": "npx puppeteer browsers install chrome"
   },
   "type": "module",
   "author": "Edwar Stheven Ariza Torres",
