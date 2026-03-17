@@ -42,5 +42,21 @@ export class descarteCache {
             throw new ConnectRedisError(502, `Error al obtener descarte: ${err.message}`);
         }
     }
+    static getDescartes() {
+        try {
+            return descarteMap;
+        } catch (err) {
+            console.error(`[CACHE] Error al obtener descarte`);
+            throw new ConnectRedisError(502, `Error al obtener descarte: ${err.message}`);
+        }
+    }
+    static getDescartesSinInventario() {
+        try {
+            return Object.values(descarteMap).filter(d => !d.inventario);
+        } catch (err) {
+            console.error(`[CACHE] Error al obtener descarte`);
+            throw new ConnectRedisError(502, `Error al obtener descarte: ${err.message}`);
+        }
+    }
 
 }

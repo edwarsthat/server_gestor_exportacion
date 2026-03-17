@@ -24,6 +24,7 @@ export class CanastillasService {
         const total_frutaSinProcesar = concatResult.reduce((acc, item) => acc + item.canastillas, 0);
 
         //se obtiene las canastillas llenas de descarte
+        
         const inventarioDescarte = await InventarioDescartesRepository.get_total_canastillas_inventario_descarte({})
         if (inventarioDescarte === null) throw new Error("No se encontro el inventario de descarte")
 
