@@ -76,7 +76,15 @@ export class CanastillasController {
                 query.destino = destino
             }
 
-            const registros = await CanastillasRepository.get_data({ query: query, skip: skip, limit: resultsPerPage, sort: { createdAt: -1 } })
+            const registros = await CanastillasRepository.get_data({
+                query: query,
+                skip: skip,
+                limit: resultsPerPage,
+                sort: { createdAt: -1 },
+                populate: [
+                    { path: "usuario", select:"usuario" }
+                ]
+            })
 
             return registros
 
