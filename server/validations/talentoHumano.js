@@ -25,6 +25,8 @@ export class TalentoHumanoValidations {
                 tipoDocumento: z.string().min(1, "El tipo de documento es obligatorio"),
                 tipoSangre: z.string().min(1, "El tipo de sangre es obligatorio"),
                 cargo: z.string().min(1, "El cargo es obligatorio"),
+                vinilo: z.boolean(),
+
             }),
             foto: bufferData("foto"),
             cedulaPath: requiredSafeString("cedulaPath"),

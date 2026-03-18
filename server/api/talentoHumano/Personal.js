@@ -48,6 +48,7 @@ export class PersonalControllerRepository {
             "personal",
             "fotoCarnet",
         );
+        
 
         try {
             filePath = await FileService.saveBufferFile(
@@ -203,6 +204,7 @@ export class PersonalControllerRepository {
                 server: "python",
                 action: "validar_cedula"
             };
+            console.log("🚀 Enviando a Rust:", JSON.stringify(payload));
             const responseStr = await rustRcpClient.sendData(payload);
             console.log(responseStr)
             const response = await JSON.parse(responseStr);
