@@ -27,6 +27,9 @@ const permisos_generales = new Set([
     "post_calidad_formulario_controlLimpiezaEPP",
     //permiso tarifa congelada
     "put_tarifa_congelada_lote",
+    //permiso otros fletes
+    "get_contabilidad_otros_fletes",
+    "post_contabilidad_otros_fletes",
 
     "obtener_cantidad_usuarios",
     "obtener_cantidad_historial_espera_descargue",
