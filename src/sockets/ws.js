@@ -1,7 +1,6 @@
 import { BadGetwayError, ErrorUndefinedData } from "../../Error/ConnectionErrors.js";
 import { HandleErrors } from "../../Error/recordErrors.js";
 import { AccessError } from "../../Error/ValidationErrors.js";
-import { procesoEventEmitter } from "../../events/eventos.js";
 import { UserRepository } from "../../server/auth/users.js";
 import { apiSocket } from "../../server/desktop/reduce.js";
 import { apiSocketCalidad } from "../../server/routes/sockets/calidad.js";
@@ -18,13 +17,11 @@ import { apiSocketTalentoHumano } from "../../server/routes/sockets/talentoHuman
 import { apiSocketTransporte } from "../../server/routes/sockets/transporte.js";
 // import mongoose from "mongoose"; .Jp
 import mongoose from "mongoose";
+import { eventLisener } from "./serverEvents.js";
 
 
 export function initSockets(io) {
     // Middleware de autenticación para Socket.IO
-
-
-
     io.use(async (socket, next) => {
         try {
             await UserRepository.authenticateTokenSocket(socket, next);
@@ -37,45 +34,7 @@ export function initSockets(io) {
         io.emit('servidor', data)
     };
 
-
-    procesoEventEmitter.on('predio_vaciado', (data) => {
-        try {
-            io.emit("predio_vaciado", data);
-        } catch (error) {
-            console.error('Error en predio_vaciado:', error);
-        }
-    })
-    procesoEventEmitter.on('listaempaque_update', () => {
-        try {
-            io.emit("listaempaque_update");
-        } catch (error) {
-            console.error('Error en listaempaque_update:', error);
-        }
-    })
-    procesoEventEmitter.on('status_proceso', (data) => {
-        try {
-            io.emit("status_proceso", data);
-        } catch (error) {
-            console.error('Error en status_proceso:', error);
-        }
-    })
-
-    // procesoEventEmitter.on('proceso_event', (data) => {
-    //     try {
-    //         io.emit("proceso_event", data);
-    //     } catch (error) {
-    //         console.error('Error en proceso_event:', error);
-    //     }
-    // });
-    procesoEventEmitter.on('server_event', (data) => {
-        try {
-            io.emit("server_event", data);
-        } catch (error) {
-            console.error('Error en nuevo_predio:', error);
-        }
-    })
-
-
+    eventLisener({ io: io })
 
     io.on("connection", socket => {
         console.log("an user has connected");
@@ -87,7 +46,6 @@ export function initSockets(io) {
             try {
 
                 data.user = authenticatedUser;
-
                 // Añadir la conexión de mongoose al objeto data .Jp
                 data.conn = mongoose.connection;
 
@@ -115,8 +73,6 @@ export function initSockets(io) {
                 callback(err);
             }
         }
-
-
         socket.on("Desktop2", async (data, callback) => {
             if (!data || !data.data || !data.data.action) {
                 return callback(new ErrorUndefinedData(425, "Petición inválida: falta 'action'"));
@@ -151,7 +107,12 @@ export function initSockets(io) {
                 handleRequest(data, callback, apiSocket);
             }
         })
-
+        socket.on("join_job", (jobId) => {
+            socket.join(`job_${jobId}`);
+            console.log(`[join_job] socket ${socket.id} unido a job_${jobId}`);
+            console.log(`[join_job] sockets en job_${jobId}:`, io.sockets.adapter.rooms.get(`job_${jobId}`)?.size);
+            console.log(`[join_job] rooms activas:`, io.sockets.adapter.rooms);
+        })
         socket.on("disconnect", () => {
             console.log("Un usuario se ha desconectado.");
             console.log("Conexiones activas:", io.engine.clientsCount);

@@ -35,7 +35,7 @@ export class TalentoHumanoValidations {
     }
     static put_talentoHumano_dotacion_carnets_generar_temporal() {
         return z.object({
-            data: z.string().regex(/^[0-9a-fA-F]{24}$/, "ID de carnet no válido"),
+            data: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, "ID de carnet no válido")).min(1, "Se requiere al menos un ID"),
             action: z.string().min(1, "La acción es obligatoria"),
         })
     }

@@ -24,6 +24,7 @@ async function initDB() {
 }
 
 async function run() {
+
     let connection;
     let session
 
@@ -32,7 +33,11 @@ async function run() {
         connection = conn
         session = await conn.startSession()
 
-        const empleados = await Personal.find({ _id: { $in: carnetsIds } }).session(session)
+        console.log("[carnetWorker] carnetsIds: ", carnetsIds)
+
+        const empleados = await Personal.find({ carnet: { $in: carnetsIds } }).session(session)
+        console.log("[carnetWorker] empleados: ", empleados)
+ 
         if (!empleados || empleados.length === 0) {
             throw new Error("No se encontraron empleados para generar");
         }
@@ -119,6 +124,7 @@ async function run() {
 
             parentPort.postMessage({
                 type: 'progress',
+                status: 200,
                 jobId,
                 done: pdfs.length,
                 total: carnetsIds.length
@@ -126,13 +132,15 @@ async function run() {
 
         }
 
-        parentPort.postMessage({ type: 'done', jobId, pdfs })
+        parentPort.postMessage({ type: 'done', status: 200, jobId, pdfs })
     } catch (err) {
+        console.error(err)
         parentPort.postMessage({
             type: 'error',
             jobId,
             message: err.message,
-            stack: err.stack
+            stack: err.stack,
+            status: 401,
         })
     } finally {
         if (connection) {

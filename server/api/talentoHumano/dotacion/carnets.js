@@ -12,8 +12,7 @@ import { FileService } from "../../../services/helpers/FileService.js";
 import { HtmlToImage } from '../../../services/helpers/HtmlToImage.js';
 import config from '../../../../src/config/index.js';
 import { TalentoHumanoValidations } from '../../../validations/talentoHumano.js';
-import { CargosPersonalRepository } from '../../../Class/talentoHumano/CargosPersonal.js';
-import QRCode from 'qrcode';
+import { CarnetWorkerRunner } from '../../../services/workers/talentoHumano/carnetWorkerRunner.js';
 
 export class DotacionCarnetsControllerRepository {
     static async post_talentoHumano_dotacion_carnets(req) {
@@ -221,22 +220,20 @@ export class DotacionCarnetsControllerRepository {
         }
     }
     static async put_talentoHumano_dotacion_carnets_generar_final(req) {
-        const { user } = req
-        const { data, action } = req.data
+        const { data } = req.data
 
         const session = await db.Carnet.db.startSession();
 
         try {
             TalentoHumanoValidations.put_talentoHumano_dotacion_carnets_generar_temporal().parse(req.data)
 
-            return result;
+            const jobId = CarnetWorkerRunner.launch(data)
+            return jobId;
 
         } catch (error) {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
-            await ErrorTalentHumanoLogicHandlers(error, log)
         } finally {
             await session.endSession();
-            await registrarPasoLog(log._id, "Finalizado", "Completado", "Función completada exitosamente");
         }
     }
 }
