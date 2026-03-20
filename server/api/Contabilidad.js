@@ -2,6 +2,7 @@
 import { ContabilidadLogicError } from "../../Error/logicLayerError.js";
 import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { LotesRepository } from "../Class/Lotes.js";
+import { OtrosFletesRepository } from "../Class/OtrosFletes.js";
 import mongoose from 'mongoose';
 //jp
 import { db } from "../../DB/mongoDB/config/init.js";
@@ -498,6 +499,49 @@ export class ContabilidadRepository {
             throw new Error(err.message);
         }
     }
+    //Otros fletes
+    static async post_contabilidad_otros_fletes(req) {
+    try {
+        // const { data } = req;
+        console.log("REQ.DATA:", req.data);
+        console.log("REQ.USER:", req.user?._id);
+
+        const { fecha, destino, tipoFlete, valorFlete, placa, conductor, observaciones, semana } = req.data.data;
+
+        const nuevoRegistro = await db.OtrosFletes.create({
+            fecha: new Date(fecha),
+            destino,
+            tipoFlete,
+            valorFlete: Number(valorFlete),
+            placa,
+            conductor,
+            observaciones: observaciones || "",
+            semana,
+            usuario: req.user?._id
+        });
+
+        return nuevoRegistro;
+
+    } catch (err) {
+        throw new ContabilidadLogicError(500, err.message);
+    }
+}
+    static async get_contabilidad_otros_fletes(req) {
+    try {
+
+        const filtros = req.data || {};
+
+        const data = await OtrosFletesRepository.getOtrosFletes(filtros);
+
+        return data;
+
+    } catch (err) {
+        throw new ContabilidadLogicError(
+            475,
+            `Error obteniendo otros fletes: ${err.message}`
+        );
+    }
+}
 }
 //------------------------------------------------------------------------------
 // }
