@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
-import mongoose from 'mongoose';
 import { TalentoHumanoDotacionCarnetsRepository } from "../../../Class/talentoHumano/dotacion/Carnets.js";
 import { LogsRepository } from "../../../Class/LogsSistema.js";
 import { registrarPasoLog } from "../../helper/logs.js";
@@ -13,60 +12,75 @@ import { HtmlToImage } from '../../../services/helpers/HtmlToImage.js';
 import config from '../../../../src/config/index.js';
 import { TalentoHumanoValidations } from '../../../validations/talentoHumano.js';
 import { CarnetWorkerRunner } from '../../../services/workers/talentoHumano/carnetWorkerRunner.js';
+import { executeTransactionalTask } from '../../../utils/wrappers.js';
+import QRCode from 'qrcode';
 
 export class DotacionCarnetsControllerRepository {
     static async post_talentoHumano_dotacion_carnets(req) {
         const { user } = req
-        const { action, tipo, empleado } = req.data
-        let log
-
-        log = await LogsRepository.create({
-            user: user._id,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-        })
-
-        const session = await db.Carnet.db.startSession();
-
-        try {
-
-            await session.withTransaction(async () => {
-
-                const serial = await Seriales.actualizar_data(
-                    { name: "SKU" },
-                    { $inc: { serial: 1 } },
-                    { session }
-                )
-
-                if (!serial || serial.length === 0) {
-                    throw new Error("No se encontró el serial Carnet")
-                }
-                const carnet = serial[0]
-                await registrarPasoLog(log._id, "Éxito", "Completado", "Serial encontrado");
-
-                if (tipo === "temp") {
-                    await TalentoHumanoDotacionCarnetsRepository.post_data({ type: tipo, SKU: carnet.serial }, { user, session })
-                } else {
-                    if (!mongoose.Types.ObjectId.isValid(empleado)) {
-                        throw new Error("El ID del empleado no es un ObjectId válido")
-                    }
-                    const carnetIngresado = await TalentoHumanoDotacionCarnetsRepository.post_data({ type: tipo, SKU: carnet.serial, employeeId: empleado }, { user, session })
-                    await PersonalRepository.actualizar_data({ _id: empleado }, { carnet: carnetIngresado._id }, { session })
-                    await registrarPasoLog(log._id, "Éxito", "Completado", "Empleado vinculado al carnet exitosamente");
-                }
-
-                await registrarPasoLog(log._id, "Éxito", "Completado", "Dotación ingresar carnet completada exitosamente");
-
-            })
-
-        } catch (err) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, err);
-            await ErrorTalentHumanoLogicHandlers(err, log)
-        } finally {
-            await session.endSession();
-            await registrarPasoLog(log._id, "Finalizado", "Completado", "Función completada exitosamente");
+        if (!user || !user._id) {
+            throw new Error("Error ususario no registrado")
         }
+
+        return await executeTransactionalTask(req, async (session, log) => {
+
+            const serial = await Seriales.actualizar_data(
+                { name: "SKU" },
+                { $inc: { serial: 1 } },
+                { session }
+            )
+
+            if (!serial) {
+                throw new Error("No se encontró el serial Carnet")
+            }
+            const carnet = serial
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Serial encontrado");
+
+            const tokenGenerado = crypto.randomUUID();
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Token generado exitosamente");
+            const tokenHash = await bcrypt.hash(tokenGenerado, 10);
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Token hash generado exitosamente");
+
+            const newCarnet = await TalentoHumanoDotacionCarnetsRepository.post_data(
+                { type: "temp", SKU: carnet.serial, tokenHash, isGenerated: true },
+                { user, session }
+            )
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Dotación ingresar carnet completada exitosamente");
+
+
+
+            //Cargar el template HTML
+            let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnet.html');
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Template HTML cargado exitosamente");
+
+            const logoBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/Captura_desde_2026-01-13_16-04-29-removebg-preview.png');
+            htmlTemplate = htmlTemplate.replace('{{LOGO_BASE64}}', logoBase64);
+
+            const urlSegura = `${config.URL_CELIFRUT}/verify?serial=${newCarnet.SKU}#${tokenGenerado}`;
+            await registrarPasoLog(log._id, "Éxito", "Completado", "Carnet actualizado exitosamente");
+
+            const qrBase64 = await QRCode.toDataURL(urlSegura, { width: 250, margin: 1 });
+            htmlTemplate = htmlTemplate.replace('{{QR_URL}}', qrBase64);
+
+            const templateDir = await FileService.getTemplateDir('talentoHumano/carnet/carnet.html');
+            const pdfBuffer = await HtmlToImage.convertToPdf(htmlTemplate, {
+                baseUrl: templateDir,
+                waitFor: 'domcontentloaded',
+            });
+            if (!pdfBuffer || pdfBuffer.length === 0) {
+                throw new Error("Fallo crítico: El carnet se generó pero el PDF resultante no es válido.");
+            }
+            await registrarPasoLog(log._id, "Éxito", "Completado", "PDF generado exitosamente");
+
+            return {
+                status: 200,
+                message: "Token generado y template cargado",
+                data: Buffer.from(pdfBuffer)
+            };
+
+        })
     }
+
     static async get_talentoHumano_dotacion_carnets(req) {
 
         const { page, filtro } = req.data
@@ -193,9 +207,10 @@ export class DotacionCarnetsControllerRepository {
             );
             await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo reemplazada exitosamente");
 
-            const qrDataEncoded = encodeURIComponent(urlSegura);
-            htmlTemplate = htmlTemplate.replace('PLACEHOLDER', qrDataEncoded);
+            const qrBase64 = await QRCode.toDataURL(urlSegura, { width: 250, margin: 1 });
+            htmlTemplate = htmlTemplate.replace('{{QR_URL}}', qrBase64);
             await registrarPasoLog(log._id, "Éxito", "Completado", "QR Data codificado exitosamente");
+
 
             const templateDir = await FileService.getTemplateDir('talentoHumano/carnet/carnet.html');
             const base64 = await HtmlToImage.convertToBase64(htmlTemplate, { baseUrl: templateDir });

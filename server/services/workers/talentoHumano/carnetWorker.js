@@ -36,8 +36,10 @@ async function run() {
         connection = conn
         session = await conn.startSession()
 
+        const carnetsArray = await Carnet.find({ _id: { $in: carnetsIds } })
+        const empleadosIds = carnetsArray.map((i) => i.employeeId)
 
-        const empleados = await Personal.find({ carnet: { $in: carnetsIds } })
+        const empleados = await Personal.find({ carnet: { $in: empleadosIds } })
 
         if (!empleados || empleados.length === 0) {
             throw new Error("No se encontraron empleados para generar");

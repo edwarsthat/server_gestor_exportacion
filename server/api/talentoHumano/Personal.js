@@ -1,5 +1,3 @@
-import { db } from "../../../DB/mongoDB/config/init.js";
-import { LogsRepository } from "../../Class/LogsSistema.js";
 import { Seriales } from "../../Class/Seriales.js";
 import { PersonalRepository } from "../../Class/talentoHumano/Personal.js";
 import { TalentoHumanoValidations } from "../../validations/talentoHumano.js";
@@ -48,7 +46,7 @@ export class PersonalControllerRepository {
             "personal",
             "fotoCarnet",
         );
-        
+
 
         try {
             filePath = await FileService.saveBufferFile(
@@ -100,7 +98,7 @@ export class PersonalControllerRepository {
                 const empleado = await PersonalRepository.post_data(
                     {
                         _id: nuevoEmpleadoId,
-                        carnet: carnetIngresado._id,
+                        carnet: null,
                         ...data,
                         PE: peResult.serial,
                         urlIdentificacion: cedulaPath,
@@ -369,142 +367,109 @@ export class PersonalControllerRepository {
     }
     static async put_talentoHumano_personal_asignarCarnet(req) {
         const { user } = req
-        const { personal, qr, action } = req.data
-        let log
-        log = await LogsRepository.create({
-            user: user._id,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        if (!user || !user._id) throw new Error("Usuario no identificado")
+
+        await executeTransactionalTask(req, async (session, log) => {
+
+            const { personal, qr, action } = req.data
+
+            const personalDocArr = await PersonalRepository.get_data({ ids: [personal] }, { session })
+            const personalDoc = personalDocArr[0]
+            await registrarPasoLog(log._id, "Obtener personal", "completado")
+            if (!personalDoc) {
+                throw new Error('Personal no encontrado');
+            }
+            if (!personalDoc.estado) {
+                throw new Error('Personal no activo');
+            }
+
+            const { serial, token } = CarnetsService.procesarQr(qr)
+            const carnetDocArr = await TalentoHumanoDotacionCarnetsRepository.get_data(
+                {
+                    query: { SKU: serial },
+                    select: { tokenHash: 1, type: 1, employeeId: 1 }
+                },
+                { session }
+            )
+            const carnetDoc = carnetDocArr[0]
+            await registrarPasoLog(log._id, "Obtener carnet", "completado")
+            if (!carnetDoc) {
+                throw new Error('Carnet no encontrado');
+            }
+            if (carnetDoc.type === "temp" && carnetDoc.employeeId !== null) {
+                throw new Error('El carnet ya esta asignado');
+            }
+
+            // Verificar si el token coincide con el tokenHash de la base de datos
+            const isValid = await bcrypt.compare(token, carnetDoc.tokenHash);
+            if (!isValid) {
+                throw new Error('Token de carnet inválido');
+            }
+            await registrarPasoLog(log._id, "Token verificado", "completado")
+
+            if (carnetDoc.type === "final" && (carnetDoc.employeeId.toString() !== personalDoc._id.toString())) {
+                throw new Error('El carnet no es del personal');
+            }
+            await registrarPasoLog(log._id, "Verificar carnet", "completado")
+
+            // Asignar el carnet al personal
+            await PersonalRepository.actualizar_data(
+                { _id: personal },
+                { carnet: carnetDoc._id },
+                { session, user: user._id, action }
+            );
+            await registrarPasoLog(log._id, "Carnet asignado al personal", "completado")
+
+            // Actualizar el carnet con el employeeId
+            await TalentoHumanoDotacionCarnetsRepository.actualizar_data(
+                { _id: carnetDoc._id },
+                { employeeId: personal, status: 'active', assignedBy: user._id },
+                { session, user: user._id }
+            );
+            await registrarPasoLog(log._id, "Carnet actualizado con employeeId", "completado")
+
         })
 
-        const session = await db.Personal.db.startSession();
-
-        try {
-
-            await session.withTransaction(async () => {
-
-                const personalDocArr = await PersonalRepository.get_data({ ids: [personal] }, { session })
-                const personalDoc = personalDocArr[0]
-                await registrarPasoLog(log._id, "Obtener personal", "completado")
-                if (!personalDoc) {
-                    throw new Error('Personal no encontrado');
-                }
-                if (!personalDoc.estado) {
-                    throw new Error('Personal no activo');
-                }
-
-                const { serial, token } = CarnetsService.procesarQr(qr)
-                const carnetDocArr = await TalentoHumanoDotacionCarnetsRepository.get_data(
-                    {
-                        query: { serialNumber: serial },
-                        select: { tokenHash: 1, type: 1, employeeId: 1 }
-                    },
-                    { session }
-                )
-                const carnetDoc = carnetDocArr[0]
-                await registrarPasoLog(log._id, "Obtener carnet", "completado")
-                if (!carnetDoc) {
-                    throw new Error('Carnet no encontrado');
-                }
-                if (carnetDoc.type === "temp" && carnetDoc.employeeId !== null) {
-                    throw new Error('El carnet ya esta asignado');
-                }
-
-                // Verificar si el token coincide con el tokenHash de la base de datos
-                const isValid = await bcrypt.compare(token, carnetDoc.tokenHash);
-                if (!isValid) {
-                    throw new Error('Token de carnet inválido');
-                }
-                await registrarPasoLog(log._id, "Token verificado", "completado")
-
-                if (carnetDoc.type === "final" && (carnetDoc.employeeId.toString() !== personalDoc._id.toString())) {
-                    throw new Error('El carnet no es del personal');
-                }
-                await registrarPasoLog(log._id, "Verificar carnet", "completado")
-
-                // Asignar el carnet al personal
-                await PersonalRepository.actualizar_data(
-                    { _id: personal },
-                    { carnet: carnetDoc._id },
-                    { session, user: user._id, action }
-                );
-                await registrarPasoLog(log._id, "Carnet asignado al personal", "completado")
-
-                // Actualizar el carnet con el employeeId
-                await TalentoHumanoDotacionCarnetsRepository.actualizar_data(
-                    { _id: carnetDoc._id },
-                    { employeeId: personal, status: 'active', assignedBy: user._id },
-                    { session, user: user._id }
-                );
-                await registrarPasoLog(log._id, "Carnet actualizado con employeeId", "completado")
-
-            })
-
-
-        } catch (error) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, error);
-            await ErrorTalentHumanoLogicHandlers(error, log)
-        } finally {
-            await session.endSession();
-            await registrarPasoLog(log._id, "Fin de la función", "completado")
-        }
     }
     static async put_talentoHumano_personal_modificar_carnet(req) {
         const { user } = req
-        const { status, _id, action } = req.data
+        if (!user || !user._id) throw new Error("Usuario no encontrado")
 
-        let log
-        log = await LogsRepository.create({
-            user: user._id,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
+        await executeTransactionalTask(req, async (session, log) => {
+
+            const { status, _id } = req.data
+            if (status === "active") return;
+
+            await PersonalRepository.actualizar_data(
+                { _id: _id },
+                { carnet: null },
+                { session, user: user._id }
+            )
+            await registrarPasoLog(log._id, "Carnet desasignado al personal", "completado")
+
+            const carnetDocArr = await TalentoHumanoDotacionCarnetsRepository.get_data(
+                { query: { employeeId: _id } },
+                { session }
+            )
+            const carnetDoc = carnetDocArr[0]
+            if (!carnetDoc) {
+                throw new Error('Carnet no encontrado');
+            }
+
+            let statusEmployeeId = ""
+            if (carnetDoc.type === "temp" ) {
+                statusEmployeeId = null
+            } else {
+                statusEmployeeId = _id
+            }
+
+            await TalentoHumanoDotacionCarnetsRepository.actualizar_data(
+                { employeeId: _id },
+                { status: status, employeeId: statusEmployeeId },
+                { session, user: user._id }
+            )
+            await registrarPasoLog(log._id, "Carnet actualizado", "completado")
         })
-
-        const session = await db.Personal.db.startSession();
-
-        try {
-            await session.withTransaction(async () => {
-
-                if (status === "active") return;
-
-                await PersonalRepository.actualizar_data(
-                    { _id: _id },
-                    { carnet: null },
-                    { session, user: user._id }
-                )
-                await registrarPasoLog(log._id, "Carnet desasignado al personal", "completado")
-
-                const carnetDocArr = await TalentoHumanoDotacionCarnetsRepository.get_data(
-                    { query: { employeeId: _id } },
-                    { session }
-                )
-                const carnetDoc = carnetDocArr[0]
-                if (!carnetDoc) {
-                    throw new Error('Carnet no encontrado');
-                }
-
-                let statusCarnet = ""
-                if (carnetDoc.type === "temp" && status !== "lost") {
-                    statusCarnet = "stock"
-                } else {
-                    statusCarnet = status
-                }
-
-                await TalentoHumanoDotacionCarnetsRepository.actualizar_data(
-                    { employeeId: _id },
-                    { status: statusCarnet, employeeId: null },
-                    { session, user: user._id }
-                )
-                await registrarPasoLog(log._id, "Carnet actualizado", "completado")
-            })
-        } catch (error) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, error);
-            await registrarPasoLog(log._id, "Error", "error")
-            await ErrorTalentHumanoLogicHandlers(error, log)
-        } finally {
-            await session.endSession();
-            await registrarPasoLog(log._id, "Fin de la función", "completado")
-        }
     }
     static async put_talentoHumano_upload_document(req) {
         const { user } = req;
