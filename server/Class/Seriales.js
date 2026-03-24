@@ -1,7 +1,11 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ErrorSeriales } from "../../Error/ConnectionErrors.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-export class Seriales {
+export class Seriales extends BaseRepository {
+    static get model() { return db.Seriales; }
+    static modelName = 'Seriales';
+
     static async get_seriales(serialName, session = null) {
         try {
             const registros = await db.Seriales.find({ name: serialName })

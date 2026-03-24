@@ -5,6 +5,7 @@ import config from "../../src/config/index.js";
 import { InventariosService } from "../services/inventarios.js";
 import { ClassError, MongoDBError } from "../models/ErrorModels.js";
 import { BaseRepository } from "./base/BaseRepository.js";
+import { descarteCache } from "../cache/descartes.js";
 
 
 export class InventariosHistorialRepository extends BaseRepository {
@@ -743,10 +744,13 @@ export class InventarioDescartesRepository extends BaseRepository {
 
     static async get_total_canastillas_inventario_descarte(options = {}) {
         const { session } = options;
+        const idsSinInventario = descarteCache.getDescartesSinInventario().map(d => d._id.toString());
+        console.log(idsSinInventario)
         const resultado = await db.InventarioActualDescarte.aggregate([
             {
                 '$match': {
                     estado: 'ACTIVO',
+                    ...(idsSinInventario.length > 0 && { tipoDescarte: { $nin: idsSinInventario.map(id => new mongoose.Types.ObjectId(id)) } }),
                 }
             },
             {

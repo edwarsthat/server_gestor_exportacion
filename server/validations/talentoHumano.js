@@ -25,6 +25,8 @@ export class TalentoHumanoValidations {
                 tipoDocumento: z.string().min(1, "El tipo de documento es obligatorio"),
                 tipoSangre: z.string().min(1, "El tipo de sangre es obligatorio"),
                 cargo: z.string().min(1, "El cargo es obligatorio"),
+                vinilo: z.boolean(),
+
             }),
             foto: bufferData("foto"),
             cedulaPath: requiredSafeString("cedulaPath"),
@@ -33,7 +35,7 @@ export class TalentoHumanoValidations {
     }
     static put_talentoHumano_dotacion_carnets_generar_temporal() {
         return z.object({
-            data: z.string().regex(/^[0-9a-fA-F]{24}$/, "ID de carnet no válido"),
+            data: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, "ID de carnet no válido")).min(1, "Se requiere al menos un ID"),
             action: z.string().min(1, "La acción es obligatoria"),
         })
     }
