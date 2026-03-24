@@ -100,7 +100,7 @@ export class HtmlToImage {
             await page.setContent(finalHtml, { waitUntil: waitFor, timeout: 60000 });
 
             const pdfBuffer = await page.pdf({
-                path: outputPath, 
+                path: outputPath,
                 format,
                 printBackground,
                 margin,

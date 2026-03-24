@@ -9,6 +9,8 @@ import { FileService } from '../../helpers/FileService.js'
 import config from '../../../../src/config/index.js'
 import QRCode from 'qrcode';
 import { HtmlToImage } from '../../helpers/HtmlToImage.js'
+import { browserPool } from '../../helpers/browserPool.js'
+import { PDFDocument } from 'pdf-lib'
 
 const { carnetsIds, jobId } = workerData
 
@@ -29,28 +31,29 @@ async function run() {
     let session
 
     try {
+        await browserPool.init(1)
         const { conn, Carnet, Personal, CargosPersonal } = await initDB()
         connection = conn
         session = await conn.startSession()
 
-        console.log("[carnetWorker] carnetsIds: ", carnetsIds)
 
-        const empleados = await Personal.find({ carnet: { $in: carnetsIds } }).session(session)
-        console.log("[carnetWorker] empleados: ", empleados)
- 
+        const empleados = await Personal.find({ carnet: { $in: carnetsIds } })
+
         if (!empleados || empleados.length === 0) {
             throw new Error("No se encontraron empleados para generar");
         }
         const personalMap = new Map(empleados.map(e => [e._id.toString(), e]))
 
         const cargosIds = empleados.map(e => e.cargo)
-        const cargos = await CargosPersonal.find({ _id: { $in: cargosIds } }).session(session)
+        const cargos = await CargosPersonal.find({ _id: { $in: cargosIds } })
         if (!cargos || cargos.length === 0) {
             throw new Error("No se encontraron cargos para generar");
         }
         const cargosMap = new Map(cargos.map(c => [c._id.toString(), c]))
 
         const pdfs = []
+
+        session.startTransaction()
 
         for (const carnetId of carnetsIds) {
 
@@ -66,11 +69,10 @@ async function run() {
                 throw new Error("No se encontró el carnet para generar");
             }
 
-            const empleadoData = personalMap.get(carnetActualizado.employeeId)
+            const empleadoData = personalMap.get(carnetActualizado.employeeId.toString())
             if (!empleadoData) throw new Error("Error empleado no existe")
-            const cargoData = cargosMap.get(empleadoData.cargo)
+            const cargoData = cargosMap.get(empleadoData.cargo.toString())
             if (!cargoData) throw new Error("Error cargo no existe")
-
 
             let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnetFinal.html');
 
@@ -87,6 +89,7 @@ async function run() {
 
             const nombreArray = empleadoData.nombre.split(' ');
             let nombreCompleto = '';
+
             if (nombreArray.length > 3) {
                 nombreCompleto = [nombreArray[0], nombreArray[1], nombreArray[2]]
                     .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase())
@@ -129,11 +132,21 @@ async function run() {
                 done: pdfs.length,
                 total: carnetsIds.length
             })
-
         }
 
-        parentPort.postMessage({ type: 'done', status: 200, jobId, pdfs })
+        await session.commitTransaction()
+
+        const mergedPdf = await PDFDocument.create()
+        for (const pdfBuffer of pdfs) {
+            const doc = await PDFDocument.load(pdfBuffer)
+            const pages = await mergedPdf.copyPages(doc, doc.getPageIndices())
+            pages.forEach(page => mergedPdf.addPage(page))
+        }
+        const mergedBuffer = Buffer.from(await mergedPdf.save())
+
+        parentPort.postMessage({ type: 'done', status: 200, jobId, pdf: mergedBuffer })
     } catch (err) {
+        if (session) await session.abortTransaction()
         console.error(err)
         parentPort.postMessage({
             type: 'error',
@@ -143,9 +156,9 @@ async function run() {
             status: 401,
         })
     } finally {
-        if (connection) {
-            await connection.close()
-        }
+        if (session) await session.endSession()
+        if (connection) await connection.close()
+        await browserPool.closeAll()
     }
 }
 
