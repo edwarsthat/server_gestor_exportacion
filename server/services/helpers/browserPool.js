@@ -5,10 +5,15 @@ import { existsSync } from "fs";
 
 const getChromePath = () => {
     if (platform() === 'win32') {
-        return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+        return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'; //se comenta por ahora .Jp
+        // const defaultPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+        // Solo devolvemos la ruta si el archivo existe de verdad
+        // return existsSync(defaultPath) ? defaultPath : null;
     }
     if (platform() === 'darwin') {
-        return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+        return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'; //se comenta por ahora .Jp
+        // const macPath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+        // return existsSync(macPath) ? macPath : null;
     }
     // Linux: buscar la primera ruta que exista
     const linuxPaths = [
