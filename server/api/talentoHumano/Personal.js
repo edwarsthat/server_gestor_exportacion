@@ -443,12 +443,10 @@ export class PersonalControllerRepository {
             const personal = await PersonalRepository.get_data({ ids: [_id] }, { session })
             if (personal.length === 0) throw new Error("error obteniendo personal")
 
-            console.log(personal)
             const carnetDocArr = await TalentoHumanoDotacionCarnetsRepository.get_data(
                 { query: { _id: personal[0].carnet } },
                 { session }
             )
-            console.log(carnetDocArr)
             await registrarPasoLog(log._id, "Carnet desasignado al personal", "completado")
 
 
