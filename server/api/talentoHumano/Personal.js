@@ -383,7 +383,14 @@ export class PersonalControllerRepository {
                 throw new Error('Personal no activo');
             }
 
+            console.log(qr)
+
             const { serial, token } = CarnetsService.procesarQr(qr)
+
+            console.log(serial)
+            console.log(token)
+
+
             const carnetDocArr = await TalentoHumanoDotacionCarnetsRepository.get_data(
                 {
                     query: { SKU: serial },

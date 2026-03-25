@@ -111,7 +111,7 @@ async function run() {
             htmlTemplate = htmlTemplate.replace('{{RH}}', empleadoData.tipoSangre || 'O+');
             htmlTemplate = htmlTemplate.replace('{{COLOR_PRINCIPAL}}', cargoData.color || '#F3930D');
 
-            const urlSegura = `${config.URL_CELIFRUT}/verify?serial=${carnetActualizado.serialNumber}#${tokenGenerado}`;
+            const urlSegura = `${config.URL_CELIFRUT}/verify?serial=${carnetActualizado.SKU}#${tokenGenerado}`;
             const qrBase64 = await QRCode.toDataURL(urlSegura, { width: 250, margin: 1 });
             htmlTemplate = htmlTemplate.replace('{{QR_URL}}', qrBase64);
 
