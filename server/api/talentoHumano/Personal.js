@@ -440,31 +440,39 @@ export class PersonalControllerRepository {
             const { status, _id } = req.data
             if (status === "active") return;
 
+            const personal = await PersonalRepository.get_data({ ids: [_id] }, { session })
+            if (personal.length === 0) throw new Error("error obteniendo personal")
+
+            console.log(personal)
+            const carnetDocArr = await TalentoHumanoDotacionCarnetsRepository.get_data(
+                { query: { _id: personal[0].carnet } },
+                { session }
+            )
+            console.log(carnetDocArr)
+            await registrarPasoLog(log._id, "Carnet desasignado al personal", "completado")
+
+
             await PersonalRepository.actualizar_data(
                 { _id: _id },
                 { carnet: null },
                 { session, user: user._id }
             )
-            await registrarPasoLog(log._id, "Carnet desasignado al personal", "completado")
+            await registrarPasoLog(log._id, "Carnet carnet elimniado del personal", "completado")
 
-            const carnetDocArr = await TalentoHumanoDotacionCarnetsRepository.get_data(
-                { query: { employeeId: _id } },
-                { session }
-            )
+
             const carnetDoc = carnetDocArr[0]
             if (!carnetDoc) {
                 throw new Error('Carnet no encontrado');
             }
 
             let statusEmployeeId = ""
-            if (carnetDoc.type === "temp" ) {
+            if (carnetDoc.type === "temp") {
                 statusEmployeeId = null
             } else {
                 statusEmployeeId = _id
             }
-
             await TalentoHumanoDotacionCarnetsRepository.actualizar_data(
-                { employeeId: _id },
+                { _id: carnetDoc._id },
                 { status: status, employeeId: statusEmployeeId },
                 { session, user: user._id }
             )

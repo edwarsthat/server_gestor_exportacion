@@ -39,7 +39,7 @@ async function run() {
         const carnetsArray = await Carnet.find({ _id: { $in: carnetsIds } })
         const empleadosIds = carnetsArray.map((i) => i.employeeId)
 
-        const empleados = await Personal.find({ carnet: { $in: empleadosIds } })
+        const empleados = await Personal.find({ _id: { $in: empleadosIds } })
 
         if (!empleados || empleados.length === 0) {
             throw new Error("No se encontraron empleados para generar");
@@ -148,7 +148,7 @@ async function run() {
 
         parentPort.postMessage({ type: 'done', status: 200, jobId, pdf: mergedBuffer })
     } catch (err) {
-        if (session) await session.abortTransaction()
+        if (session && session.inTransaction()) await session.abortTransaction()
         console.error(err)
         parentPort.postMessage({
             type: 'error',
