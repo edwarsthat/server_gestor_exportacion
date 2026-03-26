@@ -295,11 +295,11 @@ export class CalidadRepository {
             //ajuste para UTC-5
             const [year, month, day] = data.fecha.split("-");
 
-            const fecha = new Date(
+            const fecha = new Date(Date.UTC(
                 Number(year),
                 Number(month) - 1,
                 Number(day)
-            )
+            ))
 
             console.log("DATA RECIBIDA:", data);
 

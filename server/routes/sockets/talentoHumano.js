@@ -18,8 +18,8 @@ export const apiSocketTalentoHumano = {
         return successResponseRoutes(data)
     },
     post_talentoHumano_dotacion_carnets: async (req) => {
-        await DotacionCarnetsControllerRepository.post_talentoHumano_dotacion_carnets(req)
-        return successResponseRoutes()
+        const result = await DotacionCarnetsControllerRepository.post_talentoHumano_dotacion_carnets(req)
+        return successResponseRoutes(result.data)
     },
     get_talentoHumano_cargosPersonal_ingresoPersonal: async () => {
         const data = await CargosPersonalControllerRepository.get_talentoHumano_cargosPersonal_ingresoPersonal()

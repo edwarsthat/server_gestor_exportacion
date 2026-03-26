@@ -38,6 +38,8 @@ function filtroFechaInicioFin(fechaInicio, fechaFin, filter = {}, fecha) {
 }
 
 function buildDateRangeFilter(start, end, field, baseFilter = {}) {
+    console.log("start", start)
+    console.log("end", end)
     // Validaciones iniciales
     if (!field) throw new UtilError(601, "buildDateRangeFilter: Debe especificar el nombre del campo de fecha");
 
@@ -51,8 +53,8 @@ function buildDateRangeFilter(start, end, field, baseFilter = {}) {
             const startDate = new Date(start);
             if (isNaN(startDate)) throw new UtilError(601, "Fecha inicio no válida");
 
-            // Forzamos el inicio del día (00:00:00)
-            startDate.setHours(0, 0, 0, 0);
+            // Inicio del día en hora Colombia (UTC-5) → 00:00 Colombia = 05:00 UTC
+            startDate.setUTCHours(5, 0, 0, 0);
             Reflect.set(dateRange, '$gte', startDate);
         }
 
@@ -60,14 +62,14 @@ function buildDateRangeFilter(start, end, field, baseFilter = {}) {
             const endDate = new Date(end);
             if (isNaN(endDate)) throw new UtilError(601, "Fecha fin no válida");
 
-            // Forzamos el fin del día (23:59:59.999)
-            endDate.setHours(23, 59, 59, 999);
+            // Fin del día en hora Colombia (23:59:59 UTC-5 = 04:59:59 UTC del día siguiente)
+            endDate.setUTCHours(28, 59, 59, 999);
             Reflect.set(dateRange, '$lte', endDate);
         }
 
         Reflect.set(query, field, dateRange);
     }
-
+    console.log(query)
     return query;
 }
 

@@ -73,7 +73,7 @@ export const defineproveedores = async (conn) => {
     precioFijo: Boolean,
     departamento: String,
     municipio: String,
-    canastillas: Number,
+    canastillas: { type: Number, min: [0, 'Las canastillas no pueden ser negativas'] },
     //Tarifa de flete fija (contabilidad). Jp
     flete: { type: Number, default: 0 },
     //Tarifas de flete por kg (contabilidad). Jp
