@@ -14,6 +14,7 @@ import { TalentoHumanoValidations } from '../../../validations/talentoHumano.js'
 import { CarnetWorkerRunner } from '../../../services/workers/talentoHumano/carnetWorkerRunner.js';
 import { executeTransactionalTask } from '../../../utils/wrappers.js';
 import QRCode from 'qrcode';
+import { InsumosRepository } from '../../../Class/Insumos.js';
 
 export class DotacionCarnetsControllerRepository {
     static async post_talentoHumano_dotacion_carnets(req) {
@@ -71,6 +72,12 @@ export class DotacionCarnetsControllerRepository {
                 throw new Error("Fallo crítico: El carnet se generó pero el PDF resultante no es válido.");
             }
             await registrarPasoLog(log._id, "Éxito", "Completado", "PDF generado exitosamente");
+
+            await InsumosRepository.actualizar_data(
+                { alias: "Carnet" },
+                { $inc: { cantidad: -1 } },
+                { session }
+            )
 
             return {
                 status: 200,

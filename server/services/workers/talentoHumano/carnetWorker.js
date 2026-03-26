@@ -11,6 +11,7 @@ import QRCode from 'qrcode';
 import { HtmlToImage } from '../../helpers/HtmlToImage.js'
 import { browserPool } from '../../helpers/browserPool.js'
 import { PDFDocument } from 'pdf-lib'
+import { defineInsumos } from '../../../../DB/mongoDB/schemas/insumos/schemaInsumos.js'
 
 const { carnetsIds, jobId } = workerData
 
@@ -21,8 +22,9 @@ async function initDB() {
     const Carnet = await defineSchemaCarnets(conn)
     const Personal = await defineSchemaPersonal(conn, null)
     const CargosPersonal = await defineSchemaCargosPersonal(conn, null)
+    const Insumos = await defineInsumos(conn)
 
-    return { conn, Carnet, Personal, CargosPersonal }
+    return { conn, Carnet, Personal, CargosPersonal, Insumos }
 }
 
 async function run() {
@@ -32,7 +34,7 @@ async function run() {
 
     try {
         await browserPool.init(1)
-        const { conn, Carnet, Personal, CargosPersonal } = await initDB()
+        const { conn, Carnet, Personal, CargosPersonal, Insumos } = await initDB()
         connection = conn
         session = await conn.startSession()
 
@@ -69,6 +71,17 @@ async function run() {
             )
             if (!carnetActualizado) {
                 throw new Error("No se encontró el carnet para generar");
+            }
+
+            if (carnetActualizado.isVinilo) {
+                const insumoActualizado = await Insumos.findOneAndUpdate(
+                    { alias: "Carnet", cantidad: { $gt: 0 } },
+                    { $inc: { cantidad: -1 } },
+                    { session }
+                )
+                if (!insumoActualizado) {
+                    throw new Error("Stock insuficiente: no hay carnets disponibles")
+                }
             }
 
             const empleadoData = personalMap.get(carnetActualizado.employeeId.toString())

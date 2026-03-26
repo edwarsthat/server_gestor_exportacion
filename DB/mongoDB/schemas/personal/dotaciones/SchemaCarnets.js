@@ -35,6 +35,11 @@ export const defineSchemaCarnets = async (conn) => {
             required: true,
             default: false,
         },
+        isVinilo: {
+            type: Boolean,
+            required: true,
+            default: false,
+        },
         SKU: {
             type: Number,
             required: true,

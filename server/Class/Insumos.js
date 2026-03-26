@@ -1,10 +1,14 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PutError, PostError } from "../../Error/ConnectionErrors.js";
 import { ItemBussyError } from "../../Error/ProcessError.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
 let bussyIds = new Set();
 
-export class InsumosRepository {
+export class InsumosRepository extends BaseRepository {
+    static get model() { return db.Insumos; }
+    static modelName = 'insumos';
+
     static async get_insumos(options = {}, session = null) {
 
         const {

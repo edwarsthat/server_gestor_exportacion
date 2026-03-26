@@ -8,6 +8,7 @@ export const defineInsumos = async (conn) => {
         codigo: { type: String, require: true, unique: true },
         insumo: String,
         medida: String,
+        cantidad: { type: Number, min:[0, 'No puede haber una cantidad negativa del producto']},
         alias: { type: String, require: true, unique: true },
         tipo: String,
         fecha: { type: Date, default: Date.now }
