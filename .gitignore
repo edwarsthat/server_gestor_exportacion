@@ -135,6 +135,10 @@ coverage/
 # ===========================================
 # ARCHIVOS ESPECÍFICOS DEL PROYECTO
 # ===========================================
+# Archivos generados por scripts
+scripts/out/
+
+
 # Archivos temporales
 temp/
 tmp/
