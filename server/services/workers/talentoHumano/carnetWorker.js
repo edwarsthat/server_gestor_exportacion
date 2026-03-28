@@ -73,7 +73,7 @@ async function run() {
                 throw new Error("No se encontró el carnet para generar");
             }
 
-            if (carnetActualizado.isVinilo) {
+            if (carnetActualizado.vinilo) {
                 const insumoActualizado = await Insumos.findOneAndUpdate(
                     { alias: "Carnet", cantidad: { $gt: 0 } },
                     { $inc: { cantidad: -1 } },
@@ -119,7 +119,7 @@ async function run() {
             htmlTemplate = htmlTemplate.replace('{{NOMBRE}}', nombreCompleto);
 
             //Reemplazar datos del empleado
-            htmlTemplate = htmlTemplate.replace('{{CARGO}}', (empleadoData.cargo?.nombre || 'Sin cargo'));
+            htmlTemplate = htmlTemplate.replace('{{CARGO}}', (cargoData?.nombre || 'Sin cargo'));
             htmlTemplate = htmlTemplate.replace('{{CEDULA}}', identificacionFormateada || 'N/A');
             htmlTemplate = htmlTemplate.replace('{{RH}}', empleadoData.tipoSangre || 'O+');
             htmlTemplate = htmlTemplate.replace('{{COLOR_PRINCIPAL}}', cargoData.color || '#F3930D');

@@ -80,4 +80,8 @@ export const apiSocketData = {
         const response = await dataRepository.get_data_versiones(req);
         return successResponseRoutes(response)
     },
+    get_data_insumos_creacion_carnets: async () => {
+        const response = await dataRepository.get_data_insumos_creacion_carnets();
+        return successResponseRoutes(response)
+    },
 }

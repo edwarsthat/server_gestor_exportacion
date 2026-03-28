@@ -81,7 +81,7 @@ export class PersonalControllerRepository {
                 await registrarPasoLog(log._id, "Actualizar serial", "completado")
                 //se crea el carnet
                 const carnetIngresado = await TalentoHumanoDotacionCarnetsRepository.post_data(
-                    { type: "final", SKU: skuSerial.serial, employeeId: nuevoEmpleadoId },
+                    { type: "final", SKU: skuSerial.serial, employeeId: nuevoEmpleadoId, vinilo: data.vinilo },
                     { user, session }
                 )
                 if (!carnetIngresado) {
@@ -136,7 +136,6 @@ export class PersonalControllerRepository {
         return await executeQueryTask(async () => {
 
             const { cedula, cedulaFrente, cedulaTrasera } = req.data
-            console.log(req.data)
             TalentoHumanoValidations.post_talentoHumano_personal_cargarCedula().parse(req.data)
 
             const urlPath = path.join(
@@ -202,11 +201,8 @@ export class PersonalControllerRepository {
                 server: "python",
                 action: "validar_cedula"
             };
-            console.log("🚀 Enviando a Rust:", JSON.stringify(payload));
             const responseStr = await rustRcpClient.sendData(payload);
-            console.log(responseStr)
             const response = await JSON.parse(responseStr);
-            console.log(response)
             return response
         })
 

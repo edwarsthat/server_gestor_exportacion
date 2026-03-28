@@ -12,7 +12,7 @@ import { HtmlToImage } from '../../../services/helpers/HtmlToImage.js';
 import config from '../../../../src/config/index.js';
 import { TalentoHumanoValidations } from '../../../validations/talentoHumano.js';
 import { CarnetWorkerRunner } from '../../../services/workers/talentoHumano/carnetWorkerRunner.js';
-import { executeTransactionalTask } from '../../../utils/wrappers.js';
+import { executeTransactionalTask, executeQueryTask } from '../../../utils/wrappers.js';
 import QRCode from 'qrcode';
 import { InsumosRepository } from '../../../Class/Insumos.js';
 
@@ -110,12 +110,12 @@ export class DotacionCarnetsControllerRepository {
             const data = await TalentoHumanoDotacionCarnetsRepository.get_data(
                 {
                     query,
+                    sort: { createdAt: -1 },
                     limit: resultsPerPage, skip: (page - 1) * resultsPerPage,
                     populate: [
                         { path: "employeeId", select: "nombre identificacion" }
                     ]
                 },
-
             )
             return data
         } catch (err) {
@@ -149,7 +149,6 @@ export class DotacionCarnetsControllerRepository {
     }
     static async get_talentoHumano_dotacion_carnets_empleados() {
         try {
-
             const data = await PersonalRepository.get_data({
                 query: {
                     estado: true,
@@ -168,6 +167,17 @@ export class DotacionCarnetsControllerRepository {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
             await ErrorTalentHumanoLogicHandlers(error)
         }
+    }
+    static async get_talentoHumano_personal_sinCarnets(){
+        return await executeQueryTask(async () => {
+            const personal = await PersonalRepository.get_data({
+                query:{ carnet: null }
+            })
+            if(personal.length === 0){
+                throw new Error("No hay personal sin carnets asignados")
+            }
+            return personal
+        })
     }
     static async put_talentoHumano_dotacion_carnets_generar_temporal(req) {
 
