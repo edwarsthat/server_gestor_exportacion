@@ -87,7 +87,41 @@ export class DotacionCarnetsControllerRepository {
 
         })
     }
+    static async post_talentoHumano_newCarnet_final(req) {
+        const { user } = req
+        if (!user || !user._id) {
+            throw new Error("Error ususario no registrado")
+        }
 
+        return await executeTransactionalTask(req, async (session, log) => {
+            const parseData = TalentoHumanoValidations.post_talentoHumano_newCarnet_final().parse(req.data)
+            const { personalId, vinilo } = parseData
+
+            //se obtiene el empleado
+            const empleadoArr = await PersonalRepository.get_data({ query: { _id: personalId } }, { session })
+            if (!empleadoArr || empleadoArr.length === 0) {
+                throw new Error("Empleado no encontrado")
+            }
+            const empleado = empleadoArr[0]
+            await registrarPasoLog(log._id, "Obtener empleado", "completado")
+            //se obtiene el serial SKU del carnet
+            const skuSerial = await Seriales.modificar_seriales({ name: "SKU" }, { $inc: { serial: 1 } }, { session })
+            if (!skuSerial) {
+                throw new Error("No se encontró el serial SKU")
+            }
+            await registrarPasoLog(log._id, "Actualizar serial", "completado")
+
+            //se crea el carnet
+            const carnetIngresado = await TalentoHumanoDotacionCarnetsRepository.post_data(
+                { type: "final", SKU: skuSerial.serial, employeeId: empleado._id, vinilo: vinilo },
+                { user, session }
+            )
+            if (!carnetIngresado) {
+                throw new Error("Error creando el carnet")
+            }
+            await registrarPasoLog(log._id, "Creacion del carnet", "completado")
+        })
+    }
     static async get_talentoHumano_dotacion_carnets(req) {
 
         const { page, filtro } = req.data
@@ -168,12 +202,12 @@ export class DotacionCarnetsControllerRepository {
             await ErrorTalentHumanoLogicHandlers(error)
         }
     }
-    static async get_talentoHumano_personal_sinCarnets(){
+    static async get_talentoHumano_personal_sinCarnets() {
         return await executeQueryTask(async () => {
             const personal = await PersonalRepository.get_data({
-                query:{ carnet: null }
+                query: { carnet: null }
             })
-            if(personal.length === 0){
+            if (personal.length === 0) {
                 throw new Error("No hay personal sin carnets asignados")
             }
             return personal

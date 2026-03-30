@@ -41,12 +41,10 @@ export class PersonalControllerRepository {
             throw new Error('El documento de identificación es obligatorio.');
         }
 
-
         const urlPath = path.join(
             "personal",
             "fotoCarnet",
         );
-
 
         try {
             filePath = await FileService.saveBufferFile(

@@ -13,6 +13,10 @@ export const apiSocketTalentoHumano = {
         await CargosPersonalControllerRepository.post_talentoHumano_cargos_ingresoCargo(req)
         return successResponseRoutes()
     },
+    post_talentoHumano_newCarnet_final: async (req) => {
+        await DotacionCarnetsControllerRepository.post_talentoHumano_newCarnet_final(req)
+        return successResponseRoutes()
+    },
     post_talentoHumano_personal_cargarCedula: async (req) => {
         const data = await PersonalControllerRepository.post_talentoHumano_personal_cargarCedula(req)
         return successResponseRoutes(data)

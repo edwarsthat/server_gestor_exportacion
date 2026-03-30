@@ -49,4 +49,11 @@ export class TalentoHumanoValidations {
             file: z.union([base64String("file"), bufferData("file")]),
         })
     }
+    static post_talentoHumano_newCarnet_final() {
+        return z.object({
+            personalId: objectIdString("personalId"),
+            vinilo: z.boolean(),
+            action: requiredSafeString("action"),
+        })
+    }
 }
