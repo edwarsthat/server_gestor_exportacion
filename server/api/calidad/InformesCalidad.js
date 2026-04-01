@@ -6,6 +6,7 @@ export class InformesCalidadController {
         return await executeQueryTask(async () => {
             const { data: datos } = req
             const { data } = datos
+            console.log('PATH RECIBIDO:', JSON.stringify(data))
             const response = await FileService.readFileAsBase64(data, "STORAGE")
             return response.replace(/^data:[^;]+;base64,/, "") //debe quitarse
         })
