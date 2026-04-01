@@ -30,24 +30,41 @@
             --color-secundario: #F5F5F5;
         }
 
+        @font-face {
+            font-family: 'Montserrat';
+            src: url('{{MONTSERRAT_FONT}}') format('truetype');
+            font-weight: 100 900;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Montserrat';
+            src: url('{{MONTSERRAT_FONT_ITALIC}}') format('truetype');
+            font-weight: 100 900;
+            font-style: italic;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
         }
 
-        body {
+        html, body {
             margin: 0;
             padding: 0;
+            overflow: hidden;
             background-color: transparent;
             display: block;
             width: 450px;
-            height: 750px;
+            height: 713px;
+            font-family: 'Montserrat', sans-serif;
         }
 
         .card {
             width: 450px;
-            height: 750px;
+            height: 713px;
             background: white;
             border-radius: 0;
             overflow: hidden;
@@ -59,7 +76,7 @@
 
         .header {
             background: var(--color-principal);
-            height: 370px;
+            height: 350px;
             text-align: center;
             position: relative;
             overflow: visible;
@@ -85,7 +102,7 @@
             height: auto;
             position: relative;
             z-index: 10;
-            margin: 0 auto;
+            margin: -5px auto 0;
         }
 
         .company-logo img {
@@ -165,22 +182,22 @@
         }
 
         .name {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: bold;
             color: #333;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .position {
-            font-size: 18px;
+            font-size: 15px;
             color: #666;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .info {
-            font-size: 16px;
+            font-size: 13px;
             color: #333;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .info-label {
@@ -188,10 +205,10 @@
         }
 
         .qr-container {
-            width: 180px;
-            height: 180px;
-            margin: 0 auto;
-            border: 3px solid #333;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 30px;
+            border: none;
             border-radius: 10px;
             overflow: hidden;
             background: white;

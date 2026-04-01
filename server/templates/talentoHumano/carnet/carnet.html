@@ -6,10 +6,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carnetización - Celifrut</title>
     <style>
+        @font-face {
+            font-family: 'Montserrat';
+            src: url('{{MONTSERRAT_FONT}}') format('truetype');
+            font-weight: 100 900;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Montserrat';
+            src: url('{{MONTSERRAT_FONT_ITALIC}}') format('truetype');
+            font-weight: 100 900;
+            font-style: italic;
+        }
+
         :root {
             --card-width: 400px;
             --card-height: calc(var(--card-width) * 1.6);
             --color-principal: #1565C0;
+        }
+
+        * {
+            font-family: 'Montserrat', sans-serif;
         }
 
         body {
@@ -20,7 +38,7 @@
             align-items: center;
             min-height: 100vh;
             background-color: #f0f2f5;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Montserrat', sans-serif;
         }
 
         .credential-container {
