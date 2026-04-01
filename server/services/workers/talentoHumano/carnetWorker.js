@@ -55,6 +55,9 @@ async function run() {
         }
         const cargosMap = new Map(cargos.map(c => [c._id.toString(), c]))
 
+        const fontBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/Montserrat-VariableFont_wght.ttf');
+        const fontItalicBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/Montserrat-Italic-VariableFont_wght.ttf');
+
         const pdfs = []
 
         session.startTransaction()
@@ -90,6 +93,9 @@ async function run() {
             if (!cargoData) throw new Error("Error cargo no existe")
 
             let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnetFinal.html');
+
+            htmlTemplate = htmlTemplate.replace('{{MONTSERRAT_FONT}}', fontBase64);
+            htmlTemplate = htmlTemplate.replace('{{MONTSERRAT_FONT_ITALIC}}', fontItalicBase64);
 
             const logoBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/Captura_desde_2026-01-13_16-04-29-removebg-preview.png');
             htmlTemplate = htmlTemplate.replace('{{LOGO_BASE64}}', logoBase64);
@@ -132,13 +138,34 @@ async function run() {
             const pdfBuffer = await HtmlToImage.convertToPdf(htmlTemplate, {
                 baseUrl: templateDir,
                 waitFor: 'domcontentloaded',
+                width: '5.4cm',
+                height: '8.56cm',
+                scale: 0.4535,
+                viewportWidth: 450,
+                viewportHeight: 690,
             });
 
             if (!pdfBuffer || pdfBuffer.length === 0) {
                 throw new Error("Fallo crítico: El carnet se generó pero el PDF resultante no es válido.");
             }
 
-            pdfs.push(Buffer.from(pdfBuffer))
+            if (carnetActualizado.vinilo === false) {
+                const reversoBuffer = await FileService.readFileAsBase64('talentoHumano/carnet/REVERSO CREDENCIALES.pdf');
+                const reversoBytes = Buffer.from(reversoBuffer.split(',')[1], 'base64');
+
+                const combined = await PDFDocument.create();
+                const frontDoc = await PDFDocument.load(pdfBuffer);
+                const reversoDoc = await PDFDocument.load(reversoBytes);
+
+                const [frontPage] = await combined.copyPages(frontDoc, [0]);
+                const [reversoPage] = await combined.copyPages(reversoDoc, [0]);
+                combined.addPage(frontPage);
+                combined.addPage(reversoPage);
+
+                pdfs.push(Buffer.from(await combined.save()));
+            } else {
+                pdfs.push(Buffer.from(pdfBuffer));
+            }
 
             parentPort.postMessage({
                 type: 'progress',

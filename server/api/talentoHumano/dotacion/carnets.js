@@ -54,6 +54,11 @@ export class DotacionCarnetsControllerRepository {
             let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnet.html');
             await registrarPasoLog(log._id, "Éxito", "Completado", "Template HTML cargado exitosamente");
 
+            const fontBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/Montserrat-VariableFont_wght.ttf');
+            const fontItalicBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/Montserrat-Italic-VariableFont_wght.ttf');
+            htmlTemplate = htmlTemplate.replace('{{MONTSERRAT_FONT}}', fontBase64);
+            htmlTemplate = htmlTemplate.replace('{{MONTSERRAT_FONT_ITALIC}}', fontItalicBase64);
+
             const logoBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/Captura_desde_2026-01-13_16-04-29-removebg-preview.png');
             htmlTemplate = htmlTemplate.replace('{{LOGO_BASE64}}', logoBase64);
 

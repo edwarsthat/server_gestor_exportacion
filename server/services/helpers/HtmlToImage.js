@@ -74,6 +74,11 @@ export class HtmlToImage {
         const {
             outputPath = null,
             format = 'A4',
+            width = null,
+            height = null,
+            scale = 1,
+            viewportWidth = null,
+            viewportHeight = null,
             printBackground = true,
             margin = { top: 0, right: 0, bottom: 0, left: 0 },
             waitFor = 'domcontentloaded',
@@ -96,12 +101,15 @@ export class HtmlToImage {
             }
 
             await page.emulateMediaType('screen');
-            // await page.setViewport({ width, height, deviceScaleFactor: 2 });
+            if (viewportWidth && viewportHeight) {
+                await page.setViewport({ width: viewportWidth, height: viewportHeight });
+            }
             await page.setContent(finalHtml, { waitUntil: waitFor, timeout: 60000 });
 
             const pdfBuffer = await page.pdf({
                 path: outputPath,
-                format,
+                ...(width && height ? { width, height } : { format }),
+                scale,
                 printBackground,
                 margin,
                 displayHeaderFooter: false
