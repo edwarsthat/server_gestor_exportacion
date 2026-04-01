@@ -53,7 +53,7 @@ async function closeConnection() {
     }
 }
 
-const OLD_PREFIX = '/opt/enterprise-projects/sistema-operativo/fotos_frutas/';
+const OLD_PREFIX = '/opt/enterprise-projects/backend/sistema-operativo/fotos_frutas/';
 const NEW_PREFIX = 'calidad/fotosCalidad/';
 
 async function main() {
