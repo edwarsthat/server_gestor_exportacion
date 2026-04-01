@@ -37,7 +37,7 @@ const STORAGE_LOCATIONS = {
     // Desde: server/services/helpers/ → public (raíz del proyecto)
     UPLOADS: path.resolve(__dirname, '..', '..', '..', 'uploads'),
     // Desde: 
-    STORAGE: path.resolve(__dirname, '..', '..', '..', '..', 'storage'),
+    STORAGE: path.resolve(__dirname, '..', '..', '..', '..', '..', 'storage'),
 };
 
 
