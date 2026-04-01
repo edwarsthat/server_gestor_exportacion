@@ -1,7 +1,5 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { PostError, ConnectionDBError } from "../../Error/ConnectionErrors.js";
-import { ProcessError } from "../../Error/ProcessError.js";
-import fs from 'fs';
 import { registrarPasoLog } from "../api/helper/logs.js";
 import { BaseRepository } from "./base/BaseRepository.js";
 
@@ -76,16 +74,7 @@ export class LotesRepository extends BaseRepository {
             throw new ConnectionDBError(522, `Error obteniendo lotes ${err.message}`);
         }
     }
-    static async obtener_imagen_lote_calidad(url) {
-        try {
-            // eslint-disable-next-line security/detect-non-literal-fs-filename
-            const data = fs.readFileSync(url)
-            const base64Image = data.toString('base64');
-            return base64Image
-        } catch (err) {
-            throw new ProcessError(525, `Error obteniendo la imagen ${err.message}`);
-        }
-    }
+
     static async get_numero_lotes(filtro = {}) {
         try {
             const count = await db.Lotes.countDocuments(filtro);

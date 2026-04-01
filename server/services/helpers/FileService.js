@@ -528,7 +528,6 @@ export class FileService {
         // Retorna ruta normalizada con forward slashes (consistencia Windows/Linux)
         return path.join(dirPath, filename).replace(/\\/g, '/');
     }
-
     static async saveBase64File(
         base64String,
         dirPath,

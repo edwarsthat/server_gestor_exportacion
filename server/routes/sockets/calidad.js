@@ -1,5 +1,6 @@
 import { CalidadRepository } from "../../api/Calidad.js";
 import { formulariosCalidadController } from "../../api/calidad/formulariosCalidad.js";
+import { InformesCalidadController } from "../../api/calidad/InformesCalidad.js";
 import { IngresosCalidadController } from "../../api/calidad/ingresosCalidad.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
@@ -36,7 +37,7 @@ export const apiSocketCalidad = {
         return successResponseRoutes(response)
     },
     get_calidad_informes_imagenDefecto: async (data) => {
-        const response = await CalidadRepository.get_calidad_informes_imagenDefecto(data)
+        const response = await InformesCalidadController.get_calidad_informes_imagenDefecto(data)
         return successResponseRoutes(response)
     },
     get_calidad_informes_contenedoresLote: async (data) => {
