@@ -7,7 +7,7 @@ export class InformesCalidadController {
             const { data: datos } = req
             const { data } = datos
             const response = await FileService.readFileAsBase64(data, "STORAGE")
-            return response
+            return response.replace(/^data:[^;]+;base64,/, '') //! se debe quitar mas adealnte
         })
     }
 }
