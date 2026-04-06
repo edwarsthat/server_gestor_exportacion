@@ -80,15 +80,6 @@ const staticLimiter = rateLimit({
 // Bloquear peticiones sospechosas primero
 app.use(blockSuspiciousExtensions);
 
-app.use((req, res, next) => {
-    const isPublic = req.url.startsWith('/public') || /\.(html|css|js|png|jpg|jpeg|gif|ico|svg|json|yml|yaml|woff2?|ttf|otf)$/i.test(req.url);
-    if (isPublic) {
-        console.log(`[ARCHIVO PÚBLICO] URL: ${req.url} - IP: ${req.ip}`);
-    } else {
-        console.log(`[PETICIÓN] ${req.method} URL: ${req.url} - IP: ${req.ip}`);
-    }
-    next();
-});
 
 // app.set('trust proxy', 1);
 app.use(helmet());
@@ -121,7 +112,7 @@ app.use("/API", routerAPI)
 app.use("/forms", formsAPI)
 app.use("/talentoHumano", routerTalentoHumano)
 app.use("/events", routerEvents)
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
     res.sendFile(path.join(
         __dirname,
         '..', '..',
@@ -141,7 +132,7 @@ const loginLimiter = rateLimit({
 });
 
 //se envia el archivo ymal para actualizar la aplicacion de ecritorio
-app.get("/latest.yml", async (req, res, next) => {
+app.get("/latest.yml", async (_req, res, next) => {
     try {
 
         const fileContents = await SistemaRepository.isNewVersion();

@@ -46,20 +46,28 @@ export class RustRcp {
         }, this.reconnectInterval);
     }
 
-    sendData(data) {
+    sendData(data, timeoutMs = 8000) {
         return new Promise((resolve, reject) => {
             if (!this.isConnected) {
-                return reject("⛔ No estás conectado al servidor");
+                return reject(new Error("⛔ No estás conectado al servidor Rust"));
             }
 
-            const dataToSend = JSON.stringify(data);
-            this.client.once("data", (incoming) => {
-                resolve(incoming.toString());
-            });
+            let settled = false
+            const done = (fn, value) => {
+                if (settled) return
+                settled = true
+                clearTimeout(timer)
+                this.client.removeListener("data", onData)
+                fn(value)
+            }
 
-            this.client.write(dataToSend, (err) => {
-                if (err) reject("💥 Error al enviar los datos: " + err);
-            });
+            const onData = (incoming) => done(resolve, incoming.toString())
+            const timer = setTimeout(() => done(reject, new Error(`⏱ Timeout: el servidor Rust no respondió en ${timeoutMs}ms`)), timeoutMs)
+
+            this.client.once("data", onData)
+            this.client.write(JSON.stringify(data), (err) => {
+                if (err) done(reject, new Error("💥 Error al enviar datos al servidor Rust: " + err))
+            })
         });
     }
 
