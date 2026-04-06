@@ -58,7 +58,7 @@ import { browserPool } from './server/services/helpers/browserPool.js';
             console.warn('⚠️ No se pudo conectar al servidor Rust inicialmente. Se intentará reconectar en segundo plano.');
         });
         const io = new Server(server, {
-            maxHttpBufferSize: 6e6 // 5 MB
+            maxHttpBufferSize: 10e6 // 10 MB
         });
         initSockets(io);
         initCronJobs();
