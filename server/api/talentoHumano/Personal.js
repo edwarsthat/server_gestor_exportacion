@@ -41,12 +41,10 @@ export class PersonalControllerRepository {
             throw new Error('El documento de identificación es obligatorio.');
         }
 
-
         const urlPath = path.join(
             "personal",
             "fotoCarnet",
         );
-
 
         try {
             filePath = await FileService.saveBufferFile(
@@ -81,7 +79,7 @@ export class PersonalControllerRepository {
                 await registrarPasoLog(log._id, "Actualizar serial", "completado")
                 //se crea el carnet
                 const carnetIngresado = await TalentoHumanoDotacionCarnetsRepository.post_data(
-                    { type: "final", SKU: skuSerial.serial, employeeId: nuevoEmpleadoId },
+                    { type: "final", SKU: skuSerial.serial, employeeId: nuevoEmpleadoId, vinilo: data.vinilo },
                     { user, session }
                 )
                 if (!carnetIngresado) {
@@ -136,7 +134,6 @@ export class PersonalControllerRepository {
         return await executeQueryTask(async () => {
 
             const { cedula, cedulaFrente, cedulaTrasera } = req.data
-            console.log(req.data)
             TalentoHumanoValidations.post_talentoHumano_personal_cargarCedula().parse(req.data)
 
             const urlPath = path.join(
@@ -202,11 +199,8 @@ export class PersonalControllerRepository {
                 server: "python",
                 action: "validar_cedula"
             };
-            console.log("🚀 Enviando a Rust:", JSON.stringify(payload));
             const responseStr = await rustRcpClient.sendData(payload);
-            console.log(responseStr)
             const response = await JSON.parse(responseStr);
-            console.log(response)
             return response
         })
 
@@ -538,7 +532,7 @@ export class PersonalControllerRepository {
             }
 
             //subir el nuevo documento
-            const fileUrl = await FileService.saveBase64File(dataValidate.file, urlPath, "STORAGE", { encrypt: isEncrypted })
+            const fileUrl = await FileService.saveBufferFile(dataValidate.file, urlPath, "STORAGE", { encrypt: isEncrypted })
 
             await registrarPasoLog(log._id, "Documento subido", "completado")
 

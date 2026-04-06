@@ -12,8 +12,9 @@ import { HtmlToImage } from '../../../services/helpers/HtmlToImage.js';
 import config from '../../../../src/config/index.js';
 import { TalentoHumanoValidations } from '../../../validations/talentoHumano.js';
 import { CarnetWorkerRunner } from '../../../services/workers/talentoHumano/carnetWorkerRunner.js';
-import { executeTransactionalTask } from '../../../utils/wrappers.js';
+import { executeTransactionalTask, executeQueryTask } from '../../../utils/wrappers.js';
 import QRCode from 'qrcode';
+import { InsumosRepository } from '../../../Class/Insumos.js';
 
 export class DotacionCarnetsControllerRepository {
     static async post_talentoHumano_dotacion_carnets(req) {
@@ -53,6 +54,11 @@ export class DotacionCarnetsControllerRepository {
             let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnet.html');
             await registrarPasoLog(log._id, "Éxito", "Completado", "Template HTML cargado exitosamente");
 
+            const fontBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/Montserrat-VariableFont_wght.ttf');
+            const fontItalicBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/Montserrat-Italic-VariableFont_wght.ttf');
+            htmlTemplate = htmlTemplate.replace('{{MONTSERRAT_FONT}}', fontBase64);
+            htmlTemplate = htmlTemplate.replace('{{MONTSERRAT_FONT_ITALIC}}', fontItalicBase64);
+
             const logoBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/Captura_desde_2026-01-13_16-04-29-removebg-preview.png');
             htmlTemplate = htmlTemplate.replace('{{LOGO_BASE64}}', logoBase64);
 
@@ -72,6 +78,12 @@ export class DotacionCarnetsControllerRepository {
             }
             await registrarPasoLog(log._id, "Éxito", "Completado", "PDF generado exitosamente");
 
+            await InsumosRepository.actualizar_data(
+                { alias: "Carnet" },
+                { $inc: { cantidad: -1 } },
+                { session }
+            )
+
             return {
                 status: 200,
                 message: "Token generado y template cargado",
@@ -80,7 +92,41 @@ export class DotacionCarnetsControllerRepository {
 
         })
     }
+    static async post_talentoHumano_newCarnet_final(req) {
+        const { user } = req
+        if (!user || !user._id) {
+            throw new Error("Error ususario no registrado")
+        }
 
+        return await executeTransactionalTask(req, async (session, log) => {
+            const parseData = TalentoHumanoValidations.post_talentoHumano_newCarnet_final().parse(req.data)
+            const { personalId, vinilo } = parseData
+
+            //se obtiene el empleado
+            const empleadoArr = await PersonalRepository.get_data({ query: { _id: personalId } }, { session })
+            if (!empleadoArr || empleadoArr.length === 0) {
+                throw new Error("Empleado no encontrado")
+            }
+            const empleado = empleadoArr[0]
+            await registrarPasoLog(log._id, "Obtener empleado", "completado")
+            //se obtiene el serial SKU del carnet
+            const skuSerial = await Seriales.modificar_seriales({ name: "SKU" }, { $inc: { serial: 1 } }, { session })
+            if (!skuSerial) {
+                throw new Error("No se encontró el serial SKU")
+            }
+            await registrarPasoLog(log._id, "Actualizar serial", "completado")
+
+            //se crea el carnet
+            const carnetIngresado = await TalentoHumanoDotacionCarnetsRepository.post_data(
+                { type: "final", SKU: skuSerial.serial, employeeId: empleado._id, vinilo: vinilo },
+                { user, session }
+            )
+            if (!carnetIngresado) {
+                throw new Error("Error creando el carnet")
+            }
+            await registrarPasoLog(log._id, "Creacion del carnet", "completado")
+        })
+    }
     static async get_talentoHumano_dotacion_carnets(req) {
 
         const { page, filtro } = req.data
@@ -103,12 +149,12 @@ export class DotacionCarnetsControllerRepository {
             const data = await TalentoHumanoDotacionCarnetsRepository.get_data(
                 {
                     query,
+                    sort: { createdAt: -1 },
                     limit: resultsPerPage, skip: (page - 1) * resultsPerPage,
                     populate: [
                         { path: "employeeId", select: "nombre identificacion" }
                     ]
                 },
-
             )
             return data
         } catch (err) {
@@ -142,7 +188,6 @@ export class DotacionCarnetsControllerRepository {
     }
     static async get_talentoHumano_dotacion_carnets_empleados() {
         try {
-
             const data = await PersonalRepository.get_data({
                 query: {
                     estado: true,
@@ -161,6 +206,17 @@ export class DotacionCarnetsControllerRepository {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
             await ErrorTalentHumanoLogicHandlers(error)
         }
+    }
+    static async get_talentoHumano_personal_sinCarnets() {
+        return await executeQueryTask(async () => {
+            const personal = await PersonalRepository.get_data({
+                query: { carnet: null }
+            })
+            if (personal.length === 0) {
+                throw new Error("No hay personal sin carnets asignados")
+            }
+            return personal
+        })
     }
     static async put_talentoHumano_dotacion_carnets_generar_temporal(req) {
 

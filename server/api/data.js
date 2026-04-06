@@ -2,6 +2,7 @@ import { control_plagas_campos, limpieza_diaria_campos, limpieza_mensual_campos 
 import { DataLogicError } from "../../Error/logicLayerError.js";
 import { ClientesRepository, ClientesNacionalesRepository } from "../Class/Clientes.js";
 import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
+import { InsumosRepository } from "../Class/Insumos.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { ProveedoresRepository } from "../Class/Proveedores.js";
 import { Seriales } from "../Class/Seriales.js";
@@ -353,6 +354,11 @@ export class dataRepository {
             const { data } = req.data
             if (typeof data !== 'string') throw new Error('data debe ser un string')
             return await dataService.obtenerVersion({ key: data })
+        })
+    }
+    static async get_data_insumos_creacion_carnets() {
+        return await executeQueryTask(async () => {
+            return await InsumosRepository.get_data({ query: { alias: "Carnet" } })
         })
     }
 }

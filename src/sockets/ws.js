@@ -113,6 +113,10 @@ export function initSockets(io) {
             console.log(`[join_job] sockets en job_${jobId}:`, io.sockets.adapter.rooms.get(`job_${jobId}`)?.size);
             console.log(`[join_job] rooms activas:`, io.sockets.adapter.rooms);
         })
+        socket.on("leave_job", (jobId) => {
+            socket.leave(`job_${jobId}`);
+            console.log(`[leave_job] socket ${socket.id} salió de job_${jobId}`);
+        })
         socket.on("disconnect", () => {
             console.log("Un usuario se ha desconectado.");
             console.log("Conexiones activas:", io.engine.clientsCount);

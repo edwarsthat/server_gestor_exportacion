@@ -1,4 +1,5 @@
 import { ProcesoRepository } from "../../api/Proceso.mjs";
+import { ProcesoCalidadController } from "../../api/proceso/calidad.js";
 import { DescartesControllers } from "../../api/proceso/descartes.js";
 import { ListaEmpaqueController } from "../../api/proceso/listaEmpaque.js";
 import { successResponseRoutes } from "../helpers/responses.js";
@@ -12,7 +13,7 @@ export const apiSocketProceso = {
     //#endregion
     //#region aplicaciones
     post_proceso_aplicaciones_fotoCalidad: async (data) => {
-        await ProcesoRepository.post_proceso_aplicaciones_fotoCalidad(data)
+        await ProcesoCalidadController.post_proceso_aplicaciones_fotoCalidad(data)
         return successResponseRoutes()
     },
     get_proceso_aplicaciones_fotoCalidad: async () => {

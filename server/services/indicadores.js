@@ -45,8 +45,7 @@ export class IndicadoresService {
             totalKilosIngreso += lote?.kilos || 0;
             totalKilosProcesados += lote?.kilosVaciados || 0;
             totalKilosExportacion += lote?.salidaExportacion?.totalKilos || 0;
-            totalKilosDescarte += (lote?.descarteLavado ? calcularTotalDescarte(lote.descarteLavado) : 0);
-            totalKilosDescarte += (lote?.descarteEncerado ? calcularTotalDescarte(lote.descarteEncerado) : 0);
+            totalKilosDescarte += (lote?.descartes ? calcularTotalDescarte(lote.descartes) : 0);
             totalKilosDescarte += lote?.frutaNacioinal || 0;
         }
         return { totalKilosIngreso, totalKilosProcesados, totalKilosExportacion, totalKilosDescarte };

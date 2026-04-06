@@ -13,6 +13,10 @@ export const apiSocketTalentoHumano = {
         await CargosPersonalControllerRepository.post_talentoHumano_cargos_ingresoCargo(req)
         return successResponseRoutes()
     },
+    post_talentoHumano_newCarnet_final: async (req) => {
+        await DotacionCarnetsControllerRepository.post_talentoHumano_newCarnet_final(req)
+        return successResponseRoutes()
+    },
     post_talentoHumano_personal_cargarCedula: async (req) => {
         const data = await PersonalControllerRepository.post_talentoHumano_personal_cargarCedula(req)
         return successResponseRoutes(data)
@@ -55,6 +59,10 @@ export const apiSocketTalentoHumano = {
     },
     get_talentoHumano_dotacion_carnets_empleados: async () => {
         const data = await DotacionCarnetsControllerRepository.get_talentoHumano_dotacion_carnets_empleados()
+        return successResponseRoutes(data)
+    },
+    get_talentoHumano_personal_sinCarnets: async () => {
+        const data = await DotacionCarnetsControllerRepository.get_talentoHumano_personal_sinCarnets()
         return successResponseRoutes(data)
     },
     put_talentoHumano_cargos_modificarCargo: async (req) => {

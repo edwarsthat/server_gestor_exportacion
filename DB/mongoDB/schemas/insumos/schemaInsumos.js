@@ -5,10 +5,11 @@ const { Schema } = mongoose;
 export const defineInsumos = async (conn) => {
 
     const InsumosSchema = new Schema({
-        codigo: { type: String, require: true, unique: true },
+        codigo: { type: String, require: true, unique: true, index: true },
         insumo: String,
         medida: String,
-        alias: { type: String, require: true, unique: true },
+        cantidad: { type: Number, min:[0, 'No puede haber una cantidad negativa del producto']},
+        alias: { type: String, require: true, index: true },
         tipo: String,
         fecha: { type: Date, default: Date.now }
     }, { timestamps: true });

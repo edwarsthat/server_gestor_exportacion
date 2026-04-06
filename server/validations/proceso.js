@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { getErrorMessages, safeString, optionalSafeString, requiredSafeString, objectIdString } from './utils/validationFunctions.js';
+import { getErrorMessages, safeString, optionalSafeString, requiredSafeString, objectIdString, base64String } from './utils/validationFunctions.js';
 
 export class ProcesoValidations {
     static put_proceso_aplicaciones_listaEmpaque_agregarItem() {
@@ -103,6 +103,14 @@ export class ProcesoValidations {
         return z.object({
             seleccion: z.array(z.string().min(1)),
             cuartoFrio: z.string().min(1)
+        })
+    }
+
+    static post_proceso_aplicaciones_fotoCalidad() {
+        return z.object({
+            _id: objectIdString("_id"),
+            fotoName: z.string().regex(/^[a-zA-Z0-9_-]+$/, 'Nombre de foto inválido'),
+            foto: base64String("foto"),
         })
     }
 }

@@ -3,12 +3,6 @@ import { procesoEventEmitter } from "../../events/eventos.js";
 import { RecordLotesRepository } from "../archive/ArchiveLotes.js";
 import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { LotesRepository } from "../Class/Lotes.js";
-// import { insumos_contenedor } from "../functions/insumos.js";
-// import { InsumosRepository } from "../Class/Insumos.js";
-
-import path from 'path';
-import fs from "fs";
-
 import { filtroFechaInicioFin } from "./utils/filtros.js";
 import { InventariosLogicError } from "../../Error/logicLayerError.js";
 import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
@@ -18,10 +12,7 @@ import { LogsRepository } from "../Class/LogsSistema.js";
 import { registrarPasoLog } from "./helper/logs.js";
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ErrorProcesoLogicHandlers } from "./utils/errorsHandlers.js";
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { FrutaProcesada } from "../Class/frutaProcesada.js";
-import { LotesHelper } from "../helper/lotes.js";
 import { ArchiveLoteMaquila } from "../archive/ArchiveLoteMaquila.js";
 import { FileService } from "../services/helpers/FileService.js";
 import { InventariosHistorialRepository } from "../Class/Inventarios.js";
@@ -30,71 +21,9 @@ import { DescartesRepository } from "../Class/Descartes.js";
 import { TurnosService } from "../services/proceso/turnos.js";
 import { EventsController } from "./events.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-
 export class ProcesoRepository {
 
     //#region aplicaciones
-    static async post_proceso_aplicaciones_fotoCalidad(req) {
-        try {
-            const { user } = req
-            const { foto, fotoName, _id } = req.data;
-
-            // Validar _id (ObjectId válido)
-            if (!/^[0-9a-fA-F]{24}$/.test(_id)) {
-                throw new ProcessError(400, 'ID de lote inválido');
-            }
-
-            // Validar fotoName (solo caracteres alfanuméricos y guiones)
-            if (!/^[a-zA-Z0-9_-]+$/.test(fotoName)) {
-                throw new ProcessError(400, 'Nombre de foto inválido');
-            }
-
-            // Construir el nombre del archivo
-            const fileName = `${_id}_${fotoName}.png`;
-
-            // Construir la ruta completa del archivo
-            const fotoPath = path.join(
-                __dirname,
-                "..",
-                "..",
-                "fotos_frutas",
-                fileName
-            );
-
-            // Validación adicional: verificar que esté en el directorio correcto
-            const resolvedPath = path.resolve(fotoPath);
-            const resolvedBase = path.resolve(__dirname, '..', '..', 'fotos_frutas');
-            if (!resolvedPath.startsWith(resolvedBase)) {
-                throw new ProcessError(400, 'Ruta de archivo no permitida');
-            }
-
-            // Eliminar el encabezado de datos URI si está presente
-            const base64Data = foto.replace(/^data:image\/\w+;base64,/, "");
-
-            // eslint-disable-next-line security/detect-non-literal-fs-filename
-            await fs.promises.writeFile(fotoPath, base64Data, { encoding: "base64" });
-            const fotos = {}
-            fotos[`calidad.fotosCalidad.${fotoName}`] = fotoPath;
-            const query = {
-                ...fotos,
-                "calidad.fotosCalidad.fechaIngreso": Date.now(),
-            }
-
-            await LotesHelper.actualizar_lotes_helper(
-                { _id: _id },
-                query,
-                { new: true, user: user._id, action: "post_proceso_aplicaciones_fotoCalidad" }
-            );
-        } catch (err) {
-            if (err.status === 523) {
-                throw err
-            }
-            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async get_proceso_aplicaciones_fotoCalidad() {
         try {
             const haceUnMes = new Date();

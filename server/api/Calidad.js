@@ -427,20 +427,7 @@ export class CalidadRepository {
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_calidad_informes_imagenDefecto(req) {
-        try {
-            const { data: datos } = req
-            const { data } = datos
-            const response = await LotesRepository.obtener_imagen_lote_calidad(data)
-            return response
-        } catch (err) {
-            if (err.status === 525) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
 
-    }
     static async get_calidad_informes_contenedoresLote(req) {
         try {
             const { data: datos } = req

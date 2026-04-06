@@ -13,7 +13,7 @@ export class ProveedoresCrontroller {
             // }
 
             const { page, filtro } = data || {}
-            const resultsPerPage = 25;
+            const resultsPerPage = 0;
             let filter
             let query
 
