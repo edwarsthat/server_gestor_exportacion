@@ -284,6 +284,11 @@ export class FileService {
             );
         }
 
+        const estimatedSize = (base64Data.length * 3) / 4;
+        if (estimatedSize > 10 * 1024 * 1024) {
+            throw new FileValidationError('Archivo demasiado grande', 'FILE_TOO_LARGE');
+        }
+
         const buffer = Buffer.from(base64Data, 'base64');
 
         // Usar file-type para detectar el tipo real

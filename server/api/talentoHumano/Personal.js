@@ -479,7 +479,6 @@ export class PersonalControllerRepository {
         })
     }
     static async put_talentoHumano_upload_document(req) {
-        console.log("Iniciando proceso de carga de documento para personal")
         const { user } = req;
         if (!user || !user._id) {
             throw new Error('Usuario no encontrado');

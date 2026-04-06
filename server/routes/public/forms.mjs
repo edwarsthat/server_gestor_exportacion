@@ -106,6 +106,10 @@ formsAPI.post("/reclamaciones_calidad", formLimiter, upload.array('documentos'),
         };
 
         for (const file of files) {
+            if (file.size > 10 * 1024 * 1024) {
+                await fs.unlink(file.path);
+                throw new Error(`Archivo demasiado grande: ${file.originalname}`);
+            }
             const fileType = await fileTypeFromFile(file.path);
             if (!fileType || !allowedTypes.includes(fileType.mime)) {
                 // Borra el archivo peligroso (ruta generada por Multer, no por usuario)
