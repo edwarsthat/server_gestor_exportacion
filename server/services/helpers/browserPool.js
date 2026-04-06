@@ -17,6 +17,7 @@ const getChromePath = () => {
         '/usr/bin/chromium-browser',
         '/usr/bin/chromium',
     ];
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
     return linuxPaths.find(p => existsSync(p)) ?? null;
 }
 
@@ -66,6 +67,32 @@ class BrowserPool {
             }
         } catch (error) {
             console.error("Error al liberar la página:", error);
+        }
+    }
+
+    getWsEndpoint() {
+        if (!this.browser) throw new Error('BrowserPool no inicializado')
+        return this.browser.wsEndpoint()
+    }
+
+    async connect(wsEndpoint, size = 1) {
+        this.browser = await puppeteer.connect({ browserWSEndpoint: wsEndpoint })
+        for (let i = 0; i < size; i++) {
+            const page = await this.browser.newPage()
+            this.pool.push(page)
+        }
+    }
+
+    async disconnect() {
+        for (const page of this.pool) {
+            try { await page.close() } catch {
+                console.warn("No se pudo cerrar una página del pool, es posible que ya esté cerrada.")
+            }
+        }
+        this.pool = []
+        if (this.browser) {
+            this.browser.disconnect()
+            this.browser = null
         }
     }
 
