@@ -143,7 +143,7 @@ async function main() {
         }
 
         const fecha = new Date().toISOString().slice(0, 10);
-        const outputPath = path.resolve('D:/trabajo/Celifrut/server_gestor_exportacion/scripts/out', `lotes_exportacion_${fecha}.xlsx`);
+        const outputPath = path.join('scripts', 'out', `lotes_exportacion_${fecha}.xlsx`);
         await workbook.xlsx.writeFile(outputPath);
 
         console.log(`✅ Total lotes procesados: ${out.length}`);
