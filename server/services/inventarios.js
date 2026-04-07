@@ -168,9 +168,21 @@ export class InventariosService {
         // Si cantidad es 0, no hay nada que hacer (esto sí es válido retornar)                                                                         
         if (cantidad === 0) return null;
 
+        const filterBase = { _id: objectId };
+
+        if (cantidad < 0) {
+            const [prov] = await ProveedoresRepository.get_data({ query: { _id: objectId }, select: { canastillas: 1 }, limit: 1 }, { session });
+            const entidad = prov ?? (await ClientesNacionalesRepository.get_data({ query: { _id: objectId }, select: { canastillas: 1 }, limit: 1 }, { session }))[0];
+
+            if (!entidad) throw new ConnectionDBError(404, "No existe proveedor/cliente con ese ID");
+            if ((entidad.canastillas ?? 0) + cantidad < 0) {
+                throw new ConnectionDBError(400, `Canastillas insuficientes: tiene ${entidad.canastillas ?? 0} y se intentan restar ${Math.abs(cantidad)}`);
+            }
+        }
+
         try {
             const prov = await ProveedoresRepository.actualizar_data(
-                { _id: objectId },
+                filterBase,
                 { $inc: { canastillas: cantidad } },
                 { session, user: user._id },
             );
@@ -178,7 +190,7 @@ export class InventariosService {
             return prov
         } catch  {
             const cli = await ClientesNacionalesRepository.actualizar_data(
-                { _id: objectId },
+                filterBase,
                 { $inc: { canastillas: cantidad } },
                 { session, user: user._id },
             )
@@ -188,7 +200,7 @@ export class InventariosService {
             }
         }
 
-        throw new ConnectionDBError(404, "No existe proveedor/cliente o el ajuste dejaría canastillas en negativo");
+        throw new ConnectionDBError(404, "No existe proveedor/cliente con ese ID");
     }
     static async encontrarDestinoOrigenRegistroCanastillas(registros) {
         const destinosArr = registros.map(registro => registro.destino);
