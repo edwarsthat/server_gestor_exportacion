@@ -106,16 +106,14 @@ async function main() {
                     if (descarteId.toString() === "690f643bbe7e33ae39bda1c6") {
                         const clasificacion = lote.calidad?.clasificacionCalidad;
                         if (clasificacion) {
-                            Object.entries(clasificacion).forEach(([claveId, cantidad]) => {
-                                if (['user', 'fecha'].includes(claveId)) return;
-                                const descarte = descartesMap.get(claveId);
-                                objLote[`descarte_${descarte?.descripcion || 'Desconocida'}`] = cantidad * kilos;
+                            Object.entries(clasificacion).forEach(([tipoDescarte, cantidad]) => {
+                                if (['user', 'fecha'].includes(tipoDescarte)) return;
+                                objLote[`descarte_${tipoDescarte || 'Desconocida'}`] = cantidad * kilos;
                             });
                         }
                     } else {
                         const descarte = descartesMap.get(descarteId.toString());
-                        const calidad = descarte ? calidadesMap.get(descarte.calidad?.toString()) : null;
-                        objLote[`descarte_${calidad?.calidad || 'Desconocida'}`] = kilos;
+                        objLote[`${descarte?.descripcion || 'Desconocida'}`] = kilos;
                     }
                 });
             }
