@@ -4,7 +4,7 @@
  */
 
 import { MongoClient } from 'mongodb';
-import config from '../../../src/config/index.js';
+import config from '../../src/config/index.js';
 import ExcelJS from 'exceljs';
 import path from 'path';
 
