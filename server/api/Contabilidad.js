@@ -2,9 +2,11 @@
 import { ContabilidadLogicError } from "../../Error/logicLayerError.js";
 import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { LotesRepository } from "../Class/Lotes.js";
+import { OtrosFletesRepository } from "../Class/OtrosFletes.js";
 import mongoose from 'mongoose';
 //jp
 import { db } from "../../DB/mongoDB/config/init.js";
+import { response } from "express";
 // import { nan } from "zod";
 
 // import { VehiculoRegistro } from "../Class/VehiculosRegistros.js";
@@ -252,7 +254,8 @@ export class ContabilidadRepository {
                     esFleteCompuesto: 1,
                     grupoFlete: 1,
                     totalFlete: 1,
-                    tarifaCongelada: 1 //nueva tarifa solo para ese viaje 
+                    tarifaCongelada: 1, //nueva tarifa solo para ese viaje 
+                    observacionesTF: 1 //para verlo en la tabla del front. Jp
                 },
                 populate: [
                     { path: "predio", select: "PREDIO GGN tarifaFleteKg flete" }
@@ -337,6 +340,7 @@ export class ContabilidadRepository {
                     tarifaKg: isNaN(tarifaKg) ?'SIN TARIFA' : tarifaKg,
                     totalFlete,
                     tarifaEsCongelada: Boolean(lote.tarifaCongelada),
+                    observacionesTF: lote.observacionesTF ?? '', //lo que pasa el objeto final. Jp
                     placa: lote.placa ?? 'N/A',
                     // conductor: lote.conductor ?? 'N/A',
                     semana,
@@ -478,26 +482,89 @@ export class ContabilidadRepository {
 
     static async put_tarifa_congelada(req) {
         try {
-            const { loteId, nuevaTarifa } = req.data;
-
+            // Recibimos también 'observaciones' desde el frontend. Jp
+            const { loteId, nuevaTarifa, observacionesTF } = req.data;
+            
             const tarifaNumerica = Number(nuevaTarifa);
-
             if (isNaN(tarifaNumerica)) {
                 throw new Error("Tarifa inválida");
             }
 
+            // Preparamos el objeto de actualización. Jp
+            const updateData = { 
+                tarifaCongelada: tarifaNumerica
+                // observacionesTF: observacionesTF || "" // Forzamos un string vacío si es undefined
+            };
+
+            //si vienen observaciones, las incluimos para que se guarden en EF especificas. Jp
+            if (observacionesTF !== undefined) {
+                updateData.observacionesTF = observacionesTF;
+            }
+
             await LotesRepository.actualizar_lote(
                 {_id: loteId},
-                { $set: { tarifaCongelada: tarifaNumerica } },
-                { calculateFields: false }
+                // { $set: { tarifaCongelada: tarifaNumerica } },
+                { $set: updateData },
+                { calculateFields: false,
+                    action: "put_comercial_registroPrecios_proveedores_comentario", // Usamos una acción excluida para no resetear aprobaciones
+                }
+                //  }
             );
 
-            return { message: "Tarifa congelada guardada correctamente" };
+            return { 
+                status: 200,
+                message: "Tarifa y observaciones congelada guardada correctamente en el EF",
+                data: response // Devolvemos la respuesta del repo para ver qué hizo
+            };
 
         } catch (err) {
+            console.error("Error en put_tarifa_congelada:", err.message);
             throw new Error(err.message);
         }
     }
+    //Otros fletes
+    static async post_contabilidad_otros_fletes(req) {
+    try {
+        // const { data } = req;
+        console.log("REQ.DATA:", req.data);
+        console.log("REQ.USER:", req.user?._id);
+
+        const { fecha, destino, tipoFlete, valorFlete, placa, conductor, observaciones, semana } = req.data.data;
+
+        const nuevoRegistro = await db.OtrosFletes.create({
+            fecha: new Date(fecha),
+            destino,
+            tipoFlete,
+            valorFlete: Number(valorFlete),
+            placa,
+            conductor,
+            observaciones: observaciones || "",
+            semana,
+            usuario: req.user?._id
+        });
+
+        return nuevoRegistro;
+
+    } catch (err) {
+        throw new ContabilidadLogicError(500, err.message);
+    }
+}
+    static async get_contabilidad_otros_fletes(req) {
+    try {
+
+        const filtros = req.data || {};
+
+        const data = await OtrosFletesRepository.getOtrosFletes(filtros);
+
+        return data;
+
+    } catch (err) {
+        throw new ContabilidadLogicError(
+            475,
+            `Error obteniendo otros fletes: ${err.message}`
+        );
+    }
+}
 }
 //------------------------------------------------------------------------------
 // }

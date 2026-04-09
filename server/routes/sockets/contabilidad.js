@@ -50,6 +50,17 @@ export const apiSocketContabilidad = {
         return successResponseRoutes(response);
     },
 
+    //Tabla de Otros Fletes. Jp
+    get_contabilidad_otros_fletes: async (data) => {
+        const response = await ContabilidadRepository.get_contabilidad_otros_fletes(data);
+        return successResponseRoutes(response);
+    },
+
+    post_contabilidad_otros_fletes: async (data) => {
+        const response = await ContabilidadRepository.post_contabilidad_otros_fletes(data);
+        return successResponseRoutes(response);
+    },
+
     get_contabilidad_informeMaquila_resumenInforme: async (data) => {
         const response = await InformesContabilidadController.get_contabilidad_informeMaquila_resumenInforme(data);
         return successResponseRoutes(response);
