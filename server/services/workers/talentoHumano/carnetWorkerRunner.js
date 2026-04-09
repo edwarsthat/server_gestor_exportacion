@@ -5,6 +5,7 @@ import { dirname, join } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 import { talentoHumanoEventEmitter } from '../../../../events/eventos.js'
+import { browserPool } from '../../helpers/browserPool.js'
 
 export class CarnetWorkerRunner {
     static launch(data){
@@ -12,7 +13,7 @@ export class CarnetWorkerRunner {
         const jobId = randomUUID()
 
         const  worker = new Worker(join(__dirname, 'carnetWorker.js'), {
-            workerData: { carnetsIds:data, jobId}
+            workerData: { carnetsIds:data, jobId, wsEndpoint: browserPool.getWsEndpoint() }
         })
 
         worker.on('message', (result) => {

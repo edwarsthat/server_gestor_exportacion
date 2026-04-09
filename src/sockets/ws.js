@@ -37,8 +37,6 @@ export function initSockets(io) {
     eventLisener({ io: io })
 
     io.on("connection", socket => {
-        console.log("an user has connected");
-        console.log("Conexiones activas:", io.engine.clientsCount);
 
         const authenticatedUser = socket.user;
 
@@ -64,7 +62,7 @@ export function initSockets(io) {
                 callback(response);
 
             } catch (err) {
-                console.log("Error en el manejo de la solicitud:", err);
+                console.error("Error en el manejo de la solicitud:", err);
                 try {
                     await HandleErrors.addError(err);
                 } catch (logError) {
@@ -109,18 +107,11 @@ export function initSockets(io) {
         })
         socket.on("join_job", (jobId) => {
             socket.join(`job_${jobId}`);
-            console.log(`[join_job] socket ${socket.id} unido a job_${jobId}`);
-            console.log(`[join_job] sockets en job_${jobId}:`, io.sockets.adapter.rooms.get(`job_${jobId}`)?.size);
-            console.log(`[join_job] rooms activas:`, io.sockets.adapter.rooms);
         })
         socket.on("leave_job", (jobId) => {
             socket.leave(`job_${jobId}`);
-            console.log(`[leave_job] socket ${socket.id} salió de job_${jobId}`);
         })
-        socket.on("disconnect", () => {
-            console.log("Un usuario se ha desconectado.");
-            console.log("Conexiones activas:", io.engine.clientsCount);
-        });
+        socket.on("disconnect", () => {});
 
     });
 }

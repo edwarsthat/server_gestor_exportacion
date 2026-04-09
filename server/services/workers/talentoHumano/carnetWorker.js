@@ -13,7 +13,7 @@ import { browserPool } from '../../helpers/browserPool.js'
 import { PDFDocument } from 'pdf-lib'
 import { defineInsumos } from '../../../../DB/mongoDB/schemas/insumos/schemaInsumos.js'
 
-const { carnetsIds, jobId } = workerData
+const { carnetsIds, jobId, wsEndpoint } = workerData
 
 async function initDB() {
     const conn = await connectProcesoDB()
@@ -33,7 +33,7 @@ async function run() {
     let session
 
     try {
-        await browserPool.init(1)
+        await browserPool.connect(wsEndpoint, 1)
         const { conn, Carnet, Personal, CargosPersonal, Insumos } = await initDB()
         connection = conn
         session = await conn.startSession()
@@ -200,7 +200,7 @@ async function run() {
     } finally {
         if (session) await session.endSession()
         if (connection) await connection.close()
-        await browserPool.closeAll()
+        await browserPool.disconnect()
     }
 }
 
