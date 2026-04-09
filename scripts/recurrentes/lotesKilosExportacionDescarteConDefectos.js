@@ -82,15 +82,20 @@ async function main() {
         const calidades = await calidadesCollection.find({}).toArray();
         const calidadesMap = new Map(calidades.map(calidad => [calidad._id.toString(), calidad]));
 
-        const tipoFrutaCollection = database.collection('tipofrutas');
+        const tipoFrutaCollection = database.collection('tipoFruta');
         const tiposFruta = await tipoFrutaCollection.find({}).toArray();
         const tipoFrutaMap = new Map(tiposFruta.map(tipo => [tipo._id.toString(), tipo]));
+
+        const prediosCollection = database.collection('proveedors');
+        const predios = await prediosCollection.find({}).toArray();
+        const prediosMap = new Map(predios.map(predio => [predio._id.toString(), predio]));
 
         const out = [];
         for (const lote of lotes) {
 
             const objLote = {
                 enf: lote.enf,
+                predio: prediosMap.get(lote.predio?.toString())?.PREDIO || 'Desconocido',
                 fecha_creacion: lote.fecha_creacion,
                 kilos: lote.kilos,
                 kilosVaciados: lote.kilosVaciados,
