@@ -410,11 +410,17 @@ export class ContabilidadRepository {
         return acc + (can * 2.2) + kg;
     }, 0);
 
-    // 4️⃣ Tarifas
-    const tarifas = lotes.map(l =>
-        Number(l.predio?.tarifaFleteKg ?? l.predio?.flete ?? NaN)
-    ).filter(t => !isNaN(t));
-
+    // 4️⃣ Tarifas; se priorizamos la tarifaCongelada
+    const tarifas = lotes.map(l => {
+        const tarifaManual = Number(l.tarifaCongelada);
+        const tarifaBase = Number(l.predio?.tarifaFleteKg ?? l.predio.flete ?? NaN);
+        // Si tiene tarifa congelada, usa esa. Si no, usa la del predio.
+    //     Number(l.predio?.tarifaFleteKg ?? l.predio?.flete ?? NaN)
+    // ).filter(t => !isNaN(t));
+        
+        return !isNaN(tarifaManual) ? tarifaManual : tarifaBase;
+        }).filter(t => !isNaN(t));
+        
     if (tarifas.length !== lotes.length) {
         throw new ContabilidadLogicError(
             400,
