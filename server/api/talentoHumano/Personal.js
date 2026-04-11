@@ -226,7 +226,6 @@ export class PersonalControllerRepository {
             await ErrorTalentHumanoLogicHandlers(error)
         }
     }
-
     static async get_talentoHumano_personal_registro(req) {
         const ERROR_CREDENCIALES = 'Credenciales de carnet inválidas';
 
@@ -345,6 +344,17 @@ export class PersonalControllerRepository {
             console.error(`[ERROR][${new Date().toISOString()}]`, error);
             await ErrorTalentHumanoLogicHandlers(error)
         }
+    }
+    static async get_talentoHumano_personal_info_socioeconomica(req){
+        return await executeQueryTask(async () => {
+            const { _id } = req.data
+            if (!mongoose.Types.ObjectId.isValid(_id)) throw new Error("_id inválido")
+            const data = await PersonalRepository.get_data(
+                { ids: [_id] }, 
+                { select: "genero nacionalidad fechaNacimiento raza eps pension cesantias celular correo escolaridad tituloObtenido departamento municipio tipoVivienda direccion strato personasACargo vulnerabilidad orientacionSexual pertenenciaEtnica contactoEmergenciaNombre contactoEmergenciaTelefono contactoEmergenciaParentesco tieneVehiculo estadoCivil fecha_formulario_sociodemografico" })
+            return data
+        })
+
     }
     static async put_talentoHumano_personal(req) {
         try {

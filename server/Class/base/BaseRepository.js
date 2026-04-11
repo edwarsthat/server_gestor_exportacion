@@ -72,6 +72,7 @@ export class BaseRepository {
         const finalOptions = {
             new: true,
             runValidators: true,
+            context: 'query',
             ...restOptions,
             ...(session && { session }),
             ...(arrayFilters && { arrayFilters })

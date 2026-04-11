@@ -2,6 +2,7 @@ import { CalidadRepository } from "../../api/Calidad.js";
 import { formulariosCalidadController } from "../../api/calidad/formulariosCalidad.js";
 import { InformesCalidadController } from "../../api/calidad/InformesCalidad.js";
 import { IngresosCalidadController } from "../../api/calidad/ingresosCalidad.js";
+import { VolanteCalidadController } from "../../api/calidad/volanteCalidad.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketCalidad = {
@@ -107,11 +108,11 @@ export const apiSocketCalidad = {
         return successResponseRoutes()
     },
     get_calidad_ingresos_operariosVolanteCalidad: async () => {
-        const response = await CalidadRepository.get_calidad_ingresos_operariosVolanteCalidad()
+        const response = await VolanteCalidadController.get_calidad_ingresos_operariosVolanteCalidad()
         return successResponseRoutes(response)
     },
     post_calidad_ingresos_volanteCalidad: async (data) => {
-        await CalidadRepository.post_calidad_ingresos_volanteCalidad(data)
+        await VolanteCalidadController.post_calidad_ingresos_volanteCalidad(data)
         return successResponseRoutes()
     },
     get_calidad_ingresos_higienePersonal: async () => {
@@ -137,7 +138,7 @@ export const apiSocketCalidad = {
     //#endregion
     //#region formularios
     get_calidad_formulario_volanteCalidad: async (data) => {
-        const response = await CalidadRepository.get_calidad_formulario_volanteCalidad(data)
+        const response = await VolanteCalidadController.get_calidad_formulario_volanteCalidad(data)
         return successResponseRoutes(response)
     },
     get_calidad_formulario_higienePersonal: async (data) => {

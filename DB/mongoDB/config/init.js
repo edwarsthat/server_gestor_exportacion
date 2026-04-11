@@ -331,7 +331,7 @@ const defineSchemasProceso = async (sysConn) => {
         db.Precios = await definePrecios(sysConn);
         console.log("✅ Precios definido");
 
-         //NUEVO JP
+        //NUEVO JP
         console.log("⚡ Define HistorialConcentraciones...");
         db.HistorialConcentraciones = await defineHistorialConcentraciones(sysConn);
         console.log("✅ HistorialConcentraciones definido");
@@ -460,6 +460,10 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo ControlLimpiezaEPP...");
         db.ControlLimpiezaEPP = await defineControlLimpiezaEPP(sysConn);
         console.log("✅ ControlLimpiezaEPP definido");
+
+        console.log("⚡ Definiendo VolanteCalidad...");
+        db.VolanteCalidad = await defineVolanteCalidad(sysConn);
+        console.log("✅ VolanteCalidad definido");
         // #endregion
 
         procesoConn = sysConn;
@@ -497,21 +501,13 @@ const defineSchemasSistema = async (sysConn) => {
         // db.Usuarios = await defineUser(sysConn);
         // console.log("✅ Usuarios definido");
 
-
         console.log("⚡ Definiendo Logs...");
         db.Logs = await defineAuditSistemaLogs(sysConn);
         console.log("✅ Logs definido");
 
-
         console.log("⚡ Definiendo recordUsuario...");
         db.recordUsuario = await defineRecordusuario(sysConn);
         console.log("✅ recordUsuario definido");
-
-
-
-        console.log("⚡ Definiendo VolanteCalidad...");
-        db.VolanteCalidad = await defineVolanteCalidad(sysConn);
-        console.log("✅ VolanteCalidad definido");
 
         console.log("⚡ Definiendo Errores...");
         db.Errores = await defineErrores(sysConn);

@@ -41,6 +41,7 @@ import { tipoFrutaCache } from './server/cache/tipoFruta.js';
 import { initCronCache } from './src/cron/cache.js';
 import { descarteCache } from './server/cache/descartes.js';
 import { browserPool } from './server/services/helpers/browserPool.js';
+import { cargosPersonalCache } from './server/cache/cargosPersonal.js';
 
 
 (async () => {
@@ -52,6 +53,7 @@ import { browserPool } from './server/services/helpers/browserPool.js';
         await initMongoDB();
         await tipoFrutaCache.cargar(5, 1000);
         await descarteCache.cargar(5, 1000);
+        await cargosPersonalCache.cargarOperarios(5, 1000);
         await browserPool.init(3)
 
         initRustRcp().catch(() => {

@@ -38,6 +38,14 @@ export class CalidadValidationsRepository {
         return z.object({
             operario: z.string().min(1, "Operario es requerido"),
             tipoFruta: z.string().min(1, "Tipo de fruta es requerido"),
+            pesoParametro: z.string()
+                .min(1, "Peso Parámetro es requerido")
+                .refine((val) => !isNaN(Number(val)), "Peso Parámetro debe ser un número válido")
+                .refine((val) => Number(val) > 0, "Peso Parámetro debe ser mayor a 0"),
+            pesoReal: z.string()
+                .min(1, "Peso Real es requerido")
+                .refine((val) => !isNaN(Number(val)), "Peso Real debe ser un número válido")
+                .refine((val) => Number(val) > 0, "Peso Real debe ser mayor a 0"),
             unidades: z.string()
                 .min(1, "Unidades es requerido")
                 .refine((val) => !isNaN(Number(val)), "Unidades debe ser un número válido")
@@ -142,24 +150,24 @@ export class CalidadValidationsRepository {
                 fecha: z.string()
                     .min(1, "Fecha y hora son obligatorias")
                     .refine((val) => !isNaN(Date.parse(val)), "Fecha inválida"),
-                
+
                 kilosProcesados: z.number()
                     .min(0, "Los kilos procesados deben ser mayor o igual a 0")
                     .refine((val) => !isNaN(val), "Kilos procesados debe ser un número válido"),
-                
+
                 tipoFruta: z.string()
                     .min(1, "Tipo de fruta es obligatorio")
                     .refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El tipoFruta debe ser un ObjectId válido de MongoDB"),
-                
+
                 concentracionPPM: z.string()
                     .trim()
                     .min(1, "Concentración PPM es obligatoria"),
-                
+
                 observaciones: z.string()
                     .trim()
                     .optional()
                     .default(""),
-                
+
                 responsable: z.string()
                     .trim()
                     .min(1, "Responsable es obligatorio")
@@ -172,29 +180,29 @@ export class CalidadValidationsRepository {
             data: z.object({
                 _id: z.string()
                     .refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB"),
-                
+
                 updateData: z.object({
                     fecha: z.string()
                         .refine((val) => !isNaN(Date.parse(val)), "Fecha inválida")
                         .optional(),
-                    
+
                     kilosProcesados: z.number()
                         .min(0, "Los kilos procesados deben ser mayor o igual a 0")
                         .optional(),
-                    
+
                     tipoFruta: z.string()
                         .refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El tipoFruta debe ser un ObjectId válido de MongoDB")
                         .optional(),
-                    
+
                     concentracionPPM: z.string()
                         .trim()
                         .min(1, "Concentración PPM es obligatoria")
                         .optional(),
-                    
+
                     observaciones: z.string()
                         .trim()
                         .optional(),
-                    
+
                     responsable: z.string().trim().min(1, "Responsable es obligatorio").optional()
                 }).refine((data) => Object.keys(data).length > 0, {
                     message: "Debe proporcionar al menos un campo para actualizar"
@@ -209,8 +217,8 @@ export class CalidadValidationsRepository {
                 .refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB")
         });
     }
-//-----------------------------------------------------------------------------------------------------------------------------------
-//Control Limpieza EPP
+    //-----------------------------------------------------------------------------------------------------------------------------------
+    //Control Limpieza EPP
     static post_calidad_formulario_controlLimpiezaEPP() {
         return z.object({
             data: z.object({

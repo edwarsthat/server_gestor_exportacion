@@ -1014,37 +1014,8 @@ export class CalidadRepository {
         }
 
     }
-    static async get_calidad_ingresos_operariosVolanteCalidad() {
-        try {
-            const usuarios = await UsuariosRepository.get_users({
-                query: { estado: true, cargo: "66bfbd0e281360363ce25dfc" }
-            });
-            return usuarios
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async post_calidad_ingresos_volanteCalidad(req) {
-        try {
-            const user = req.user
-            const { data } = req.data
-            CalidadValidationsRepository.post_calidad_ingresos_volanteCalidad().parse(data);
 
-            const volante_calidad = {
-                ...data,
-                responsable: user._id
-            }
-            await UsuariosRepository.add_volante_calidad(volante_calidad)
-        } catch (err) {
-            if (err.status === 521) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
+
     static async get_calidad_ingresos_higienePersonal() {
         try {
             const usuarios = await UsuariosRepository.get_users({
@@ -1091,34 +1062,6 @@ export class CalidadRepository {
 
     //#endregion
     //#region formulario
-    static async get_calidad_formulario_volanteCalidad(req) {
-        try {
-            const { filtro } = req.data
-            const { tipoFruta, fechaInicio, fechaFin, operario } = filtro;
-            let query = {}
-
-            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha")
-
-            if (tipoFruta) {
-                query.tipoFruta = tipoFruta
-            }
-
-            if (operario !== '') {
-                query.operario = operario
-            }
-
-            const volanteCalidad = await UsuariosRepository.obtener_volante_calidad({
-                query: query,
-                limit: 'all'
-            });
-            return volanteCalidad
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async get_calidad_formulario_higienePersonal(req) {
         try {
             const { tipoFruta, fechaInicio, fechaFin } = req.data;
@@ -1141,10 +1084,6 @@ export class CalidadRepository {
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
         }
     }
-
-
-
-
 
     //#region reclamaciones
     static async get_calidad_reclamaciones_contenedores(req) {
