@@ -30,9 +30,10 @@ export class InventarioDescarteController {
             const { fechaInicio, fechaFin, tipoFruta, buscar, areaSeleccion, descarte, enInventario } = parseData.filtro
             let lote
             let query = {
-                estado: enInventario ? 'AGOTADO' : 'ACTIVO',
+                // estado: enInventario ? 'AGOTADO' : 'ACTIVO',
                 loteType: { $in: ["Lote", "Loteef8"] },
             }
+            if (!enInventario) query.estado = 'ACTIVO';
             if (tipoFruta) query.tipoFruta = tipoFruta;
             if (areaSeleccion) query.area = areaSeleccion
             if (descarte) query.tipoDescarte = descarte
