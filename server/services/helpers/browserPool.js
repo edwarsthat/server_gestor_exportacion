@@ -36,7 +36,7 @@ class BrowserPool {
     async init(size = 3) {
         const executablePath = getChromePath()
         this.browser = await puppeteer.launch({
-            headless: 'new',
+            headless: true,
             ...(executablePath && { executablePath }),
             args: [
                 '--no-sandbox',
