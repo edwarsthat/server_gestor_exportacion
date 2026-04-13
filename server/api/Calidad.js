@@ -5,8 +5,6 @@ import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
 import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { FormulariosCalidadRepository } from "../Class/FormulariosCalidad.js";
 import { LotesRepository } from "../Class/Lotes.js";
-import { UsuariosRepository } from "../Class/Usuarios.js";
-import { filtroFechaInicioFin } from "./utils/filtros.js";
 import { CalidadValidationsRepository } from "../validations/calidad.js";
 import { z } from "zod";
 
@@ -1015,75 +1013,9 @@ export class CalidadRepository {
 
     }
 
-
-    static async get_calidad_ingresos_higienePersonal() {
-        try {
-            const usuarios = await UsuariosRepository.get_users({
-                query: {
-                    estado: true,
-                    $or: [
-                        { cargo: "66bfbd0e281360363ce25dfc" },
-                        { cargo: "66bf8a99281360363ce252be" },
-                        { cargo: "66bf8ab6281360363ce252c7" },
-                        { cargo: "66bf8ad5281360363ce252d0" },
-                        { cargo: "66bf8e40281360363ce25353" },
-                        { cargo: "66c513dcb7dca1eebff39a96" }
-                    ]
-                },
-                limit: 0
-            });
-            return usuarios
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async post_calidad_ingresos_higienePersonal(req) {
-        try {
-            const { user } = req
-            const { data } = req.data
-            const higienePersonal = {
-                ...data,
-                responsable: user._id
-            }
-            await UsuariosRepository.add_higiene_personal(higienePersonal)
-        } catch (err) {
-            if (err.status === 521) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
-
-
-
-
     //#endregion
     //#region formulario
-    static async get_calidad_formulario_higienePersonal(req) {
-        try {
-            const { tipoFruta, fechaInicio, fechaFin } = req.data;
-            let query = {}
 
-            query = filtroFechaInicioFin(fechaInicio, fechaFin, query, "fecha")
-
-            if (tipoFruta !== '') {
-                query.tipoFruta = tipoFruta
-            }
-
-            const volanteCalidad = await UsuariosRepository.obtener_formularios_higiene_personal({
-                query: query
-            });
-            return volanteCalidad
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`)
-        }
-    }
 
     //#region reclamaciones
     static async get_calidad_reclamaciones_contenedores(req) {

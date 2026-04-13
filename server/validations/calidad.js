@@ -211,6 +211,24 @@ export class CalidadValidationsRepository {
         });
     }
 
+    static post_calidad_ingresos_higienePersonal() {
+        return z.object({
+            data: z.object({
+                operario: objectIdString("operario"),
+                botas: z.boolean(),
+                pantalon: z.boolean(),
+                camisa: z.boolean(),
+                tapaoidos: z.boolean(),
+                cofia: z.boolean(),
+                tapabocas: z.boolean(),
+                uñas: z.boolean(),
+                accesorios: z.boolean(),
+                barba: z.boolean(),
+                maquillaje: z.boolean(),
+                salud: z.boolean(),
+            }),
+        })
+    }
     static delete_calidad_formulario_historialConcentraciones() {
         return z.object({
             _id: z.string()

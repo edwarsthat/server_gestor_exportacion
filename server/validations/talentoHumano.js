@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { objectIdString, base64String, requiredSafeString, bufferData } from "./utils/validationFunctions.js";
+import { objectIdString, base64String, requiredSafeString, bufferData, safeString, optionalSafeString } from "./utils/validationFunctions.js";
 
 export class TalentoHumanoValidations {
     static post_talentoHumano_personal_cargarCedula() {
@@ -21,6 +21,7 @@ export class TalentoHumanoValidations {
         return z.object({
             data: z.object({
                 nombre: z.string().min(1, "El nombre es obligatorio"),
+                apellido: z.string().min(1, "El apellido es obligatorio"),
                 identificacion: z.string().min(1, "La identificación es obligatoria"),
                 tipoDocumento: z.string().min(1, "El tipo de documento es obligatorio"),
                 tipoSangre: z.string().min(1, "El tipo de sangre es obligatorio"),
@@ -47,6 +48,50 @@ export class TalentoHumanoValidations {
                 errorMap: () => ({ message: "El tipo de documento debe ser 'foto' o 'cedula'" })
             }),
             file: z.union([base64String("file"), bufferData("file")]),
+        })
+    }
+    static put_talentoHumano_personal() {
+        return z.object({
+            _id: objectIdString("_id"),
+            action: requiredSafeString("action"),
+            data: z.object({
+                nombre: safeString("nombre").optional(),
+                apellido: safeString("apellidO").optional(),
+                identificacion: safeString("identificacion").optional(),
+                tipoDocumento: safeString("tipoDocumento").optional(),
+                tipoSangre: safeString("tipoSangre").optional(),
+                cargo: objectIdString("cargo").optional(),
+                estado: z.boolean().optional(),
+                // Campos sociodemográficos
+                genero: optionalSafeString("genero"),
+                nacionalidad: optionalSafeString("nacionalidad"),
+                fechaNacimiento: optionalSafeString("fechaNacimiento"),
+                raza: optionalSafeString("raza"),
+                eps: optionalSafeString("eps"),
+                pension: optionalSafeString("pension"),
+                cesantias: optionalSafeString("cesantias"),
+                celular: optionalSafeString("celular"),
+                correo: optionalSafeString("correo"),
+                escolaridad: optionalSafeString("escolaridad"),
+                tituloObtenido: optionalSafeString("tituloObtenido"),
+                departamento: optionalSafeString("departamento"),
+                municipio: optionalSafeString("municipio"),
+                tipoVivienda: optionalSafeString("tipoVivienda"),
+                direccion: optionalSafeString("direccion"),
+                strato: optionalSafeString("strato"),
+                personasACargo: z.number().int().nonnegative().optional(),
+                vulnerabilidad: optionalSafeString("vulnerabilidad"),
+                orientacionSexual: optionalSafeString("orientacionSexual"),
+                pertenenciaEtnica: optionalSafeString("pertenenciaEtnica"),
+                contactoEmergenciaNombre: optionalSafeString("contactoEmergenciaNombre"),
+                contactoEmergenciaTelefono: optionalSafeString("contactoEmergenciaTelefono"),
+                contactoEmergenciaParentesco: optionalSafeString("contactoEmergenciaParentesco"),
+                tieneVehiculo: z.boolean().optional(),
+                estadoCivil: optionalSafeString("estadoCivil"),
+                fecha_formulario_sociodemografico: z.string().datetime({ offset: true }).optional(),
+            }).refine(obj => Object.keys(obj).length > 0, {
+                message: "Se debe enviar al menos un campo para actualizar"
+            }),
         })
     }
     static post_talentoHumano_newCarnet_final() {

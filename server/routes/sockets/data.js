@@ -84,4 +84,8 @@ export const apiSocketData = {
         const response = await dataRepository.get_data_insumos_creacion_carnets();
         return successResponseRoutes(response)
     },
+    get_data_operarios: async () => {
+        const response = await dataRepository.get_data_operarios();
+        return successResponseRoutes(response)
+    },
 }

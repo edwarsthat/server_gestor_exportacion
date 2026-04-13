@@ -30,6 +30,7 @@ export class PersonalControllerRepository {
         if (!user || !user._id) {
             throw new Error('Usuario no encontrado');
         }
+        console.log("Data recibida", req.data)
         const dataValidada = TalentoHumanoValidations.post_talentoHumano_personal_ingresoPersonal().parse(req.data)
         const { action, data, cedulaPath, foto } = dataValidada
 
@@ -359,9 +360,9 @@ export class PersonalControllerRepository {
     static async put_talentoHumano_personal(req) {
         try {
             const { user } = req
-            const { _id, data } = req.data
+            const { _id, data, action } = TalentoHumanoValidations.put_talentoHumano_personal().parse(req.data)
 
-            const updatedPersonal = await PersonalRepository.actualizar_data({ _id }, data, { user })
+            const updatedPersonal = await PersonalRepository.actualizar_data({ _id }, data, { user, action })
             return updatedPersonal
 
         } catch (error) {

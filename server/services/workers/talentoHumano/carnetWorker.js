@@ -108,18 +108,7 @@ async function run() {
 
             htmlTemplate = htmlTemplate.replace('{{FOTO_BASE64}}', fotoBase64);
 
-            const nombreArray = empleadoData.nombre.split(' ');
-            let nombreCompleto = '';
-
-            if (nombreArray.length > 3) {
-                nombreCompleto = [nombreArray[0], nombreArray[1], nombreArray[2]]
-                    .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase())
-                    .join(' ');
-            } else {
-                nombreCompleto = [nombreArray[0], nombreArray[1]]
-                    .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase())
-                    .join(' ');
-            }
+            let nombreCompleto = empleadoData.nombre + ' ' + empleadoData.apellido;
             const identificacionFormateada = Number(empleadoData.identificacion).toLocaleString('de-DE');
 
             htmlTemplate = htmlTemplate.replace('{{NOMBRE}}', nombreCompleto);

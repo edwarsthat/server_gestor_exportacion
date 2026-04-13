@@ -1,6 +1,4 @@
-import mongoose from "mongoose";
-import { cargosPersonalCache } from "../../cache/cargosPersonal.js";
-import { PersonalRepository } from "../../Class/talentoHumano/Personal.js";
+
 import { executeQueryTask, executeTransactionalTask } from "../../utils/wrappers.js";
 import { CalidadValidationsRepository } from "../../validations/calidad.js";
 import { registrarPasoLog } from "../helper/logs.js";
@@ -8,18 +6,6 @@ import { VolanteCalidadRepository } from "../../Class/calidad/VolanteCalidad.js"
 import { buildDateRangeFilter } from "../utils/filtros.js";
 
 export class VolanteCalidadController {
-    static async get_calidad_ingresos_operariosVolanteCalidad() {
-        return await executeQueryTask(async () => {
-            const cargosOperariosMap = cargosPersonalCache.getCargosPersonalOperarios()
-            const cargosOperarios = Object.keys(cargosOperariosMap).map(id => new mongoose.Types.ObjectId(id))
-
-            const personal = await PersonalRepository.get_data({
-                query: { cargo: { $in: cargosOperarios } },
-                select: { nombre: 1 }
-            });
-            return personal
-        })
-    }
     static async get_calidad_formulario_volanteCalidad(req) {
         return await executeQueryTask(async () => {
 
@@ -39,6 +25,9 @@ export class VolanteCalidadController {
 
             const volanteCalidad = await VolanteCalidadRepository.get_data({
                 query: query,
+                populate: [
+                    { path: "operario", select: "nombre apellido" }
+                ]
             });
             return volanteCalidad
         })

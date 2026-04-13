@@ -296,22 +296,6 @@ export class UsuariosRepository {
             throw new PostError(409, `Error agregando formulario Volante calidad ${err.message}`);
         }
     }
-    static async add_higiene_personal(data) {
-        /**
-         * Funcion que agrega una fila a higiene personal  a la base de datos lote de mongoDB
-         * 
-         * @param {object} data - Recibe un objeto, donde estan los datos del formulario 
-         * higiene personal que se va a ingresar, 
-         *                      
-         */
-        try {
-            const formulario = new db.HigienePersonal(data);
-            const saveFormulario = await formulario.save();
-            return saveFormulario
-        } catch (err) {
-            throw new PostError(409, `Error agregando formulario higiene personal ${err.message}`);
-        }
-    }
 
     static async obtener_formularios_higiene_personal(options = {}) {
         const {
