@@ -364,128 +364,262 @@ export class ContabilidadRepository {
     }
 
 
-    static async agrupar_fletes_compuestos(req) {
+//     static async agrupar_fletes_compuestos(req) {
+//     try {
+//     const ingresoIds = req?.data?.data?.ingresoIds;
+//     // LOG 1: Ver qué IDs llegan del frontend
+//             console.log("🚀 [DEBUG] IDs recibidos del front:", ingresoIds);
 
-    const ingresoIds = req?.data?.data?.ingresoIds;
+//     console.log("CONTABILIDAD DEBUG (VISTA COMPUESTA):", {
+//         ingresoIds,
+//         user: req?.user?._id
+//     });
 
-    console.log("CONTABILIDAD DEBUG (VISTA COMPUESTA):", {
-        ingresoIds,
-        user: req?.user?._id
-    });
+//     if (!ingresoIds || ingresoIds.length < 2) {
+//         throw new ContabilidadLogicError(
+//             400,
+//             "Debe seleccionar mínimo dos ingresos para agrupar"
+//         );
+//     }
 
-    if (!ingresoIds || ingresoIds.length < 2) {
-        throw new ContabilidadLogicError(
-            400,
-            "Debe seleccionar mínimo dos ingresos para agrupar"
-        );
-    }
+//     // 1️⃣ Obtener lotes BASE (NO se modifican)
+//     const lotes = await LotesRepository.getLotes({
+//         ids: ingresoIds,
+//         populate: [
+//             // { path: "predio", select: "PREDIO tarifaFleteKg flete" }
+//             { path: "predio", select: "PREDIO" }
+//         ]
+//     });
 
-    // 1️⃣ Obtener lotes BASE (NO se modifican)
-    const lotes = await LotesRepository.getLotes({
-        ids: ingresoIds,
-        populate: [
-            { path: "predio", select: "PREDIO tarifaFleteKg flete" }
-        ]
-    });
+//     console.log("📦 [DEBUG] Lotes encontrados en BD:", lotes?.length);
+//             if(lotes?.length > 0) { //sospechoso
+//     console.log("🔍 [DEBUG] Primer lote - Placa:", lotes[0].placa, "Obs:", lotes[0].observacionesTF);
+//             }
 
-    if (!lotes || lotes.length < 2) {
-        throw new ContabilidadLogicError(404, "Ingresos no encontrados");
-    }
+//     if (!lotes || lotes.length < 2) {
+//         throw new ContabilidadLogicError(404, "Ingresos no encontrados");
+//     }
 
-    // 2️⃣ Validar misma placa
-    const placaBase = lotes[0].placa;
-    const mismaPlaca = lotes.every(l => l.placa === placaBase);
+//     // 2️⃣ Validar misma placa
+//     const placaBase = lotes[0].placa;
+//     const mismaPlaca = lotes.every(l => l.placa === placaBase);
 
-    if (!mismaPlaca) {
-        throw new ContabilidadLogicError(
-            400,
-            "Todos los ingresos deben pertenecer al mismo vehículo (placa)"
-        );
-    }
+//     if (!mismaPlaca) {
+//         throw new ContabilidadLogicError(
+//             400,
+//             "Todos los ingresos deben pertenecer al mismo vehículo (placa)"
+//         );
+//     }
 
-    // 3️⃣ Total kilos reales
-    const kilosTotales = lotes.reduce((acc, l) => {
-        const can = Number(l.canastillas) || 0;
-        const kg = Number(l.kilos) || 0;
-        return acc + (can * 2.2) + kg;
-    }, 0);
+//     // 3️⃣ Total kilos reales
+//     const kilosTotales = lotes.reduce((acc, l) => {
+//         const can = Number(l.canastillas) || 0;
+//         const kg = Number(l.kilos) || 0;
+//         return acc + (can * 2.2) + kg;
+//     }, 0);
 
-    // 4️⃣ Tarifas; se priorizamos la tarifaCongelada
-    const tarifas = lotes.map(l => {
-        const tarifaManual = Number(l.tarifaCongelada);
-        const tarifaBase = Number(l.predio?.tarifaFleteKg ?? l.predio.flete ?? NaN);
-        // Si tiene tarifa congelada, usa esa. Si no, usa la del predio.
-    //     Number(l.predio?.tarifaFleteKg ?? l.predio?.flete ?? NaN)
-    // ).filter(t => !isNaN(t));
+//     // 4️⃣ Tarifas
+//     const tarifas = lotes.map(l =>
+//         Number(l.predio?.tarifaFleteKg ?? l.predio?.flete ?? NaN)
+//     ).filter(t => !isNaN(t));
+
+//     // LOG 3: Ver las tarifas calculadas
+//             console.log("💰 [DEBUG] Tarifas extraídas de predios:", tarifas);
+
+//     if (tarifas.length !== lotes.length) {
+//         throw new ContabilidadLogicError(
+//             400,
+//             "Todos los ingresos deben tener tarifa de flete configurada"
+//         );
+//     }
+
+//     // 5️⃣ Regla mínimo 5000
+//     const kilosFacturables = Math.max(kilosTotales, 5000);
+
+//     // 6️⃣ Tarifa menor
+//     const tarifaMenor = Math.min(...tarifas);
+
+//     // 7️⃣ Recargo (50k por predio adicional)
+//     const recargo = (lotes.length - 1) * 50000;
+
+//     // 8️⃣ Total flete compuesto
+//     const totalFleteCompuesto =
+//         (tarifaMenor * kilosFacturables) + recargo;
+
+//     // 9️⃣ Distribución proporcional (VISTA)
+//     const detalle = lotes.map(lote => {
+//         const kilosLote =
+//             (Number(lote.canastillas) || 0) * 2.2 +
+//             (Number(lote.kilos) || 0);
+
+//         const proporcion =
+//             kilosTotales > 0 ? kilosLote / kilosTotales : 0;
+
+//         // LOG 4: Ver si observacionesTF existe antes de retornar
+//                 console.log(`📝 [DEBUG] Mapeando EF: ${lote.enf}, Obs:`, lote.observacionesTF);
+
+//         return {
+//             ...lote,
+//             esFleteCompuesto: true,
+//             vistaFlete: "COMPUESTO",
+//             tarifaKg: tarifaMenor,
+//             totalKilosTransportados: kilosLote,
+//             totalFlete: Math.round(totalFleteCompuesto * proporcion),
+//             grupoFlete: placaBase
+//         };
+//     });
+
+//     // 🔟 RESPUESTA TEMPORAL (NO persistida)
+//     return {
+//         vista: "agrupada",
+//         resumen: {
+//             tipo: "FLETE_COMPUESTO",
+//             placa: placaBase,
+//             numeroPredios: lotes.length,
+//             tarifaMenor,
+//             kilosReales: kilosTotales,
+//             kilosFacturables,
+//             recargo,
+//             totalFlete: totalFleteCompuesto
+//         },
+//         detalle
+//     };
+// } catch (err) {
+//     console.error("🔥 [ERROR] Falló agrupar_fletes_compuestos:", err.message);
+//         if (err instanceof ContabilidadLogicError) {
+//             throw err;
+//         }
+//         throw new ContabilidadLogicError(
+//             475,
+//             `Error agrupando flete compuesto: ${err.message}`
+//         );
+//     }
+// }
+
+static async agrupar_fletes_compuestos(req) {
+    try {
+        const ingresoIds = req?.data?.data?.ingresoIds;
         
-        return !isNaN(tarifaManual) ? tarifaManual : tarifaBase;
-        }).filter(t => !isNaN(t));
-        
-    if (tarifas.length !== lotes.length) {
-        throw new ContabilidadLogicError(
-            400,
-            "Todos los ingresos deben tener tarifa de flete configurada"
-        );
-    }
+        console.log("🚀 [DEBUG] IDs recibidos del front:", ingresoIds);
 
-    // 5️⃣ Regla mínimo 5000
-    const kilosFacturables = Math.max(kilosTotales, 5000);
-
-    // 6️⃣ Tarifa menor
-    const tarifaMenor = Math.min(...tarifas);
-
-    // 7️⃣ Recargo (50k por predio adicional)
-    const recargo = (lotes.length - 1) * 50000;
-
-    // 8️⃣ Total flete compuesto
-    const totalFleteCompuesto =
-        (tarifaMenor * kilosFacturables) + recargo;
-
-    // 9️⃣ Distribución proporcional (VISTA)
-    const detalle = lotes.map(lote => {
-        const kilosLote =
-            (Number(lote.canastillas) || 0) * 2.2 +
-            (Number(lote.kilos) || 0);
-
-        const proporcion =
-            kilosTotales > 0 ? kilosLote / kilosTotales : 0;
-
-        return {
-            ...lote,
-            esFleteCompuesto: true,
-            vistaFlete: "COMPUESTO",
-            tarifaKg: tarifaMenor,
-            totalKilosTransportados: kilosLote,
-            totalFlete: Math.round(totalFleteCompuesto * proporcion),
-            grupoFlete: placaBase
-        };
-    });
-
-    // 🔟 RESPUESTA TEMPORAL (NO persistida)
-    return {
-        vista: "agrupada",
-        resumen: {
-            tipo: "FLETE_COMPUESTO",
-            placa: placaBase,
-            numeroPredios: lotes.length,
-            tarifaMenor,
-            kilosReales: kilosTotales,
-            kilosFacturables,
-            recargo,
-            totalFlete: totalFleteCompuesto
-        },
-        detalle
-    };
-} catch (err) {
-        if (err instanceof ContabilidadLogicError) {
-            throw err;
+        if (!ingresoIds || ingresoIds.length < 2) {
+            throw new ContabilidadLogicError(400, "Debe seleccionar mínimo dos ingresos para agrupar");
         }
-        throw new ContabilidadLogicError(
-            475,
-            `Error agrupando flete compuesto: ${err.message}`
-        );
-    }
 
+        // 1️⃣ Obtener lotes BASE
+        const lotes = await LotesRepository.getLotes({
+            ids: ingresoIds,
+            populate: [
+                { path: "predio", select: "PREDIO" } // 🟢 CAMBIO: Solo traemos el nombre, la tarifa la buscamos aparte
+            ]
+        });
+
+        if (!lotes || lotes.length < 2) {
+            throw new ContabilidadLogicError(404, "Ingresos no encontrados");
+        }
+
+        // 🟢 CAMBIO (Paso 2): Buscar tarifas oficiales en la colección TarifaPredio por año
+    const detalleConTarifas = await Promise.all(lotes.map(async (lote) => {
+    const fechaLote = lote.fecha_ingreso_inventario ? new Date(lote.fecha_ingreso_inventario) : null;
+    const yearTarifa = fechaLote ? fechaLote.getFullYear() : null;
+
+    const tarifaHistorica = yearTarifa 
+        ? await db.TarifaPredio.findOne({
+            predio: lote.predio?._id,
+            year: yearTarifa,
+            tipo: "FIJA",
+            activo: true
+            }).lean()
+        : null;
+
+    // Prioridad: Congelada > Histórica (106) > Fallback de seguridad
+    const tarifaFinal = Number(
+        lote.tarifaCongelada ?? 
+        tarifaHistorica?.valor ?? 
+        lote.predio?.tarifaFleteKg ?? 
+        lote.predio?.flete ?? 
+        NaN
+    );
+
+    // 🟢 CORRECCIÓN AQUÍ: Quitamos .toObject() y usamos el spread directo
+    return { ...lote, tarifaCalculada: tarifaFinal };
+    }));
+
+        // 2️⃣ Validar misma placa (usamos detalleConTarifas ahora)
+        const placaBase = detalleConTarifas[0].placa;
+        const mismaPlaca = detalleConTarifas.every(l => l.placa === placaBase);
+
+        if (!mismaPlaca) {
+            throw new ContabilidadLogicError(400, "Todos los ingresos deben pertenecer al mismo vehículo (placa)");
+        }
+
+        // 3️⃣ Total kilos reales
+        const kilosTotales = detalleConTarifas.reduce((acc, l) => {
+            const can = Number(l.canastillas) || 0;
+            const kg = Number(l.kilos) || 0;
+            return acc + (can * 2.2) + kg;
+        }, 0);
+
+        // 4️⃣ 🟢 CAMBIO (Paso 3): Extraer tarifas del nuevo mapeo
+        const tarifas = detalleConTarifas
+            .map(l => l.tarifaCalculada)
+            .filter(t => !isNaN(t));
+
+        console.log("💰 [DEBUG] Tarifas reales extraídas (106 esperado):", tarifas);
+
+        if (tarifas.length !== detalleConTarifas.length) {
+            throw new ContabilidadLogicError(400, "Todos los ingresos deben tener tarifa de flete configurada");
+        }
+
+        // 5️⃣ Regla mínimo 5000
+        const kilosFacturables = Math.max(kilosTotales, 5000);
+
+        // 6️⃣ Tarifa menor (aquí es donde los 106 pesos harán su trabajo)
+        const tarifaMenor = Math.min(...tarifas);
+
+        // 7️⃣ Recargo (50k por predio adicional)
+        const recargo = (detalleConTarifas.length - 1) * 50000;
+
+        // 8️⃣ Total flete compuesto
+        const totalFleteCompuesto = (tarifaMenor * kilosFacturables) + recargo;
+
+        // 9️⃣ 🟢 CAMBIO (Paso 4): Distribución proporcional usando detalleConTarifas
+        const detalle = detalleConTarifas.map(lote => {
+            const kilosLote = (Number(lote.canastillas) || 0) * 2.2 + (Number(lote.kilos) || 0);
+            const proporcion = kilosTotales > 0 ? kilosLote / kilosTotales : 0;
+
+            return {
+                ...lote,
+                esFleteCompuesto: true,
+                vistaFlete: "COMPUESTO",
+                tarifaKg: tarifaMenor,
+                totalKilosTransportados: kilosLote,
+                totalFlete: Math.round(totalFleteCompuesto * proporcion),
+                grupoFlete: placaBase
+            };
+        });
+
+        // 🔟 RESPUESTA
+        return {
+            vista: "agrupada",
+            resumen: {
+                tipo: "FLETE_COMPUESTO",
+                placa: placaBase,
+                numeroPredios: detalleConTarifas.length,
+                tarifaMenor,
+                kilosReales: kilosTotales,
+                kilosFacturables,
+                recargo,
+                totalFlete: totalFleteCompuesto
+            },
+            detalle
+        };
+    } catch (err) {
+        console.error("🔥 [ERROR] Falló agrupar_fletes_compuestos:", err.message);
+        if (err instanceof ContabilidadLogicError) throw err;
+        throw new ContabilidadLogicError(475, `Error agrupando flete compuesto: ${err.message}`);
+    }
+}
     static async put_tarifa_congelada(req) {
         try {
             // Recibimos también 'observaciones' desde el frontend. Jp
