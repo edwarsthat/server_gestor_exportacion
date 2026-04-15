@@ -13,6 +13,7 @@ import bcrypt from "bcrypt";
 import PDFDocument from "pdfkit";
 import { executeQueryTask, executeTransactionalTask } from "../../utils/wrappers.js";
 import mongoose from "mongoose";
+import { getRedisClient } from "../../../DB/redis/init.js";
 
 
 export class PersonalControllerRepository {
@@ -356,6 +357,20 @@ export class PersonalControllerRepository {
             return data
         })
 
+    }
+    static async get_talentoHumano_personal_preIngreso(){
+        return await executeQueryTask(async () => {
+            const redisCliente = await getRedisClient();
+
+            const keys = await redisCliente.keys("encuesta:pending:*");
+            if (keys.length === 0) return [];
+
+            const values = await redisCliente.mGet(keys);
+            return values
+                .filter(v => v !== null)
+                .map(v => JSON.parse(v));
+       
+        })
     }
     static async put_talentoHumano_personal(req) {
         try {
