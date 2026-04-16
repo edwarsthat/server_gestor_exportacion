@@ -20,18 +20,24 @@ export class TalentoHumanoValidations {
     static post_talentoHumano_personal_ingresoPersonal() {
         return z.object({
             data: z.object({
-                nombre: z.string().min(1, "El nombre es obligatorio"),
-                apellido: z.string().min(1, "El apellido es obligatorio"),
                 identificacion: z.string().min(1, "La identificación es obligatoria"),
-                tipoDocumento: z.string().min(1, "El tipo de documento es obligatorio"),
-                tipoSangre: z.string().min(1, "El tipo de sangre es obligatorio"),
-                cargo: z.string().min(1, "El cargo es obligatorio"),
+                cargo: objectIdString("cargo"),
                 vinilo: z.boolean(),
-
             }),
             foto: bufferData("foto"),
-            cedulaPath: requiredSafeString("cedulaPath"),
+            cedula: bufferData("cedula").optional(),
+            cedulaFrente: bufferData("cedulaFrente").optional(),
+            cedulaTrasera: bufferData("cedulaTrasera").optional(),
             action: requiredSafeString("action"),
+        }).superRefine((val, ctx) => {
+            const hasCedula = val.cedula !== undefined;
+            const hasFrontalTrasera = val.cedulaFrente !== undefined && val.cedulaTrasera !== undefined;
+            if (!hasCedula && !hasFrontalTrasera) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Se requiere 'cedula' o ambos 'cedulaFrente' y 'cedulaTrasera'",
+                });
+            }
         })
     }
     static put_talentoHumano_dotacion_carnets_generar_temporal() {
