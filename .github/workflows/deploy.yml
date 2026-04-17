@@ -73,9 +73,9 @@ jobs:
       - name: Reiniciar con PM2
         run: |
           ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-          "cd ${{ secrets.DEPLOY_PATH }} && \
+          "source ~/.bashrc && \
+           cd ${{ secrets.DEPLOY_PATH }} && \
            pnpm install --prod && \
-           chmod 600 ecosystem.config.js && \
            pm2 startOrRestart ecosystem.config.js --env production && \
            pm2 save"
 
