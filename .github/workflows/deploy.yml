@@ -77,4 +77,3 @@ jobs:
            /home/deploy/.local/share/pnpm/pnpm install --prod && \
            /home/deploy/.local/share/pnpm/pm2 startOrRestart ecosystem.config.js --env production && \
            /home/deploy/.local/share/pnpm/pm2 save"
-
