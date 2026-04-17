@@ -1,4 +1,8 @@
 import 'dotenv/config';
+import { INVENTARIOS_IDS } from '../constants/inventarios';
+import { PREDIOS_IDS } from '../constants/predios';
+import { CLIENTES_IDS } from '../constants/clientes';
+import { CARGOS_IDS } from '../constants/cargos';
 
 export default {
     PORT: process.env.PORT || 3000,
@@ -17,15 +21,15 @@ export default {
     EMAIL: process.env.EMAIL || "correoEnvio@gmail.com",
     PASSWORD_EMAIL: process.env.PASSWORD_EMAIL || "password_email",
     TEST_TOKEN: process.env.TEST_TOKEN || "test_token",
-    INVENTARIO_FRUTA_SIN_PROCESAR: process.env.INVENTARIO_FRUTA_SIN_PROCESAR || "68cecc4cff82bb2930e43d05",
-    INVENTARIO_ORDEN_VACEO: process.env.INVENTARIO_ORDEN_VACEO || "68d1c0410f282bcb84388dd3",
-    ID_CELIFRUT: process.env.ID_CELIFRUT || "65c27f3870dd4b7f03ed9857",
+    INVENTARIO_FRUTA_SIN_PROCESAR: INVENTARIOS_IDS.INVENTARIO_FRUTA_SIN_PROCESAR,
+    INVENTARIO_ORDEN_VACEO: INVENTARIOS_IDS.INVENTARIO_ORDEN_VACEO,
+    INVENTARIO_CANASTILLAS: INVENTARIOS_IDS.INVENTARIO_CANASTILLAS,
+    ID_CELIFRUT: PREDIOS_IDS.ID_CELIFRUT,
     ENCRYPTION_KEY: process.env.ENCRYPTION_KEY || "encryption_key",
     URL_CELIFRUT: process.env.URL_CELIFRUT || "https://www.celifrut.com",
-    DIR_OPERACIONES: process.env.DIR_OPERACIONES || "",
-    COORDINADOR_PRODUCCION: process.env.COORDINADOR_PRODUCCION || "",
-    CLIENTE_PROACOL: process.env.CLIENTE_PROACOL || "68b87bb095a45e4b46698c05",
-    CLIENTE_KONGELATO: process.env.CLIENTE_KONGELATO || "659dbd9a347a42d89929340e",
-    INVENTARIO_CANASTILLAS: process.env.INVENTARIO_CANASTILLAS || "68cecc4cff82bb2930e43d05",
+    DIR_OPERACIONES: CARGOS_IDS.DIR_OPERACIONES,
+    COORDINADOR_PRODUCCION: CARGOS_IDS.COORDINADOR_PRODUCCION,
+    CLIENTE_PROACOL: CLIENTES_IDS.CLIENTE_PROACOL,
+    CLIENTE_KONGELATO: CLIENTES_IDS.CLIENTE_KONGELATO,
     API_KEY_SP32: process.env.API_KEY_SP32 || "api_key_sp32"
 };

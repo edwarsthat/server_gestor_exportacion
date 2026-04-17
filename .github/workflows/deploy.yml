@@ -1,0 +1,81 @@
+name: Node Deploy
+
+on: 
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10.33.0
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Instalar dependencias
+        run: pnpm install
+
+      - name: Generar ecosystem.config.js dinámico
+        run: |
+          echo "module.exports = {
+            apps: [{
+              name: '${{ github.event.repository.name }}',
+              script: './index.js',
+              env: {
+                NODE_ENV: 'production',
+                PORT: 3010,
+                HOST: 'localhost',
+                RUST_MONGO_PROCESO: '127.0.0.1',
+                RUST_MONGO_PROCESO_PUERTO: '3030',
+                MONGO_PORT: '27017',
+                SALT_ROUNDS: 10,
+                MONGODB_PROCESO: '${{ secrets.MONGODB_PROCESO }}',
+                MONGODB_SISTEMA: '${{ secrets.MONGODB_SISTEMA }}',
+                MONGODB_CATALOGOS: '${{ secrets.MONGODB_CATALOGOS }}',
+                ACCES_TOKEN: '${{ secrets.ACCES_TOKEN }}',
+                JWT_SECRET: '${{ secrets.JWT_SECRET }}',
+                SHARED_ENCRYPTION_KEY: '${{ secrets.SHARED_ENCRYPTION_KEY }}',
+                AES_SECRET: '${{ secrets.AES_SECRET }}',
+                API_MAILGUN: '${{ secrets.API_MAILGUN }}',
+                EMAIL: '${{ secrets.EMAIL }}',
+                PASSWORD_EMAIL: '${{ secrets.PASSWORD_EMAIL }}',
+                API_KEY_SP32: '${{ secrets.API_KEY_SP32 }}',
+                URI_CELIFRUT_CARNETS: '${{ secrets.URI_CELIFRUT_CARNETS }}'
+              }
+            }]
+          }" > ecosystem.config.js
+
+      - name: Configurar SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+
+      - name: Desplegar al servidor
+        run: |
+          # Usamos rsync para no subir basura ni los node_modules del CI
+          rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no" \
+            --exclude 'node_modules' \
+            --exclude '.git' \
+            --exclude '.github' \
+            ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}
+
+      - name: Reiniciar con PM2
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+          "cd ${{ secrets.DEPLOY_PATH }} && \
+           pnpm install --prod && \
+           chmod 600 ecosystem.config.js && \
+           pm2 startOrRestart ecosystem.config.js --env production && \
+           pm2 save"
+
