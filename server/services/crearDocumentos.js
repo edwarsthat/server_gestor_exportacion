@@ -59,7 +59,7 @@ export class CrearDocumentosRepository {
                 row1 = [
                     c("", { span: 2, height: 80 }), null,
                     c("PACKING LIST REPORT", { span: 8, fontSize: 24, fontWeight: 'bold' }), null, null, null, null, null, null, null,
-                    c("Codigo: PC-CAL-FOR-05", { fontWeight: 'bold' }),
+                    c("Codigo: PC-CAL-FOR-05\nVersion: 03\nFecha: 17 Oct 2020", { fontWeight: 'bold', wrapText: true }),
                 ];
                 row2 = [
                     c("CLIENTE", { fontWeight: 'bold', height: alto }),
@@ -88,7 +88,7 @@ export class CrearDocumentosRepository {
                 row1 = [
                     c("", { span: 2, height: 80 }), null,
                     c("PACKING LIST REPORT", { span: 7, fontSize: 24, fontWeight: 'bold' }), null, null, null, null, null, null,
-                    c("Codigo: PC-CAL-FOR-05", { fontWeight: 'bold' }),
+                    c("Codigo: PC-CAL-FOR-05\nVersion: 03\nFecha: 17 Oct 2020", { fontWeight: 'bold', wrapText: true }),
                 ];
                 row2 = [
                     c("CLIENTE", { fontWeight: 'bold', height: alto }),
@@ -140,7 +140,7 @@ export class CrearDocumentosRepository {
                     item.cajas,
                     item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
                     item.GGN ? item.lote.predio.GGN.code : "N/A",
-                    item.GGN ? item.lote.predio.GGN.fechaVencimiento : "N/A",
+                    item.GGN ? new Date(item.lote.predio.GGN.fechaVencimiento).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "N/A",
                 ] : [
                     String(item.pallet.numeroPallet) + String(cont.numeroContenedor),
                     formatearFecha(item.fecha instanceof Date ? item.fecha.toISOString() : item.fecha, true),
@@ -151,7 +151,7 @@ export class CrearDocumentosRepository {
                     item.cajas,
                     item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
                     item.GGN ? item.lote.predio.GGN.code : "N/A",
-                    item.GGN ? item.lote.predio.GGN.fechaVencimiento : "N/A",
+                    item.GGN ? new Date(item.lote.predio.GGN.fechaVencimiento).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "N/A",
                 ];
                 dataRows.push(values.map((v, i) => c(v ?? "", {
                     wrap: true,
