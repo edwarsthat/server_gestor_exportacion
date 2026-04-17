@@ -1,8 +1,8 @@
 import 'dotenv/config';
-import { INVENTARIOS_IDS } from '../constants/inventarios';
-import { PREDIOS_IDS } from '../constants/predios';
-import { CLIENTES_IDS } from '../constants/clientes';
-import { CARGOS_IDS } from '../constants/cargos';
+import { INVENTARIOS_IDS } from '../constants/inventarios.js';
+import { PREDIOS_IDS } from '../constants/predios.js';
+import { CLIENTES_IDS } from '../constants/clientes.js';
+import { CARGOS_IDS } from '../constants/cargos.js';
 
 export default {
     PORT: process.env.PORT || 3000,
