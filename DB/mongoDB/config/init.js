@@ -73,6 +73,7 @@ import { defineHistorialConcentraciones } from '../schemas/calidad/schemaHistori
 //import { defineSchemaContratosPersonal } from '../schemas/gestionLaboral/schemaContratosPersonal.js'
 import { defineControlLimpiezaEPP } from '../schemas/calidad/schemaControlLimpiezaEPP.js';
 import { defineOtrosFletes } from '../schemas/tarifas/schemaOtrosFletes.js';
+import { defineFleteCompuesto } from '../schemas/tarifas/schemaFleteCompuesto.js';
 
 export const db = {};
 export const connections = {};
@@ -308,6 +309,10 @@ const defineSchemasProceso = async (sysConn) => {
         console.log("⚡ Definiendo Otros Fletes...");
         db.OtrosFletes = await defineOtrosFletes(sysConn);
         console.log("✅ Otros Fletes definido");
+        
+        console.log("⚡ Definiendo Flete Compuesto...");
+        db.FleteCompuesto = await defineFleteCompuesto(sysConn);
+        console.log("✅ Flete Compuesto definido");
 
         console.log("⚡ Definiendo recordProveedor...");
         db.recordProveedor = await defineRecordProveedor(sysConn);
