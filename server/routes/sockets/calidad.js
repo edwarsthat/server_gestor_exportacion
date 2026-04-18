@@ -1,7 +1,9 @@
 import { CalidadRepository } from "../../api/Calidad.js";
 import { formulariosCalidadController } from "../../api/calidad/formulariosCalidad.js";
+import { HigienePersonalController } from "../../api/calidad/HigienePersonalCalidad.js";
 import { InformesCalidadController } from "../../api/calidad/InformesCalidad.js";
 import { IngresosCalidadController } from "../../api/calidad/ingresosCalidad.js";
+import { VolanteCalidadController } from "../../api/calidad/volanteCalidad.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 export const apiSocketCalidad = {
@@ -106,20 +108,12 @@ export const apiSocketCalidad = {
         await CalidadRepository.put_calidad_ingresos_inspeccionFruta(req)
         return successResponseRoutes()
     },
-    get_calidad_ingresos_operariosVolanteCalidad: async () => {
-        const response = await CalidadRepository.get_calidad_ingresos_operariosVolanteCalidad()
-        return successResponseRoutes(response)
-    },
     post_calidad_ingresos_volanteCalidad: async (data) => {
-        await CalidadRepository.post_calidad_ingresos_volanteCalidad(data)
+        await VolanteCalidadController.post_calidad_ingresos_volanteCalidad(data)
         return successResponseRoutes()
     },
-    get_calidad_ingresos_higienePersonal: async () => {
-        const response = await CalidadRepository.get_calidad_ingresos_higienePersonal()
-        return successResponseRoutes(response)
-    },
     post_calidad_ingresos_higienePersonal: async (data) => {
-        await CalidadRepository.post_calidad_ingresos_higienePersonal(data)
+        await HigienePersonalController.post_calidad_ingresos_higienePersonal(data)
         return successResponseRoutes()
     },
     post_calidad_ingresos_crearFormulario: async (data) => {
@@ -137,11 +131,11 @@ export const apiSocketCalidad = {
     //#endregion
     //#region formularios
     get_calidad_formulario_volanteCalidad: async (data) => {
-        const response = await CalidadRepository.get_calidad_formulario_volanteCalidad(data)
+        const response = await VolanteCalidadController.get_calidad_formulario_volanteCalidad(data)
         return successResponseRoutes(response)
     },
     get_calidad_formulario_higienePersonal: async (data) => {
-        const response = await CalidadRepository.get_calidad_formulario_higienePersonal(data)
+        const response = await HigienePersonalController.get_calidad_formulario_higienePersonal(data)
         return successResponseRoutes(response)
     },
     get_calidad_formulario_limpiezaDiaria: async (data) => {

@@ -67,6 +67,12 @@ export const defineInventarioActualDescarte = async (conn) => {
             min: [0, 'Los kilos actuales no pueden ser negativos'],
             validate: {
                 validator: function (v) {
+                    if (this && typeof this.getUpdate === 'function') {
+                        const update = this.getUpdate();
+                        const newKilosIniciales = update?.$set?.kilosIniciales ?? update?.kilosIniciales;
+                        if (newKilosIniciales !== undefined) return v <= newKilosIniciales;
+                        return true;
+                    }
                     return v <= this.kilosIniciales;
                 },
                 message: 'Los kilos actuales no pueden exceder los kilos iniciales'
@@ -89,6 +95,12 @@ export const defineInventarioActualDescarte = async (conn) => {
             min: [0, 'Las canastillas actuales no pueden ser negativas'],
             validate: {
                 validator: function (v) {
+                    if (this && typeof this.getUpdate === 'function') {
+                        const update = this.getUpdate();
+                        const newCanastillasIniciales = update?.$set?.canastillasIniciales ?? update?.canastillasIniciales;
+                        if (newCanastillasIniciales !== undefined) return v <= newCanastillasIniciales;
+                        return true;
+                    }
                     return v <= this.canastillasIniciales;
                 },
                 message: 'Las canastillas actuales no pueden exceder las canastillas iniciales'

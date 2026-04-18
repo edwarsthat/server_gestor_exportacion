@@ -5,7 +5,7 @@ export const defineHigienePersonal = async (conn) => {
 
     const HigienePersonalSchema = new Schema({
         fecha: { type: Date, default: () => new Date() },
-        operario: { type: Schema.Types.ObjectId, ref: "usuario" },
+        operario: { type: Schema.Types.ObjectId, ref: "personal", index: true },
         responsable: { type: Schema.Types.ObjectId, ref: "usuario" },
         botas: Boolean,
         pantalon: Boolean,

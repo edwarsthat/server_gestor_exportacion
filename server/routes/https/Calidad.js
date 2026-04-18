@@ -2,6 +2,8 @@ import express from 'express';
 import { UserRepository } from '../../auth/users.js';
 import { AccessError } from '../../../Error/ValidationErrors.js';
 import { CalidadRepository } from '../../api/Calidad.js';
+import { HigienePersonalController } from '../../api/calidad/HigienePersonalCalidad.js';
+import { dataRepository } from '../../api/data.js';
 
 
 export const routerCalidad = express.Router();
@@ -14,12 +16,7 @@ routerCalidad.get("/", (req, res) => {
 //#region ingresos calidad
 routerCalidad.get("/get_calidad_ingresos_higienePersonal", async (req, res) => {
     try {
-        const token = req.headers['authorization'];
-
-        const user = await UserRepository.authenticateToken(token);
-        await UserRepository.autentificacionPermisosHttps(user.cargo, 'get_calidad_ingresos_higienePersonal')
-
-        const operarios = await CalidadRepository.get_calidad_ingresos_higienePersonal()
+        const operarios = await dataRepository.get_data_operarios();
 
         res.send({ status: 200, message: 'Ok', data: operarios })
     } catch (err) {
@@ -38,7 +35,7 @@ routerCalidad.post("/post_calidad_ingresos_higienePersonal", async (req, res) =>
             data: req.body,
             user: user
         }
-        await CalidadRepository.post_calidad_ingresos_higienePersonal(data)
+        await HigienePersonalController.post_calidad_ingresos_higienePersonal(data)
 
         res.json({ status: 200, message: 'Ok' })
 

@@ -296,66 +296,7 @@ export class UsuariosRepository {
             throw new PostError(409, `Error agregando formulario Volante calidad ${err.message}`);
         }
     }
-    static async add_higiene_personal(data) {
-        /**
-         * Funcion que agrega una fila a higiene personal  a la base de datos lote de mongoDB
-         * 
-         * @param {object} data - Recibe un objeto, donde estan los datos del formulario 
-         * higiene personal que se va a ingresar, 
-         *                      
-         */
-        try {
-            const formulario = new db.HigienePersonal(data);
-            const saveFormulario = await formulario.save();
-            return saveFormulario
-        } catch (err) {
-            throw new PostError(409, `Error agregando formulario higiene personal ${err.message}`);
-        }
-    }
-    static async obtener_volante_calidad(options = {}) {
-        const {
-            ids = [],
-            query = {},
-            select = {},
-            sort = { fecha: -1 },
-            limit = 50,
-            skip = 0,
-        } = options;
-        try {
-            let registroQuery = { ...query };
 
-            if (ids.length > 0) {
-                registroQuery._id = { $in: ids };
-            }
-
-            const limitToUse = (limit === 0 || limit === 'all') ? 0 : limit;
-
-
-            const volanteCalidad = await db.VolanteCalidad.find(registroQuery)
-                .select(select)
-                .sort(sort)
-                .populate({
-                    path: 'operario',
-                    model: db.Usuarios,
-                    select: 'nombre apellido usuario',
-                })
-                .populate({
-                    path: 'responsable',
-                    model: db.Usuarios,
-                    select: 'nombre apellido usuario',
-                })
-                .limit(limitToUse)
-                .skip(skip)
-                .exec();
-
-
-            return volanteCalidad
-
-        } catch (err) {
-            throw new ConnectionDBError(522, `Volante calidad -> ${err.message}`);
-
-        }
-    }
     static async obtener_formularios_higiene_personal(options = {}) {
         const {
             ids = [],

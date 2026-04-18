@@ -13,6 +13,7 @@ import bcrypt from "bcrypt";
 import PDFDocument from "pdfkit";
 import { executeQueryTask, executeTransactionalTask } from "../../utils/wrappers.js";
 import mongoose from "mongoose";
+import { getRedisClient } from "../../../DB/redis/init.js";
 
 
 export class PersonalControllerRepository {
@@ -31,11 +32,13 @@ export class PersonalControllerRepository {
             throw new Error('Usuario no encontrado');
         }
         const dataValidada = TalentoHumanoValidations.post_talentoHumano_personal_ingresoPersonal().parse(req.data)
-        const { action, data, cedulaPath, foto } = dataValidada
+        const { action, data, foto, cedula, cedulaFrente, cedulaTrasera } = dataValidada
 
         if (!foto) {
             throw new Error('La foto es obligatoria.');
         }
+
+        const cedulaPath = await this.post_talentoHumano_personal_cargarCedula(cedula, cedulaFrente, cedulaTrasera)
 
         if (!cedulaPath) {
             throw new Error('El documento de identificación es obligatorio.');
@@ -47,6 +50,7 @@ export class PersonalControllerRepository {
         );
 
         try {
+            //se sube la foto
             filePath = await FileService.saveBufferFile(
                 foto,
                 urlPath,
@@ -66,6 +70,13 @@ export class PersonalControllerRepository {
             responsePath = response.path;
 
             await executeTransactionalTask(req, async (session, log) => {
+                const redisCliente = await getRedisClient();
+
+                const value = await redisCliente.get(`encuesta:pending:${data.identificacion}`);
+                if (!value) return null;
+
+                const encuesta = JSON.parse(value);
+
                 //se crea el _id que va a tener el empleado
                 const nuevoEmpleadoId = new mongoose.Types.ObjectId();
                 if (!nuevoEmpleadoId) {
@@ -101,6 +112,8 @@ export class PersonalControllerRepository {
                         PE: peResult.serial,
                         urlIdentificacion: cedulaPath,
                         urlFotoCarnet: response.path,
+                        fecha_formulario_sociodemografico: new Date(),
+                        ...encuesta
                     },
                     { user: user._id, action: action, session }
                 )
@@ -109,6 +122,7 @@ export class PersonalControllerRepository {
                 }
                 await registrarPasoLog(log._id, "Éxito", "Completado", "Empleado vinculado al carnet exitosamente");
 
+                await redisCliente.del(`encuesta:pending:${data.identificacion}`);
             });
         }
         catch (error) {
@@ -125,16 +139,9 @@ export class PersonalControllerRepository {
             throw error
         }
     }
-    static async post_talentoHumano_personal_cargarCedula(req) {
-        const { user } = req
-        if (!user || !user._id) {
-            throw new Error("No se encontró el usuario")
-        }
+    static async post_talentoHumano_personal_cargarCedula(cedula, cedulaFrente, cedulaTrasera) {
 
         return await executeQueryTask(async () => {
-
-            const { cedula, cedulaFrente, cedulaTrasera } = req.data
-            TalentoHumanoValidations.post_talentoHumano_personal_cargarCedula().parse(req.data)
 
             const urlPath = path.join(
                 "personal",
@@ -192,18 +199,8 @@ export class PersonalControllerRepository {
                 throw new Error("La cedula es obligatoria")
             }
 
-            let dataForRust = filePath;
-
-            const payload = {
-                data: JSON.stringify(cleanForRust(dataForRust)),
-                server: "python",
-                action: "validar_cedula"
-            };
-            const responseStr = await rustRcpClient.sendData(payload);
-            const response = await JSON.parse(responseStr);
-            return response
+            return filePath
         })
-
     }
     static async get_talentoHumano_personal_registros(req) {
         try {
@@ -226,7 +223,6 @@ export class PersonalControllerRepository {
             await ErrorTalentHumanoLogicHandlers(error)
         }
     }
-
     static async get_talentoHumano_personal_registro(req) {
         const ERROR_CREDENCIALES = 'Credenciales de carnet inválidas';
 
@@ -346,12 +342,37 @@ export class PersonalControllerRepository {
             await ErrorTalentHumanoLogicHandlers(error)
         }
     }
+    static async get_talentoHumano_personal_info_socioeconomica(req) {
+        return await executeQueryTask(async () => {
+            const { _id } = req.data
+            if (!mongoose.Types.ObjectId.isValid(_id)) throw new Error("_id inválido")
+            const data = await PersonalRepository.get_data(
+                { ids: [_id] },
+                { select: "genero nacionalidad fechaNacimiento raza eps pension cesantias celular correo escolaridad tituloObtenido departamento municipio tipoVivienda direccion strato personasACargo vulnerabilidad orientacionSexual pertenenciaEtnica contactoEmergenciaNombre contactoEmergenciaTelefono contactoEmergenciaParentesco tieneVehiculo estadoCivil fecha_formulario_sociodemografico" })
+            return data
+        })
+
+    }
+    static async get_talentoHumano_personal_preIngreso() {
+        return await executeQueryTask(async () => {
+            const redisCliente = await getRedisClient();
+
+            const keys = await redisCliente.keys("encuesta:pending:*");
+            if (keys.length === 0) return [];
+
+            const values = await redisCliente.mGet(keys);
+            return values
+                .filter(v => v !== null)
+                .map(v => JSON.parse(v));
+
+        })
+    }
     static async put_talentoHumano_personal(req) {
         try {
             const { user } = req
-            const { _id, data } = req.data
+            const { _id, data, action } = TalentoHumanoValidations.put_talentoHumano_personal().parse(req.data)
 
-            const updatedPersonal = await PersonalRepository.actualizar_data({ _id }, data, { user })
+            const updatedPersonal = await PersonalRepository.actualizar_data({ _id }, data, { user, action })
             return updatedPersonal
 
         } catch (error) {

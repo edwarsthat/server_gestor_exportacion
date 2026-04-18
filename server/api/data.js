@@ -1,5 +1,7 @@
+import mongoose from "mongoose";
 import { control_plagas_campos, limpieza_diaria_campos, limpieza_mensual_campos } from "../../constants/formularios_calidad.js";
 import { DataLogicError } from "../../Error/logicLayerError.js";
+import { cargosPersonalCache } from "../cache/cargosPersonal.js";
 import { ClientesRepository, ClientesNacionalesRepository } from "../Class/Clientes.js";
 import { ConstantesDelSistema } from "../Class/ConstantesDelSistema.js";
 import { InsumosRepository } from "../Class/Insumos.js";
@@ -8,6 +10,7 @@ import { ProveedoresRepository } from "../Class/Proveedores.js";
 import { Seriales } from "../Class/Seriales.js";
 import { AreasAccesoRepository } from "../Class/systemData/AreasAcceso.js";
 import { CargosPersonalRepository } from "../Class/talentoHumano/CargosPersonal.js";
+import { PersonalRepository } from "../Class/talentoHumano/Personal.js";
 import { UsuariosRepository } from "../Class/Usuarios.js";
 import { dataService } from "../services/data.js";
 import { CanastillasService } from "../services/inventarios/canastillas.js";
@@ -359,6 +362,18 @@ export class dataRepository {
     static async get_data_insumos_creacion_carnets() {
         return await executeQueryTask(async () => {
             return await InsumosRepository.get_data({ query: { alias: "Carnet" } })
+        })
+    }
+    static async get_data_operarios() {
+        return await executeQueryTask(async () => {
+            const cargosOperariosMap = cargosPersonalCache.getCargosPersonalOperarios()
+            const cargosOperarios = Object.keys(cargosOperariosMap).map(id => new mongoose.Types.ObjectId(id))
+
+            const personal = await PersonalRepository.get_data({
+                query: { cargo: { $in: cargosOperarios } },
+                select: { nombre: 1, apellido: 1 }
+            });
+            return personal
         })
     }
 }
