@@ -46,13 +46,13 @@ jobs:
                 MONGODB_CATALOGOS: '${{ secrets.MONGODB_CATALOGOS }}',
                 ACCES_TOKEN: '${{ secrets.ACCES_TOKEN }}',
                 JWT_SECRET: '${{ secrets.JWT_SECRET }}',
-                SHARED_ENCRYPTION_KEY: '${{ secrets.SHARED_ENCRYPTION_KEY }}',
                 AES_SECRET: '${{ secrets.AES_SECRET }}',
                 API_MAILGUN: '${{ secrets.API_MAILGUN }}',
                 EMAIL: '${{ secrets.EMAIL }}',
                 PASSWORD_EMAIL: '${{ secrets.PASSWORD_EMAIL }}',
                 API_KEY_SP32: '${{ secrets.API_KEY_SP32 }}',
-                URI_CELIFRUT_CARNETS: '${{ secrets.URI_CELIFRUT_CARNETS }}'
+                URI_CELIFRUT_CARNETS: '${{ secrets.URI_CELIFRUT_CARNETS }}',
+                ENCRYPTION_KEY: '${{ secrets.ENCRYPTION_KEY }}',
               }
             }]
           }" > ecosystem.config.cjs
