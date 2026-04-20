@@ -2,6 +2,8 @@ import { ContabilidadRepository } from "../../api/Contabilidad.js";
 import { InformesContabilidadController } from "../../api/contabilidad/Informes.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
+import { FleteCompuestoRepository } from "../../Class/FleteCompuesto.js";
+
 export const apiSocketContabilidad = {
     get_contabilidad_informes_calidad: async (data) => {
         const response = await ContabilidadRepository.get_contabilidad_informes_calidad(data);
@@ -42,6 +44,18 @@ export const apiSocketContabilidad = {
     // Actualizar agrupacion de fletes compuestos. Jp
     put_contabilidad_agrupar_fletes_compuestos: async (data) => {
         const response = await ContabilidadRepository.agrupar_fletes_compuestos(data);
+        return successResponseRoutes(response);
+    },
+
+    get_contabilidad_fletes_compuestos: async (data) => {
+        const response = await FleteCompuestoRepository.getFletesCompuestos({ query: data });
+        return successResponseRoutes(response);
+    },
+
+    delete_contabilidad_flete_compuesto: async (data) => {
+        // data debe contener el _id del registro en FleteCompuesto
+        // const { id } = data; 
+        const response = await ContabilidadRepository.delete_flete_compuesto(data);
         return successResponseRoutes(response);
     },
 

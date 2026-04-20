@@ -142,7 +142,15 @@ export const defineLotes = async (conn, AuditLog) => {
     kilos: Number,
     //Tarifa aplicada congelada para este lote
     tarifaCongelada: { type: Number, default: null },
-    //observacionesTF
+    fleteCompuestoId: { 
+        type: Schema.Types.ObjectId, 
+        ref: "FleteCompuesto", 
+        default: null 
+    },
+    esFleteCompuesto: { 
+        type: Boolean, 
+        default: false 
+    },
     observacionesTF: { type: String, default: "" },
 
     //Override manual SOLO para este lote

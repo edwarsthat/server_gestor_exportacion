@@ -13,6 +13,7 @@ const permisos_generales = new Set([
     "agrupar_fletes_compuestos",
     //permisos de contabilidad para agrupar fletes compuestos. Jp
     "put_contabilidad_agrupar_fletes_compuestos",
+    "delete_contabilidad_flete_compuesto",
     //permisos tarifas .Jp
     "get_comercial_tarifa_predio",
     "post_comercial_tarifa_predio",
