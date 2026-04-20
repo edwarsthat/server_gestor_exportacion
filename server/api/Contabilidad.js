@@ -251,7 +251,8 @@ export class ContabilidadRepository {
                     grupoFlete: 1,
                     totalFlete: 1,
                     tarifaCongelada: 1, //nueva tarifa solo para ese viaje 
-                    observacionesTF: 1 //para verlo en la tabla del front. Jp
+                    observacionesTF: 1, //para verlo en la tabla del front. Jp
+                    fleteCompuestoId: 1 //para crear el felteagrupado
                 },
                 populate: [
                     { path: "predio", select: "PREDIO GGN tarifaFleteKg flete" },
