@@ -98,6 +98,15 @@ jest.unstable_mockModule('../../../../DB/mongoDB/config/init.js', () => ({
     db: { Personal: { db: { startSession: jest.fn() } } }
 }));
 
+const mockRedisClient = {
+    get: jest.fn(),
+    del: jest.fn()
+};
+
+jest.unstable_mockModule('../../../../DB/redis/init.js', () => ({
+    getRedisClient: jest.fn(async () => mockRedisClient)
+}));
+
 jest.unstable_mockModule('../../../../server/Class/LogsSistema.js', () => ({
     LogsRepository: { create: jest.fn() }
 }));
@@ -139,10 +148,11 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
                 identificacion: '12345678',
                 tipoDocumento: 'CC',
                 tipoSangre: 'O+',
-                cargo: VALID_OBJECT_ID
+                cargo: VALID_OBJECT_ID,
+                vinilo: false
             },
             foto: createValidBuffer(),
-            cedulaPath: MOCK_CEDULA_PATH
+            cedula: createValidBuffer()
         }
     });
 
@@ -164,8 +174,13 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
         serial: serial
     });
 
+    const MOCK_ENCUESTA_DATA = { nombre: 'Juan Pérez', tipoDocumento: 'CC', tipoSangre: 'O+' };
+
     const setupHappyPathMocks = () => {
-        mockFileService.saveBufferFile.mockResolvedValue(MOCK_FILE_PATH);
+        mockFileService.saveBufferFile.mockImplementation(async (_buffer, urlPath) => {
+            if (typeof urlPath === 'string' && urlPath.includes('identificacion')) return MOCK_CEDULA_PATH;
+            return MOCK_FILE_PATH;
+        });
         mockFileService.deleteFile.mockResolvedValue(true);
         mockRustRpcClient.sendData.mockResolvedValue(createSuccessRpcResponse());
         mockSeriales.modificar_seriales
@@ -173,6 +188,8 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
             .mockResolvedValueOnce(createMockPeResult());
         mockTalentoHumanoDotacionCarnetsRepository.post_data.mockResolvedValue({ _id: MOCK_CARNET_ID });
         mockPersonalRepository.post_data.mockResolvedValue({ _id: VALID_OBJECT_ID });
+        mockRedisClient.get.mockResolvedValue(JSON.stringify(MOCK_ENCUESTA_DATA));
+        mockRedisClient.del.mockResolvedValue(1);
     };
 
     beforeEach(() => {
@@ -246,7 +263,7 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
             await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
 
             expect(mockPersonalRepository.post_data).toHaveBeenCalledWith(
-                expect.objectContaining({ carnet: MOCK_CARNET_ID }),
+                expect.objectContaining({ carnet: null }),
                 expect.any(Object)
             );
         });
@@ -380,28 +397,28 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
             ).rejects.toThrow();
         });
 
-        test('debería lanzar error si cedulaPath es undefined', async () => {
-            delete mockReq.data.cedulaPath;
+        test('debería lanzar error si el guardado de cédula retorna null', async () => {
+            mockFileService.saveBufferFile.mockResolvedValueOnce(null);
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow();
+            ).rejects.toThrow('La cedula es obligatoria');
         });
 
-        test('debería lanzar error si cedulaPath es null', async () => {
-            mockReq.data.cedulaPath = null;
+        test('debería lanzar error si el guardado de cédula retorna undefined', async () => {
+            mockFileService.saveBufferFile.mockResolvedValueOnce(undefined);
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow();
+            ).rejects.toThrow('La cedula es obligatoria');
         });
 
-        test('debería lanzar error si cedulaPath está vacío', async () => {
-            mockReq.data.cedulaPath = '';
+        test('debería lanzar error si el guardado de cédula retorna ruta vacía', async () => {
+            mockFileService.saveBufferFile.mockResolvedValueOnce('');
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow();
+            ).rejects.toThrow('La cedula es obligatoria');
         });
     });
 
@@ -409,22 +426,6 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
     // TEST GROUP 4: VALIDACIÓN ZOD - CAMPO data (objeto interno)
     // ============================================================
     describe('Validación Zod - Campo data (objeto interno)', () => {
-
-        test('debería rechazar si data.nombre está vacío', async () => {
-            mockReq.data.data.nombre = '';
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar si data.nombre es undefined', async () => {
-            delete mockReq.data.data.nombre;
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
 
         test('debería rechazar si data.identificacion está vacío', async () => {
             mockReq.data.data.identificacion = '';
@@ -436,38 +437,6 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
 
         test('debería rechazar si data.identificacion es undefined', async () => {
             delete mockReq.data.data.identificacion;
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar si data.tipoDocumento está vacío', async () => {
-            mockReq.data.data.tipoDocumento = '';
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar si data.tipoDocumento es undefined', async () => {
-            delete mockReq.data.data.tipoDocumento;
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar si data.tipoSangre está vacío', async () => {
-            mockReq.data.data.tipoSangre = '';
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar si data.tipoSangre es undefined', async () => {
-            delete mockReq.data.data.tipoSangre;
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
@@ -573,38 +542,6 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
     // TEST GROUP 6: VALIDACIÓN ZOD - CAMPO cedulaPath (requiredSafeString)
     // ============================================================
     describe('Validación Zod - Campo cedulaPath', () => {
-
-        test('debería rechazar si cedulaPath contiene $', async () => {
-            mockReq.data.cedulaPath = 'path/$ne/file.pdf';
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar si cedulaPath contiene {', async () => {
-            mockReq.data.cedulaPath = 'path/{injection}/file.pdf';
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar si cedulaPath contiene }', async () => {
-            mockReq.data.cedulaPath = 'path/injection}/file.pdf';
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar si cedulaPath contiene <script', async () => {
-            mockReq.data.cedulaPath = '<script>alert(1)</script>.pdf';
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
 
         test('debería aceptar cedulaPath con ruta válida', async () => {
             mockReq.data.cedulaPath = 'personal/identificacion/cedula-12345.pdf';
@@ -823,22 +760,6 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
             ).rejects.toThrow(ZodError);
         });
 
-        test('debería rechazar operador $gt en cedulaPath', async () => {
-            mockReq.data.cedulaPath = { $gt: '' };
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar operador $regex en data.nombre', async () => {
-            mockReq.data.data.nombre = { $regex: '.*' };
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
         test('debería rechazar operador $where en data.identificacion', async () => {
             mockReq.data.data.identificacion = { $where: 'return true' };
 
@@ -855,13 +776,6 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
             ).rejects.toThrow(ZodError);
         });
 
-        test('debería rechazar operador $in en data.tipoSangre', async () => {
-            mockReq.data.data.tipoSangre = { $in: ['A+', 'O+'] };
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
     });
 
     // ============================================================
