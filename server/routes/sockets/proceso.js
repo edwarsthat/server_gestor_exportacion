@@ -52,7 +52,7 @@ export const apiSocketProceso = {
         return successResponseRoutes(response)
     },
     put_proceso_aplicaciones_listaEmpaque_Cerrar: async (data) => {
-        await ProcesoRepository.put_proceso_aplicaciones_listaEmpaque_Cerrar(data);
+        await ListaEmpaqueController.put_proceso_aplicaciones_listaEmpaque_Cerrar(data);
         return successResponseRoutes()
     },
     put_proceso_aplicaciones_listaEmpaque_eliminarItems: async (data) => {

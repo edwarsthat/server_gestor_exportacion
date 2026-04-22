@@ -1,6 +1,16 @@
 import { registrarPasoLog } from "../api/helper/logs.js";
 import { ZodError } from "zod";
 
+export class AppError extends Error {
+    constructor(status, message) {
+        super();
+        this.name = "AppError";
+        this.status = status;
+        this.message = message;
+        this.type = status >= 500 ? "System" : "Logic";
+    }
+}
+
 /**
  * Formatea los errores de Zod en un mensaje legible
  * @param {ZodError} zodError - Error de validación de Zod
@@ -33,7 +43,6 @@ export async function GlobalControllerErrorHandler(error, log = null) {
     let message = error.message || "Error inesperado";
     let type = error.type || "System";
 
-    // Manejo especial para errores de Zod
     if (error instanceof ZodError || error.name === 'ZodError') {
         status = 400;
         type = "Validation";
@@ -44,5 +53,8 @@ export async function GlobalControllerErrorHandler(error, log = null) {
         await registrarPasoLog(log._id, "Error", "Fallido", `[${type}] ${message}`);
     }
 
-    throw { status, message, type };
+    // Errores >= 500 pueden tener detalles internos — se reemplaza el mensaje antes de enviarlo al cliente
+    const clientMessage = status >= 500 ? "Error interno del servidor" : message;
+
+    throw { status, message: clientMessage, type };
 }

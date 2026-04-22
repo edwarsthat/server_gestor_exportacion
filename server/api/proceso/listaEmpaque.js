@@ -4,6 +4,7 @@ import { CuartosFriosRepository } from "../../Class/Inventarios.js";
 import { have_lote_GGN_export } from "../../controllers/validations.js";
 import { LotesHelper } from "../../helper/lotes.js";
 import { ProcesoService } from "../../services/proceso.js";
+import { AppError } from "../../utils/ErrorHandler.js";
 import { executeTransactionalTask } from "../../utils/wrappers.js";
 import { ProcesoValidations } from "../../validations/proceso.js";
 import { registrarPasoLog } from "../helper/logs.js";
@@ -12,7 +13,7 @@ import { checkFinalizadoLote } from "../utils/lotesFunctions.js";
 export class ListaEmpaqueController {
     static async put_proceso_pallet_eviarCuartoFrio(req) {
         const { user } = req;
-        if (!user || !user._id) throw new Error("Usuario no identificado");
+        if (!user || !user._id) throw new AppError(401, "Usuario no identificado");
 
         await executeTransactionalTask(req, async (session, log) => {
 
@@ -26,9 +27,9 @@ export class ListaEmpaqueController {
 
             const newDate = new Date();
             const cuartosFrios = await CuartosFriosRepository.get_data({ query: { _id: cuartoFrioId } }, { session });
-            if (cuartosFrios.length === 0) throw new Error("No se encontraron cuartos frios");
+            if (cuartosFrios.length === 0) throw new AppError(404, "No se encontraron cuartos frío");
             const cuartoFrio = cuartosFrios[0];
-            if (!cuartoFrio.inventario) throw new Error("El cuarto frio no tiene inventario");
+            if (!cuartoFrio.inventario) throw new AppError(422, "El cuarto frío no tiene inventario asignado");
 
             for (const itemId of seleccion) {
                 let item = null;
@@ -53,7 +54,7 @@ export class ListaEmpaqueController {
                 operation += `${cajas} cajas de ${tipoCaja}, `
             }
 
-            if (idsLimpios.length === 0) throw new Error("No se encontraron items válidos para enviar a cuarto frío");
+            if (idsLimpios.length === 0) throw new AppError(422, "No se encontraron ítems válidos para enviar a cuarto frío");
 
             await CuartosFriosRepository.actualizar_data(
                 { _id: cuartoFrio._id },
@@ -85,7 +86,7 @@ export class ListaEmpaqueController {
     }
     static async put_proceso_aplicaciones_listaEmpaque_agregarItem(req) {
         const { user } = req;
-        if (!user || !user._id) throw new Error("Usuario no identificado");
+        if (!user || !user._id) throw new AppError(401, "Usuario no identificado");
 
         await executeTransactionalTask(req, async (session, log) => {
 
@@ -96,7 +97,7 @@ export class ListaEmpaqueController {
             const { contenedor, lotes } = await ProcesoService.getContenedorAndLote(lote, _id, session);
 
             if (checkFinalizadoLote(lotes[0])) {
-                throw new Error(`El lote ${lotes[0].enf} ya se encuentra finalizado, no se puede modificar`);
+                throw new AppError(409, `El lote ${lotes[0].enf} ya está finalizado y no se puede modificar`);
             }
 
             const GGN = have_lote_GGN_export(lotes[0], contenedor[0], item)
@@ -122,7 +123,7 @@ export class ListaEmpaqueController {
     }
     static async put_proceso_aplicaciones_listaEmpaque_moverItems(req) {
         const { user } = req
-        if (!user || !user._id) throw new Error("Usuario no identificado")
+        if (!user || !user._id) throw new AppError(401, "Usuario no identificado")
 
         const { seleccionado, contenedor2, cajas, action } = req.data;
 
@@ -149,15 +150,15 @@ export class ListaEmpaqueController {
             const newPallet = await ContenedoresRepository.getPallets({ query: { contenedor: id2, numeroPallet: pallet2 } }, session);
 
             if (newPallet.length === 0) {
-                throw new Error(`El pallet ${pallet2} no existe en el contenedor ${contenedores[0].numeroContenedor}`);
+                throw new AppError(404, `El pallet ${pallet2} no existe en el contenedor ${contenedores[0].numeroContenedor}`);
             }
             const itemsPallet = await ContenedoresRepository.getItemsPallets({ ids: seleccionado }, session);
             if (itemsPallet.length !== seleccionado.length) {
-                throw new Error(`Alguno de los items seleccionados no existe`);
+                throw new AppError(404, "Alguno de los ítems seleccionados no existe");
             }
             const cont = await ContenedoresRepository.getContenedores({ ids: [id2] }, session);
             if (cont.length === 0) {
-                throw new Error(`El contenedor del item seleccionado no existe`);
+                throw new AppError(404, "El contenedor de destino no existe");
             }
 
             for (const idItem of itemsPallet) {
@@ -212,14 +213,14 @@ export class ListaEmpaqueController {
             const newPallet = await ContenedoresRepository.getPallets({ query: { contenedor: id2, numeroPallet: pallet2 } }, session);
 
             if (newPallet.length === 0) {
-                throw new Error(`El pallet ${pallet2} no existe en el contenedor ${contenedores[0].numeroContenedor}`);
+                throw new AppError(404, `El pallet ${pallet2} no existe en el contenedor ${contenedores[0].numeroContenedor}`);
             }
             const oldItemPallet = await ContenedoresRepository.getItemsPallets({ query: { _id: seleccionado[0] } }, session);
             if (oldItemPallet.length === 0) {
-                throw new Error(`El item seleccionado no existe`);
+                throw new AppError(404, "El ítem seleccionado no existe");
             }
             if (cajas > oldItemPallet[0].cajas) {
-                throw new Error(`No se pueden mover ${cajas} cajas, el item solo tiene ${oldItemPallet[0].cajas} cajas`);
+                throw new AppError(422, `No se pueden mover ${cajas} cajas, el ítem solo tiene ${oldItemPallet[0].cajas} disponibles`);
             }
 
             const kilos = cajas * Number(oldItemPallet[0].tipoCaja.split("-")[1].replace(",", "."));
@@ -287,5 +288,40 @@ export class ListaEmpaqueController {
         procesoEventEmitter.emit("listaempaque_update");
 
 
+    }
+    static async put_proceso_aplicaciones_listaEmpaque_Cerrar(req) {
+        const { user } = req;
+        const { _id, action } = req.data;
+
+        if (!user || !user._id) throw new AppError(401, "Usuario no identificado");
+
+        await executeTransactionalTask(req, async (session, log) => {
+            const itemPallets = await ItemPalletRepository.get_data(
+                { 
+                    query: {
+                        contenedor: _id
+                    }
+                },
+                session
+            );
+
+            if (itemPallets.length === 0)
+                throw new AppError(422, "El contenedor no tiene cajas registradas para exportación");
+
+            const cajaSinCuartoFrio = itemPallets.find(item => !item.fecha_cuartofrio);
+            if (cajaSinCuartoFrio)
+                throw new AppError(422, "Todas las cajas deben pasar por cuarto frío antes de cerrar el contenedor");
+
+            await ContenedoresRepository.actualizar_contenedor(
+                { _id },
+                {
+                    'infoContenedor.cerrado': true,
+                    'infoContenedor.fechaFinalizado': new Date(),
+                },
+                { user: user._id, action, session }
+            );
+            await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_contenedor", "Completado");
+        });
+        procesoEventEmitter.emit("listaempaque_update");
     }
 }

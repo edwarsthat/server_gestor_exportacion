@@ -68,7 +68,9 @@ export function initSockets(io) {
                 } catch (logError) {
                     console.error("Error al registrar el error:", logError);
                 }
-                callback(err);
+                const errorPayload = { status:err?.status || 401  ,error: true, message: err.message || "Error interno del servidor" };
+                console.log("[ws] enviando error al cliente:", errorPayload);
+                callback(errorPayload);
             }
         }
         socket.on("Desktop2", async (data, callback) => {

@@ -5,7 +5,6 @@ import { ContenedoresRepository } from "../Class/Contenedores.js";
 import { LotesRepository } from "../Class/Lotes.js";
 import { filtroFechaInicioFin } from "./utils/filtros.js";
 import { InventariosLogicError } from "../../Error/logicLayerError.js";
-import { RecordModificacionesRepository } from "../archive/ArchivoModificaciones.js";
 import { ProcesoValidations } from "../validations/proceso.js";
 import { ProcesoService } from "../services/proceso.js";
 import { LogsRepository } from "../Class/LogsSistema.js";
@@ -443,72 +442,7 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
-    static async put_proceso_aplicaciones_listaEmpaque_Cerrar(req) {
-        const { user } = req;
-        const { _id, action } = req.data;
 
-        let log
-
-        const session = await db.Contenedores.db.startSession();
-
-        log = await LogsRepository.create({
-            user: user._id,
-            action: action,
-            acciones: [{ paso: "Inicio de la función", status: "Iniciado", timestamp: new Date() }]
-        })
-
-        try {
-            await session.withTransaction(async () => {
-                const contenedor = await ContenedoresRepository.getContenedores({ ids: [_id] }, session);
-                // const lista = await insumos_contenedor(contenedor[0]);
-                // const listasAlias = Object.keys(lista);
-                // const idsInsumos = await InsumosRepository.get_insumos({
-                //     query: {
-                //         codigo: { $in: listasAlias },
-                //     }
-                // }, { session });
-                // const listaInsumos = {};
-                // idsInsumos.forEach(item => {
-                //     listaInsumos[`insumosData.${item._id.toString()}`] = lista[item.codigo]
-                // })
-                // await registrarPasoLog(log._id, "insumos_contenedor", "Completado");
-                // Actualizar contenedor con pallets modificados
-                const newContenedor = await ContenedoresRepository.actualizar_contenedor(
-                    { _id },
-                    {
-                        // ...listaInsumos,
-                        'infoContenedor.cerrado': true,
-                        'infoContenedor.fechaFinalizado': new Date(),
-                    },
-                    { user: user._id, action: action, session: session }
-                );
-                await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_contenedor", "Completado");
-                // Registrar modificación
-                await RecordModificacionesRepository.post_record_contenedor_modification(
-                    action,
-                    user,
-                    {
-                        modelo: "Contenedor",
-                        documentoId: _id,
-                        descripcion: `Se cerro el contenedor ${contenedor[0].numeroContenedor}`,
-                    },
-                    contenedor[0],
-                    newContenedor,
-                    { _id, action },
-                    { session }
-                );
-            });
-
-            procesoEventEmitter.emit("listaempaque_update");
-
-        } catch (error) {
-            console.error(`[ERROR][${new Date().toISOString()}]`, error);
-            await ErrorProcesoLogicHandlers(error, log)
-        } finally {
-            await session.endSession();
-            await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
-        }
-    }
     static async put_proceso_add_pallet_listaempaque(req) {
         const { user } = req;
         const { _id, action } = req.data;
