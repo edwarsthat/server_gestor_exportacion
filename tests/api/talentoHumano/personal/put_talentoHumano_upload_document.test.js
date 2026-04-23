@@ -45,6 +45,7 @@ const mockPersonalRepository = {
 const mockFileService = {
     deleteFile: jest.fn(),
     saveBase64File: jest.fn(),
+    saveBufferFile: jest.fn(),
     readFileAsBase64: jest.fn()
 };
 
@@ -132,7 +133,7 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
         mockPersonalRepository.get_data.mockResolvedValue([createMockPersonal()]);
         mockPersonalRepository.actualizar_data.mockResolvedValue({ _id: VALID_OBJECT_ID });
         mockFileService.deleteFile.mockResolvedValue(true);
-        mockFileService.saveBase64File.mockResolvedValue('personal/fotoCarnetProcessed/new-photo.jpg');
+        mockFileService.saveBufferFile.mockResolvedValue('personal/fotoCarnetProcessed/new-photo.jpg');
     });
 
     afterEach(() => {
@@ -152,17 +153,17 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
                 { session: 'mock-session' }
             );
             expect(mockFileService.deleteFile).toHaveBeenCalled();
-            expect(mockFileService.saveBase64File).toHaveBeenCalled();
+            expect(mockFileService.saveBufferFile).toHaveBeenCalled();
             expect(mockPersonalRepository.actualizar_data).toHaveBeenCalled();
         });
 
         test('debería subir cédula exitosamente', async () => {
             mockReq = createValidRequest('cedula');
-            mockFileService.saveBase64File.mockResolvedValue('personal/identificacion/new-cedula.pdf');
+            mockFileService.saveBufferFile.mockResolvedValue('personal/identificacion/new-cedula.pdf');
 
             await PersonalControllerRepository.put_talentoHumano_upload_document(mockReq);
 
-            expect(mockFileService.saveBase64File).toHaveBeenCalledWith(
+            expect(mockFileService.saveBufferFile).toHaveBeenCalledWith(
                 mockReq.data.file,
                 expect.stringContaining('identificacion'),
                 'STORAGE',
@@ -175,7 +176,7 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
 
             await PersonalControllerRepository.put_talentoHumano_upload_document(mockReq);
 
-            expect(mockFileService.saveBase64File).toHaveBeenCalledWith(
+            expect(mockFileService.saveBufferFile).toHaveBeenCalledWith(
                 mockReq.data.file,
                 expect.stringContaining('fotoCarnetProcessed'),
                 'STORAGE',
@@ -185,7 +186,7 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
 
         test('debería actualizar urlFotoCarnet cuando typeDoc es foto', async () => {
             const newPhotoPath = 'personal/fotoCarnetProcessed/new-photo-123.jpg';
-            mockFileService.saveBase64File.mockResolvedValue(newPhotoPath);
+            mockFileService.saveBufferFile.mockResolvedValue(newPhotoPath);
 
             await PersonalControllerRepository.put_talentoHumano_upload_document(mockReq);
 
@@ -199,7 +200,7 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
         test('debería actualizar urlIdentificacion cuando typeDoc es cedula', async () => {
             mockReq = createValidRequest('cedula');
             const newCedulaPath = 'personal/identificacion/new-cedula-123.pdf';
-            mockFileService.saveBase64File.mockResolvedValue(newCedulaPath);
+            mockFileService.saveBufferFile.mockResolvedValue(newCedulaPath);
 
             await PersonalControllerRepository.put_talentoHumano_upload_document(mockReq);
 
@@ -295,7 +296,7 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
         });
 
         test('debería propagar error si saveBase64File falla', async () => {
-            mockFileService.saveBase64File.mockRejectedValue(
+            mockFileService.saveBufferFile.mockRejectedValue(
                 new Error('Error al guardar archivo')
             );
 

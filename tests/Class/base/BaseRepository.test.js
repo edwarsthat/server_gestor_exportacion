@@ -465,6 +465,8 @@ describe('BaseRepository', () => {
                     { $set: { valor: 100 } },
                     {
                         new: true,
+                        runValidators: true,
+                        context: 'query',
                         upsert: false,
                         session: mockSession,
                         arrayFilters

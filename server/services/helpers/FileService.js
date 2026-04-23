@@ -469,12 +469,6 @@ export class FileService {
         // Valida tamaño
         this.validateBufferSize(buffer, maxSize);
 
-        // Detectar tipo de archivo por magic bytes (primero para saber si es SVG)
-        const type = await fileTypeFromBuffer(buffer);
-        if (!type || !allowedTypes.includes(type.mime)) {
-            throw new FileValidationError('Tipo de archivo no permitido o no reconocido', 'INVALID_FILE_TYPE');
-        }
-
         // Patrones peligrosos que indican contenido ejecutable
         const dangerousPatterns = [
             '<?php',           // PHP
@@ -485,14 +479,10 @@ export class FileService {
             '#!/',             // Shebang (scripts Unix)
         ];
 
-        // Para SVG: escanear TODO el buffer (puede tener <script> en cualquier parte - XSS risk)
-        // Para otros tipos: escanear solo los primeros 256 bytes
-        const isSvg = type.mime === 'image/svg+xml';
-        const bytesToScan = isSvg ? buffer : buffer.subarray(0, 256);
-        const textPreview = bytesToScan.toString('utf-8').toLowerCase();
-
+        // Escanear primeros 256 bytes antes de validar tipo (captura polyglot files)
+        const earlyPreview = buffer.subarray(0, 256).toString('utf-8').toLowerCase();
         for (const pattern of dangerousPatterns) {
-            if (textPreview.includes(pattern)) {
+            if (earlyPreview.includes(pattern)) {
                 throw new FileValidationError(
                     'Tipo de archivo no permitido: contenido ejecutable detectado',
                     'EXECUTABLE_CONTENT'
@@ -500,10 +490,25 @@ export class FileService {
             }
         }
 
-        // SVG adicional: buscar event handlers (onclick, onerror, onload, etc.)
-        if (isSvg) {
+        // Detectar tipo de archivo por magic bytes
+        const type = await fileTypeFromBuffer(buffer);
+        if (!type || !allowedTypes.includes(type.mime)) {
+            throw new FileValidationError('Tipo de archivo no permitido o no reconocido', 'INVALID_FILE_TYPE');
+        }
+
+        // Para SVG: escanear TODO el buffer (puede tener <script> en cualquier parte - XSS risk)
+        if (type.mime === 'image/svg+xml') {
+            const fullText = buffer.toString('utf-8').toLowerCase();
+            for (const pattern of dangerousPatterns) {
+                if (fullText.includes(pattern)) {
+                    throw new FileValidationError(
+                        'Tipo de archivo no permitido: contenido ejecutable detectado',
+                        'EXECUTABLE_CONTENT'
+                    );
+                }
+            }
             const eventHandlerPattern = /\bon\w+\s*=/i;
-            if (eventHandlerPattern.test(textPreview)) {
+            if (eventHandlerPattern.test(fullText)) {
                 throw new FileValidationError(
                     'Tipo de archivo no permitido: SVG con event handlers detectado',
                     'SVG_EVENT_HANDLER'

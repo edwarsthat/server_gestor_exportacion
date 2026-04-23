@@ -9,6 +9,7 @@ export const defineSchemaCargosPersonal = async (conn, auditLog) => {
     const cargosPersonalSchema = new Schema({
         nombre: { type: String, required: true, unique: true },
         areasAcceso: [{ type: Schema.Types.ObjectId, ref: 'areasFisicas' }],
+        areasAccesoParcial: [{ type: Schema.Types.ObjectId, ref: 'areasFisicas' }],
         color: { type: String, required: true, enum: ["#7EBA27", "#FFCD00", "#F3930D"] },
     })
 

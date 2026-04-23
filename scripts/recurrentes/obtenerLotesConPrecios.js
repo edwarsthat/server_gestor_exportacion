@@ -1,139 +1,193 @@
+/**
+ * @file Script para migrar PAIS_DESTINO de clientes de strings a ObjectId
+ * @description Lee el array de strings de PAIS_DESTINO de cada cliente, normaliza los nombres,
+ * busca el _id correspondiente en la colección pais y actualiza el campo con el nuevo formato
+ */
 
-import { connectProcesoDB, connectCatalogosDB } from "../../DB/mongoDB/config/config.js";
-import { defineLotes } from "../../DB/mongoDB/schemas/lotes/schemaLotes.js";
-import { definePrecios } from "../../DB/mongoDB/schemas/precios/schemaPrecios.js";
-import { defineproveedores } from "../../DB/mongoDB/schemas/proveedores/schemaProveedores.js";
-import fs from 'fs';
-import path from 'path';
+import { MongoClient } from 'mongodb';
+import writeXlsxFile from 'write-excel-file/node';
+import 'dotenv/config';
+
+const MONGODB_PROCESO = process.env.MONGODB_PROCESO;
+
+let client = null;
+let db = null;
 
 
-async function obtener_lotes_precios_json() {
-    const db = await connectProcesoDB("mongodb://localhost:27017/proceso");
-    const dbC = await connectCatalogosDB("mongodb://localhost:27017/catalogos");
-
+async function connectProcesoDB() {
     try {
-        const LoteDB = await defineLotes(db);
-        await defineproveedores(db);
-        await definePrecios(db)
-
-        const populateLote = [
-            { path: 'predio', select: 'PREDIO ICA GGN SISPAP' },
-            { path: 'precio', select: 'descarte frutaNacional exportacion' }
-        ]
-
-        const lotes = await LoteDB.find({
-            fecha_creacion: { $gte: new Date("2025-01-01T00:00:00Z") },
-            predio: "655e68b24e055637327c2f52"
-        })
-            .select({ kilos: 1, exportacion: 1, precio: 1, predio: 1, tipoFruta: 1, descarteLavado: 1, descarteEncerado: 1, frutaNacional: 1, enf: 1, directoNacional: 1 })
-            .populate(populateLote)
-            .lean().exec();
-
-        const out = []
-
-        for (const lote of lotes) {
-            const lotObj = {}
-            lotObj._id = lote._id;
-            lotObj.kilos = lote.kilos;
-            lotObj.frutaNacional = lote.frutaNacional;
-            lotObj.directoNacional = lote.directoNacional;
-            lotObj.enf = lote.enf;
-            lotObj.predio = lote.predio ? lote.predio.PREDIO : null;
-            lotObj["precio.Descarte"] = lote.precio ? lote.precio.descarte : null;
-            lotObj["precio.FrutaNacional"] = lote.precio ? lote.precio.frutaNacional : null;
-
-            const descartesLavadoKeys = Object.keys(lote.descarteLavado || {});
-            const descartesEnceradoKeys = Object.keys(lote.descarteEncerado || {});
-            const exportacionExportacionCont = Object.keys(lote.exportacion || {});
-            const preciosExportacionKeys = Object.keys(lote.precio ? lote.precio.exportacion || {} : {});
-
-            for (const key of descartesLavadoKeys) {
-                lotObj[`descarteLavado_${key}`] = lote.descarteLavado[key];
-            }
-
-            for (const key of descartesEnceradoKeys) {
-                lotObj[`descarteEncerado_${key}`] = lote.descarteEncerado[key];
-            }
-
-            for (const key of preciosExportacionKeys) {
-                lotObj[`precio.${key}`] = lote.precio.exportacion[key];
-            }
-
-            for (const key of exportacionExportacionCont) {
-                const exportacionCalidadKeys = Object.keys(lote.exportacion[key] || {});
-                for (const subKey of exportacionCalidadKeys) {
-                        if (!lotObj[`exportacion.${subKey}`]) {
-                        lotObj[`exportacion.${subKey}`] = 0;
-                    }
-                    lotObj[`exportacion.${subKey}`] += lote.exportacion[key][subKey];
-                }
-            }
-            
-            out.push(lotObj);
-
+        if (db) {
+            console.log('Ya existe una conexion activa a la base de datos proceso');
+            return db;
         }
 
-        // Generar CSV
-        if (out.length > 0) {
-            // Obtener todas las columnas únicas
-            const allKeys = new Set();
-            out.forEach(obj => {
-                Object.keys(obj).forEach(key => allKeys.add(key));
-            });
-            
-            const headers = Array.from(allKeys);
-            
-            // Crear el contenido CSV
-            let csvContent = headers.join(',') + '\n';
-            
-            out.forEach(obj => {
-                const row = headers.map(header => {
-                    let value = obj[header];
-                    if (value === null || value === undefined) {
-                        return '';
-                    }
-                    // Escapar comillas y comas en los valores
-                    if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
-                        value = '"' + value.replace(/"/g, '""') + '"';
-                    }
-                    return value;
-                }).join(',');
-                csvContent += row + '\n';
-            });
-            
-            // Crear directorio out si no existe
-            const currentDir = path.dirname(new URL(import.meta.url).pathname);
-            // En Windows, necesitamos limpiar la ruta
-            const cleanCurrentDir = process.platform === 'win32' && currentDir.startsWith('/') 
-                ? currentDir.slice(1) 
-                : currentDir;
-            const outDir = path.join(cleanCurrentDir, '..', 'out');
-            // eslint-disable-next-line security/detect-non-literal-fs-filename
-            if (!fs.existsSync(outDir)) {
-                // eslint-disable-next-line security/detect-non-literal-fs-filename
-                fs.mkdirSync(outDir, { recursive: true });
-            }
-            
-            // Guardar en archivo CSV
-            const fileName = `lotes_precios_${new Date().toISOString().split('T')[0]}.csv`;
-            const filePath = path.join(outDir, fileName);
-            // eslint-disable-next-line security/detect-non-literal-fs-filename
-            fs.writeFileSync(filePath, csvContent, 'utf8');
-            console.log(`CSV guardado en: ${filePath}`);
-            console.log(`Total de registros: ${out.length}`);
-            console.log(`Columnas: ${headers.length}`);
-        } else {
-            console.log('No se encontraron datos para exportar');
-        }
-        
-        return out;
-    } catch (err) {
-        console.error("Error en la migración de exportacion → ObjectId:", err);
-        process.exitCode = 1;
-    } finally {
-        await db.close().catch(() => { });
-        await dbC.close().catch(() => { });
+        console.log('Conectando a la base de datos proceso...');
+
+        client = new MongoClient(MONGODB_PROCESO, {
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 45000,
+        });
+
+        await client.connect();
+        await client.db().admin().ping();
+        console.log('Conectado exitosamente a la base de datos proceso');
+
+        db = client.db();
+        return db;
+    } catch (error) {
+        console.error('Error conectando a la base de datos:', error.message);
+        throw error;
     }
 }
 
-obtener_lotes_precios_json();
+async function closeConnection() {
+    try {
+        if (client) {
+            await client.close();
+            client = null;
+            db = null;
+            console.log('Conexion cerrada correctamente');
+        }
+    } catch (error) {
+        console.error('Error cerrando la conexion:', error.message);
+        throw error;
+    }
+}
+
+async function main() {
+    try {
+        const database = await connectProcesoDB();
+        const lotesCollection = database.collection('lotes');
+        const proveedoresCollection = database.collection('proveedors');
+        const precios = database.collection('precios');
+        const calidadesCollection = database.collection('calidades');
+        const descartesCollection = database.collection('descartes');
+
+        const [lotes, calidades, descartes] = await Promise.all([
+            lotesCollection.find({
+                fecha_creacion: {
+                    $gte: new Date('2026-01-01T00:00:00.000Z'),
+                    $lte: new Date('2026-03-31T23:59:59.999Z')
+                }
+            }).toArray(),
+            calidadesCollection.find({}).toArray(),
+            descartesCollection.find({}).toArray()
+        ])
+
+        const proveedoresSetIds = new Set();
+        const preciosSetIds = new Set();
+
+        for (const lote of lotes) {
+            proveedoresSetIds.add(lote.predio);
+            preciosSetIds.add(lote.precio)
+        }
+
+        const [proveedores, preciosArray] = await Promise.all([
+            proveedoresCollection.find({
+                _id: { $in: Array.from(proveedoresSetIds) }
+            }).toArray(),
+            precios.find({
+                _id: { $in: Array.from(preciosSetIds) }
+            }).toArray()
+        ]);
+
+        const proveedoresMap = new Map(proveedores.map(d => [d._id.toString(), d]));
+        const preciosMap = new Map(preciosArray.map(d => [d._id.toString(), d]));
+        const descartesMap = new Map(descartes.map(d => [d._id.toString(), d]));
+        const calidadesMap = new Map(calidades.map(d => [d._id.toString(), d]));
+
+        const out = [];
+
+        for (const lote of lotes) {
+            const proveedor = proveedoresMap.get(lote.predio.toString());
+            const objOut = {
+                fechaIngreso: lote.fecha_creacion,
+                enf: lote.enf,
+                predio: proveedor ? proveedor.PREDIO : 'Desconocido',
+                kilos: lote.kilos,
+            };
+
+            const precio = preciosMap.get(lote?.precio?.toString() || '');
+
+            if (precio) {
+                Object.entries(precio.exportacion).forEach(([key, value]) => {
+                    const calidad = calidadesMap.get(key);
+                    if (calidad) {
+                        objOut[`precio_${calidad.nombre}`] = value;
+                    } else {
+                        console.warn(`Calidad no encontrada para precio ${precio._id}: calidad=${key}`);
+                    }
+                })
+                objOut.descarte = precio?.descarte || 0;
+                objOut.frutaNacional = precio?.frutaNacional || 0;
+            }
+
+            if (lote.salidaExportacion && lote.salidaExportacion.porCalidad) {
+                Object.entries(lote.salidaExportacion.porCalidad).forEach(([key, value]) => {
+                    const calidad = calidadesMap.get(key);
+                    if (calidad) {
+                        objOut[`kilos_${calidad.nombre}`] = value.kilos;
+                    } else {
+                        console.warn(`Calidad no encontrada para precio ${precio._id}: calidad=${key}`);
+                    }
+                })
+            }
+
+            if(lote.directoNacional){
+                objOut.precio_directoNacional = precio?.directoNacional || 0;
+            }
+
+            if(lote.descartes){
+                Object.entries(lote.descartes).forEach(([key, value]) => {
+                    const descarte = descartesMap.get(key);
+                    if (descarte) {
+                        objOut[`kilos_descarte_${descarte.nombre}`] = value;
+                    } else {
+                        console.warn(`Descarte no encontrado para lote ${lote._id}: descarte=${key}`);
+                    }
+                })
+            }
+            if(lote.deshidratacion !== 0){
+                objOut.kilosDeshidratacion = ((lote.deshidratacion / 100) * lote.kilos);
+            }
+
+            out.push(objOut);
+        }
+
+        const allKeys = [...new Set(out.flatMap(row => Object.keys(row)))];
+        const schema = allKeys.map(key => {
+            let type = String;
+            if (key === 'fechaIngreso') {
+                type = Date;
+            } else {
+                const firstValue = out.find(row => row[key] != null)?.[key];
+                if (typeof firstValue === 'number') type = Number;
+            }
+            return {
+                column: key,
+                type,
+                value: row => {
+                    const v = row[key];
+                    if (v == null) return null;
+                    if (type === Number) return typeof v === 'number' ? v : Number(v);
+                    if (type === Date) return v instanceof Date ? v : new Date(v);
+                    if (typeof v === 'object') return v.toString();
+                    return String(v);
+                },
+            };
+        });
+
+        const filePath = '/home/analista/server/server_gestor_exportacion/scripts/out/lotes_con_precios.xlsx';
+        await writeXlsxFile(out, { schema, filePath, dateFormat: 'dd/mm/yyyy' });
+        console.log(`Archivo generado: ${filePath}`);
+
+    } catch (error) {
+        console.error('Error en el proceso:', error.message);
+        console.error(error);
+        process.exit(1);
+    } finally {
+        await closeConnection();
+    }
+}
+
+main();

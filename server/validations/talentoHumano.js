@@ -14,6 +14,7 @@ export class TalentoHumanoValidations {
         return z.object({
             nombre: z.string().min(1, "El nombre es obligatorio"),
             areasAcceso: z.array(z.string()).min(1, "Al menos una área de acceso es obligatoria"),
+            areasAccesoParcial: z.array(z.string()).optional(),
             color: z.string().min(1, "El color es obligatorio"),
         })
     }

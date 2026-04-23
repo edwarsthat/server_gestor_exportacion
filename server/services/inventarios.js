@@ -528,6 +528,10 @@ export class InventariosService {
                 throw new Error("El descuento supera el inventario disponible.");
             }
 
+            if (!descompuesta && (restanteKilos === 0) !== (restanteCanastillas === 0)) {
+                throw new Error("Inconsistencia: El inventario quedaría con kilos o canastillas desbalanceados.");
+            }
+
             // Verificar que se pudieron descontar todos los kilos
             if (kilos > 0) {
                 throw new InventariosLogicError(470, `No hay inventario suficiente. Faltan ${kilos} kilos para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);

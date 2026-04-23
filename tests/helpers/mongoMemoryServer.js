@@ -23,10 +23,10 @@ import { defineSeriales } from '../../DB/mongoDB/schemas/seriales/SerialesSchema
 import { definePaises } from '../../DB/mongoDB/schemas/catalogs/schemaPaises.js';
 import { defineContenedores } from '../../DB/mongoDB/schemas/contenedores/schemaContenedores.js';
 import { defineItemPallet } from '../../DB/mongoDB/schemas/contenedores/schemaItemsPallet.js';
-import { defineSchemaPallet } from '../../DB/mongoDB/schemas/contenedores/schemaPallet.js';
+import { definePallet as defineSchemaPallet } from '../../DB/mongoDB/schemas/contenedores/schemaPallet.js';
 import { defineCalidades } from '../../DB/mongoDB/schemas/catalogs/schemaCalidades.js';
-import { defineProveedores } from '../../DB/mongoDB/schemas/proveedores/schemaProveedores.js';
-import { definePaises } from '../../DB/mongoDB/schemas/catalogs/schemaPaises.js'
+import { defineproveedores as defineProveedores } from '../../DB/mongoDB/schemas/proveedores/schemaProveedores.js';
+import { defineAuditLogContenedores } from '../../DB/mongoDB/schemas/audit/AuditLogsContenedores.js';
 import { defineCargo } from '../../DB/mongoDB/schemas/usuarios/schemaCargos.js'
 
 let replSet = null;
@@ -98,6 +98,7 @@ export async function defineTestSchemas(conn) {
     testDb.InventarioDescarte = await defineInventarioDescarte(conn);
     testDb.Seriales = await defineSeriales(conn);
     testDb.Paises = await definePaises(conn);
+    const AuditContenedores = await defineAuditLogContenedores(conn);
     testDb.Contenedores = await defineContenedores(conn, AuditContenedores);
     testDb.ItemPallet = await defineItemPallet(conn, AuditContenedores);
     testDb.Pallets = await defineSchemaPallet(conn);
@@ -105,7 +106,6 @@ export async function defineTestSchemas(conn) {
     testDb.Proveedores = await defineProveedores(conn);
 
     //sin relacion
-    testDb.Paises = await definePaises(conn);
     testDb.Cargo = await defineCargo(conn);
     testDb.TipoFrutas = await defineTipoFrutas(conn);
 

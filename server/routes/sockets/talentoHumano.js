@@ -74,7 +74,7 @@ export const apiSocketTalentoHumano = {
         return successResponseRoutes(data)
     },
     put_talentoHumano_cargos_modificarCargo: async (req) => {
-        await PersonalControllerRepository.put_talentoHumano_cargos_modificarCargo(req)
+        await CargosPersonalControllerRepository.put_talentoHumano_cargos_modificarCargo(req)
         return successResponseRoutes()
     },
     put_talentoHumano_personal: async (req) => {
