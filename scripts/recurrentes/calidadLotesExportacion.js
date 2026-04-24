@@ -5,7 +5,7 @@
  */
 
 import { MongoClient } from 'mongodb';
-import { writeFileSync } from 'fs';
+import writeXlsxFile from 'write-excel-file/node';
 import config from '../../src/config/index.js';
 
 const { MONGODB_PROCESO } = config;
@@ -59,37 +59,74 @@ async function main() {
         const database = await connectProcesoDB();
         const lotesCollection = database.collection('lotes');
         const calidadCollection = database.collection('calidades')
-
+        const descartesCollection = database.collection('descartes')
+        const tipoFrutaCollection = database.collection('tipofrutas')
 
         const lotes = await lotesCollection.find(
             {
-
+                fecha_creacion: {
+                    $gte: new Date('2026-02-01T05:00:00.000Z'),
+                    $lt: new Date('2026-05-01T05:00:00.000Z'),
+                },
             },
         ).toArray();
 
-        const calidades = await calidadCollection.find({}).toArray()
+        const [calidades, descartes, tipoFrutas] = await Promise.all([
+            calidadCollection.find({}).toArray(),
+            descartesCollection.find({}).toArray(),
+            tipoFrutaCollection.find({}).toArray(),
+        ]);
 
         const calidadesMap = new Map(calidades.map(d => [d._id.toString(), d]))
+        const descartesMap = new Map(descartes.map(d => [d._id.toString(), d]))
+        const tipoFrutasMap = new Map(tipoFrutas.map(d => [d._id.toString(), d]))
 
         const out = []
 
-        for(const lote of lotes){
-            if(!lote.salidaExportacion || !lote.salidaExportacion.porCalidad){
+        for (const lote of lotes) {
+            if (!lote.salidaExportacion || !lote.salidaExportacion.porCalidad) {
                 continue
             }
-            if(Object.keys(lote.salidaExportacion.porCalidad).length === 0) {
+            if (Object.keys(lote.salidaExportacion.porCalidad).length === 0) {
                 continue
+            }
+
+            const tipoFruta = tipoFrutasMap.get(lote.tipoFruta.toString());
+            if(!tipoFruta) {
+                console.warn(`Tipo fruta no encontrado para lote ${lote._id}: tipoFruta=${lote.tipoFruta}`);
+                continue;
             }
 
             const objLote = {
+                fecha: lote.fecha_creacion,
                 enf: lote.enf,
-                fecha: lote.fecha_creacion
+                tipoFruta: tipoFruta.tipoFruta,
+                kilos: lote.kilos,
             }
 
-            Object.entries(lote.salidaExportacion.porCalidad).forEach(([key,value]) => {
+            Object.entries(lote.salidaExportacion.porCalidad).forEach(([key, value]) => {
                 const calidad = calidadesMap.get(key)
                 objLote[calidad.nombre] = value.kilos
             })
+
+            if (lote.directoNacional) {
+                objLote.directoNacional = lote?.directoNacional || 0;
+            }
+
+
+            if (lote.descartes) {
+                Object.entries(lote.descartes).forEach(([key, value]) => {
+                    const descarte = descartesMap.get(key);
+                    if (descarte) {
+                        objLote[`kilos_descarte_${descarte.nombre}`] = value;
+                    } else {
+                        console.warn(`Descarte no encontrado para lote ${lote._id}: descarte=${key}`);
+                    }
+                })
+            }
+            if (lote.deshidratacion !== 0) {
+                objLote.kilosDeshidratacion = ((lote.deshidratacion / 100) * lote.kilos);
+            }
 
             console.log(objLote)
             out.push(objLote)
@@ -98,13 +135,18 @@ async function main() {
 
         if (out.length > 0) {
             const headers = [...new Set(out.flatMap(row => Object.keys(row)))];
-            const csvRows = [
-                headers.join(';'),
-                ...out.map(row => headers.map(h => row[h] ?? '').join(';')),
+            const data = [
+                headers.map(h => ({ value: h, fontWeight: 'bold' })),
+                ...out.map(row => headers.map(h => {
+                    const val = row[h] ?? null;
+                    if (val instanceof Date) return { value: val, type: Date };
+                    if (typeof val === 'number') return { value: val, type: Number };
+                    return { value: val !== null ? String(val) : '', type: String };
+                })),
             ];
-            const outputPath = '/home/analista/server/server_gestor_exportacion/scripts/out/calidadLotesExportacion.csv';
-            writeFileSync(outputPath, csvRows.join('\n'), 'utf8');
-            console.log(`CSV generado: ${outputPath} (${out.length} filas)`);
+            const outputPath = '/home/analista/server/server_gestor_exportacion/scripts/out/calidadLotesExportacion.xlsx';
+            await writeXlsxFile(data, { filePath: outputPath, dateFormat: 'dd/mm/yyyy' });
+            console.log(`Excel generado: ${outputPath} (${out.length} filas)`);
         } else {
             console.log('No hay datos para exportar');
         }
