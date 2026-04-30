@@ -13,9 +13,9 @@ export class tipoFrutaCache {
                 if (!tipoFruta || tipoFruta.length === 0) {
                     throw new Error("No se encontraron tipos de fruta para guardar en Redis");
                 }
+                for(let i = 0; i < tipoFruta.length - c ; i++){
 
-                for(let i = 0; i <= tipoFruta.length - c ; i++){
-                    const id = tipoFruta[i]._id;
+                    const id = tipoFruta[i]._id.toString();
                     Reflect.set(tipoFrutaMap, id, tipoFruta[i]);
                 }
 
