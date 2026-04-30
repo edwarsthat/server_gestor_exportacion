@@ -1,5 +1,6 @@
 import { getRedisClient } from "../../DB/redis/init.js";
 import { ConnectRedisError } from "../../Error/ConnectionErrors.js";
+import config from "../../src/config/index.js";
 
 export class RedisRepository {
     //#region inventarioDesverdizado
@@ -451,6 +452,28 @@ export class RedisRepository {
             await cliente.ping();
 
             return cliente;
+
+        } catch (err) {
+            console.error('Error obteniendo cliente Redis:', err);
+            throw new ConnectRedisError(502, `Error obteniendo cliente Redis: ${err.message || err}`);
+        }
+    }
+    static async getClieent() {
+        try {
+            const cliente = await getRedisClient();
+
+            // Validar que el cliente esté disponible
+            if (!cliente) {
+                throw new Error('Cliente Redis no disponible');
+            }
+
+            // Verificar conexión con un ping simple
+            await cliente.ping();
+
+            const data = await cliente.get(config.TIPOS_FRUTAS)
+            await cliente.set(config.TIPOS_FRUTAS, Number(data) + 1)
+
+            return Math.floor(Number(data) / 1000);
 
         } catch (err) {
             console.error('Error obteniendo cliente Redis:', err);

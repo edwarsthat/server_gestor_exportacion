@@ -13,6 +13,7 @@ function require(name) {
 export default {
     PORT: process.env.PORT || 3000,
     HOST: process.env.HOST || '0.0.0.0',
+    TIPOS_FRUTAS: process.env.TIEMPO_TRABAJADO || "tiempoTrabajadoHoy",
     MONGODB_PROCESO: require("MONGODB_PROCESO"),
     MONGODB_SISTEMA: require("MONGODB_SISTEMA"),
     MONGODB_CATALOGOS: require("MONGODB_CATALOGOS"),
