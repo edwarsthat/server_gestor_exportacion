@@ -56,7 +56,7 @@ export const defineVehiculoSalida = async (conn, audit) => {
     });
 
     // Middleware para registrar actualizaciones
-    vehiculoSalidaSchema.pre('findOneAndUpdate', async function (next) {
+    vehiculoSalidaSchema.pre('findOneAndUpdate', async function () {
         try {
             if (audit) {
                 const docToUpdate = await this.model.findOne(this.getQuery());
@@ -64,10 +64,9 @@ export const defineVehiculoSalida = async (conn, audit) => {
                     this._auditDoc = docToUpdate.toObject();
                 }
             }
-            next();
         } catch (error) {
             console.error('Error en pre-update audit:', error);
-            next();
+            throw error;
         }
     });
 
@@ -107,7 +106,7 @@ export const defineVehiculoSalida = async (conn, audit) => {
     });
 
     // Middleware para registrar eliminaciones
-    vehiculoSalidaSchema.pre(['deleteOne', 'findOneAndDelete'], async function (next) {
+    vehiculoSalidaSchema.pre(['deleteOne', 'findOneAndDelete'], async function () {
         try {
             if (audit) {
                 const docToDelete = await this.model.findOne(this.getQuery());
@@ -115,10 +114,9 @@ export const defineVehiculoSalida = async (conn, audit) => {
                     this._auditDeleteDoc = docToDelete.toObject();
                 }
             }
-            next();
         } catch (error) {
             console.error('Error en pre-delete audit:', error);
-            next();
+            throw error;
         }
     });
 
@@ -135,6 +133,7 @@ export const defineVehiculoSalida = async (conn, audit) => {
             }
         } catch (error) {
             console.error('Error al crear auditoría de eliminación:', error);
+            throw error;
         }
     });
 

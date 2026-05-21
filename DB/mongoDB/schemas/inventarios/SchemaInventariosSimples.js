@@ -33,35 +33,29 @@ export const defineInventarioSimple = async (conn, AuditInventariosSimples) => {
     });
 
     // ✔ Actualiza updatedAt también en updates tipo query
-    InventarioSimpleSchema.pre(['updateOne', 'findOneAndUpdate', 'updateMany'], function (next) {
+    InventarioSimpleSchema.pre(['updateOne', 'findOneAndUpdate', 'updateMany'], function () {
         // En query middleware, set() aplica sobre el update
         this.set({ updatedAt: new Date() });
-        next();
     });
 
     // ✔ Captura del documento previo dentro de la MISMA sesión
-    InventarioSimpleSchema.pre('findOneAndUpdate', async function (next) {
-        try {
-            const opts = this.getOptions?.() || this.options || {};
-            const session = opts.session;
+    InventarioSimpleSchema.pre('findOneAndUpdate', async function () {
+        const opts = this.getOptions?.() || this.options || {};
+        const session = opts.session;
 
-            // Importante: leer con la misma session para snapshot consistente
-            const q = this.model.findOne(this.getQuery());
-            if (session) q.session(session);
+        // Importante: leer con la misma session para snapshot consistente
+        const q = this.model.findOne(this.getQuery());
+        if (session) q.session(session);
 
-            const docToUpdate = await q.lean(); // lean para clonar ligero
-            this._oldValue = docToUpdate || null;
-            next();
-        } catch (err) {
-            next(err);
-        }
+        const docToUpdate = await q.lean(); // lean para clonar ligero
+        this._oldValue = docToUpdate || null;
     });
 
     // ✔ Audit dentro de la misma sesión (si no se pide skip)
-    InventarioSimpleSchema.post('findOneAndUpdate', async function (res, next) {
+    InventarioSimpleSchema.post('findOneAndUpdate', async function (res) {
         try {
             const opts = this.getOptions?.() || this.options || {};
-            if (opts.skipAudit) return next();
+            if (opts.skipAudit) return;
 
             const session = opts.session; // misma sesión de la TX
             const user = opts.user || 'System';
@@ -113,15 +107,15 @@ export const defineInventarioSimple = async (conn, AuditInventariosSimples) => {
                 }], { session });
             }
 
-            next();
+            return;
         } catch (err) {
             // No mates el server por el audit: log y continua
             console.error('Error guardando auditoría:', err);
-            next(err); // o next() si quieres que el audit no rompa la operación
+            return err; // o return () si quieres que el audit no rompa la operación
         }
     });
 
-    InventarioSimpleSchema.pre('updateOne', async function (next) {
+    InventarioSimpleSchema.pre('updateOne', async function () {
         try {
             const opts = this.getOptions?.() || this.options || {};
             const session = opts.session;
@@ -131,19 +125,18 @@ export const defineInventarioSimple = async (conn, AuditInventariosSimples) => {
 
             const docToUpdate = await q.lean();
             this._oldValue = docToUpdate || null;  // guardar snapshot previo
-            next();
         } catch (err) {
-            next(err);
+            return err;
         }
     });
     // === NUEVO: Auditoría después de updateOne (leer el "después" y comparar) ===
-    InventarioSimpleSchema.post('updateOne', async function (result, next) {
+    InventarioSimpleSchema.post('updateOne', async function (result) {
         try {
             const opts = this.getOptions?.() || this.options || {};
-            if (opts.skipAudit) return next();
+            if (opts.skipAudit) return;
 
             // Si no tocó nada, no auditar
-            if (!result?.acknowledged || !result?.matchedCount) return next();
+            if (!result?.acknowledged || !result?.matchedCount) return;
 
             const session = opts.session;
             const user = opts.user || 'System';
@@ -201,10 +194,10 @@ export const defineInventarioSimple = async (conn, AuditInventariosSimples) => {
                 description
             }], { session });
 
-            next();
+            return;
         } catch (err) {
             console.error('Error guardando auditoría (updateOne):', err);
-            next(err); // o next() si prefieres no romper la operación por fallar el audit
+            return err; // o return () si prefieres no romper la operación por fallar el audit
         }
     });
 

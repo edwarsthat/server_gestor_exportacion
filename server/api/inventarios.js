@@ -457,7 +457,7 @@ export class InventariosRepository {
                         },
                         {
                             sort: { fecha: -1 },
-                            new: true,
+                            returnDocument: 'after',
                             session,
                         }
                     );
@@ -1109,7 +1109,7 @@ export class InventariosRepository {
                 const frutaProcesada = await FrutaProcesada.actualizar_frutaProcesada(
                     { _id: _id },
                     { $inc: { canastillas: -canastillas } },
-                    { new: true, user: user, action: action, session: session },
+                    { returnDocument: 'after', user: user, action: action, session: session },
                 )
                 await registrarPasoLog(
                     log._id,
@@ -1121,7 +1121,7 @@ export class InventariosRepository {
                 const lote = await LotesHelper.actualizar_lotes_helper(
                     { _id: frutaProcesada.loteId },
                     { $inc: { kilosVaciados: -newKilos } },
-                    { new: true, user: user, action: action, session: session },
+                    { returnDocument: 'after', user: user, action: action, session: session },
                 )
 
                 await registrarPasoLog(
@@ -1325,7 +1325,7 @@ export class InventariosRepository {
                 },
                 {
                     sort: { fecha: -1 },
-                    new: true,
+                    returnDocument: 'after',
                 }
             );
 

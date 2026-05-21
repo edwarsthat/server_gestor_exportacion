@@ -65,7 +65,7 @@ export class InventarioFrutaSinProcesarController {
             await LotesRepository.actualizar_lote(
                 { _id: loteId },
                 queryLote,
-                { new: true, user: user, action: action, session: session, calculateFields: true }
+                { returnDocument: 'after', user: user, action: action, session: session, calculateFields: true }
             );
             await registrarPasoLog(log._id, "LotesRepository.actualizar_lote", "Completado", `Lote ${loteId} actualizado con directoNacional: ${lote.promedio * data.canastillas}`);
 

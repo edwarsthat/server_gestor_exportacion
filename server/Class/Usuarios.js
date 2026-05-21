@@ -229,7 +229,7 @@ export class UsuariosRepository {
                 filter.__v = __v;
             }
 
-            const usuario = await db.Usuarios.findOneAndUpdate(filter, query, { new: true });
+            const usuario = await db.Usuarios.findOneAndUpdate(filter, { $set: query }, { new: true });
             const usuario_obj = usuario ? usuario.toObject() : null;
 
             if (usuario_obj) {

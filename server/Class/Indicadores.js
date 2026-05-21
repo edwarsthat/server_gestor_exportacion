@@ -45,7 +45,7 @@ export class IndicadoresRepository extends BaseRepository {
     }
     static async put_indicador(id, query) {
         try {
-            const registro = await db.Indicadores.findOneAndUpdate({ _id: id, }, query, { new: true });
+            const registro = await db.Indicadores.findOneAndUpdate({ _id: id, }, { $set: query }, { new: true });
             return registro;
 
         } catch (err) {

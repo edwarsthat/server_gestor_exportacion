@@ -106,7 +106,7 @@ export class TransporteRepository {
                     const newContenedor = await ContenedoresRepository.actualizar_contenedor(
                         { _id: data.contenedor },
                         update,
-                        { session, new: true },
+                        { session, returnDocument: 'after'},
                         log._id
                     );
 

@@ -29,10 +29,9 @@ export const defineLoteEf8 = async (conn, AuditLog) => {
     });
 
 
-    LoteEf8Schema.pre('findOneAndUpdate', async function (next) {
+    LoteEf8Schema.pre('findOneAndUpdate', async function () {
         const docToUpdate = await this.model.findOne(this.getQuery());
         this._oldValue = docToUpdate ? docToUpdate.toObject() : null;
-        next();
     });
 
     LoteEf8Schema.post('findOneAndUpdate', async function (res) {

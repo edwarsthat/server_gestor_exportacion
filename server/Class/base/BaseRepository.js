@@ -78,8 +78,10 @@ export class BaseRepository {
             ...(arrayFilters && { arrayFilters })
         };
 
+        const updateWithOperators = Object.keys(update).some(key => key.startsWith('$')) ? update : { $set: update };
+
         try {
-            let documento = await this.model.findOneAndUpdate(filter, update, { ...finalOptions });
+            let documento = await this.model.findOneAndUpdate(filter, updateWithOperators, { ...finalOptions });
             if (!documento) {
                 throw new Error(`${this.modelName} no encontrado`);
             }

@@ -55,7 +55,7 @@ export class FrutaDescompuestaRepository extends BaseRepository {
 
     static async put_fruta_descompuesta(id, query) {
         try {
-            const registro = await db.frutaDescompuesta.findOneAndUpdate({ _id: id, }, query, { new: true });
+            const registro = await db.frutaDescompuesta.findOneAndUpdate({ _id: id, }, { $set: query }, { new: true });
             return registro;
 
         } catch (err) {

@@ -121,7 +121,7 @@ export class ProveedoresRepository extends BaseRepository {
     static async modificar_varios_proveedores(query, data, opts = {}) {
         const { session, action = "", user = "" } = opts;
         try {
-            await db.Proveedores.updateMany(query, data, { session })
+            await db.Proveedores.updateMany(query, { $set: data }, { session })
 
             let record = new db.recordProveedor({
                 operacionRealizada: action,

@@ -148,7 +148,7 @@ export class ComercialRepository {
             const resultado = await db.TarifaPredio.findOneAndUpdate(
                 { predio, year, tipo },             //filtro de busqueda
                 { $set: { valor, activo: true } },  //que actualizar
-                { upsert: true, new: true }        //upsert + retrona el doc actualizado
+                { upsert: true, returnDocument: 'after' }        //upsert + retrona el doc actualizado
             );
 
             return resultado;

@@ -152,8 +152,8 @@ export const defineInventarioActualDescarte = async (conn) => {
     );
 
     InventarioActualDescarteSchema.index(
-        { ubicacion: 1, tipoFruta: 1, estado: 1 },
-        { name: 'idx_ubicacion_tipofruta' }
+        { area: 1, tipoFruta: 1, estado: 1 },
+        { name: 'idx_area_tipofruta' }
     );
 
     InventarioActualDescarteSchema.index(

@@ -39,9 +39,10 @@ export class ContratosPersonalRepository {
     }
 
     static async actualizar_data(query, data, options = {}) {
+        const updateWithOperators = Object.keys(data).some(key => key.startsWith('$')) ? data : { $set: data };
         return await ContratosPersonal.findOneAndUpdate(
             query,
-            data,
+            updateWithOperators,
             {
                 new: true,
                 session: options.session

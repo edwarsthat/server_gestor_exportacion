@@ -49,7 +49,7 @@ export class InsumosRepository extends BaseRepository {
 
             const insumo = await db.Insumos.findOneAndUpdate(
                 { _id: id },
-                query,
+                { $set: query },
                 { new: true }
             );
             const insumo_obj = new Object(insumo.toObject());

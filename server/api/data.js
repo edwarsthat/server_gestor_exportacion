@@ -244,7 +244,7 @@ export class dataRepository {
             { $inc: { serial: 1 } },
             {
                 session,
-                new: true,
+                returnDocument: 'after',
                 upsert: true,
                 setDefaultsOnInsert: true
             }

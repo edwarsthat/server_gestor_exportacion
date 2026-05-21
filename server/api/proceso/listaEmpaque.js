@@ -36,8 +36,8 @@ export class ListaEmpaqueController {
                 try {
                     item = await ItemPalletRepository.actualizar_data(
                         { _id: itemId, fecha_cuartofrio: { $exists: false } },
-                        { fecha_cuartofrio: newDate, },
-                        { session, new: true }
+                        { $set: { fecha_cuartofrio: newDate } },
+                        { session, returnDocument: 'after' }
                     );
                 } catch {
                     continue;
@@ -171,7 +171,7 @@ export class ListaEmpaqueController {
                 await ContenedoresRepository.actualizar_contenedor(
                     { _id: idItem.contenedor._id },
                     { $inc: { totalCajas: -idItem.cajas, totalKilos: -idItem.kilos } },
-                    { session, new: true, action: action, user: user._id });
+                    { session, returnDocument: 'after', action: action, user: user._id });
 
                 const itemPallet = await ContenedoresRepository.actualizar_palletItem(
                     { _id: idItem._id },
@@ -188,7 +188,7 @@ export class ListaEmpaqueController {
                 await ContenedoresRepository.actualizar_contenedor(
                     { _id: id2 },
                     { $inc: { totalCajas: idItem.cajas, totalKilos: idItem.kilos } },
-                    { session, new: true, action: action, user: user._id });
+                    { session, returnDocument: 'after', action: action, user: user._id });
 
             }
 
@@ -245,14 +245,14 @@ export class ListaEmpaqueController {
             await ContenedoresRepository.actualizar_contenedor(
                 { _id: oldItemPallet[0].contenedor._id },
                 { $inc: { totalCajas: -cajas, totalKilos: -kilos } },
-                { session, new: true, action: action, user: user._id });
+                { session, returnDocument: 'after', action: action, user: user._id });
 
             await registrarPasoLog(log._id, "Contenedor actualizado", "Completado", `Contenedor ID: ${oldItemPallet[0].contenedor._id}, Cajas restadas: ${cajas}, Kilos restados: ${kilos}`);
 
             await ContenedoresRepository.actualizar_contenedor(
                 { _id: id2 },
                 { $inc: { totalCajas: cajas, totalKilos: kilos } },
-                { session, new: true, action: action, user: user._id });
+                { session, returnDocument: 'after', action: action, user: user._id });
 
             await registrarPasoLog(log._id, "Contenedor actualizado", "Completado", `Contenedor ID: ${id2}, Cajas restadas: ${cajas}, Kilos restados: ${kilos}`);
 
@@ -297,7 +297,7 @@ export class ListaEmpaqueController {
 
         await executeTransactionalTask(req, async (session, log) => {
             const itemPallets = await ItemPalletRepository.get_data(
-                { 
+                {
                     query: {
                         contenedor: _id
                     }
