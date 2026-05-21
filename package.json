@@ -19,24 +19,6 @@
   "type": "module",
   "author": "Edwar Stheven Ariza Torres",
   "license": "PROPIEDAD PRIVADA - USO EXCLUSIVO CELIFRUT",
-  "pnpm": {
-    "overrides": {
-      "qs": "6.14.2",
-      "basic-ftp": "5.2.2",
-      "eslint>minimatch": "3.1.4",
-      "test-exclude>minimatch": "3.1.4",
-      "readdir-glob>minimatch": "9.0.7",
-      "glob>minimatch": "9.0.7",
-      "eslint>ajv": "6.14.0",
-      "yaml": "2.8.3",
-      "brace-expansion": "5.0.5",
-      "@xmldom/xmldom": "0.9.9",
-      "socket.io-parser": "4.2.6",
-      "flatted": "3.4.2",
-      "picomatch": "4.0.4",
-      "yauzl": "3.3.0"
-    }
-  },
   "dependencies": {
     "bcrypt": "6.0.0",
     "chalk": "5.6.2",
@@ -55,7 +37,7 @@
     "jsonwebtoken": "9.0.3",
     "jszip": "3.10.1",
     "mongodb": "6.20.0",
-    "mongoose": "8.16.0",
+    "mongoose": "9.6.2",
     "multer": "2.1.1",
     "node-cron": "4.2.1",
     "nodemailer": "8.0.5",
@@ -66,14 +48,12 @@
     "qrcode": "1.5.4",
     "redis": "5.11.0",
     "socket.io": "4.8.3",
-    "uuid": "11.1.0",
+    "uuid": "14.0.0",
     "write-excel-file": "^3.0.5",
     "zod": "3.25.67"
   },
   "devDependencies": {
     "@eslint/js": "9.29.0",
-    "@grpc/grpc-js": "1.14.3",
-    "@grpc/proto-loader": "0.7.15",
     "@types/jest": "30.0.0",
     "eslint": "9.29.0",
     "eslint-plugin-no-secrets": "2.2.2",
