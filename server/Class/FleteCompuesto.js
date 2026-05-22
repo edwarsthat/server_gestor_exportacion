@@ -41,7 +41,7 @@ export class FleteCompuestoRepository extends BaseRepository {
                 .sort(sort)
                 .populate(populate)
                 .lean()
-                .exec();
+                
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo fletes compuestos: ${err.message}`);
         }

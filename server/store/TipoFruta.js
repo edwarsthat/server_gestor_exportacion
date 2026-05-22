@@ -17,7 +17,7 @@ export class TiposFruta {
 
             const tipos = await db.TipoFrutas.find(Query)
                 .select(select)
-                .exec();
+                
 
             return tipos
         } catch (err) {

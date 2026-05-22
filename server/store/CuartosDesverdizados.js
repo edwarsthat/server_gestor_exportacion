@@ -17,7 +17,7 @@ export class CuartosDesverdizados {
 
             const cuartos = await db.CuartosDesverdizados.find(Query)
                 .select(select)
-                .exec();
+                
 
             return cuartos
         } catch (err) {

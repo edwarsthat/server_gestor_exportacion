@@ -37,7 +37,7 @@ export class CanastillasRepository extends BaseRepository {
                 .sort(sort)
                 .limit(limitToUse)
                 .skip(skip)
-                .exec();
+                
 
             return lotes
 

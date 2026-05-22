@@ -10,7 +10,7 @@ export class Seriales extends BaseRepository {
         try {
             const registros = await db.Seriales.find({ name: serialName })
                 .session(session)
-                .exec();
+                
 
             return registros
 

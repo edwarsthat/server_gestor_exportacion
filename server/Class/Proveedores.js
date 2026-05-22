@@ -52,7 +52,7 @@ export class ProveedoresRepository extends BaseRepository {
                 .limit(limit)
                 .skip(skip)
                 .session(session)
-                .exec();
+                
 
             return proveedores
         } catch (err) {
@@ -159,7 +159,7 @@ export class ProveedoresRepository extends BaseRepository {
          * @param {ClientSession} session - Sesión de transacción (opcional)
          * @returns Documento actualizado
          */
-        const defaultOptions = { new: true }; // retorna el documento actualizado
+        const defaultOptions = { returnDocument: 'after' }; // retorna el documento actualizado
         const finalOptions = session
             ? { ...defaultOptions, ...options, session }
             : { ...defaultOptions, ...options };

@@ -40,7 +40,7 @@ export class PreciosRepository extends BaseRepository {
                 .sort(sort)
                 .limit(limitToUse)
                 .skip(skip)
-                .exec();
+                
 
             return registros
 
@@ -68,7 +68,7 @@ export class PreciosRepository extends BaseRepository {
          * @param {ClientSession} session - Sesión de transacción (opcional)
          * @returns Documento actualizado
          */
-        const defaultOptions = { new: true }; // retorna el documento actualizado
+        const defaultOptions = { returnDocument: 'after' }; // retorna el documento actualizado
         const finalOptions = session
             ? { ...defaultOptions, ...options, session }
             : { ...defaultOptions, ...options };

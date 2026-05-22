@@ -33,7 +33,7 @@ export class FrutaDescompuestaRepository extends BaseRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
-                .exec();
+                
 
             return registros
 
@@ -55,7 +55,7 @@ export class FrutaDescompuestaRepository extends BaseRepository {
 
     static async put_fruta_descompuesta(id, query) {
         try {
-            const registro = await db.frutaDescompuesta.findOneAndUpdate({ _id: id, }, { $set: query }, { new: true });
+            const registro = await db.frutaDescompuesta.findOneAndUpdate({ _id: id, }, { $set: query }, { returnDocument: 'after' });
             return registro;
 
         } catch (err) {
@@ -66,7 +66,7 @@ export class FrutaDescompuestaRepository extends BaseRepository {
     static async delete_fruta_descompuesta(id) {
         try {
             const registro = await db.frutaDescompuesta.findByIdAndDelete(
-                { _id: id, }, { new: true }
+                { _id: id, }, { returnDocument: 'after' }
             );
             return registro;
 
@@ -86,7 +86,7 @@ export class FrutaDescompuestaRepository extends BaseRepository {
     * @returns Documento actualizado
     */
     static async actualizar_registro(filter, update, options = {}, session = null, user = '', action = '') {
-        const defaultOptions = { new: true }; // retorna el documento actualizado
+        const defaultOptions = { returnDocument: 'after' }; // retorna el documento actualizado
         const finalOptions = session
             ? { ...defaultOptions, ...options, session }
             : { ...defaultOptions, ...options };

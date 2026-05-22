@@ -48,7 +48,7 @@ export class VehiculoRegistro {
                 .skip(skip)
                 .populate(populate)
                 .session(session)
-                .exec();
+                
 
             return registros
 

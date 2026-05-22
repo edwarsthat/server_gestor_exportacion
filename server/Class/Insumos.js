@@ -25,7 +25,7 @@ export class InsumosRepository extends BaseRepository {
             const lotes = await db.Insumos.find(InsumosQuery)
                 .select(select)
                 .session(session || null)
-                .exec();
+                
 
             return lotes
 
@@ -50,7 +50,7 @@ export class InsumosRepository extends BaseRepository {
             const insumo = await db.Insumos.findOneAndUpdate(
                 { _id: id },
                 { $set: query },
-                { new: true }
+                { returnDocument: 'after' }
             );
             const insumo_obj = new Object(insumo.toObject());
 

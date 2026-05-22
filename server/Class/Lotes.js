@@ -66,7 +66,7 @@ export class LotesRepository extends BaseRepository {
                 .populate(populate)
                 .lean()
                 .session(session)
-                .exec();
+                
 
             return lotes
 
@@ -210,7 +210,7 @@ export class LotesRepository extends BaseRepository {
                 .skip(skip)
                 .populate(populate)
                 .session(session)
-                .exec();
+                
 
             return lotes
 
@@ -357,7 +357,7 @@ export class LotesRepository extends BaseRepository {
                 .limit(limitToUse)
                 .skip(skip)
                 .populate(populate)
-                .exec();
+                
 
             return lotes
 

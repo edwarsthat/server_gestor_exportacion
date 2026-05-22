@@ -16,7 +16,7 @@ export class DespachoDescartesRepository extends BaseRepository {
         }
     }
     static async actualizar_registro(filter, update, options = {}, session = null, user = '', action = '') {
-        const defaultOptions = { new: true }; // retorna el documento actualizado
+        const defaultOptions = { returnDocument: 'after' }; // retorna el documento actualizado
         const finalOptions = session
             ? { ...defaultOptions, ...options, session }
             : { ...defaultOptions, ...options };

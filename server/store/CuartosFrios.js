@@ -17,7 +17,7 @@ export class CuartosFrios {
 
             const cuartos = await db.CuartosFrios.find(Query)
                 .select(select)
-                .exec();
+                
 
             return cuartos
         } catch (err) {

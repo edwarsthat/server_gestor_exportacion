@@ -57,7 +57,7 @@ export class UnionsRepository {
                 }
             },
             { $sort: { createdAt: -1, fecha_creacion: -1 } },
-        ]).exec();
+        ])
 
     }
 }
