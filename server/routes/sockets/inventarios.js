@@ -249,7 +249,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes(response)
     },
     get_inventarios_historiales_listasDeEmpaque: async (data) => {
-        const response = await InventariosRepository.get_inventarios_historiales_listasDeEmpaque(data)
+        const response = await ListaEmpaqueController.get_inventarios_historiales_listasDeEmpaque(data)
         return successResponseRoutes(response)
     },
     get_inventarios_historiales_listasDeEmpaque_numeroRegistros: async () => {
@@ -293,7 +293,7 @@ export const apiSocketInventarios = {
         return successResponseRoutes(response)
     },
     get_inventarios_historiales_listasDeEmpaque_itemPallets: async (data) => {
-        const response = await InventariosRepository.get_inventarios_historiales_listasDeEmpaque_itemPallets(data)
+        const response = await ListaEmpaqueController.get_inventarios_historiales_listasDeEmpaque_itemPallets(data)
         return successResponseRoutes(response)
     },
     get_inventarios_historiales_listaDeEmpaque_crearDocumento: async (data) => {

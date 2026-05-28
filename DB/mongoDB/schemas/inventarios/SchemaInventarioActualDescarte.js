@@ -161,7 +161,9 @@ export const defineInventarioActualDescarte = async (conn) => {
         { name: 'idx_kilos_estado' }
     );
 
-    InventarioActualDescarteSchema.pre('save', function (next) {
+    // En Mongoose 9 + kareem 3.x los hooks NO reciben `next` como callback,
+    // sino las opciones de save() como primer argumento. Usar async function().
+    InventarioActualDescarteSchema.pre('save', async function () {
         this.fechaActualizacion = new Date();
 
         if (this.kilosActuales === 0 && this.estado === 'ACTIVO') {
@@ -171,13 +173,10 @@ export const defineInventarioActualDescarte = async (conn) => {
         if (this.isNew && this.kilosActuales === undefined) {
             this.kilosActuales = this.kilosIniciales;
         }
-
-        next();
     });
 
-    InventarioActualDescarteSchema.pre('findOneAndUpdate', function (next) {
+    InventarioActualDescarteSchema.pre('findOneAndUpdate', async function () {
         this.set({ fechaActualizacion: new Date() });
-        next();
     });
 
     InventarioActualDescarteSchema.virtual('kilosConsumidos').get(function () {

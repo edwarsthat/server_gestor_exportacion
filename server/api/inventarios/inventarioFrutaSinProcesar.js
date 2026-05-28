@@ -252,10 +252,11 @@ export class InventarioFrutaSinProcesarController {
 
             const tipoFruta = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(dataLote.tipoFruta)
 
-            const [{ precioId, proveedor }, ef10] = await Promise.all([
-                InventariosService.obtenerPrecioProveedor(dataLote.predio, tipoFruta[0]._id, session),
-                dataService.get_ef10_serial(dataLote.fecha_estimada_llegada, log._id, session),
-            ])
+            // NOTA: Promise.all con la misma sesión dentro de una transacción causa
+            // el error "Only servers in a sharded cluster can start a new transaction
+            // at the active transaction number". Ejecutar secuencialmente.
+            const { precioId, proveedor } = await InventariosService.obtenerPrecioProveedor(dataLote.predio, tipoFruta[0]._id, session);
+            const ef10 = await dataService.get_ef10_serial(dataLote.fecha_estimada_llegada, log._id, session);
             await registrarPasoLog(log._id, "Promise.all obtener precio, proveedor, ef1 y tipo de fruta", "Completado");
 
 

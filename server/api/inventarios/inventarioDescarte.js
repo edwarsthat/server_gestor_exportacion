@@ -367,11 +367,13 @@ export class InventarioDescarteController {
         const validatedData = InventariosValidations.post_inventarios_EF8().parse(req.data)
         const { data } = validatedData;
         const registroEF8_final = await executeTransactionalTask(req, async (session, log) => {
-            const [EF8, { precioId }, tipoFrutas] = await Promise.all([
-                dataService.get_ef8_serial(data.fecha_ingreso_inventario, log._id, session),
-                InventariosService.obtenerPrecioProveedor(data.predio, data.tipoFruta, session),
-                ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(data.tipoFruta, session)
-            ])
+            // NOTA: Promise.all con la misma sesión dentro de una transacción causa
+            // el error "Only servers in a sharded cluster can start a new transaction
+            // at the active transaction number". Las sesiones MongoDB no soportan
+            // operaciones concurrentes — se deben ejecutar secuencialmente.
+            const EF8 = await dataService.get_ef8_serial(data.fecha_ingreso_inventario, log._id, session);
+            const { precioId } = await InventariosService.obtenerPrecioProveedor(data.predio, data.tipoFruta, session);
+            const tipoFrutas = await ConstantesDelSistema.get_constantes_sistema_tipo_frutas2(data.tipoFruta, session);
 
             if (tipoFrutas.length === 0) throw new Error("No se encontró el tipo de fruta");
             const tipoFrutaObj = tipoFrutas[0];

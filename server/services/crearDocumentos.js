@@ -39,8 +39,11 @@ export class CrearDocumentosRepository {
             const fechaStr = new Date(cont.infoContenedor.fechaFinalizado).toLocaleDateString('es-ES', {
                 day: '2-digit', month: '2-digit', year: 'numeric'
             });
-            const tipoFrutaStr = cont.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.tipoFruta + " - ", "");
+            const tipoFrutaStr = cont.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.exportName + " - ", "");
             const cocValue = coc_flag ? "4063061801296" : "N/A";
+
+            console.log(cont.registrosSalidas.datalogger_id)
+            const dataloggerId = cont?.registrosSalidas?.reduce((acu, item) => acu + item.datalogger_id + " - ", "") || "N/A";
 
             // Helper: crea un objeto-celda con estilos base
             const c = (value, opts = {}) => ({
@@ -54,73 +57,75 @@ export class CrearDocumentosRepository {
 
             // ---- Fila 1 ----
             let row1, row2, row3;
-            if (isCOC) {
+            // if (isCOC) {
                 // 11 columnas (A-K)
                 row1 = [
                     c("", { span: 2, height: 80 }), null,
                     c("PACKING LIST REPORT", { span: 8, fontSize: 24, fontWeight: 'bold' }), null, null, null, null, null, null, null,
-                    c("Codigo: PC-CAL-FOR-05\nVersion: 03\nFecha: 17 Oct 2020", { fontWeight: 'bold', wrapText: true }),
+                    c("Codigo: PC-CAL-FOR-05\nVersion: 04\nFecha: 29/05/2026", { fontWeight: 'bold', wrapText: true }),
                 ];
                 row2 = [
                     c("CLIENTE", { fontWeight: 'bold', height: alto }),
-                    c(cont.infoContenedor.clienteInfo.CLIENTE, { span: 2 }), null,
+                    c(cont.infoContenedor.clienteInfo.CLIENTE, { span: 3 }), null, null,
                     c("TEMP. SET POINT:", { fontWeight: 'bold' }),
                     c("44,6F"),
                     c("FREIGHT:", { fontWeight: 'bold' }),
-                    c(""),
+                    c(tipoFrutaStr, { span: 2 }), null,
                     c("CONTAINER NUMBER:", { fontWeight: 'bold' }),
                     c(cont.numeroContenedor),
-                    c("REFERENCE N°:", { fontWeight: 'bold' }),
-                    c(tipoFrutaStr),
                 ];
                 row3 = [
                     c("TEMP RECORDER LOCATION:", { fontWeight: 'bold', span: 2, height: alto }), null,
-                    c("PALLET 10"),
+                    c("PALLET UBICATION  #10", { span: 2 }), null,
                     c("TEMP RECORDER ID:", { fontWeight: 'bold', span: 2 }), null,
-                    c("SS-0085719"),
-                    c("DATE:", { fontWeight: 'bold' }),
-                    c(fechaStr, { span: 2 }), null,
-                    c("CoC:", { fontWeight: 'bold' }),
-                    c(cocValue),
-                ];
-            } else {
-                // 10 columnas (A-J)
-                row1 = [
-                    c("", { span: 2, height: 80 }), null,
-                    c("PACKING LIST REPORT", { span: 7, fontSize: 24, fontWeight: 'bold' }), null, null, null, null, null, null,
-                    c("Codigo: PC-CAL-FOR-05\nVersion: 03\nFecha: 17 Oct 2020", { fontWeight: 'bold', wrapText: true }),
-                ];
-                row2 = [
-                    c("CLIENTE", { fontWeight: 'bold', height: alto }),
-                    c(cont.infoContenedor.clienteInfo.CLIENTE, { span: 2 }), null,
-                    c("TEMP. SET POINT:", { fontWeight: 'bold' }),
-                    c("44,6F"),
-                    c("FREIGHT:", { fontWeight: 'bold' }),
-                    c("CONTAINER NUMBER:", { fontWeight: 'bold' }),
-                    c(cont.numeroContenedor),
-                    c("REFERENCE N°:", { fontWeight: 'bold' }),
-                    c(tipoFrutaStr),
-                ];
-                row3 = [
-                    c("TEMP RECORDER LOCATION:", { fontWeight: 'bold', span: 2, height: alto }), null,
-                    c("PALLET 10"),
-                    c("TEMP RECORDER ID:", { fontWeight: 'bold', span: 2 }), null,
-                    c("SS-0085719"),
+                    c(dataloggerId),
                     c("DATE:", { fontWeight: 'bold' }),
                     c(fechaStr),
                     c("CoC:", { fontWeight: 'bold' }),
-                    c(cocValue),
+                    c(isCOC ? cocValue : "N/A"),
                 ];
-            }
+            // } 
+            // else {
+            //     // 10 columnas (A-J)
+            //     row1 = [
+            //         c("", { span: 2, height: 80 }), null,
+            //         c("PACKING LIST REPORT", { span: 7, fontSize: 24, fontWeight: 'bold' }), null, null, null, null, null, null,
+            //         c("Codigo: PC-CAL-FOR-05\nVersion: 03\nFecha: 17 Oct 2020", { fontWeight: 'bold', wrapText: true }),
+            //     ];
+            //     row2 = [
+            //         c("CLIENTE", { fontWeight: 'bold', height: alto }),
+            //         c(cont.infoContenedor.clienteInfo.CLIENTE, { span: 2 }), null,
+            //         c("TEMP. SET POINT:", { fontWeight: 'bold' }),
+            //         c("44,6F"),
+            //         c("FREIGHT:", { fontWeight: 'bold' }),
+            //         c("CONTAINER NUMBER:", { fontWeight: 'bold' }),
+            //         c(cont.numeroContenedor),
+            //         c("REFERENCE N°:", { fontWeight: 'bold' }),
+            //         c(tipoFrutaStr),
+            //     ];
+            //     row3 = [
+            //         c("TEMP RECORDER LOCATION:", { fontWeight: 'bold', span: 2, height: alto }), null,
+            //         c("PALLET 10"),
+            //         c("TEMP RECORDER ID:", { fontWeight: 'bold', span: 2 }), null,
+            //         c("SS-0085719"),
+            //         c("DATE:", { fontWeight: 'bold' }),
+            //         c(fechaStr),
+            //         c("CoC:", { fontWeight: 'bold' }),
+            //         c(cocValue),
+            //     ];
+            // }
 
             // ---- Fila de headers ----
-            const headersData = isCOC ? [
-                "PALLET ID", "PACKING DATE", "VARIETY", "PRODUCT", "WEIGHT",
-                "CATEGORY", "SIZE", "QTY", "FARM CODE", "N° GG", "EXPIRATION DATE"
-            ] : [
-                "PALLET ID", "PACKING DATE", "VARIETY", "WEIGHT",
-                "CATEGORY", "SIZE", "QTY", "FARM CODE", "N° GG", "EXPIRATION DATE"
-            ];
+            // const headersData = isCOC ? [
+            const headersData = [
+
+                "PALLET ID", "LOT CODE", "PACKING DATE", "VARIETY", "WEIGHT",
+                "CATEGORY", "SIZE", "QTY", "FARM CODE", "GGN", "EXPIRATION DATE"
+            ] 
+            // : [
+            //     "PALLET ID", "LOT CODE", "PACKING DATE", "VARIETY", "PRODUCT", "WEIGHT",
+            //     "CATEGORY", "SIZE", "QTY", "FARM CODE", "N° GG", "EXPIRATION DATE"
+            // ];
             const headerRow = headersData.map((h, i) =>
                 c(h, { fontWeight: 'bold', fontSize: 15, backgroundColor: GREEN, height: alto, ...(i > 0 ? {} : {}) })
             );
@@ -129,11 +134,14 @@ export class CrearDocumentosRepository {
             let totalCajas = 0;
             const dataRows = [];
             for (const item of itemsPallet) {
-                const values = isCOC ? [
+                // const values = isCOC ? [
+                const values = [
+
                     String(item.pallet.numeroPallet) + String(cont.numeroContenedor),
+                    item?.lote?.enf ? item.lote.enf : "N/A",
                     formatearFecha(item.fecha instanceof Date ? item.fecha.toISOString() : item.fecha, true),
                     labelListaEmpaque[item.tipoFruta.tipoFruta],
-                    "COL-" + mostrarKilose(item) + (item.tipoFruta === 'Limon' ? 'Limes' : 'Oranges') + item.calibre + "ct",
+                    // "COL-" + mostrarKilose(item) + (item.tipoFruta === 'Limon' ? 'Limes' : 'Oranges') + item.calibre + "ct",
                     mostrarKilose(item),
                     isNotCaribe ? (item?.calidad?.descripcion || "N/A") : "Caribe",
                     item.calibre,
@@ -141,18 +149,19 @@ export class CrearDocumentosRepository {
                     item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
                     item.GGN ? item.lote.predio.GGN.code : "N/A",
                     item.GGN ? new Date(item.lote.predio.GGN.fechaVencimiento).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "N/A",
-                ] : [
-                    String(item.pallet.numeroPallet) + String(cont.numeroContenedor),
-                    formatearFecha(item.fecha instanceof Date ? item.fecha.toISOString() : item.fecha, true),
-                    labelListaEmpaque[item.tipoFruta.tipoFruta],
-                    mostrarKilose(item),
-                    isNotCaribe ? (item?.calidad?.descripcion || "N/A") : "Caribe",
-                    item.calibre,
-                    item.cajas,
-                    item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
-                    item.GGN ? item.lote.predio.GGN.code : "N/A",
-                    item.GGN ? new Date(item.lote.predio.GGN.fechaVencimiento).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "N/A",
-                ];
+                ] 
+                // : [
+                //     String(item.pallet.numeroPallet) + String(cont.numeroContenedor),
+                //     formatearFecha(item.fecha instanceof Date ? item.fecha.toISOString() : item.fecha, true),
+                //     labelListaEmpaque[item.tipoFruta.tipoFruta],
+                //     mostrarKilose(item),
+                //     isNotCaribe ? (item?.calidad?.descripcion || "N/A") : "Caribe",
+                //     item.calibre,
+                //     item.cajas,
+                //     item.SISPAP ? item.lote.predio.ICA.code : 'Sin SISPAP',
+                //     item.GGN ? item.lote.predio.GGN.code : "N/A",
+                //     item.GGN ? new Date(item.lote.predio.GGN.fechaVencimiento).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "N/A",
+                // ];
                 dataRows.push(values.map((v, i) => c(v ?? "", {
                     wrap: true,
                     ...(i === 0 ? { height: alto } : {}),
@@ -161,13 +170,15 @@ export class CrearDocumentosRepository {
             }
 
             // ---- Fila de total ----
-            const totalRow = isCOC ? [
+            // const totalRow = isCOC ? [
+            const totalRow = [
                 c("TOTAL", { span: 6, fontWeight: 'bold', backgroundColor: GREEN, fontSize: 12, height: alto }), null, null, null, null, null,
                 c(totalCajas, { span: 5, fontWeight: 'bold', backgroundColor: GREEN, fontSize: 12 }), null, null, null, null,
-            ] : [
-                c("TOTAL", { span: 5, fontWeight: 'bold', backgroundColor: GREEN, fontSize: 12, height: alto }), null, null, null, null,
-                c(totalCajas, { span: 5, fontWeight: 'bold', backgroundColor: GREEN, fontSize: 12 }), null, null, null, null,
-            ];
+            ] 
+            // : [
+            //     c("TOTAL", { span: 5, fontWeight: 'bold', backgroundColor: GREEN, fontSize: 12, height: alto }), null, null, null, null,
+            //     c(totalCajas, { span: 5, fontWeight: 'bold', backgroundColor: GREEN, fontSize: 12 }), null, null, null, null,
+            // ];
 
             // ---- Tablas de resumen por calidad ----
             const summaryRows = [[]]; // fila en blanco separadora
