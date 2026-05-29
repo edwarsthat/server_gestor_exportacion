@@ -1,7 +1,7 @@
 
 import puppeteer from "puppeteer";
 import { platform } from "os";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 
 const getChromePath = () => {
     if (platform() === 'win32') {
@@ -15,15 +15,25 @@ const getChromePath = () => {
         const macPath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
         return existsSync(macPath) ? macPath : null;
     }
-    // Linux: buscar la primera ruta que exista
+    // Linux: buscar la primera ruta que sea un binario real (no wrapper de snap)
     const linuxPaths = [
         '/usr/bin/google-chrome',
         '/usr/bin/google-chrome-stable',
         '/usr/bin/chromium-browser',
         '/usr/bin/chromium',
     ];
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    return linuxPaths.find(p => existsSync(p)) ?? null;
+    for (const p of linuxPaths) {
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        if (!existsSync(p)) continue;
+        // Descartar wrappers de snap: son shell scripts que empiezan con '#!'
+        try {
+            // eslint-disable-next-line security/detect-non-literal-fs-filename
+            const header = readFileSync(p, { encoding: 'utf8', flag: 'r' }).slice(0, 10);
+            if (header.startsWith('#!')) continue;
+        } catch { continue; }
+        return p;
+    }
+    return null;
 }
 
 class BrowserPool {
