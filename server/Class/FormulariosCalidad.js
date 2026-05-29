@@ -54,8 +54,7 @@ export class FormulariosCalidadRepository {
                 .select(select)
                 .sort(sort)
                 .limit(limit)
-                .skip(skip)
-                .exec();
+                .skip(skip);
             return formularios
 
         } catch (err) {
@@ -89,8 +88,7 @@ export class FormulariosCalidadRepository {
                 .select(select)
                 .sort(sort)
                 .limit(limit)
-                .skip(skip)
-                .exec();
+                .skip(skip);
             return formularios
 
         } catch (err) {
@@ -124,8 +122,7 @@ export class FormulariosCalidadRepository {
                 .select(select)
                 .sort(sort)
                 .limit(limit)
-                .skip(skip)
-                .exec();
+                .skip(skip);
             return formularios
 
         } catch (err) {
@@ -145,7 +142,7 @@ export class FormulariosCalidadRepository {
     static async modificar_limpieza_diaria(id, query) {
         /**
          * Modifica un formulario de calidad de limpieza diaria en la base de datos de MongoDB desde las aplicaciones
-         * 
+         *
          *
          * @param {string} id - ID del formulario a modificar.
          * @param {Object} query - Objeto con los cambios a aplicar al lote.
@@ -156,7 +153,7 @@ export class FormulariosCalidadRepository {
          */
         this.validateBussyIds(id)
         try {
-            await db.LimpiezaDiaria.findOneAndUpdate({ _id: id, }, query, { new: true });
+            await db.LimpiezaDiaria.findOneAndUpdate({ _id: id, }, { $set: query }, { returnDocument: 'after' });
 
         } catch (err) {
             throw new PutError(523, `Error formularios limpieza diaria  ${err.name}`);
@@ -168,7 +165,7 @@ export class FormulariosCalidadRepository {
     static async modificar_limpieza_mensual(id, query) {
         /**
          * Modifica un formulario de calidad de limpieza diaria en la base de datos de MongoDB desde las aplicaciones
-         * 
+         *
          *
          * @param {string} id - ID del formulario a modificar.
          * @param {Object} query - Objeto con los cambios a aplicar al lote.
@@ -179,7 +176,7 @@ export class FormulariosCalidadRepository {
          */
         this.validateBussyIds(id)
         try {
-            await db.LimpiezaMensual.findOneAndUpdate({ _id: id, }, query, { new: true });
+            await db.LimpiezaMensual.findOneAndUpdate({ _id: id, }, { $set: query }, { returnDocument: 'after' });
 
         } catch (err) {
             throw new PutError(523, `Error formularios limpieza mensual  ${err.name}`);
@@ -191,7 +188,7 @@ export class FormulariosCalidadRepository {
     static async modificar_control_plagas(id, query) {
         /**
          * Modifica un formulario de calidad de limpieza diaria en la base de datos de MongoDB desde las aplicaciones
-         * 
+         *
          *
          * @param {string} id - ID del formulario a modificar.
          * @param {Object} query - Objeto con los cambios a aplicar al lote.
@@ -202,7 +199,7 @@ export class FormulariosCalidadRepository {
          */
         this.validateBussyIds(id)
         try {
-            await db.ControlPlagas.findOneAndUpdate({ _id: id, }, query, { new: true });
+            await db.ControlPlagas.findOneAndUpdate({ _id: id, }, { $set: query }, { returnDocument: 'after' });
 
         } catch (err) {
             throw new PutError(523, `Error al modificar control plagas  ${err.name}`);
@@ -320,7 +317,7 @@ export class FormulariosCalidadRepository {
             const registroDesactivado = await HistorialConcentraciones.findByIdAndUpdate(
                 _id,
                 { $set: { activo: false } },
-                { new: true }
+                { returnDocument: 'after' }
             ).lean();
             
             if (!registroDesactivado) {
@@ -401,7 +398,7 @@ export class FormulariosCalidadRepository {
                 .sort(sort)
                 .limit(limit)
                 .skip(skip)
-                .exec();
+                
 
             return formularios;
 

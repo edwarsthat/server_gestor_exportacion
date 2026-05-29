@@ -25,8 +25,7 @@ export class UsuariosRepository {
                 .select(select)
                 .sort(sort)
                 .limit(limit)
-                .skip(skip)
-                .exec();
+                .skip(skip);
             return cargos
 
         } catch (err) {
@@ -52,13 +51,12 @@ export class UsuariosRepository {
 
 
             // Construimos la query base
-            let usuarios = db.Usuarios.find(usuariosQuery)
+            let usuarios = await db.Usuarios.find(usuariosQuery)
                 .select(select)
                 .sort(sort)
                 .limit(limit)
                 .populate(populate)
-                .skip(skip)
-                .exec();
+                .skip(skip);
 
             return usuarios
 
@@ -113,7 +111,7 @@ export class UsuariosRepository {
         session.startTransaction();
         try {
 
-            await db.Cargo.replaceOne({ _id: id }, query, { new: true });
+            await db.Cargo.replaceOne({ _id: id }, query);
 
             let record = new db.recordCargo({
                 operacionRealizada: action,
@@ -143,7 +141,7 @@ export class UsuariosRepository {
          * @param {ClientSession} session - Sesión de transacción (opcional)
          * @returns Documento actualizado
          */
-        const defaultOptions = { new: true }; // retorna el documento actualizado
+        const defaultOptions = { returnDocument: 'after' };
         const finalOptions = session
             ? { ...defaultOptions, ...options, session }
             : { ...defaultOptions, ...options };
@@ -229,7 +227,7 @@ export class UsuariosRepository {
                 filter.__v = __v;
             }
 
-            const usuario = await db.Usuarios.findOneAndUpdate(filter, query, { new: true });
+            const usuario = await db.Usuarios.findOneAndUpdate(filter, { $set: query }, { returnDocument: 'after' });
             const usuario_obj = usuario ? usuario.toObject() : null;
 
             if (usuario_obj) {
@@ -264,7 +262,7 @@ export class UsuariosRepository {
          * @param {ClientSession} session - Sesión de transacción (opcional)
          * @returns Documento actualizado
          */
-        const defaultOptions = { new: true }; // retorna el documento actualizado
+        const defaultOptions = { returnDocument: 'after' };
         const finalOptions = session
             ? { ...defaultOptions, ...options, session }
             : { ...defaultOptions, ...options };
@@ -326,8 +324,7 @@ export class UsuariosRepository {
                     select: 'nombre apellido usuario',
                 })
                 .limit(limit)
-                .skip(skip)
-                .exec();
+                .skip(skip);
 
             return higienePersonal
 

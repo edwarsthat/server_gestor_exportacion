@@ -7,6 +7,11 @@
 import { MongoClient } from 'mongodb';
 import writeXlsxFile from 'write-excel-file/node';
 import config from '../../src/config/index.js';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const { MONGODB_PROCESO } = config;
 
@@ -61,25 +66,29 @@ async function main() {
         const calidadCollection = database.collection('calidades')
         const descartesCollection = database.collection('descartes')
         const tipoFrutaCollection = database.collection('tipofrutas')
+        const proveedoresCollection = database.collection('proveedors')
 
         const lotes = await lotesCollection.find(
             {
                 fecha_creacion: {
-                    $gte: new Date('2026-02-01T05:00:00.000Z'),
-                    $lt: new Date('2026-05-01T05:00:00.000Z'),
+                    $gte: new Date('2024-05-01T05:00:00.000Z'),
+                    // $lt: new Date('2026-05-01T05:00:00.000Z'),
                 },
             },
         ).toArray();
 
-        const [calidades, descartes, tipoFrutas] = await Promise.all([
+        const [calidades, descartes, tipoFrutas, proveedores] = await Promise.all([
             calidadCollection.find({}).toArray(),
             descartesCollection.find({}).toArray(),
             tipoFrutaCollection.find({}).toArray(),
+            proveedoresCollection.find({}).toArray()
         ]);
 
         const calidadesMap = new Map(calidades.map(d => [d._id.toString(), d]))
         const descartesMap = new Map(descartes.map(d => [d._id.toString(), d]))
         const tipoFrutasMap = new Map(tipoFrutas.map(d => [d._id.toString(), d]))
+        const proveedoresMap = new Map(proveedores.map(d => [d._id.toString(), d]))
+
 
         const out = []
 
@@ -97,11 +106,14 @@ async function main() {
                 continue;
             }
 
+
+
             const objLote = {
                 fecha: lote.fecha_creacion,
                 enf: lote.enf,
                 tipoFruta: tipoFruta.tipoFruta,
                 kilos: lote.kilos,
+                predio: proveedoresMap.get(lote.predio.toString())?.PREDIO || "Err"
             }
 
             Object.entries(lote.salidaExportacion.porCalidad).forEach(([key, value]) => {
@@ -127,6 +139,10 @@ async function main() {
             if (lote.deshidratacion !== 0) {
                 objLote.kilosDeshidratacion = ((lote.deshidratacion / 100) * lote.kilos);
             }
+            if(lote.descarteEncerado && lote.descarteEncerado.suelo){
+                objLote.suelo = lote.descarteEncerado.suelo
+            }
+
 
             console.log(objLote)
             out.push(objLote)
@@ -144,7 +160,7 @@ async function main() {
                     return { value: val !== null ? String(val) : '', type: String };
                 })),
             ];
-            const outputPath = '/home/analista/server/server_gestor_exportacion/scripts/out/calidadLotesExportacion.xlsx';
+            const outputPath = path.join(__dirname, '../out/calidadLotesExportacion.xlsx');
             await writeXlsxFile(data, { filePath: outputPath, dateFormat: 'dd/mm/yyyy' });
             console.log(`Excel generado: ${outputPath} (${out.length} filas)`);
         } else {

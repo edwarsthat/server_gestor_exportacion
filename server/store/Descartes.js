@@ -17,7 +17,7 @@ export class Descartes {
 
             const tipos = await db.Descartes.find(Query)
                 .select(select)
-                .exec();
+                
 
             return tipos
         } catch (err) {

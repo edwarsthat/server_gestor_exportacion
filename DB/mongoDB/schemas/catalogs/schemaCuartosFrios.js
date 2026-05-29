@@ -20,11 +20,10 @@ export const defineCuartosFrios = async (conn, AuditCuartosFrios) => {
     });
 
 
-    CuartoFrioSchema.pre('findOneAndUpdate', async function (next) {
+    // En Mongoose 9 + kareem 3.x los hooks NO reciben `next` como callback. Usar async function().
+    CuartoFrioSchema.pre('findOneAndUpdate', async function () {
         const docToUpdate = await this.model.findOne(this.getQuery());
         this._oldValue = docToUpdate ? docToUpdate.toObject() : null;
-
-        next();
     });
 
 

@@ -38,8 +38,7 @@ function filtroFechaInicioFin(fechaInicio, fechaFin, filter = {}, fecha) {
 }
 
 function buildDateRangeFilter(start, end, field, baseFilter = {}) {
-    console.log("start", start)
-    console.log("end", end)
+
     // Validaciones iniciales
     if (!field) throw new UtilError(601, "buildDateRangeFilter: Debe especificar el nombre del campo de fecha");
 

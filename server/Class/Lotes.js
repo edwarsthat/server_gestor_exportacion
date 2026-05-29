@@ -66,7 +66,7 @@ export class LotesRepository extends BaseRepository {
                 .populate(populate)
                 .lean()
                 .session(session)
-                .exec();
+                
 
             return lotes
 
@@ -88,15 +88,16 @@ export class LotesRepository extends BaseRepository {
             softNotFound = false, calculateFields = false, vaciar = false, ...restOptions } = options;
 
         const finalOptions = {
-            new: true,
+            returnDocument: 'after',
             ...restOptions,
             ...(session && { session }),
             ...(arrayFilters && { arrayFilters })
         };
 
         try {
+            const updateWithOperators = Object.keys(update).some(key => key.startsWith('$')) ? update : { $set: update };
             // 1. Actualiza el lote con los datos proporcionados y obtiene el nuevo estado
-            let documento = await db.Lotes.findOneAndUpdate(filter, update, finalOptions)
+            let documento = await db.Lotes.findOneAndUpdate(filter, updateWithOperators, finalOptions)
                 .populate([{ path: 'predio', select: 'PREDIO ICA GGN SISPAP' }, { path: 'tipoFruta' }]);
             if (!documento) {
                 if (softNotFound) return null;
@@ -143,7 +144,7 @@ export class LotesRepository extends BaseRepository {
                 if (documento.deshidratacion !== deshidratacion || documento.rendimiento !== rendimiento) {
 
                     const recalcOptions = {
-                        new: true,
+                        returnDocument: 'after',
                         ...restOptions, // Solo las opciones básicas
                         ...(session && { session }),
                         skipAudit: true,
@@ -152,7 +153,7 @@ export class LotesRepository extends BaseRepository {
 
                     documento = await db.Lotes.findOneAndUpdate(
                         filter,
-                        { deshidratacion, rendimiento },
+                        { $set: { deshidratacion, rendimiento } },
                         recalcOptions //  Usar opciones sin arrayFilters
                     ).populate([{ path: 'predio', select: 'PREDIO ICA GGN SISPAP' }, { path: 'tipoFruta' }]);
                 }
@@ -209,7 +210,7 @@ export class LotesRepository extends BaseRepository {
                 .skip(skip)
                 .populate(populate)
                 .session(session)
-                .exec();
+                
 
             return lotes
 
@@ -229,7 +230,8 @@ export class LotesRepository extends BaseRepository {
         };
 
         try {
-            let documento = await db.LotesMaquila.findOneAndUpdate(filter, update, { ...finalOptions });
+            const updateWithOperators = Object.keys(update).some(key => key.startsWith('$')) ? update : { $set: update };
+            let documento = await db.LotesMaquila.findOneAndUpdate(filter, updateWithOperators, { ...finalOptions });
             if (!documento) {
                 if (softNotFound) return null;
                 throw new Error('Lote no encontrado');
@@ -285,7 +287,7 @@ export class LotesRepository extends BaseRepository {
 
                     documento = await db.LotesMaquila.findOneAndUpdate(
                         filter,
-                        { deshidratacion, rendimiento },
+                        { $set: { deshidratacion, rendimiento } },
                         recalcOptions // 👈 Usar opciones sin arrayFilters
                     ).populate([{ path: 'predio', select: 'PREDIO ICA GGN SISPAP' }, { path: 'tipoFruta' }]);
                 }
@@ -355,7 +357,7 @@ export class LotesRepository extends BaseRepository {
                 .limit(limitToUse)
                 .skip(skip)
                 .populate(populate)
-                .exec();
+                
 
             return lotes
 
@@ -372,7 +374,8 @@ export class LotesRepository extends BaseRepository {
         };
 
         try {
-            let documento = await db.LotesEF8.findOneAndUpdate(filter, update, { ...finalOptions });
+            const updateWithOperators = Object.keys(update).some(key => key.startsWith('$')) ? update : { $set: update };
+            let documento = await db.LotesEF8.findOneAndUpdate(filter, updateWithOperators, { ...finalOptions });
             if (!documento) throw new Error('Lote no encontrado');
 
             return documento;

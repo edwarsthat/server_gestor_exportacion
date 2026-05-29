@@ -59,7 +59,7 @@ export class FrutaProcesada extends BaseRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
-                .exec();
+                
 
             return documentos
 

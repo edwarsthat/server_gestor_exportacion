@@ -34,7 +34,7 @@ export class IndicadoresRepository extends BaseRepository {
                 .sort(sort)
                 .limit(limit)
                 .skip(skip)
-                .exec();
+                
 
             return registros
 
@@ -45,7 +45,7 @@ export class IndicadoresRepository extends BaseRepository {
     }
     static async put_indicador(id, query) {
         try {
-            const registro = await db.Indicadores.findOneAndUpdate({ _id: id, }, query, { new: true });
+            const registro = await db.Indicadores.findOneAndUpdate({ _id: id, }, { $set: query }, { returnDocument: 'after' });
             return registro;
 
         } catch (err) {

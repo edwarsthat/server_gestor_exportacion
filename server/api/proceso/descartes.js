@@ -109,7 +109,7 @@ export class DescartesControllers {
                     },
                     {
                         sort: { fecha: -1 },
-                        new: true,
+                        returnDocument: 'after',
                         session,
                     }
                 );

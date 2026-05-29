@@ -32,7 +32,7 @@ export class ProcesoCalidadController {
                 { _id: _id },
                 query,
                 { 
-                    new: true, 
+                    returnDocument: 'after',
                     user: user._id, 
                     action: "post_proceso_aplicaciones_fotoCalidad", 
                     session 

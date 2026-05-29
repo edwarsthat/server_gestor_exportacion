@@ -46,7 +46,7 @@ export class RecordLotesRepository {
                 .limit(limit)
                 .sort(sort)
                 .skip(skip)
-                .exec();
+                
 
             return lotes;
 
@@ -73,7 +73,7 @@ export class RecordLotesRepository {
                 .select(select)
                 .sort(sort)
                 .limit(limit)
-                .exec();
+                
 
             return lotes;
 
@@ -125,7 +125,7 @@ export class RecordLotesRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
-                .exec();
+                
 
             return lotes
 

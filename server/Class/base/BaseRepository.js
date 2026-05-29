@@ -40,7 +40,7 @@ export class BaseRepository {
             if (limit > 0) mongooseQuery.limit(limit);
             if (lean) mongooseQuery.lean();
 
-            return await mongooseQuery.exec();
+            return await mongooseQuery;
 
         } catch (err) {
             // Importante: No uses 501, usa 502 para Gateway Issues
@@ -70,7 +70,7 @@ export class BaseRepository {
         const { session, arrayFilters, ...restOptions } = options;
 
         const finalOptions = {
-            new: true,
+            returnDocument: 'after',
             runValidators: true,
             context: 'query',
             ...restOptions,
@@ -78,8 +78,10 @@ export class BaseRepository {
             ...(arrayFilters && { arrayFilters })
         };
 
+        const updateWithOperators = Object.keys(update).some(key => key.startsWith('$')) ? update : { $set: update };
+
         try {
-            let documento = await this.model.findOneAndUpdate(filter, update, { ...finalOptions });
+            let documento = await this.model.findOneAndUpdate(filter, updateWithOperators, { ...finalOptions });
             if (!documento) {
                 throw new Error(`${this.modelName} no encontrado`);
             }

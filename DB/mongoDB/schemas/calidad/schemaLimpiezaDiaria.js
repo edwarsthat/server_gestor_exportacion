@@ -105,7 +105,8 @@ export const defineLimpiezaDiaria = async (conn) => {
     });
 
     // Middleware pre-save para asegurar que las fechas se guarden en UTC
-    LimpiezaDiariaSchema.pre('save', function (next) {
+    // En Mongoose 9 + kareem 3.x los hooks NO reciben `next` como callback. Usar async function().
+    LimpiezaDiariaSchema.pre('save', async function () {
         // Convertir fechaInicio a UTC, manteniendo las 0 horas locales
         if (this.fechaInicio) {
             const fechaInicioLocal = new Date(this.fechaInicio);
@@ -119,8 +120,6 @@ export const defineLimpiezaDiaria = async (conn) => {
             fechaFinLocal.setHours(23, 59, 59, 999); // Establecer al final del día local
             this.fechaFin = new Date(fechaFinLocal.toUTCString());
         }
-
-        next();
     });
 
     const LimpiezaDiaria = conn.model("limpiezaDiaria", LimpiezaDiariaSchema);

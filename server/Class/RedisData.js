@@ -217,7 +217,7 @@ export class RedisRepository {
      * await RedisRepository.delete_inventarioDesverdizado_registro("cuarto1", "id2", multi);
      * await RedisRepository.delete_inventarioDesverdizado_registro("cuarto2", "id3", multi);
      * 
-     * await multi.exec(); // Ejecutar todas las eliminaciones
+     * await multi // Ejecutar todas las eliminaciones
      * 
      * @example
      * // Operación transaccional compleja: eliminar registro obsoleto y agregar nuevo
@@ -232,7 +232,7 @@ export class RedisRepository {
      *   JSON.stringify(nuevosDatos), "cuarto1", "registro_nuevo", multi
      * );
      * 
-     * await multi.exec();
+     * await multi
      * 
      * @description
      * **Funcionamiento interno:**

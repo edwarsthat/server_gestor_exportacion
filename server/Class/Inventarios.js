@@ -71,7 +71,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                 queryBuilder = queryBuilder.lean();
             }
 
-            const registro = await queryBuilder.exec();
+            const registro = await queryBuilder
 
             return registro;
 
@@ -121,7 +121,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
-                .exec();
+                
 
             return registros
 
@@ -144,7 +144,7 @@ export class InventariosHistorialRepository extends BaseRepository {
         try {
             const documento = await db.InventariosSimples.findOne({ _id: id })
                 .lean()
-                .exec();
+                
             return documento;
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo el inventario simple ${err.message}`);
@@ -233,7 +233,7 @@ export class InventariosHistorialRepository extends BaseRepository {
             ];
 
 
-            const res = await db.InventariosSimples.aggregate(pipeline).exec();
+            const res = await db.InventariosSimples.aggregate(pipeline)
             return res || []
 
         } catch (error) {
@@ -330,7 +330,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                 { $replaceWith: "$lote" }
             ];
 
-            const res = await db.InventariosSimples.aggregate(pipeline).exec();
+            const res = await db.InventariosSimples.aggregate(pipeline)
             return res || []
         } catch (error) {
             throw new ClassError(522, `Error obteniendo el inventario simple ${error.message}`, error);
@@ -347,7 +347,7 @@ export class InventariosHistorialRepository extends BaseRepository {
         try {
             const documento = await db.InventariosSimples.findOne({ _id: config.INVENTARIO_FRUTA_SIN_PROCESAR })
                 .lean()
-                .exec();
+                
 
             if (!documento) {
                 throw new ConnectionDBError(522, 'No se encontró el documento de inventario de fruta sin procesar');
@@ -421,7 +421,7 @@ export class InventariosHistorialRepository extends BaseRepository {
             const data = await db.InventariosSimples.find({ _id: config.INVENTARIO_ORDEN_VACEO })
                 .select({ ordenVaceo: 1, _id: 0, __v: 1 })
                 .lean()
-                .exec();
+                
             return { data: data?.[0]?.ordenVaceo || [], __v: data?.[0]?.__v || 0 };
         } catch (err) {
             console.error(err);
@@ -566,7 +566,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
-                .exec();
+                
 
             console.log('Registros encontrados:', registros.length);
             const result = await InventariosService.respuesta_invetario_descartes_maquila(registros);
@@ -599,7 +599,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
-                .exec();
+                
 
             return registros;
 
@@ -631,7 +631,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                 .skip(skip)
                 .populate(populate)
                 .session(session)
-                .exec();
+                
 
             const t1 = performance.now();
             console.log(`DB InventarioActualDescarte.find ${(t1 - t0).toFixed(2)} `)

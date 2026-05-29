@@ -179,7 +179,7 @@ export const defineLotes = async (conn, AuditLog) => {
   }, { versionKey: '__v' });
 
   // Hook de lógica de negocio: modificar aprobacionProduccion según la acción
-  dataSchema.pre('findOneAndUpdate', async function (next) {
+  dataSchema.pre('findOneAndUpdate', async function () {
     const update = this.getUpdate();
 
     // Lista de acciones que NO deben resetear aprobacionProduccion
@@ -202,7 +202,6 @@ export const defineLotes = async (conn, AuditLog) => {
       update.$set.aprobacionProduccion = false;
     }
 
-    next();
   });
 
   // Aplicar plugin de auditoría

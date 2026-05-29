@@ -67,8 +67,8 @@ export class CalidadRepository {
 
             await LotesRepository.actualizar_lote(
                 { _id: _id },
-                data,
-                { new: true, user: user, action: action }
+                { $set: data },
+                { returnDocument: 'after', user: user, action: action }
             );
         } catch (err) {
             if (err.status === 524) {
@@ -116,8 +116,8 @@ export class CalidadRepository {
         try {
             return await LotesRepository.actualizar_lote(
                 { _id },
-                data,
-                { new: true, user, action }
+                { $set: data },
+                { returnDocument: 'after', user, action }
             );
         } catch (error) {
             await ErrorCalidadLogicHandlers(error, log);
@@ -130,18 +130,18 @@ export class CalidadRepository {
     static async get_calidad_formulario_historialConcentraciones(req) {
         try {
             const { fechaInicio, fechaFin } = req.data;
-            
+
             // Construir query con filtros
             let query = { activo: true };
 
             // Si hay filtros de fecha, agregarlos
             if (fechaInicio || fechaFin) {
                 query.fecha = {};
-                
+
                 if (fechaInicio) {
                     query.fecha.$gte = new Date(fechaInicio);
                 }
-                
+
                 if (fechaFin) {
                     // Agregar un día completo para incluir registros del día final
                     const fechaFinDate = new Date(fechaFin);
@@ -180,7 +180,7 @@ export class CalidadRepository {
             CalidadValidationsRepository.post_calidad_formulario_historialConcentraciones().parse(req.data);
             // Obtener el usuario de la sesión
             const usuarioId = user._id;
-            
+
             if (!usuarioId) {
                 throw new CalidadLogicError(401, 'Usuario no autenticado');
             }
@@ -221,7 +221,7 @@ export class CalidadRepository {
 
     static async put_calidad_formulario_historialConcentraciones(req) {
         try {
-             // Validar datos con Zod
+            // Validar datos con Zod
             CalidadValidationsRepository.put_calidad_formulario_historialConcentraciones().parse(req.data);
 
             const { data } = req.data;
@@ -233,7 +233,7 @@ export class CalidadRepository {
 
             // Preparar datos de actualización
             const update = {};
-            
+
             if (updateData.fecha) update.fecha = new Date(updateData.fecha);
             if (updateData.kilosProcesados !== undefined) {
                 update.kilosProcesados = Number(updateData.kilosProcesados);
@@ -481,7 +481,7 @@ export class CalidadRepository {
                 })
 
                 const contenedores = new Set([...itemPallets.values()].map(c => c.contenedor._id))
-                query['salidaExportacion.contenedores']  = [...contenedores]
+                query['salidaExportacion.contenedores'] = [...contenedores]
 
                 await registrarPasoLog(logData.logId, "getLotes AND get_Contenedores_sin_lotes", "Completado");
                 const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id, logData);
@@ -496,8 +496,8 @@ export class CalidadRepository {
             console.log(query)
             await LotesRepository.actualizar_lote(
                 { _id },
-                query,
-                { new: true, user: user, action: "put_calidad_informes_loteFinalizarInforme" }
+                { $set: query },
+                { returnDocument: 'after', user: user, action: "put_calidad_informes_loteFinalizarInforme" }
             );
             await registrarPasoLog(logData.logId, "LotesRepository.actualizar_lote", "Completado");
 
@@ -531,7 +531,7 @@ export class CalidadRepository {
                         fecha_aprobacion_comercial: new Date()
                     }
                 },
-                { new: true, user: user, action: action }
+                { returnDocument: 'after', user: user, action: action }
             );
 
             return true
@@ -556,9 +556,9 @@ export class CalidadRepository {
 
             await LotesRepository.actualizar_lote(
                 { _id: lote[0]._id },
-                query,
+                { $set: query },
                 {
-                    new: true,
+                    returnDocument: 'after',
                     user: user._id,
                     action: action
                 }
@@ -714,7 +714,7 @@ export class CalidadRepository {
                 await registrarPasoLog(logData.logId, "getLotes AND get_Contenedores_sin_lotes", "Completado");
 
                 const contenedores = new Set([...itemPallets.values()].map(c => c.contenedor._id))
-                update['salidaExportacion.contenedores']  = [...contenedores]
+                update['salidaExportacion.contenedores'] = [...contenedores]
 
 
                 const { exportacion, kilosGGN } = await CalidadService.obtenerExportacionContenedores(itemPallets, _id);
@@ -733,7 +733,7 @@ export class CalidadRepository {
             await LotesRepository.actualizar_lote_Maquila(
                 { _id },
                 update,
-                { new: true, user: user._id, action: "put_calidad_informes_loteFinalizarInforme" }
+                { returnDocument: 'after', user: user._id, action: "put_calidad_informes_loteFinalizarInforme" }
             );
             await registrarPasoLog(logData.logId, "LotesRepository.actualizar_lote", "Completado");
 
@@ -770,7 +770,7 @@ export class CalidadRepository {
                         fecha_aprobacion_comercial: new Date()
                     }
                 },
-                { new: true, user: user._id, action: action }
+                { returnDocument: 'after', user: user._id, action: action }
             );
 
             return true
@@ -945,9 +945,9 @@ export class CalidadRepository {
                         }
                         await LotesRepository.actualizar_lote(
                             { _id: _id },
-                            query,
+                            { $set: query },
                             {
-                                new: true,
+                                returnDocument: 'after',
                                 user: user,
                                 action: action
                             }
@@ -971,9 +971,9 @@ export class CalidadRepository {
                 }
                 await LotesRepository.actualizar_lote(
                     { _id: _id },
-                    query,
+                    { $set: query },
                     {
-                        new: true,
+                        returnDocument: 'after',
                         user: user,
                         action: action
                     }
@@ -992,9 +992,9 @@ export class CalidadRepository {
             }
             await LotesRepository.actualizar_lote(
                 { _id: _id },
-                query,
+                { $set: query },
                 {
-                    new: true,
+                    returnDocument: 'after',
                     user: user,
                     action: action
                 }

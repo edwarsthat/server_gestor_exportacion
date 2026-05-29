@@ -675,7 +675,7 @@ export class InventariosService {
             const multi = clientRedis.multi();
             await RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', newRegistro.tipoFruta, multi);
             await RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', newRegistro.tipoFruta, multi);
-            const resultado = await multi.exec();
+            const resultado = await multi
             if (resultado === null) {
                 console.warn(`[INVENTARIO] Transacción fallida por concurrencia. Intentando rollback...`);
                 throw new Error('Transacción fallida: otro proceso modificó el inventario, reintente.');
@@ -689,7 +689,7 @@ export class InventariosService {
                 const multi = clientRedis.multi();
                 await RedisRepository.put_reprocesoDescarte(registro.descarteLavado._doc, 'descarteLavado:', registro.tipoFruta, multi);
                 await RedisRepository.put_reprocesoDescarte(registro.descarteEncerado._doc, 'descarteEncerado:', registro.tipoFruta, multi);
-                const resultado = await multi.exec();
+                const resultado = await multi
                 if (resultado === null) {
                     throw new Error('Transacción fallida: otro proceso modificó el inventario, reintente.');
                 }
@@ -734,7 +734,7 @@ export class InventariosService {
             const multi = clientRedis.multi();
             await RedisRepository.put_reprocesoDescarte(descarteLavado, 'descarteLavado:', tipoFruta, multi);
             await RedisRepository.put_reprocesoDescarte(descarteEncerado, 'descarteEncerado:', tipoFruta, multi);
-            const resultado = await multi.exec();
+            const resultado = await multi
 
             if (resultado === null) {
                 console.warn(`[INVENTARIO DESCARTES] Transacción fallida por concurrencia. Intentando rollback...`);
@@ -768,7 +768,7 @@ export class InventariosService {
             await RedisRepository.put_reprocesoDescarte_sumar(descarteLavado, 'descarteLavado:', tipoFruta, multi);
             await RedisRepository.put_reprocesoDescarte_sumar(descarteEncerado, 'descarteEncerado:', tipoFruta, multi);
 
-            const resultado = await multi.exec();
+            const resultado = await multi
 
             if (resultado === null) {
                 console.warn(`[INVENTARIO DESCARTES][RESTORE] Transacción fallida por concurrencia. Reintente si es necesario.`);

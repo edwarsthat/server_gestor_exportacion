@@ -24,7 +24,7 @@ export class AreasAccesoRepository {
                 .limit(limit)
                 .skip(skip)
                 .session(session)
-                .exec();
+                
 
             return documents
         } catch (err) {

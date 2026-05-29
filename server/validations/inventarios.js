@@ -259,7 +259,7 @@ export class InventariosValidations {
         return z.object({
             _id: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB").optional(),
             EF: optionalSafeString(),
-            GGN: z.boolean().optional(),
+            GGN: optionalSafeString(),
             buscar: safeString(),
             fechaFin: z.union([
                 z.literal(''),

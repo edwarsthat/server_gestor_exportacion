@@ -86,11 +86,11 @@ export const defineproveedores = async (conn) => {
   });
 
   // Middleware pre-save para establecer alt = _id en la creación inicial
-  PredioSchema.pre('save', function (next) {
+  // En Mongoose 9 + kareem 3.x los hooks NO reciben `next` como callback. Usar async function().
+  PredioSchema.pre('save', async function () {
     if (this.isNew && !this.alt) {
       this.alt = this._id;
     }
-    next();
   });
 
   PredioSchema.post('save', incrementarProveedoresVersion);

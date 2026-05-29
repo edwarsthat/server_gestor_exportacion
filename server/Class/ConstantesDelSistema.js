@@ -55,7 +55,7 @@ export class ConstantesDelSistema {
             const filter = _id ? { _id } : {};
             const registros = await db.TipoFrutas.find(filter)
                 .populate({ path: 'descartes', select: 'nombre descripcion seccion' })
-                .session(session).exec();
+                .session(session)
             return registros;
         } catch (err) {
             throw new ProcessError(540, `Error Obteniendo datos de inspeccionCalidadJSON ${err.name}`);
@@ -66,7 +66,7 @@ export class ConstantesDelSistema {
             const filter = _id ? { _id } : {};
             const registros = await db.CalidadesExpFruta.find(filter)
                 .populate({ path: 'tipoFruta', select: 'tipoFruta' })
-                .session(session).exec();
+                .session(session)
             if (logId) {
                 await registrarPasoLog(logId, "ConstantesDelSistema.get_constantes_sistema_calidades", "Completado");
             }
@@ -79,7 +79,7 @@ export class ConstantesDelSistema {
         try {
             const filter = _id ? { _id } : {};
             const registros = await db.Descartes.find(filter)
-                .session(session).exec();
+                .session(session)
             if (logId) {
                 await registrarPasoLog(logId, "ConstantesDelSistema.get_constantes_sistema_descartes", "Completado");
             }

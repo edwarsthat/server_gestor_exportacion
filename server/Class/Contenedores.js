@@ -83,7 +83,7 @@ export class ContenedoresRepository extends BaseRepository {
                 .limit(limit)
                 .skip(skip)
                 .session(session || null)
-                .exec();
+                
 
             return contenedores
 
@@ -121,7 +121,7 @@ export class ContenedoresRepository extends BaseRepository {
                 .limit(limitToUse)
                 .skip(skip)
                 .lean()
-                .exec();
+                
 
 
             return contenedores
@@ -175,7 +175,7 @@ export class ContenedoresRepository extends BaseRepository {
                 .limit(limit)
                 .skip(skip)
                 .session(session || null)
-                .exec();
+                
 
             const response = contenedores.map(contenedor => contenedor.toObject());
             return response
@@ -208,7 +208,7 @@ export class ContenedoresRepository extends BaseRepository {
                 .populate(populate)
                 .skip(skip)
                 .session(session || null)
-                .exec();
+                
 
             return response
 
@@ -253,7 +253,7 @@ export class ContenedoresRepository extends BaseRepository {
                 .populate(populate)
                 .sort(sort)
                 .session(session || null)
-                .exec();
+                
 
             return response
 
@@ -277,7 +277,7 @@ export class ContenedoresRepository extends BaseRepository {
             const contenedor = await db.Contenedores.findOneAndUpdate(
                 findQuery,
                 updateQuery,
-                { new: true }
+                { returnDocument: 'after' }
             );
 
             if (!contenedor) {
@@ -420,7 +420,7 @@ export class ContenedoresRepository extends BaseRepository {
     }
     static async getPipelineItemsContenedorsCalibres(pipeline) {
         try {
-            const result = await db.itemPallet.aggregate(pipeline).exec();
+            const result = await db.itemPallet.aggregate(pipeline)
             return result;
         } catch (err) {
             throw new ConnectionDBError(522, `Error contenedores ${err.message}`);
@@ -428,7 +428,7 @@ export class ContenedoresRepository extends BaseRepository {
     }
     static async aggregateAndPopulate(pipeline, populateOptions) {
         try {
-            const result = await db.itemPallet.aggregate(pipeline).exec();
+            const result = await db.itemPallet.aggregate(pipeline)
             await db.itemPallet.populate(result, populateOptions);
             return result;
         } catch (err) {
@@ -443,7 +443,7 @@ export class ItemPalletRepository extends BaseRepository {
 
     static async aggregateAndPopulate(pipeline, populateOptions) {
         try {
-            const result = await this.model.aggregate(pipeline).exec();
+            const result = await this.model.aggregate(pipeline)
             await this.model.populate(result, populateOptions);
             return result;
         } catch (err) {

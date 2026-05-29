@@ -48,7 +48,7 @@ export class VehiculoRegistro {
                 .skip(skip)
                 .populate(populate)
                 .session(session)
-                .exec();
+                
 
             return registros
 
@@ -76,8 +76,10 @@ export class VehiculoRegistro {
             ...(session && { session })
         };
 
+        const updateWithOperators = Object.keys(update).some(key => key.startsWith('$')) ? update : { $set: update };
+
         try {
-            let documento = await db.VehiculoSalida.findOneAndUpdate(filter, update, finalOptions)
+            let documento = await db.VehiculoSalida.findOneAndUpdate(filter, updateWithOperators, finalOptions)
             if (!documento) throw new Error('Registro no encontrado');
             return documento;
 

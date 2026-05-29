@@ -50,29 +50,28 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
         // }
 
         // ---------- SAVE (create/update con doc.save) ----------
-        schema.pre("save", async function (next) {
+        schema.pre("save", async function () {
             if (this.isNew) {
                 this._op = 'create';
                 this._oldValue = null;
             }
-            next();
         });
 
-        schema.post("save", async function (doc, next) {
+        schema.post("save", async function (doc) {
 
             const session = doc.$session();
             const userId = doc.user;
             const action = doc.action;
 
-            const op = doc._op || 'UPDATE';
+            const op = doc._op || 'update';
             const oldChanged = null;
             const changes = doc._modifiedPaths || [];
-            const collectionName = doc.constructor.modelName;
+            const modelName = doc.constructor.modelName;
 
             const newChanged = doc.toObject({ depopulate: true });
 
             await writeLog({
-                coleccion: collectionName,
+                coleccion: modelName,
                 documentId: doc._id,
                 operation: op,
                 user: userId,
@@ -83,18 +82,16 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
                 description: action
             }, session);
 
-            next();
         });
 
         // ---------- findOneAndUpdate / findOneAndReplace ----------
-        schema.pre('deleteMany', async function (next) {
+        schema.pre('deleteMany', async function () {
             try {
                 const docsToDelete = await this.model.find(this.getQuery());
                 this._docsToDelete = docsToDelete.map(d => d.toObject({ depopulate: true }));
-                next();
             } catch (err) {
                 console.error('Error capturando documentos para eliminar:', err);
-                next(err);
+                throw err;
             }
         });
 
@@ -122,10 +119,9 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
             }
         });
 
-        schema.pre('findOneAndUpdate', async function (next) {
+        schema.pre('findOneAndUpdate', async function () {
             const docToUpdate = await this.model.findOne(this.getQuery());
             this._oldValue = docToUpdate ? docToUpdate.toObject({ depopulate: true }) : null;
-            next();
         });
 
         schema.post('findOneAndUpdate', async function (res) {
@@ -234,9 +230,8 @@ export function makeAuditPlugin({ collectionName, AuditLogs }) {
         // });
 
         // ---------- insertMany (resumen) ----------
-        schema.post("insertMany", async function (docs) {
-            // Obtener session de los argumentos si existe
-            const session = arguments[1]?.session || null;
+        schema.post("insertMany", async function (docs, options) {
+            const session = options?.session || null;
             await writeLog({
                 coleccion: collectionName,
                 operation: "bulk-insert",

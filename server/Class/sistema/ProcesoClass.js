@@ -40,7 +40,7 @@ export class SistemaProcesoClass {
                 .skip(skip)
                 .populate(populate)
                 .session(session)
-                .exec();
+                
 
             return lotes
 

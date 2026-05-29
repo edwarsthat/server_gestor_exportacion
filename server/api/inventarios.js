@@ -457,7 +457,7 @@ export class InventariosRepository {
                         },
                         {
                             sort: { fecha: -1 },
-                            new: true,
+                            returnDocument: 'after',
                             session,
                         }
                     );
@@ -687,77 +687,7 @@ export class InventariosRepository {
             throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
         }
     }
-    static async get_inventarios_historiales_listasDeEmpaque(req) {
-        try {
-            const { data } = req;
-            const { page } = data
-            const resultsPerPage = 25;
-            const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                skip: (page - 1) * resultsPerPage,
-                limit: resultsPerPage,
-                populate: [
-                    {
-                        path: 'infoContenedor.clienteInfo',
-                        select: 'CLIENTE',
-                    },
-                    {
-                        path: 'infoContenedor.calidad',
-                        select: 'nombre descripcion',
-                    },
-                ],
-                select: {
-                    infoContenedor: 1,
-                    __v: 1,
-                    numeroContenedor: 1
-                },
-                query: {
-                    "infoContenedor.fechaFinalizado": { $ne: null }
-                }
-            })
-            return contenedores
-        } catch (err) {
-            if (err.status === 523) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
-    static async get_inventarios_historiales_listasDeEmpaque_itemPallets(req) {
-        try {
-            const { contenedor } = req.data
-            const pallets = await ContenedoresRepository.getItemsPallets({
-                query: { contenedor: contenedor },
-                populate:
-                    [
-                        { path: 'calidad', select: 'nombre descripcion' },
-                        { path: 'pallet', select: 'numeroPallet' },
-                        { path: 'contenedor', select: 'numeroContenedor infoContenedor' },
-                        { path: 'tipoFruta', select: 'tipoFruta' },
-                        {
-                            path: 'lote',
-                            select: 'enf predio finalizado GGN',
-                            populate: {
-                                path: 'predio',
-                                select: 'PREDIO GGN ICA',
 
-                            }
-                        }
-                    ]
-
-            });
-
-            const sortItemsPallet = pallets.sort((a, b) => {
-                return a.pallet.numeroPallet - b.pallet.numeroPallet;
-            });
-
-            return sortItemsPallet
-        } catch (err) {
-            if (err.status === 523) {
-                throw err
-            }
-            throw new InventariosLogicError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
 
     static async get_inventarios_historiales_listasDeEmpaque_numeroRegistros() {
         const cantidad = await ContenedoresRepository.obtener_cantidad_contenedores()
@@ -912,7 +842,13 @@ export class InventariosRepository {
             }
             if (tipoFruta) query.tipoFruta = tipoFruta;
             if (proveedor) query.predio = proveedor;
-            if (GGN) query.GGN = GGN;
+            if (GGN) {
+                if(GGN === "GGN") {
+                    query.GGN = true
+                } else {
+                    query.GGN = false;
+                }
+            }
             if (EF) query.enf = EF;
             if (_id) query._id = _id;
             else if (!EF) query.enf = { $regex: '^E', $options: 'i' }
@@ -1109,7 +1045,7 @@ export class InventariosRepository {
                 const frutaProcesada = await FrutaProcesada.actualizar_frutaProcesada(
                     { _id: _id },
                     { $inc: { canastillas: -canastillas } },
-                    { new: true, user: user, action: action, session: session },
+                    { returnDocument: 'after', user: user, action: action, session: session },
                 )
                 await registrarPasoLog(
                     log._id,
@@ -1121,7 +1057,7 @@ export class InventariosRepository {
                 const lote = await LotesHelper.actualizar_lotes_helper(
                     { _id: frutaProcesada.loteId },
                     { $inc: { kilosVaciados: -newKilos } },
-                    { new: true, user: user, action: action, session: session },
+                    { returnDocument: 'after', user: user, action: action, session: session },
                 )
 
                 await registrarPasoLog(
@@ -1325,7 +1261,7 @@ export class InventariosRepository {
                 },
                 {
                     sort: { fecha: -1 },
-                    new: true,
+                    returnDocument: 'after',
                 }
             );
 

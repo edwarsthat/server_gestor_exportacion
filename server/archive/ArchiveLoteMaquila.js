@@ -26,7 +26,7 @@ export class ArchiveLoteMaquila {
                 .skip(skip)
                 .populate(populate)
                 .session(session)
-                .exec();
+                
 
             return lotes
 

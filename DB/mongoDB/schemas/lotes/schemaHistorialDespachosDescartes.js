@@ -19,14 +19,13 @@ export const defineHistorialDespachoDescarte = async (conn) => {
     });
 
 
-    RegistroSchema.pre('findOneAndUpdate', async function (next) {
+    RegistroSchema.pre('findOneAndUpdate', async function () {
         try {
             // Guardamos el documento original (ANTES)
             const docToUpdate = await this.model.findOne(this.getQuery());
             this._oldValue = docToUpdate ? docToUpdate.toObject() : null;
-            next();
         } catch (err) {
-            next(err);
+            return err;
         }
     });
 
