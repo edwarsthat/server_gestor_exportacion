@@ -42,7 +42,6 @@ export class CrearDocumentosRepository {
             const tipoFrutaStr = cont.infoContenedor.tipoFruta.reduce((acu, item) => acu + item.exportName + " - ", "");
             const cocValue = coc_flag ? "4063061801296" : "N/A";
 
-            console.log(cont.registrosSalidas.datalogger_id)
             const dataloggerId = cont?.registrosSalidas?.reduce((acu, item) => acu + item.datalogger_id + " - ", "") || "N/A";
 
             // Helper: crea un objeto-celda con estilos base
@@ -82,7 +81,7 @@ export class CrearDocumentosRepository {
                     c("DATE:", { fontWeight: 'bold' }),
                     c(fechaStr),
                     c("CoC:", { fontWeight: 'bold' }),
-                    c(isCOC ? cocValue : "N/A"),
+                    c(isCOC ? cocValue : cocValue),
                 ];
             // } 
             // else {
