@@ -160,6 +160,13 @@ export class ListaEmpaqueController {
             if (cont.length === 0) {
                 throw new AppError(404, "El contenedor de destino no existe");
             }
+            const calibres = cont[0].infoContenedor.calibres.map(c => c.toString());
+
+            for (const idItem of itemsPallet) {
+                if (!calibres.includes(idItem.calibre.toString())) {
+                    throw new AppError(400, `El ítem con calibre ${idItem.calibre} no está permitido en el contenedor ${cont[0].numeroContenedor}`);
+                }
+            }
 
             for (const idItem of itemsPallet) {
 
@@ -221,6 +228,11 @@ export class ListaEmpaqueController {
             }
             if (cajas > oldItemPallet[0].cajas) {
                 throw new AppError(422, `No se pueden mover ${cajas} cajas, el ítem solo tiene ${oldItemPallet[0].cajas} disponibles`);
+            }
+
+            const calibres = contenedores[0].infoContenedor.calibres.map(c => c.toString());
+            if (!calibres.includes(oldItemPallet[0].calibre.toString())) {
+                throw new AppError(400, `El ítem con calibre ${oldItemPallet[0].calibre} no está permitido en el contenedor ${contenedores[0].numeroContenedor}`);
             }
 
             const kilos = cajas * Number(oldItemPallet[0].tipoCaja.split("-")[1].replace(",", "."));
