@@ -12,6 +12,10 @@ export class CarnetWorkerRunner {
 
         const jobId = randomUUID()
 
+        if (!browserPool.isReady()) {
+            throw new Error('El navegador no está disponible en este momento. Intente nuevamente en unos segundos.')
+        }
+
         const  worker = new Worker(join(__dirname, 'carnetWorker.js'), {
             workerData: { carnetsIds:data, jobId, wsEndpoint: browserPool.getWsEndpoint() }
         })

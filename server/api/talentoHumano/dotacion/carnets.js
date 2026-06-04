@@ -72,6 +72,11 @@ export class DotacionCarnetsControllerRepository {
             const pdfBuffer = await HtmlToImage.convertToPdf(htmlTemplate, {
                 baseUrl: templateDir,
                 waitFor: 'domcontentloaded',
+                width: '5.4cm',
+                height: '8.64cm',
+                scale: 0.51,
+                viewportWidth: 400,
+                viewportHeight: 640,
             });
             if (!pdfBuffer || pdfBuffer.length === 0) {
                 throw new Error("Fallo crítico: El carnet se generó pero el PDF resultante no es válido.");

@@ -41,9 +41,12 @@ class BrowserPool {
         this.browser = null
         this.pool = []
         this.queue = []
+        this._poolSize = 3
+        this._restarting = false
     }
 
     async init(size = 3) {
+        this._poolSize = size
         const executablePath = getChromePath()
         this.browser = await puppeteer.launch({
             headless: true,
@@ -53,6 +56,20 @@ class BrowserPool {
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage'
             ]
+        })
+
+        this.browser.on('disconnected', () => {
+            if (this._restarting) return
+            this._restarting = true
+            console.warn('⚠️ Chrome se desconectó inesperadamente. Reiniciando...')
+            this.browser = null
+            this.pool = []
+            this.init(this._poolSize)
+                .then(() => { this._restarting = false })
+                .catch(err => {
+                    console.error('Error crítico al reiniciar Chrome:', err)
+                    this._restarting = false
+                })
         })
 
         for (let i = 0; i < size; i++) {
@@ -85,8 +102,12 @@ class BrowserPool {
         }
     }
 
+    isReady() {
+        return !!(this.browser && !this._restarting)
+    }
+
     getWsEndpoint() {
-        if (!this.browser) throw new Error('BrowserPool no inicializado')
+        if (!this.browser || this._restarting) throw new Error('BrowserPool no está listo')
         return this.browser.wsEndpoint()
     }
 
