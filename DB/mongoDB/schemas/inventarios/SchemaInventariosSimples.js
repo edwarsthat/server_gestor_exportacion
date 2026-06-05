@@ -34,8 +34,18 @@ export const defineInventarioSimple = async (conn, AuditInventariosSimples) => {
 
     // ✔ Actualiza updatedAt también en updates tipo query
     InventarioSimpleSchema.pre(['updateOne', 'findOneAndUpdate', 'updateMany'], function () {
-        // En query middleware, set() aplica sobre el update
-        this.set({ updatedAt: new Date() });
+        const update = this.getUpdate();
+        if (Array.isArray(update)) {
+            // Mongoose 9+: this.set() lanza error con pipeline updates, hay que modificar el array directamente
+            const lastStage = update[update.length - 1];
+            if (lastStage?.$set) {
+                lastStage.$set.updatedAt = new Date();
+            } else {
+                update.push({ $set: { updatedAt: new Date() } });
+            }
+        } else {
+            this.set({ updatedAt: new Date() });
+        }
     });
 
     // ✔ Captura del documento previo dentro de la MISMA sesión
