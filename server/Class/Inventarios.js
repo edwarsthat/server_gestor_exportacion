@@ -391,7 +391,7 @@ export class InventariosHistorialRepository extends BaseRepository {
         if (!filter || typeof filter !== 'object' || Object.keys(filter).length === 0) {
             throw new Error('El filtro es requerido y no puede estar vacío');
         }
-        if (!update || typeof update !== 'object' || Object.keys(update).length === 0) {
+        if (!update || typeof update !== 'object' || (Array.isArray(update) ? update.length === 0 : Object.keys(update).length === 0)) {
             throw new Error('El update es requerido y no puede estar vacío');
         }
 
@@ -401,6 +401,7 @@ export class InventariosHistorialRepository extends BaseRepository {
 
         const finalOptions = {
             runValidators: false,
+            ...(Array.isArray(update) && { updatePipeline: true }),
             ...safeOptions,
         };
         console.log("finalOptions", finalOptions);
