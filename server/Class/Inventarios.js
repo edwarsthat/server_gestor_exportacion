@@ -397,7 +397,7 @@ export class InventariosHistorialRepository extends BaseRepository {
 
         // Protección contra Prototype Pollution
         // eslint-disable-next-line no-unused-vars
-        const { __proto__: _proto, constructor: _constructor, prototype: _prototype, ...safeOptions } = options;
+        const { __proto__: _proto, constructor: _constructor, prototype: _prototype, softNotFound, ...safeOptions } = options;
 
         const finalOptions = {
             runValidators: false,
@@ -409,7 +409,7 @@ export class InventariosHistorialRepository extends BaseRepository {
         try {
             const res = await db.InventariosSimples.updateOne(filter, update, finalOptions);
             console.log("res", res);
-            if (res.matchedCount === 0) {
+            if (res.matchedCount === 0 && !softNotFound) {
                 throw new Error('No se encontró ningún documento que coincida con el filtro');
             }
             return res;
