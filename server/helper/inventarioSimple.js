@@ -7,7 +7,8 @@ export class InventarioSimpleHelper {
         const options = {
             session,
             user,
-            action: `Actualizar inventario fruta sin procesar - Lote: ${_id}, Canastillas: ${canastillas}`
+            action: `Actualizar inventario fruta sin procesar - Lote: ${_id}, Canastillas: ${canastillas}`,
+            softNotFound: true,
         };
         // Intentar actualizar en inventario normal usando operador posicional
         let resultado = await InventariosHistorialRepository.put_inventarioSimple(
