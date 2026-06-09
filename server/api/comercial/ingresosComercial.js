@@ -11,12 +11,14 @@ export class IngresosComercialController {
             throw new Error("Usuario no autenticado")
         }
         await executeTransactionalTask(req, async (session) => {
+            console.log(req.data)
             const { data } = ComercialValidationsRepository.post_comercial_contenedor().parse(req.data);
-            const objCont = ComercialService.crear_contenedor(data)
-            console.log(objCont)
-            if (!objCont) {
-                throw new Error("Error al crear el contenedor")
-            }
+            console.log(data)
+
+            // const objCont = ComercialService.crear_contenedor(data)
+            // if (!objCont) {
+            //     throw new Error("Error al crear el contenedor")
+            // }
             await ContenedoresRepository.post_data(objCont, { session, user: user._id });
         })
     }

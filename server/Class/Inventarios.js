@@ -384,9 +384,7 @@ export class InventariosHistorialRepository extends BaseRepository {
         }
     }
     static async put_inventarioSimple(filter, update, options = {}) {
-        console.log("filter", filter);
-        console.log("update", update);
-        console.log("options", options);
+
         // Validación de parámetros
         if (!filter || typeof filter !== 'object' || Object.keys(filter).length === 0) {
             throw new Error('El filtro es requerido y no puede estar vacío');
@@ -404,7 +402,6 @@ export class InventariosHistorialRepository extends BaseRepository {
             ...(Array.isArray(update) && { updatePipeline: true }),
             ...safeOptions,
         };
-        console.log("finalOptions", finalOptions);
 
         try {
             const res = await db.InventariosSimples.updateOne(filter, update, finalOptions);
