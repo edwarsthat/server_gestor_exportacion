@@ -2,6 +2,7 @@ import { executeTransactionalTask } from "../../utils/wrappers.js";
 import { ComercialValidationsRepository } from "../../validations/Comercial.js";
 import { ComercialService } from "../../services/comercial.js";
 import { ContenedoresRepository } from "../../Class/Contenedores.js";
+import { dataRepository } from "../data.js";
 
 
 export class IngresosComercialController {
@@ -11,14 +12,13 @@ export class IngresosComercialController {
             throw new Error("Usuario no autenticado")
         }
         await executeTransactionalTask(req, async (session) => {
-            console.log(req.data)
             const { data } = ComercialValidationsRepository.post_comercial_contenedor().parse(req.data);
-            console.log(data)
 
-            // const objCont = ComercialService.crear_contenedor(data)
-            // if (!objCont) {
-            //     throw new Error("Error al crear el contenedor")
-            // }
+            const ordenCompra = await dataRepository.incrementar_serial("ordenCompra", session);
+            const objCont = ComercialService.crear_contenedor({ ...data, ordenCompra })
+            if (!objCont) {
+                throw new Error("Error al crear el contenedor")
+            }
             await ContenedoresRepository.post_data(objCont, { session, user: user._id });
         })
     }

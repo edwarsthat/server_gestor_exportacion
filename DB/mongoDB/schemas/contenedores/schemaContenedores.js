@@ -14,6 +14,18 @@ export const defineContenedores = async (conn, AuditLog) => {
     flagInsumos: { type: Boolean, default: false }
   }, { _id: false, strict: false })
 
+  const calidadContenedorSchema = new Schema({
+    parametros: { type: Map, of: String },
+    calibres: [String],
+  }, { _id: true });
+
+  const tipoCajaSchema = new Schema({
+    tipo: String,
+    pesoNeto: Number,
+    cantidadCajas: Number,
+    pallets: Number,
+  }, { _id: false });
+
   const infoContenedorSchema = new Schema({
     clienteInfo: { type: Schema.Types.ObjectId, ref: "Cliente" },
     createdAt: { type: Date, default: () => new Date() },
@@ -25,16 +37,11 @@ export const defineContenedores = async (conn, AuditLog) => {
     fechaSalida: Date,
     ultimaModificacion: Date,
     tipoFruta: [{ type: Schema.Types.ObjectId, ref: 'tipoFrutas' }],
-    tipoCaja: [String],
-    calidad: [{ type: Schema.Types.ObjectId, ref: 'calidades' }],
-    sombra: String,
-    defecto: String,
-    mancha: String,
-    verdeManzana: String,
+    tipoCaja: [tipoCajaSchema],
+    calidades: [calidadContenedorSchema],
     cerrado: Boolean,
     observaciones: String,
     desverdizado: Boolean,
-    calibres: [String],
     urlInforme: String,
     cajasTotal: Number,
     RrtoEstimado: String,
@@ -118,7 +125,8 @@ export const defineContenedores = async (conn, AuditLog) => {
 
 
   const listaEmpaqueSchema = new Schema({
-    numeroContenedor: { type: Number, required: true, unique: true, index: true },
+    numeroContenedor: { type: Number, unique: true, index: true },
+    ordenCompra: { type: Number, unique: true, index: true, required: true },
     totalKilos: Number,
     totalCajas: Number,
     pallets: Number,
