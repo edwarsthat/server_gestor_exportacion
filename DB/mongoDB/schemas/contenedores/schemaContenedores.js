@@ -17,6 +17,7 @@ export const defineContenedores = async (conn, AuditLog) => {
   const calidadContenedorSchema = new Schema({
     parametros: { type: Map, of: String },
     calibres: [String],
+    _id: { type: Schema.Types.ObjectId, ref: "calidades" },
   }, { _id: true });
 
   const tipoCajaSchema = new Schema({
@@ -44,8 +45,12 @@ export const defineContenedores = async (conn, AuditLog) => {
     desverdizado: Boolean,
     urlInforme: String,
     cajasTotal: Number,
-    RrtoEstimado: String,
     maquila: Boolean,
+    semana: Number,
+    anno: Number,
+    GGN: Boolean,
+    ICA: Boolean,
+    pais_destino: { type: Schema.Types.ObjectId, ref: "Pais" },
 
   });
 
@@ -130,8 +135,6 @@ export const defineContenedores = async (conn, AuditLog) => {
     totalKilos: Number,
     totalCajas: Number,
     pallets: Number,
-    GGN: Boolean,
-    pais_destino: { type: Schema.Types.ObjectId, ref: "Pais" },
     infoContenedor: infoContenedorSchema,
     infoTractoMula: schemaInfoMula,
     infoExportacion: schemaInfoExportacion,
@@ -139,7 +142,8 @@ export const defineContenedores = async (conn, AuditLog) => {
     inspeccion_mula: inspeccionMulasSchema,
     reclamacionCalidad: reclamacionSchema,
     registrosSalidas: [{ type: Schema.Types.ObjectId, ref: "salidaVehiculo" }],
-    user: { type: Schema.Types.ObjectId, ref: 'usuario' }
+    user: { type: Schema.Types.ObjectId, ref: 'usuario' },
+    cancelado: { type: Boolean, default: false, index: true }
   });
 
   listaEmpaqueSchema.index({ reclamacionCalidad: 1, entregaPrecinto: 1 });

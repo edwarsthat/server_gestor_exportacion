@@ -8,24 +8,52 @@ export class ProgramacionesController {
 
         return await executeQueryTask(async () => {
             const parseReq = InventariosValidations.get_inventarios_programaciones_contenedores().parse(req.data);
-            const { fecha } = parseReq;
+            const { semanas } = parseReq;
 
-            const fechaActual = new Date(fecha);
-            const year = fechaActual.getUTCFullYear();
-            const month = fechaActual.getUTCMonth();
+            const queryOrConditions = semanas.map(({ week, year }) => {
+                const start = new Date(year, 0, 1);
 
-            const startDate = new Date(Date.UTC(year, month, 1));
-            const endDate = new Date(Date.UTC(year, month + 1, 1));
+                const daysOffset = (week - 1) * 7;
+                start.setDate(start.getDate() + daysOffset);
 
-            const query = {
-                "infoContenedor.fechaInicio": {
-                    $gte: startDate,
-                    $lt: endDate
-                }
-            };
+                // (getDay() devuelve 0 para domingo, lo cambiamos a 7 para que la resta funcione)
+                const dayOfWeek = start.getDay() || 7;
+                start.setDate(start.getDate() - dayOfWeek + 1);
+                start.setHours(0, 0, 0, 0);
+
+                const end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                end.setHours(23, 59, 59, 999);
+
+                return {
+                    "infoContenedor.fechaInicio": { $gte: start, $lte: end }
+                };
+            });
 
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
                 select: { infoContenedor: 1, numeroContenedor: 1, __v: 1, GGN: 1, pais_destino: 1 },
+                populate: [
+                    {
+                        path: "infoContenedor.clienteInfo",
+                        select: "CLIENTE"
+                    },
+                    {
+                        path: "infoContenedor.calidades",
+                        select: "nombre"
+                    }
+                ]
+            });
+            return response;
+        })
+    }
+    static async get_inventarios_ordenesDeCompra() {
+        return await executeQueryTask(async () => {
+            const query = {
+                "numeroContenedor": { $exists: false },
+                "cancelado": false
+            };
+            const response = await ContenedoresRepository.get_data({
+                select: { infoContenedor: 1, ordenCompra: 1, __v: 1, GGN: 1, pais_destino: 1 },
                 query: query,
                 populate: [
                     {
@@ -37,9 +65,9 @@ export class ProgramacionesController {
                         select: "CLIENTE"
                     },
                     {
-                        path: "infoContenedor.calidad",
+                        path: "infoContenedor.pais_destino",
                         select: "nombre"
-                    }
+                    },
                 ]
             });
             return response;

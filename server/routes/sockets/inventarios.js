@@ -103,6 +103,10 @@ export const apiSocketInventarios = {
         return successResponseRoutes(descarte)
     },
     //#region programaciones
+    get_inventarios_ordenesDeCompra: async (data) => {
+        const response = await ProgramacionesController.get_inventarios_ordenesDeCompra(data)
+        return successResponseRoutes(response)
+    },
     get_inventarios_programaciones_contenedores: async (data) => {
         const response = await ProgramacionesController.get_inventarios_programaciones_contenedores(data)
         return successResponseRoutes(response)

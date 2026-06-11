@@ -775,9 +775,12 @@ export class InventariosValidations {
     static get_inventarios_programaciones_contenedores() {
         return z.object({
             action: z.literal("get_inventarios_programaciones_contenedores"),
-            fecha: z.string()
-                .min(1, "La fecha es obligatoria")
-                .refine(val => !isNaN(Date.parse(val)), "La fecha no tiene un formato válido"),
+            semanas: z.array(
+                z.object({
+                    week:z.number().min(1, "Semana Invalida").max(53, "Semana Invalida"), 
+                    year:z.number().min(2000, "Año invalido")
+                })
+            )
         })
     }
     static put_inventarios_canastillas_celifrut() {

@@ -2,10 +2,16 @@ import mongoose from "mongoose";
 
 export class ComercialService {
     static crear_contenedor(data) {
+        const [annoStr, semanaStr] = data.semana.split('-W');
+        const anno = parseInt(annoStr, 10);
+        const semana = parseInt(semanaStr, 10);
         return {
             ordenCompra: data.ordenCompra,
             infoContenedor: {
                 clienteInfo: data.clienteInfo,
+                pais_destino: data.paisDestino,
+                GGN: data.GGN,
+                ICA: data.ICA,
                 tipoFruta: data.tipoFruta,
                 fechaCreacion: new Date(),
                 observaciones: data.observaciones,
@@ -13,11 +19,10 @@ export class ComercialService {
                 tipoCaja: data.tipoCaja,
                 calidades: data.calidades,
                 cajasTotal: data.cajasTotal ? Number(data.cajasTotal) : undefined,
-                RrtoEstimado: data.rtoEstimado,
                 ultimaModificacion: new Date(),
                 maquila: data.maquila,
-                semana: parseInt(data.semana, 10),
-                anno: new Date().getFullYear(),
+                semana,
+                anno
             },
             pallets: 0,
             GGN: data.GGN,

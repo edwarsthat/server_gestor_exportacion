@@ -13,7 +13,6 @@ export class IngresosComercialController {
         }
         await executeTransactionalTask(req, async (session) => {
             const { data } = ComercialValidationsRepository.post_comercial_contenedor().parse(req.data);
-
             const ordenCompra = await dataRepository.incrementar_serial("ordenCompra", session);
             const objCont = ComercialService.crear_contenedor({ ...data, ordenCompra })
             if (!objCont) {
