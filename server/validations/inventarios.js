@@ -878,4 +878,19 @@ export class InventariosValidations {
             observaciones: optionalSafeString("observaciones"),
         })
     }
+    static put_inventarios_programaciones_asignar_contenedor() {
+        return z.object({
+            action: z.literal("put_inventarios_programaciones_asignar_contenedor"),
+            data: z.object({
+                ordenId: objectIdString("ordenId"),
+                fecha: safeString("fecha").refine(
+                    val => !isNaN(Date.parse(val)),
+                    "La fecha no tiene un formato válido"
+                ),
+                numeroContenedor: z.coerce.number()
+                    .int("El número de contenedor debe ser un entero")
+                    .gt(0, "El número de contenedor debe ser mayor a cero"),
+            })
+        });
+    }
 }

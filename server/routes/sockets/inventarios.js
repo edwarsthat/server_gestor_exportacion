@@ -115,6 +115,10 @@ export const apiSocketInventarios = {
         await ProgramacionesController.put_inventarios_programacion_contenedores(data)
         return successResponseRoutes()
     },
+    put_inventarios_programaciones_asignar_contenedor: async (data) => {
+        await ProgramacionesController.put_inventarios_programaciones_asignar_contenedor(data)
+        return successResponseRoutes()
+    },
     //#endregion
     //#region canastillas
     get_inventarios_historiales_canastillas_registros: async (data) => {

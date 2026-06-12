@@ -103,4 +103,27 @@ export class ProgramacionesController {
             await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_data", "Completado");
         })
     }
+    static async put_inventarios_programaciones_asignar_contenedor(req) {
+        const { user } = req;
+        if (!user || !user._id) {
+            throw new Error("Usuario no autenticado");
+        }
+        await executeTransactionalTask(req, async (session, log) => {
+            const parseData = InventariosValidations.put_inventarios_programaciones_asignar_contenedor().parse(req.data)
+            const { data } = parseData;
+
+            console.log("Data parseada para asignar contenedor:", parseData);
+            await ContenedoresRepository.actualizar_data(
+                { _id: data.ordenId },
+                {
+                    $set: {
+                        numeroContenedor: data.numeroContenedor,
+                        "infoContenedor.fechaInicio": data.fecha,
+                    }
+                },
+                { user: user._id, session }
+            )
+
+        })
+    }
 }

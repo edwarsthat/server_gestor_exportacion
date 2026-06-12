@@ -3,6 +3,7 @@ import { ComercialValidationsRepository } from "../../validations/Comercial.js";
 import { ComercialService } from "../../services/comercial.js";
 import { ContenedoresRepository } from "../../Class/Contenedores.js";
 import { dataRepository } from "../data.js";
+import { contenedorEmitter } from "../../../events/emitters.js";
 
 
 export class IngresosComercialController {
@@ -13,12 +14,13 @@ export class IngresosComercialController {
         }
         await executeTransactionalTask(req, async (session) => {
             const { data } = ComercialValidationsRepository.post_comercial_contenedor().parse(req.data);
-            const ordenCompra = await dataRepository.incrementar_serial("ordenCompra", session);
-            const objCont = ComercialService.crear_contenedor({ ...data, ordenCompra })
+            const serial = await dataRepository.incrementar_serial("ordenCompra", session);
+            const objCont = ComercialService.crear_contenedor({ ...data, ordenCompra: serial })
             if (!objCont) {
                 throw new Error("Error al crear el contenedor")
             }
-            await ContenedoresRepository.post_data(objCont, { session, user: user._id });
+            const contenedor = await ContenedoresRepository.post_data(objCont, { session, user: user._id });
+            contenedorEmitter.emit("crearOrdenCompra", { contenedor });
         })
     }
 }
