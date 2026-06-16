@@ -16,7 +16,7 @@ export const filtroSchema = z.object({
         z.literal(''),
         z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'El formato de fechaFin debe ser YYYY-MM-DD'),
     ]).optional(),
-    GGN: z.boolean().optional(),
+    GGN: z.string().optional(),
     buscar: optionalSafeString('buscar'),
     proveedor: optionalSafeString('proveedor'),
     tipoFecha: optionalSafeString('tipoFecha'),
