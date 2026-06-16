@@ -31,6 +31,9 @@ export class ProgramacionesController {
             });
 
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                query: { 
+                    numeroContenedor: { $exists: true }
+                },
                 select: { infoContenedor: 1, numeroContenedor: 1, __v: 1, GGN: 1, pais_destino: 1 },
                 populate: [
                     {
@@ -38,7 +41,7 @@ export class ProgramacionesController {
                         select: "CLIENTE"
                     },
                     {
-                        path: "infoContenedor.calidades",
+                        path: "infoContenedor.calidadData",
                         select: "nombre"
                     }
                 ]

@@ -38,8 +38,11 @@ export const defineContenedores = async (conn, AuditLog) => {
     fechaSalida: Date,
     ultimaModificacion: Date,
     tipoFruta: [{ type: Schema.Types.ObjectId, ref: 'tipoFrutas' }],
-    tipoCaja: [tipoCajaSchema],
-    calidades: [calidadContenedorSchema],
+    tipoCajaData: [tipoCajaSchema],
+    calidadData: [calidadContenedorSchema],
+    tipoCaja: [String],
+    calidad: [{ type: Schema.Types.ObjectId, ref: 'calidades' }],
+    calibres: [String],
     cerrado: Boolean,
     observaciones: String,
     desverdizado: Boolean,
@@ -130,7 +133,7 @@ export const defineContenedores = async (conn, AuditLog) => {
 
 
   const listaEmpaqueSchema = new Schema({
-    numeroContenedor: { type: Number, unique: true, index: true },
+    numeroContenedor: { type: Number, unique: true, sparse: true },
     ordenCompra: { type: Number, unique: true, index: true, required: true },
     totalKilos: Number,
     totalCajas: Number,
@@ -146,7 +149,7 @@ export const defineContenedores = async (conn, AuditLog) => {
     cancelado: { type: Boolean, default: false, index: true }
   });
 
-  listaEmpaqueSchema.index({ reclamacionCalidad: 1, entregaPrecinto: 1 });
+  listaEmpaqueSchema.index({ "infoContenedor.fechaInicio": 1 });
 
   listaEmpaqueSchema.plugin(auditPlugin);
 

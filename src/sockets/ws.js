@@ -115,6 +115,12 @@ export function initSockets(io) {
         socket.on("leave_job", (jobId) => {
             socket.leave(`job_${jobId}`);
         })
+        
+        socket.onAny((event, ...args) => {
+            const rooms = [...socket.rooms];
+            console.log(`[evento: ${event}] rooms: ${rooms}`, args);
+        });
+
         socket.on("join_room", (room) => {
             socket.join(room);
         })

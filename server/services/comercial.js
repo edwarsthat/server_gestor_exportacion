@@ -5,6 +5,8 @@ export class ComercialService {
         const [annoStr, semanaStr] = data.semana.split('-W');
         const anno = parseInt(annoStr, 10);
         const semana = parseInt(semanaStr, 10);
+        const calidades = data.calidades.map(c => c._id)
+        const tipoCaja = data.tipoCaja.map(c => c.tipo + "-" + c.pesoNeto)
         return {
             ordenCompra: data.ordenCompra,
             infoContenedor: {
@@ -16,8 +18,11 @@ export class ComercialService {
                 fechaCreacion: new Date(),
                 observaciones: data.observaciones,
                 cerrado: false,
-                tipoCaja: data.tipoCaja,
-                calidades: data.calidades,
+                tipoCaja: tipoCaja,
+                calidad: calidades,
+                calibres: [...new Set(data.calidades.flatMap(c => c.calibres))],
+                tipoCajaData: data.tipoCaja,
+                calidadData: data.calidades,
                 cajasTotal: data.cajasTotal ? Number(data.cajasTotal) : undefined,
                 ultimaModificacion: new Date(),
                 maquila: data.maquila,
@@ -25,8 +30,6 @@ export class ComercialService {
                 anno
             },
             pallets: 0,
-            GGN: data.GGN,
-            pais_destino: new mongoose.Types.ObjectId(data.paisDestino),
         }
     }
     static async poner_precio_lotes(itemPallets, calidades) {
