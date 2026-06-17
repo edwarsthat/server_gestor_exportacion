@@ -2,6 +2,7 @@ import { executeQueryTask, executeTransactionalTask } from "../../utils/wrappers
 import { InventariosValidations } from "../../validations/inventarios.js";
 import { ContenedoresRepository } from "../../Class/Contenedores.js";
 import { registrarPasoLog } from "../helper/logs.js";
+import { contenedorEmitter } from "../../../events/emitters.js";
 
 export class ProgramacionesController {
     static async get_inventarios_programaciones_contenedores(req) {
@@ -10,7 +11,7 @@ export class ProgramacionesController {
             const parseReq = InventariosValidations.get_inventarios_programaciones_contenedores().parse(req.data);
             const { semanas } = parseReq;
 
-            const queryOrConditions = semanas.map(({ week, year }) => {
+            semanas.map(({ week, year }) => {
                 const start = new Date(year, 0, 1);
 
                 const daysOffset = (week - 1) * 7;
@@ -31,8 +32,9 @@ export class ProgramacionesController {
             });
 
             const response = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                query: { 
-                    numeroContenedor: { $exists: true }
+                query: {
+                    numeroContenedor: { $exists: true },
+                    cancelado: false
                 },
                 select: { infoContenedor: 1, numeroContenedor: 1, __v: 1, GGN: 1, pais_destino: 1 },
                 populate: [
@@ -115,7 +117,6 @@ export class ProgramacionesController {
             const parseData = InventariosValidations.put_inventarios_programaciones_asignar_contenedor().parse(req.data)
             const { data } = parseData;
 
-            console.log("Data parseada para asignar contenedor:", parseData);
             await ContenedoresRepository.actualizar_data(
                 { _id: data.ordenId },
                 {
@@ -126,6 +127,39 @@ export class ProgramacionesController {
                 },
                 { user: user._id, session }
             )
+            await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_data", "Completado");
+            contenedorEmitter.emit(
+                "crearOrdenCompra", {
+                action: 'put_inventarios_programaciones_asignar_contenedor',
+                _id: data.ordenId,
+                numeroContenedor: data.numeroContenedor,
+                "infoContenedor.fechaInicio": data.fecha
+            });
+        })
+    }
+    static async delete_inventarios_cancelar_ordenCompra(req) {
+        const { user } = req;
+        if (!user || !user._id) {
+            throw new Error("Usuario no autenticado");
+        }
+        await executeTransactionalTask(req, async (session, log) => {
+            const parseData = InventariosValidations.delete_inventarios_cancelar_ordenCompra().parse(req.data)
+            const { _id } = parseData
+            await ContenedoresRepository.actualizar_data(
+                { _id: _id },
+                {
+                    $set: {
+                        cancelado: true,
+                    }
+                },
+                { user: user._id, session }
+            )
+            await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_data", "Completado");
+            contenedorEmitter.emit(
+                "crearOrdenCompra", {
+                action: 'delete_inventarios_cancelar_ordenCompra',
+                _id: _id
+            });
 
         })
     }

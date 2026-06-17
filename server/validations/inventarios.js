@@ -893,4 +893,10 @@ export class InventariosValidations {
             })
         });
     }
+    static delete_inventarios_cancelar_ordenCompra() {
+        return z.object({
+            action: z.literal("delete_inventarios_cancelar_ordenCompra"),
+            _id: objectIdString("_id"),
+        });
+    }
 }

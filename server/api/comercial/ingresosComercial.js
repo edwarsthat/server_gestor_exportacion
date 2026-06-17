@@ -20,7 +20,15 @@ export class IngresosComercialController {
                 throw new Error("Error al crear el contenedor")
             }
             const contenedor = await ContenedoresRepository.post_data(objCont, { session, user: user._id });
-            contenedorEmitter.emit("crearOrdenCompra", { contenedor });
+            await contenedor.populate([
+                { path: "infoContenedor.tipoFruta", select: "tipoFruta" },
+                { path: "infoContenedor.clienteInfo", select: "CLIENTE" },
+                { path: "infoContenedor.pais_destino", select: "nombre" },
+            ]);
+            contenedorEmitter.emit("crearOrdenCompra", {
+                action: "post_comercial_contenedor",
+                contenedor
+            });
         })
     }
 }

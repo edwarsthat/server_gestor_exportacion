@@ -119,6 +119,10 @@ export const apiSocketInventarios = {
         await ProgramacionesController.put_inventarios_programaciones_asignar_contenedor(data)
         return successResponseRoutes()
     },
+    delete_inventarios_cancelar_ordenCompra: async (data) => {
+        await ProgramacionesController.delete_inventarios_cancelar_ordenCompra(data)
+        return successResponseRoutes()
+    },
     //#endregion
     //#region canastillas
     get_inventarios_historiales_canastillas_registros: async (data) => {
