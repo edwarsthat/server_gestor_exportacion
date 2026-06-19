@@ -45,7 +45,15 @@ export class ProgramacionesController {
                     {
                         path: "infoContenedor.calidadData",
                         select: "nombre"
-                    }
+                    },
+                    {
+                        path: "infoContenedor.tipoFruta",
+                        select: "tipoFruta"
+                    },
+                    {
+                        path: "infoContenedor.pais_destino",
+                        select: "nombre"
+                    },
                 ]
             });
             return response;
@@ -83,7 +91,7 @@ export class ProgramacionesController {
         if (!user || !user._id) {
             throw new Error("Usuario no autenticado");
         }
-        await executeTransactionalTask(req, async (session, log) => {
+        return await executeTransactionalTask(req, async (session, log) => {
 
             const parseData = InventariosValidations.put_inventarios_programacion_contenedores().parse(req.data);
             const { data, idContenedor } = parseData;
@@ -91,14 +99,29 @@ export class ProgramacionesController {
             const query = { $set: {} }
             const setObj = Reflect.get(query, '$set');
 
-            Reflect.set(setObj, "GGN", data.GGN);
-            Reflect.set(setObj, "pais_destino", data.pais_destino);
-            delete data.GGN;
-            delete data.pais_destino;
+            // 'calidades' (array de objetos) deriva tres campos del modelo:
+            // calidad (ids), calibres (union) y calidadData (los objetos completos)
+            if (data.calidades !== undefined) {
+                Reflect.set(setObj, "infoContenedor.calidad", data.calidades.map(c => c._id));
+                Reflect.set(setObj, "infoContenedor.calibres", [...new Set(data.calidades.flatMap(c => c.calibres ?? []))]);
+                Reflect.set(setObj, "infoContenedor.calidadData", data.calidades);
+                delete data.calidades;
+            }
 
+            // 'tipoCaja' (array de objetos) deriva tipoCaja (strings) y tipoCajaData (objetos)
+            if (data.tipoCaja !== undefined) {
+                Reflect.set(setObj, "infoContenedor.tipoCaja", data.tipoCaja.map(c => `${c.tipo}-${c.pesoNeto}`));
+                Reflect.set(setObj, "infoContenedor.tipoCajaData", data.tipoCaja);
+                delete data.tipoCaja;
+            }
+
+            // El resto de campos van directo a infoContenedor con el mismo nombre,
+            // y solo si vienen en la petición (data ya viene filtrada por el schema .partial())
             Object.keys(data).forEach(key => {
                 Reflect.set(setObj, `infoContenedor.${key}`, Reflect.get(data, key));
             })
+
+            Reflect.set(setObj, "infoContenedor.ultimaModificacion", new Date());
 
             await ContenedoresRepository.actualizar_data(
                 { _id: idContenedor },
@@ -106,6 +129,39 @@ export class ProgramacionesController {
                 { user: user._id, session }
             );
             await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_data", "Completado");
+
+            const [cont] = await ContenedoresRepository.get_Contenedores_sin_lotes(
+                {
+                    query: { _id: idContenedor },
+                    select: { infoContenedor: 1, numeroContenedor: 1, __v: 1, GGN: 1, pais_destino: 1 },
+                    populate: [
+                        {
+                            path: "infoContenedor.clienteInfo",
+                            select: "CLIENTE"
+                        },
+                        {
+                            path: "infoContenedor.calidadData",
+                            select: "nombre"
+                        },
+                        {
+                            path: "infoContenedor.tipoFruta",
+                            select: "tipoFruta"
+                        },
+                        {
+                            path: "infoContenedor.pais_destino",
+                            select: "nombre"
+                        },
+                    ]
+                },
+                { session }
+            );
+
+            contenedorEmitter.emit(
+                "crearOrdenCompra", {
+                action: 'put_inventarios_programacion_contenedores',
+                contenedor: cont
+            });
+
         })
     }
     static async put_inventarios_programaciones_asignar_contenedor(req) {
@@ -159,6 +215,35 @@ export class ProgramacionesController {
                 "crearOrdenCompra", {
                 action: 'delete_inventarios_cancelar_ordenCompra',
                 _id: _id
+            });
+
+        })
+    }
+    static async delete_inventarios_programacion_contenedores(req) {
+        const { user } = req;
+        if (!user || !user._id) {
+            throw new Error("Usuario no autenticado");
+        }
+        await executeTransactionalTask(req, async (session, log) => {
+            console.log(req.data)
+            const parseData = InventariosValidations.delete_inventarios_programacion_contenedores().parse(req.data);
+            const { data } = parseData;
+
+            await ContenedoresRepository.actualizar_data(
+                { _id: data._id },
+                {
+                    $set: {
+                        numeroContenedo: null,
+                        cancelado: true,
+                    }
+                },
+                { user: user._id, session }
+            );
+            await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_data", "Completado");
+            contenedorEmitter.emit(
+                "crearOrdenCompra", {
+                action: 'delete_inventarios_programacion_contenedores',
+                _id: data._id
             });
 
         })

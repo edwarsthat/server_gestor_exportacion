@@ -6,7 +6,7 @@ export const defineAuditLogContenedores = (conn) => {
         coleccion: String,
         documentId: mongoose.Schema.Types.ObjectId,
         operation: String,
-        user: String,
+        user: { type: Schema.Types.ObjectId, ref: 'usuario' },
         action: String,
         timestamp: { type: Date, default: Date.now },
         oldValue: mongoose.Schema.Types.Mixed,
