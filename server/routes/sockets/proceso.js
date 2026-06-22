@@ -28,7 +28,7 @@ export const apiSocketProceso = {
 
     //·region lista de empaque
     get_proceso_aplicaciones_listaEmpaque_contenedores: async () => {
-        const response = await ProcesoRepository.get_proceso_aplicaciones_listaEmpaque_contenedores()
+        const response = await ListaEmpaqueController.get_proceso_aplicaciones_listaEmpaque_contenedores()
         return successResponseRoutes(response)
     },
     get_proceso_aplicaciones_listaEmpaque_lotes: async () => {
