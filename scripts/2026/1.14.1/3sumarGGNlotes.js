@@ -100,9 +100,10 @@ async function main() {
             console.log(`📦 Lote ${loteId}: +${kilos} kg en salidaExportacion.kilosGGN`)
         }
 
-        // 2) Cambiar todos los items del contenedor con GGN false a true
+        // 2) Cambiar a true los items con GGN false, solo de lotes que SÍ son GGN
+        const lotesGGNIds = lotesArr.filter(lote => lote.GGN).map(lote => lote._id)
         const resultadoGGN = await itemPalletsCollection.updateMany(
-            { contenedor: contenedor._id, GGN: false },
+            { contenedor: contenedor._id, GGN: false, lote: { $in: lotesGGNIds } },
             { $set: { GGN: true } }
         )
         console.log(`✅ Items actualizados GGN false -> true: ${resultadoGGN.modifiedCount}`)
