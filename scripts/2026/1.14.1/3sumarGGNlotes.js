@@ -78,14 +78,35 @@ async function main() {
         const lotesArr = await lotesCollections.find({ _id: { $in: lotesIdsArr } }).toArray()
         const loteMap = new Map(lotesArr.map(lote => [lote._id.toString(), lote]))
 
+        // 1) Acumular item.kilos por lote para sumarlo a salidaExportacion.kilosGGN
+        const kilosGGNPorLote = new Map()
+
         for(const item of itemPallets){
             if(!item.GGN) continue
 
             const lote = loteMap.get(item.lote.toString())
-            
+
             if(!lote.GGN) continue
-        
+
+            const loteId = lote._id.toString()
+            kilosGGNPorLote.set(loteId, (kilosGGNPorLote.get(loteId) || 0) + (item.kilos || 0))
         }
+
+        for(const [loteId, kilos] of kilosGGNPorLote){
+            await lotesCollections.updateOne(
+                { _id: loteMap.get(loteId)._id },
+                { $inc: { 'salidaExportacion.kilosGGN': kilos } }
+            )
+            console.log(`📦 Lote ${loteId}: +${kilos} kg en salidaExportacion.kilosGGN`)
+        }
+
+        // 2) Cambiar a true los items con GGN false, solo de lotes que SÍ son GGN
+        const lotesGGNIds = lotesArr.filter(lote => lote.GGN).map(lote => lote._id)
+        const resultadoGGN = await itemPalletsCollection.updateMany(
+            { contenedor: contenedor._id, GGN: false, lote: { $in: lotesGGNIds } },
+            { $set: { GGN: true } }
+        )
+        console.log(`✅ Items actualizados GGN false -> true: ${resultadoGGN.modifiedCount}`)
 
     } catch (error) {
         console.error('❌ Error en el proceso:', error.message);
