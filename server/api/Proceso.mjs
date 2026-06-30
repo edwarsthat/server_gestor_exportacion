@@ -167,30 +167,6 @@ export class ProcesoRepository {
             await registrarPasoLog(log._id, "Finalizo la funcion", "Completado");
         }
     }
-    static async get_proceso_aplicaciones_listaEmpaque_contenedores() {
-        try {
-            const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
-                select: { numeroContenedor: 1, infoContenedor: 1, },
-                query: { 'infoContenedor.cerrado': false },
-                populate: [
-                    {
-                        path: 'infoContenedor.clienteInfo',
-                        select: 'CLIENTE',
-                    },
-                    {
-                        path: 'infoContenedor.calidad',
-                        select: 'nombre',
-                    },
-                ]
-            });
-            return contenedores
-        } catch (err) {
-            if (err.status === 522) {
-                throw err
-            }
-            throw new ProcessError(470, `Error ${err.type}: ${err.message}`)
-        }
-    }
     static async get_proceso_aplicaciones_listaEmpaque_pallets(req) {
         try {
             const { contenedor } = req.data

@@ -5,7 +5,7 @@ import { have_lote_GGN_export } from "../../controllers/validations.js";
 import { LotesHelper } from "../../helper/lotes.js";
 import { ProcesoService } from "../../services/proceso.js";
 import { AppError } from "../../utils/ErrorHandler.js";
-import { executeTransactionalTask } from "../../utils/wrappers.js";
+import { executeTransactionalTask, executeQueryTask } from "../../utils/wrappers.js";
 import { ProcesoValidations } from "../../validations/proceso.js";
 import { registrarPasoLog } from "../helper/logs.js";
 import { checkFinalizadoLote } from "../utils/lotesFunctions.js";
@@ -335,5 +335,27 @@ export class ListaEmpaqueController {
             await registrarPasoLog(log._id, "ContenedoresRepository.actualizar_contenedor", "Completado");
         });
         procesoEventEmitter.emit("listaempaque_update");
+    }
+    static async get_proceso_aplicaciones_listaEmpaque_contenedores() {
+        return await executeQueryTask(async () => {
+            const contenedores = await ContenedoresRepository.get_Contenedores_sin_lotes({
+                select: { numeroContenedor: 1, infoContenedor: 1, },
+                query: {
+                    'infoContenedor.cerrado': false,
+                    numeroContenedor: { $exists: true, $ne: null },
+                },
+                populate: [
+                    {
+                        path: 'infoContenedor.clienteInfo',
+                        select: 'CLIENTE',
+                    },
+                    {
+                        path: 'infoContenedor.calidad',
+                        select: 'nombre',
+                    },
+                ]
+            });
+            return contenedores
+        });
     }
 }

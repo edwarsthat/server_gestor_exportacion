@@ -23,6 +23,7 @@ export const defineTipoFrutas = async (conn) => {
         createdAt: { type: Date, default: () => new Date() },
         descartes: { type: [{ type: Schema.Types.ObjectId, ref: 'descartes', required: true }] },
         descartesGenerales: [descarteGenetalSchema],
+        parametrosCalidad: [String]
     });
 
     const tipoFrutas = conn.model("tipoFrutas", TipoFrutaSchema);

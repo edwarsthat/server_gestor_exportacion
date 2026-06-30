@@ -14,6 +14,19 @@ export const defineContenedores = async (conn, AuditLog) => {
     flagInsumos: { type: Boolean, default: false }
   }, { _id: false, strict: false })
 
+  const calidadContenedorSchema = new Schema({
+    parametros: { type: Map, of: String },
+    calibres: [String],
+    _id: { type: Schema.Types.ObjectId, ref: "calidades" },
+  }, { _id: true });
+
+  const tipoCajaSchema = new Schema({
+    tipo: String,
+    pesoNeto: Number,
+    cantidadCajas: Number,
+    pallets: Number,
+  }, { _id: false });
+
   const infoContenedorSchema = new Schema({
     clienteInfo: { type: Schema.Types.ObjectId, ref: "Cliente" },
     createdAt: { type: Date, default: () => new Date() },
@@ -25,20 +38,22 @@ export const defineContenedores = async (conn, AuditLog) => {
     fechaSalida: Date,
     ultimaModificacion: Date,
     tipoFruta: [{ type: Schema.Types.ObjectId, ref: 'tipoFrutas' }],
+    tipoCajaData: [tipoCajaSchema],
+    calidadData: [calidadContenedorSchema],
     tipoCaja: [String],
     calidad: [{ type: Schema.Types.ObjectId, ref: 'calidades' }],
-    sombra: String,
-    defecto: String,
-    mancha: String,
-    verdeManzana: String,
+    calibres: [String],
     cerrado: Boolean,
     observaciones: String,
     desverdizado: Boolean,
-    calibres: [String],
     urlInforme: String,
     cajasTotal: Number,
-    RrtoEstimado: String,
     maquila: Boolean,
+    semana: Number,
+    anno: Number,
+    GGN: Boolean,
+    ICA: Boolean,
+    pais_destino: { type: Schema.Types.ObjectId, ref: "Pais" },
 
   });
 
@@ -118,12 +133,11 @@ export const defineContenedores = async (conn, AuditLog) => {
 
 
   const listaEmpaqueSchema = new Schema({
-    numeroContenedor: { type: Number, required: true, unique: true, index: true },
+    numeroContenedor: { type: Number, unique: true, sparse: true },
+    ordenCompra: { type: Number, unique: true, index: true, required: true },
     totalKilos: Number,
     totalCajas: Number,
     pallets: Number,
-    GGN: Boolean,
-    pais_destino: { type: Schema.Types.ObjectId, ref: "Pais" },
     infoContenedor: infoContenedorSchema,
     infoTractoMula: schemaInfoMula,
     infoExportacion: schemaInfoExportacion,
@@ -131,10 +145,11 @@ export const defineContenedores = async (conn, AuditLog) => {
     inspeccion_mula: inspeccionMulasSchema,
     reclamacionCalidad: reclamacionSchema,
     registrosSalidas: [{ type: Schema.Types.ObjectId, ref: "salidaVehiculo" }],
-    user: { type: Schema.Types.ObjectId, ref: 'usuario' }
+    user: { type: Schema.Types.ObjectId, ref: 'usuario' },
+    cancelado: { type: Boolean, default: false, index: true }
   });
 
-  listaEmpaqueSchema.index({ reclamacionCalidad: 1, entregaPrecinto: 1 });
+  listaEmpaqueSchema.index({ "infoContenedor.fechaInicio": 1 });
 
   listaEmpaqueSchema.plugin(auditPlugin);
 

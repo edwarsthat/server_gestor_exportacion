@@ -2,33 +2,34 @@ import mongoose from "mongoose";
 
 export class ComercialService {
     static crear_contenedor(data) {
+        const [annoStr, semanaStr] = data.semana.split('-W');
+        const anno = parseInt(annoStr, 10);
+        const semana = parseInt(semanaStr, 10);
+        const calidades = data.calidades.map(c => c._id)
+        const tipoCaja = data.tipoCaja.map(c => c.tipo + "-" + c.pesoNeto)
         return {
-            numeroContenedor: Number(data.numeroContenedor),
+            ordenCompra: data.ordenCompra,
             infoContenedor: {
                 clienteInfo: data.clienteInfo,
+                pais_destino: data.paisDestino,
+                GGN: data.GGN,
+                ICA: data.ICA,
                 tipoFruta: data.tipoFruta,
                 fechaCreacion: new Date(),
-                fechaEstimadaCargue: new Date(data.fechaEstimadaCargue),
-                fechaFinalizado: '',
-                fechaSalida: '',
-                fechaInicio: new Date(data.fechaInicioProceso),
                 observaciones: data.observaciones,
                 cerrado: false,
-                tipoCaja: data.tipoCaja,
-                calidad: data.calidad,
-                calibres: data.calibres,
-                sombra: data.sombra,
-                defecto: data.defecto,
-                mancha: data.mancha,
-                verdeManzana: data.verdeManzana,
-                cajasTotal: Number(data.cajasTotal),
-                rtoEstimado: data.rtoEstimado,
+                tipoCaja: tipoCaja,
+                calidad: calidades,
+                calibres: [...new Set(data.calidades.flatMap(c => c.calibres))],
+                tipoCajaData: data.tipoCaja,
+                calidadData: data.calidades,
+                cajasTotal: data.cajasTotal ? Number(data.cajasTotal) : undefined,
                 ultimaModificacion: new Date(),
                 maquila: data.maquila,
+                semana,
+                anno
             },
             pallets: 0,
-            GGN: data.GGN,
-            pais_destino: new mongoose.Types.ObjectId(data.paisDestino),
         }
     }
     static async poner_precio_lotes(itemPallets, calidades) {

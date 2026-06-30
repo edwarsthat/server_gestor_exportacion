@@ -18,6 +18,7 @@ import { apiSocketTransporte } from "../../server/routes/sockets/transporte.js";
 // import mongoose from "mongoose"; .Jp
 import mongoose from "mongoose";
 import { eventLisener } from "./serverEvents.js";
+import { initBridge } from "./bridge/index.js";
 
 
 export function initSockets(io) {
@@ -35,6 +36,7 @@ export function initSockets(io) {
     };
 
     eventLisener({ io: io })
+    initBridge(io)
 
     io.on("connection", socket => {
 
@@ -112,6 +114,18 @@ export function initSockets(io) {
         })
         socket.on("leave_job", (jobId) => {
             socket.leave(`job_${jobId}`);
+        })
+        
+        socket.onAny((event, ...args) => {
+            const rooms = [...socket.rooms];
+            console.log(`[evento: ${event}] rooms: ${rooms}`, args);
+        });
+
+        socket.on("join_room", (room) => {
+            socket.join(room);
+        })
+        socket.on("leave_room", (room) => {
+            socket.leave(room);
         })
         socket.on("disconnect", () => {});
 

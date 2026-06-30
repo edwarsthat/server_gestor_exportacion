@@ -103,12 +103,28 @@ export const apiSocketInventarios = {
         return successResponseRoutes(descarte)
     },
     //#region programaciones
+    get_inventarios_ordenesDeCompra: async (data) => {
+        const response = await ProgramacionesController.get_inventarios_ordenesDeCompra(data)
+        return successResponseRoutes(response)
+    },
     get_inventarios_programaciones_contenedores: async (data) => {
         const response = await ProgramacionesController.get_inventarios_programaciones_contenedores(data)
         return successResponseRoutes(response)
     },
     put_inventarios_programacion_contenedores: async (data) => {
         await ProgramacionesController.put_inventarios_programacion_contenedores(data)
+        return successResponseRoutes()
+    },
+    put_inventarios_programaciones_asignar_contenedor: async (data) => {
+        await ProgramacionesController.put_inventarios_programaciones_asignar_contenedor(data)
+        return successResponseRoutes()
+    },
+    delete_inventarios_cancelar_ordenCompra: async (data) => {
+        await ProgramacionesController.delete_inventarios_cancelar_ordenCompra(data)
+        return successResponseRoutes()
+    },
+    delete_inventarios_programacion_contenedores: async (data) => {
+        await ProgramacionesController.delete_inventarios_programacion_contenedores(data)
         return successResponseRoutes()
     },
     //#endregion

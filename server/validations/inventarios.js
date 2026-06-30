@@ -677,6 +677,19 @@ export class InventariosValidations {
             z.string().refine(val => !isNaN(Date.parse(val)), "La fecha no tiene un formato válido"),
         ]);
 
+        const schemaCalidad = z.object({
+            _id: z.string().min(1, "El id de calidad es obligatorio"),
+            parametros: z.record(z.string(), z.string()),
+            calibres: z.array(z.string()).optional(),
+        });
+
+        const schemaTipoCaja = z.object({
+            tipo: z.string().min(1, "El tipo de caja es obligatorio"),
+            pesoNeto: z.number().min(0, "El peso neto debe ser mayor o igual a 0"),
+            cantidadCajas: z.number().min(0, "La cantidad de cajas debe ser mayor o igual a 0"),
+            pallets: z.number().min(0, "Los pallets deben ser mayor o igual a 0"),
+        });
+
         return z.object({
             action: z.literal("put_inventarios_programacion_contenedores"),
             idContenedor: objectIdString("idContenedor"),
@@ -684,14 +697,13 @@ export class InventariosValidations {
                 clienteInfo: objectIdString("clienteInfo"),
                 pais_destino: objectIdString("pais_destino"),
                 GGN: z.boolean({ message: "El campo GGN debe ser un booleano" }),
+                ICA: z.boolean({ message: "El campo ICA debe ser un booleano" }),
                 tipoFruta: z.array(objectIdString("tipoFruta"))
                     .min(1, "Debe seleccionar al menos un tipo de fruta"),
-                calidad: z.array(objectIdString("calidad"))
-                    .min(1, "Debe seleccionar al menos una opción de calidad"),
-                calibres: z.array(safeString("calibres").pipe(z.string().min(1, "El calibre no puede estar vacío")))
-                    .min(1, "Debe seleccionar al menos un calibre"),
-                tipoCaja: z.array(safeString("tipoCaja").pipe(z.string().min(1, "El tipo de caja no puede estar vacío")))
-                    .min(1, "Debe seleccionar al menos un tipo de caja"),
+                calidades: z.array(schemaCalidad)
+                    .min(1, "Debe haber al menos una calidad"),
+                tipoCaja: z.array(schemaTipoCaja)
+                    .min(1, "Debe agregar al menos un tipo de caja"),
                 fechaCreacion: z.string()
                     .min(1, "La fecha de creación es obligatoria")
                     .refine(val => !isNaN(Date.parse(val)), "La fecha de creación no es válida"),
@@ -711,6 +723,10 @@ export class InventariosValidations {
                 observaciones: optionalSafeString("observaciones"),
                 maquila: z.boolean({ message: "El campo maquila debe ser un booleano" }),
             })
+                .partial()
+                .refine(obj => Object.keys(obj).length > 0, {
+                    message: "Debe enviar al menos un campo para actualizar"
+                })
         });
     }
     static put_inventarios_ordenVaceo_vacear() {
@@ -775,9 +791,12 @@ export class InventariosValidations {
     static get_inventarios_programaciones_contenedores() {
         return z.object({
             action: z.literal("get_inventarios_programaciones_contenedores"),
-            fecha: z.string()
-                .min(1, "La fecha es obligatoria")
-                .refine(val => !isNaN(Date.parse(val)), "La fecha no tiene un formato válido"),
+            semanas: z.array(
+                z.object({
+                    week:z.number().min(1, "Semana Invalida").max(53, "Semana Invalida"), 
+                    year:z.number().min(2000, "Año invalido")
+                })
+            )
         })
     }
     static put_inventarios_canastillas_celifrut() {
@@ -874,5 +893,34 @@ export class InventariosValidations {
             destinatario: requiredSafeString("destinatario"),
             observaciones: optionalSafeString("observaciones"),
         })
+    }
+    static put_inventarios_programaciones_asignar_contenedor() {
+        return z.object({
+            action: z.literal("put_inventarios_programaciones_asignar_contenedor"),
+            data: z.object({
+                ordenId: objectIdString("ordenId"),
+                fecha: safeString("fecha").refine(
+                    val => !isNaN(Date.parse(val)),
+                    "La fecha no tiene un formato válido"
+                ),
+                numeroContenedor: z.coerce.number()
+                    .int("El número de contenedor debe ser un entero")
+                    .gt(0, "El número de contenedor debe ser mayor a cero"),
+            })
+        });
+    }
+    static delete_inventarios_cancelar_ordenCompra() {
+        return z.object({
+            action: z.literal("delete_inventarios_cancelar_ordenCompra"),
+            _id: objectIdString("_id"),
+        });
+    }
+    static delete_inventarios_programacion_contenedores() {
+        return z.object({
+            action: z.literal("delete_inventarios_programacion_contenedores"),
+            data: z.object({
+                _id: objectIdString("_id"),
+            }),
+        });
     }
 }

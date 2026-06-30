@@ -200,42 +200,36 @@ export class ComercialValidationsRepository {
         })
     }
     static post_comercial_contenedor() {
+        const schemaTipoCaja = z.object({
+            tipo: z.string().min(1, "El tipo de caja es obligatorio"),
+            pesoNeto: z.number().min(0, "El peso neto debe ser mayor o igual a 0"),
+            cantidadCajas: z.number().min(0, "La cantidad de cajas debe ser mayor o igual a 0"),
+            pallets: z.number().min(0, "Los pallets deben ser mayor o igual a 0"),
+        });
+
+        const schemaCalidad = z.object({
+            _id: z.string().min(1, "El id de calidad es obligatorio"),
+            parametros: z.record(z.string(), z.string()),
+            calibres: z.array(z.string()).optional(),
+        });
+
         return z.object({
             action: z.literal("post_comercial_contenedor"),
             data: z.object({
                 clienteInfo: objectIdString("clienteInfo"),
                 paisDestino: objectIdString("paisDestino"),
+                semana: z.string().min(1, "La semana es obligatoria"),
                 GGN: z.boolean({ message: "El campo GGN debe ser un booleano" }),
-                numeroContenedor: requiredSafeString("numeroContenedor")
-                    .pipe(z.string().refine(
-                        val => !isNaN(Number(val)) && Number(val) > 0,
-                        "El número de contenedor debe ser un número válido mayor a cero"
-                    )),
+                ICA: z.boolean({ message: "El campo ICA debe ser un booleano" }),
                 tipoFruta: z.array(objectIdString("tipoFruta"))
                     .min(1, "Debe seleccionar al menos un tipo de fruta"),
-                fechaInicioProceso: z.string()
-                    .min(1, "La fecha de inicio de proceso es obligatoria")
-                    .refine(val => !isNaN(Date.parse(val)), "La fecha de inicio de proceso no es válida"),
-                fechaEstimadaCargue: z.string()
-                    .min(1, "La fecha estimada de cargue es obligatoria")
-                    .refine(val => !isNaN(Date.parse(val)), "La fecha estimada de cargue no es válida"),
-                calidad: z.array(objectIdString("calidad"))
-                    .min(1, "Debe seleccionar al menos una opción de calidad"),
-                calibres: z.array(safeString("calibres").pipe(z.string().min(1, "El calibre no puede estar vacío")))
-                    .min(1, "Debe seleccionar al menos un calibre"),
-                tipoCaja: z.array(safeString("tipoCaja").pipe(z.string().min(1, "El tipo de caja no puede estar vacío")))
-                    .min(1, "Debe seleccionar al menos un tipo de caja"),
-                sombra: optionalSafeString("sombra"),
-                defecto: optionalSafeString("defecto"),
-                mancha: optionalSafeString("mancha"),
-                verdeManzana: optionalSafeString("verdeManzana"),
-                cajasTotal: requiredSafeString("cajasTotal")
-                    .pipe(z.string().refine(
-                        val => !isNaN(Number(val)) && Number(val) > 0,
-                        "El total de cajas debe ser un número válido mayor a cero"
-                    )),
+                calidades: z.array(schemaCalidad)
+                    .min(1, "Debe haber al menos una calidad"),
+                tipoCaja: z.array(schemaTipoCaja)
+                    .min(1, "Debe agregar al menos un tipo de caja"),
+                cajasTotal: z.string().optional(),
                 rtoEstimado: optionalSafeString("rtoEstimado"),
-                observaciones: optionalSafeString("observaciones"),
+                observaciones: z.string().min(1, "Las observaciones son obligatorias"),
                 maquila: z.boolean({ message: "El campo maquila debe ser un booleano" }),
             })
         })

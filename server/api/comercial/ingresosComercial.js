@@ -2,6 +2,8 @@ import { executeTransactionalTask } from "../../utils/wrappers.js";
 import { ComercialValidationsRepository } from "../../validations/Comercial.js";
 import { ComercialService } from "../../services/comercial.js";
 import { ContenedoresRepository } from "../../Class/Contenedores.js";
+import { dataRepository } from "../data.js";
+import { contenedorEmitter } from "../../../events/emitters.js";
 
 
 export class IngresosComercialController {
@@ -12,12 +14,21 @@ export class IngresosComercialController {
         }
         await executeTransactionalTask(req, async (session) => {
             const { data } = ComercialValidationsRepository.post_comercial_contenedor().parse(req.data);
-            const objCont = ComercialService.crear_contenedor(data)
-            console.log(objCont)
+            const serial = await dataRepository.incrementar_serial("ordenCompra", session);
+            const objCont = ComercialService.crear_contenedor({ ...data, ordenCompra: serial })
             if (!objCont) {
                 throw new Error("Error al crear el contenedor")
             }
-            await ContenedoresRepository.post_data(objCont, { session, user: user._id });
+            const contenedor = await ContenedoresRepository.post_data(objCont, { session, user: user._id });
+            await contenedor.populate([
+                { path: "infoContenedor.tipoFruta", select: "tipoFruta" },
+                { path: "infoContenedor.clienteInfo", select: "CLIENTE" },
+                { path: "infoContenedor.pais_destino", select: "nombre" },
+            ]);
+            contenedorEmitter.emit("crearOrdenCompra", {
+                action: "post_comercial_contenedor",
+                contenedor
+            });
         })
     }
 }
