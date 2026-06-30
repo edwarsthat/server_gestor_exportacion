@@ -206,6 +206,9 @@ export class ProgramacionesController {
                 {
                     $set: {
                         cancelado: true,
+                    },
+                    $unset: {
+                        numeroContenedor: "",
                     }
                 },
                 { user: user._id, session }
@@ -225,16 +228,14 @@ export class ProgramacionesController {
             throw new Error("Usuario no autenticado");
         }
         await executeTransactionalTask(req, async (session, log) => {
-            console.log(req.data)
             const parseData = InventariosValidations.delete_inventarios_programacion_contenedores().parse(req.data);
             const { data } = parseData;
 
             await ContenedoresRepository.actualizar_data(
                 { _id: data._id },
                 {
-                    $set: {
-                        numeroContenedo: null,
-                        cancelado: true,
+                    $unset: {
+                        numeroContenedor: "",
                     }
                 },
                 { user: user._id, session }
