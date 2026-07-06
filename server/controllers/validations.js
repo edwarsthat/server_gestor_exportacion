@@ -7,13 +7,13 @@ function have_lote_GGN_export(lote, contenedor) {
         if (!lote.GGN) return false;
         if (!lote.predio?.GGN) return false;
         const { GGN } = lote.predio;
-        let PAIS_DESTINO = contenedor.pais_destino || "";
+        let PAIS_DESTINO = contenedor.infoContenedor?.pais_destino || "";
 
         // Validar que exista GGN y tenga datos
         if (!GGN.paises.length) {
             return false;
         }
-        if (!contenedor.GGN) {
+        if (!contenedor.infoContenedor.GGN) {
             return false;
         }
         if (union_europea.includes(PAIS_DESTINO.toString())) {
