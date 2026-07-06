@@ -1,4 +1,5 @@
 import { TransporteRepository } from "../../api/Transporte.js";
+import { transporteDocumentosController } from "../../api/transporte/documentos.controller.js";
 import { TransporteIngresosController } from "../../api/transporte/Ingresos.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
@@ -92,7 +93,7 @@ export const apiSocketTransporte = {
     //#endregion
     //#region documentos
     get_transporte_documentos_programacionMula_contenedores: async (data) => {
-        const response = await TransporteRepository.get_transporte_documentos_programacionMula_contenedores(data)
+        const response = await transporteDocumentosController.get_transporte_documentos_programacionMula_contenedores(data)
         return successResponseRoutes(response)
     },
     get_transporte_documentos_generarDocumentos: async (data) => {
