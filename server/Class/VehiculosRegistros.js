@@ -1,7 +1,11 @@
 import { db } from "../../DB/mongoDB/config/init.js";
 import { ConnectionDBError, PostError } from "../../Error/ConnectionErrors.js";
+import { BaseRepository } from "./base/BaseRepository.js";
 
-export class VehiculoRegistro {
+export class VehiculoRegistro extends BaseRepository {
+    static get model() { return db.VehiculoSalida; }
+    static modelName = 'salidaVehiculo';
+
     static async addTractomula(data, opts = {}) {
         const { session } = opts;
         try {
@@ -48,7 +52,7 @@ export class VehiculoRegistro {
                 .skip(skip)
                 .populate(populate)
                 .session(session)
-                
+
 
             return registros
 
