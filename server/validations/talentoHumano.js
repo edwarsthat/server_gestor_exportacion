@@ -25,7 +25,7 @@ export class TalentoHumanoValidations {
                 cargo: objectIdString("cargo"),
                 vinilo: z.boolean(),
             }),
-            foto: bufferData("foto"),
+            foto: bufferData("foto").optional(),
             cedula: bufferData("cedula").optional(),
             cedulaFrente: bufferData("cedulaFrente").optional(),
             cedulaTrasera: bufferData("cedulaTrasera").optional(),

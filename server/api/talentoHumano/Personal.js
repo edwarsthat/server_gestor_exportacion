@@ -32,17 +32,8 @@ export class PersonalControllerRepository {
             throw new Error('Usuario no encontrado');
         }
         const dataValidada = TalentoHumanoValidations.post_talentoHumano_personal_ingresoPersonal().parse(req.data)
-        const { action, data, foto, cedula, cedulaFrente, cedulaTrasera } = dataValidada
+        const { action, data, foto } = dataValidada
 
-        if (!foto) {
-            throw new Error('La foto es obligatoria.');
-        }
-
-        const cedulaPath = await this.post_talentoHumano_personal_cargarCedula(cedula, cedulaFrente, cedulaTrasera)
-
-        if (!cedulaPath) {
-            throw new Error('El documento de identificación es obligatorio.');
-        }
 
         const urlPath = path.join(
             "personal",
@@ -50,24 +41,28 @@ export class PersonalControllerRepository {
         );
 
         try {
-            //se sube la foto
-            filePath = await FileService.saveBufferFile(
-                foto,
-                urlPath,
-                "STORAGE"
-            )
+            let response
+            if (foto) {
+                //se sube la foto
+                filePath = await FileService.saveBufferFile(
+                    foto,
+                    urlPath,
+                    "STORAGE"
+                )
 
-            const payload = {
-                data: JSON.stringify(cleanForRust(filePath)),
-                server: "python",
-                action: "talentoHumano_procesamiento_imagen"
-            };
+                const payload = {
+                    data: JSON.stringify(cleanForRust(filePath)),
+                    server: "python",
+                    action: "talentoHumano_procesamiento_imagen"
+                };
 
-            const responseStr = await rustRcpClient.sendData(payload);
-            const response = JSON.parse(responseStr);
+                const responseStr = await rustRcpClient.sendData(payload);
+                response = JSON.parse(responseStr);
 
-            if (!response.success) throw new Error(response.message || 'Error al procesar la imagen');
-            responsePath = response.path;
+                if (!response.success) throw new Error(response.message || 'Error al procesar la imagen');
+                responsePath = response.path;
+            }
+
 
             await executeTransactionalTask(req, async (session, log) => {
                 const redisCliente = await getRedisClient();
@@ -110,8 +105,7 @@ export class PersonalControllerRepository {
                         carnet: null,
                         ...data,
                         PE: peResult.serial,
-                        urlIdentificacion: cedulaPath,
-                        urlFotoCarnet: response.path,
+                        urlFotoCarnet: response?.path ?? null,
                         fecha_formulario_sociodemografico: new Date(),
                         ...encuesta
                     },
