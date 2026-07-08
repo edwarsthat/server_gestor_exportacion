@@ -15,8 +15,7 @@ export const defineSchemaPersonal = async (conn, auditLog) => {
         tipoDocumento: { type: String },
         foto: { type: String },
         tipoSangre: { type: String },
-        urlIdentificacion: { type: String, required: true },
-        urlFotoCarnet: { type: String, required: true },
+        urlFotoCarnet: { type: String },
         estado: { type: Boolean, required: true, default: true },
         carnet: { type: Schema.Types.ObjectId, ref: 'carnet', default: null },
 

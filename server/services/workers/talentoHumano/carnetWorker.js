@@ -46,6 +46,12 @@ async function run() {
         if (!empleados || empleados.length === 0) {
             throw new Error("No se encontraron empleados para generar");
         }
+
+        empleados.forEach(e => {
+            if(!e.urlFotoCarnet){
+                throw new Error(`El empleado ${e._id} no tiene foto de carnet`)
+            }
+        })
         const personalMap = new Map(empleados.map(e => [e._id.toString(), e]))
 
         const cargosIds = empleados.map(e => e.cargo)
