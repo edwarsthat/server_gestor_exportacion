@@ -38,18 +38,20 @@ export class LotesHelper {
 
     }
     static async obtener_lote_helper(filter = {}, options = {}) {
-        const [r1, r2] = await Promise.allSettled([
-            LotesRepository.getLotes(filter, options),
-            LotesRepository.getLotesMaquila(filter, options)
-        ]);
+        // IMPORTANTE: dentro de una transacción MongoDB no se pueden ejecutar dos
+        // operaciones en paralelo sobre la misma session (error "Only servers in a
+        // sharded cluster can start a new transaction at the active transaction number").
+        // Por eso las consultas se ejecutan de forma secuencial, no con Promise.allSettled.
+        const settle = async (fn) => {
+            try {
+                return { status: 'fulfilled', value: await fn() };
+            } catch (reason) {
+                return { status: 'rejected', reason };
+            }
+        };
 
-        // === DIAGNOSTICO TEMPORAL: quitar cuando se resuelva el problema de maquila ===
-        console.log('[LotesHelper][DEBUG] filter:', JSON.stringify(filter), 'options:', JSON.stringify({ session: !!options?.session }));
-        console.log('[LotesHelper][DEBUG] getLotes        ->', r1.status, r1.status === 'fulfilled' ? `count=${Array.isArray(r1.value) ? r1.value.length : 'no-array'}` : '');
-        console.log('[LotesHelper][DEBUG] getLotesMaquila ->', r2.status, r2.status === 'fulfilled' ? `count=${Array.isArray(r2.value) ? r2.value.length : 'no-array'}` : '');
-        if (r1.status === 'rejected') console.error('[LotesHelper][DEBUG] getLotes FALLO:', r1.reason);
-        if (r2.status === 'rejected') console.error('[LotesHelper][DEBUG] getLotesMaquila FALLO:', r2.reason);
-        // === FIN DIAGNOSTICO TEMPORAL ===
+        const r1 = await settle(() => LotesRepository.getLotes(filter, options));
+        const r2 = await settle(() => LotesRepository.getLotesMaquila(filter, options));
 
         if (r1.status === 'rejected' && r2.status === 'rejected') {
             throw new Error(`Error obteniendo lotes, ambas bases de datos estan caidas`);
