@@ -3,7 +3,7 @@ import { InventariosHistorialRepository } from "../../Class/Inventarios.js";
 import { InventariosService } from "../../services/inventarios.js";
 import { registrarPasoLog } from "../helper/logs.js";
 import { InventariosValidations } from "../../validations/inventarios.js";
-import { LotesRepository } from "../../Class/Lotes.js";
+import { LoteMaquilaRepository, LotesRepository } from "../../Class/Lotes.js";
 import { executeQueryTask, executeTransactionalTask } from "../../utils/wrappers.js";
 import config from "../../../src/config/index.js";
 import { buildDateRangeFilter } from "../utils/filtros.js";
@@ -280,7 +280,7 @@ export class InventarioFrutaSinProcesarController {
 
             let lote
 
-            lote = await LotesRepository.post_data(query, { session: session, user: user._id, action: action });
+            lote = await LoteMaquilaRepository.post_data(query, { session: session, user: user._id, action: action });
             await registrarPasoLog(log._id, "LotesRepository.post_data", "Completado");
 
             // await VariablesDelSistema.ingresarInventario(lote._id.toString(), Number(lote.canastillas));
