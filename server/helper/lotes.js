@@ -33,14 +33,25 @@ export class LotesHelper {
             }
             return loteActualizado;
         } catch (err) {
-            throw new Error(`Fallo en la escritura del lote: ${err.message}`);
+            throw new Error(`Fallo en la escritura del lote: ${err.message}`, { cause: err });
         }
+
     }
     static async obtener_lote_helper(filter = {}, options = {}) {
-        const [r1, r2] = await Promise.allSettled([
-            LotesRepository.getLotes(filter, options),
-            LotesRepository.getLotesMaquila(filter, options)
-        ]);
+        // IMPORTANTE: dentro de una transacción MongoDB no se pueden ejecutar dos
+        // operaciones en paralelo sobre la misma session (error "Only servers in a
+        // sharded cluster can start a new transaction at the active transaction number").
+        // Por eso las consultas se ejecutan de forma secuencial, no con Promise.allSettled.
+        const settle = async (fn) => {
+            try {
+                return { status: 'fulfilled', value: await fn() };
+            } catch (reason) {
+                return { status: 'rejected', reason };
+            }
+        };
+
+        const r1 = await settle(() => LotesRepository.getLotes(filter, options));
+        const r2 = await settle(() => LotesRepository.getLotesMaquila(filter, options));
 
         if (r1.status === 'rejected' && r2.status === 'rejected') {
             throw new Error(`Error obteniendo lotes, ambas bases de datos estan caidas`);
