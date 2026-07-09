@@ -209,8 +209,9 @@ export class LotesRepository extends BaseRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
+                .lean()
                 .session(session)
-                
+
 
             return lotes
 

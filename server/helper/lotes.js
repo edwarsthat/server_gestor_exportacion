@@ -33,14 +33,23 @@ export class LotesHelper {
             }
             return loteActualizado;
         } catch (err) {
-            throw new Error(`Fallo en la escritura del lote: ${err.message}`);
+            throw new Error(`Fallo en la escritura del lote: ${err.message}`, { cause: err });
         }
+
     }
     static async obtener_lote_helper(filter = {}, options = {}) {
         const [r1, r2] = await Promise.allSettled([
             LotesRepository.getLotes(filter, options),
             LotesRepository.getLotesMaquila(filter, options)
         ]);
+
+        // === DIAGNOSTICO TEMPORAL: quitar cuando se resuelva el problema de maquila ===
+        console.log('[LotesHelper][DEBUG] filter:', JSON.stringify(filter), 'options:', JSON.stringify({ session: !!options?.session }));
+        console.log('[LotesHelper][DEBUG] getLotes        ->', r1.status, r1.status === 'fulfilled' ? `count=${Array.isArray(r1.value) ? r1.value.length : 'no-array'}` : '');
+        console.log('[LotesHelper][DEBUG] getLotesMaquila ->', r2.status, r2.status === 'fulfilled' ? `count=${Array.isArray(r2.value) ? r2.value.length : 'no-array'}` : '');
+        if (r1.status === 'rejected') console.error('[LotesHelper][DEBUG] getLotes FALLO:', r1.reason);
+        if (r2.status === 'rejected') console.error('[LotesHelper][DEBUG] getLotesMaquila FALLO:', r2.reason);
+        // === FIN DIAGNOSTICO TEMPORAL ===
 
         if (r1.status === 'rejected' && r2.status === 'rejected') {
             throw new Error(`Error obteniendo lotes, ambas bases de datos estan caidas`);
