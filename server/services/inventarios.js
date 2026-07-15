@@ -1390,9 +1390,14 @@ export class InventariosService {
             }
 
             // Calcular nuevo valor y preparar update
+            const canastillasAEliminar = Math.ceil(Number(kilos) / 20);
             const nuevoKilosActuales = registro.kilosActuales - Number(kilos);
+            const nuevoCanastillasActuales = nuevoKilosActuales === 0
+                ? 0
+                : Math.max((registro.canastillasActuales || 0) - canastillasAEliminar, 0);
             const update = {
                 kilosActuales: nuevoKilosActuales,
+                canastillasActuales: nuevoCanastillasActuales,
                 ...(nuevoKilosActuales === 0 && { estado: 'AGOTADO' })
             };
 
@@ -1470,6 +1475,7 @@ export class InventariosService {
                 area: area,
                 tipoDescarte: tipoDescarteId,
                 kilos: kilos,
+                canastillas: Math.ceil(Number(kilos) / 20),
                 loteType: "Lote"
             }
 
