@@ -154,7 +154,7 @@ export class DotacionCarnetsControllerRepository {
             const data = await TalentoHumanoDotacionCarnetsRepository.get_data(
                 {
                     query,
-                    sort: { createdAt: -1 },
+                    sort: { SKU: -1 },
                     limit: resultsPerPage, skip: (page - 1) * resultsPerPage,
                     populate: [
                         { path: "employeeId", select: "nombre apellido identificacion" }

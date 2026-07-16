@@ -1,5 +1,6 @@
 import { IngresosCalidadController } from "../../api/calidad/ingresosCalidad.js";
 import { dataRepository } from "../../api/data.js";
+import { crearExcelController } from "../../api/data/crearExcel.controller.js";
 import { successResponseRoutes } from "../helpers/responses.js";
 
 
@@ -88,4 +89,8 @@ export const apiSocketData = {
         const response = await dataRepository.get_data_operarios();
         return successResponseRoutes(response)
     },
+    get_data_excelPersonal: async (req) => {
+        const response = await crearExcelController.documento_personal(req);
+        return successResponseRoutes(response)
+    }
 }

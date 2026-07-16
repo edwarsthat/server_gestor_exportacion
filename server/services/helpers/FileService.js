@@ -38,6 +38,7 @@ const STORAGE_LOCATIONS = {
     UPLOADS: path.resolve(__dirname, '..', '..', '..', 'uploads'),
     // Desde: 
     STORAGE: path.resolve(__dirname, '..', '..', '..', '..', 'storage'),
+
 };
 
 
@@ -67,6 +68,8 @@ export class FileService {
             // Resolver la ruta usando path.normalize para prevenir secuencias ../ anidadas
             const normalizedPath = path.normalize(sanitizedPath);
             const resolvedPath = path.resolve(baseDir, normalizedPath);
+
+            console.log('[FileService.validateFilePath] filePath:', filePath, '| allowedLocation:', allowedLocation, '| resolvedPath:', resolvedPath);
 
             // Seguridad contra Path Traversal usando path.relative
             const relative = path.relative(baseDir, resolvedPath);
@@ -136,6 +139,8 @@ export class FileService {
         } = options;
 
         const resolvedPath = await this.sanitizeAndValidatePath(filePath, location);
+
+        console.log('[FileService.readFileAsBase64] resolvedPath:', resolvedPath);
 
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         let buffer = await fs.readFile(resolvedPath);

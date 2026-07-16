@@ -69,7 +69,7 @@ async function main() {
         const lotesCollection = database.collection('lotes');
         const lotes = await lotesCollection.find({
             fecha_creacion: {
-                $gte: new Date('2024-04-30'),
+                $gte: new Date('2026-01-01'),
                 // $lte: new Date('2026-03-31T23:59:59.999Z'),
             },
         }).toArray();
@@ -82,7 +82,7 @@ async function main() {
         const calidades = await calidadesCollection.find({}).toArray();
         const calidadesMap = new Map(calidades.map(calidad => [calidad._id.toString(), calidad]));
 
-        const tipoFrutaCollection = database.collection('tipoFruta');
+        const tipoFrutaCollection = database.collection('tipofrutas');
         const tiposFruta = await tipoFrutaCollection.find({}).toArray();
         const tipoFrutaMap = new Map(tiposFruta.map(tipo => [tipo._id.toString(), tipo]));
 
