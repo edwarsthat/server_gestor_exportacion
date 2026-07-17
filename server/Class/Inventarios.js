@@ -486,8 +486,8 @@ export class InventariosHistorialRepository extends BaseRepository {
                         $inc: {
                             kilosActuales: Number(kilos),
                             kilosIniciales: Number(kilos),
-                            canastillasActuales: Number(canastillas),
-                            canastillasIniciales: Number(canastillas)
+                            canastillasActuales: Number(canastillas || 0),
+                            canastillasIniciales: Number(canastillas || 0)
                         },
                         $set: { fechaActualizacion: new Date() }
                     },
@@ -515,8 +515,8 @@ export class InventariosHistorialRepository extends BaseRepository {
                     user: user,
                     kilosIniciales: Number(kilos),
                     kilosActuales: Number(kilos),
-                    canastillasIniciales: Number(canastillas),
-                    canastillasActuales: Number(canastillas),
+                    canastillasIniciales: Number(canastillas || 0),
+                    canastillasActuales: Number(canastillas || 0),
                     tipoRegistro: area,
                 });
 
