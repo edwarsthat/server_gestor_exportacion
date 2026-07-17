@@ -65,15 +65,17 @@ export class DotacionCarnetsControllerRepository {
             const urlSegura = `${config.URL_CELIFRUT}/verify?serial=${newCarnet.SKU}#${tokenGenerado}`;
             await registrarPasoLog(log._id, "Éxito", "Completado", "Carnet actualizado exitosamente");
 
-            const qrBase64 = await QRCode.toDataURL(urlSegura, { width: 250, margin: 1 });
+            const qrBase64 = await QRCode.toDataURL(urlSegura, { width: 1000, margin: 1 });
             htmlTemplate = htmlTemplate.replace('{{QR_URL}}', qrBase64);
 
             const templateDir = await FileService.getTemplateDir('talentoHumano/carnet/carnet.html');
             const pdfBuffer = await HtmlToImage.convertToPdf(htmlTemplate, {
                 baseUrl: templateDir,
                 waitFor: 'domcontentloaded',
-                width: '5.4cm',
-                height: '8.64cm',
+                // 204px x 326.4px = 5.4cm x 8.64cm; en px exactos (400x640 * 0.51)
+                // para que la página no quede 0.2px más ancha que la tarjeta y se vea un filo blanco
+                width: '204px',
+                height: '326.4px',
                 scale: 0.51,
                 viewportWidth: 400,
                 viewportHeight: 640,
@@ -257,16 +259,16 @@ export class DotacionCarnetsControllerRepository {
             //Cargar el template HTML
             let htmlTemplate = await FileService.readTemplate('talentoHumano/carnet/carnet.html');
             await registrarPasoLog(log._id, "Éxito", "Completado", "Template HTML cargado exitosamente");
-            //Cargar la iamgen de fondo
-            const imgaBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/CREDENCIAL TEMPORAL.png');
-            await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo cargada exitosamente");
+            // //Cargar la iamgen de fondo
+            // const imgaBase64 = await FileService.readFileAsBase64('talentoHumano/carnet/CREDENCIAL TEMPORAL.png');
+            // await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo cargada exitosamente");
 
-            //se reemplaza la imagen por la de base64 
-            htmlTemplate = htmlTemplate.replace(
-                "url('CREDENCIAL TEMPORAL.png')",
-                `url('${imgaBase64}')`
-            );
-            await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo reemplazada exitosamente");
+            // //se reemplaza la imagen por la de base64 
+            // htmlTemplate = htmlTemplate.replace(
+            //     "url('CREDENCIAL TEMPORAL.png')",
+            //     `url('${imgaBase64}')`
+            // );
+            // await registrarPasoLog(log._id, "Éxito", "Completado", "Imagen de fondo reemplazada exitosamente");
 
             const qrBase64 = await QRCode.toDataURL(urlSegura, { width: 250, margin: 1 });
             htmlTemplate = htmlTemplate.replace('{{QR_URL}}', qrBase64);
