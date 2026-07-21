@@ -1,7 +1,19 @@
 import { z } from "zod";
 import { objectIdString, base64String, requiredSafeString, bufferData, safeString, optionalSafeString } from "./utils/validationFunctions.js";
+import { filtroSchema } from "./utils/validateFiltros.js";
 
 export class TalentoHumanoValidations {
+    static get_talentoHumano_personal_registros() {
+        return z.object({
+            page: z.coerce.number().int().positive("La página debe ser un número entero positivo"),
+            filtro: filtroSchema,
+        })
+    }
+    static get_talentoHumano_personal_numeroRegistros() {
+        return z.object({
+            filtro: filtroSchema,
+        })
+    }
     static post_talentoHumano_personal_cargarCedula() {
         return z.object({
             action: z.string().min(1, "La acción es obligatoria"),
@@ -25,20 +37,8 @@ export class TalentoHumanoValidations {
                 cargo: objectIdString("cargo"),
                 vinilo: z.boolean(),
             }),
-            foto: bufferData("foto"),
-            cedula: bufferData("cedula").optional(),
-            cedulaFrente: bufferData("cedulaFrente").optional(),
-            cedulaTrasera: bufferData("cedulaTrasera").optional(),
+            foto: bufferData("foto").optional(),
             action: requiredSafeString("action"),
-        }).superRefine((val, ctx) => {
-            const hasCedula = val.cedula !== undefined;
-            const hasFrontalTrasera = val.cedulaFrente !== undefined && val.cedulaTrasera !== undefined;
-            if (!hasCedula && !hasFrontalTrasera) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: "Se requiere 'cedula' o ambos 'cedulaFrente' y 'cedulaTrasera'",
-                });
-            }
         })
     }
     static put_talentoHumano_dotacion_carnets_generar_temporal() {
@@ -51,10 +51,7 @@ export class TalentoHumanoValidations {
         return z.object({
             _id: objectIdString("_id"),
             action: requiredSafeString("action"),
-            typeDoc: z.enum(["foto", "cedula"], {
-                errorMap: () => ({ message: "El tipo de documento debe ser 'foto' o 'cedula'" })
-            }),
-            file: z.union([base64String("file"), bufferData("file")]),
+            file: bufferData("file"),
         })
     }
     static put_talentoHumano_personal() {

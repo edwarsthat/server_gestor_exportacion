@@ -46,6 +46,12 @@ async function run() {
         if (!empleados || empleados.length === 0) {
             throw new Error("No se encontraron empleados para generar");
         }
+
+        empleados.forEach(e => {
+            if(!e.urlFotoCarnet){
+                throw new Error(`El empleado ${e._id} no tiene foto de carnet`)
+            }
+        })
         const personalMap = new Map(empleados.map(e => [e._id.toString(), e]))
 
         const cargosIds = empleados.map(e => e.cargo)
@@ -119,6 +125,17 @@ async function run() {
             htmlTemplate = htmlTemplate.replace('{{RH}}', empleadoData.tipoSangre || 'O+');
             htmlTemplate = htmlTemplate.replace('{{COLOR_PRINCIPAL}}', cargoData.color || '#F3930D');
 
+            // Gradiente del header según el color base del cargo (inicio -> fin, izquierda a derecha)
+            const gradientesHeader = {
+                '#7EBA27': ['#7EBA28', '#00A634'], // Verde
+                '#FFCD00': ['#FFCD00', '#EF9F00'], // Amarillo
+                '#F3930D': ['#F3930D', '#DD6B00'], // Naranja
+            };
+            const colorCargo = (cargoData.color || '#F3930D').toUpperCase();
+            const [gradStart, gradEnd] = gradientesHeader[colorCargo] || [colorCargo, colorCargo];
+            htmlTemplate = htmlTemplate.replace('{{COLOR_GRAD_START}}', gradStart);
+            htmlTemplate = htmlTemplate.replace('{{COLOR_GRAD_END}}', gradEnd);
+
             const urlSegura = `${config.URL_CELIFRUT}/verify?serial=${carnetActualizado.SKU}#${tokenGenerado}`;
             const qrBase64 = await QRCode.toDataURL(urlSegura, { width: 250, margin: 1 });
             htmlTemplate = htmlTemplate.replace('{{QR_URL}}', qrBase64);
@@ -127,9 +144,12 @@ async function run() {
             const pdfBuffer = await HtmlToImage.convertToPdf(htmlTemplate, {
                 baseUrl: templateDir,
                 waitFor: 'domcontentloaded',
-                width: '5.4cm',
-                height: '8.56cm',
-                scale: 0.4535,
+                // Chromium cuantiza la página a pasos de 0.96pt: pedir 5.4cm (153.07pt) produce 154.08pt
+                // y deja ~0.4mm de página vacía al lado derecho. 204px -> 153.12pt (5.4cm) exactos,
+                // y scale 0.4542 hace que la tarjeta (450x713) llene la página completa (8.56cm de alto).
+                width: '204px',
+                height: '323.8px',
+                scale: 0.4542,
                 viewportWidth: 450,
                 viewportHeight: 690,
             });

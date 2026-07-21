@@ -855,4 +855,52 @@ Fecha: 17 Oct 2020`
             throw error;
         }
     }
+    static async crear_tabla_personal(personal) {
+        try {
+            const rows = personal.map(p => (p.toObject ? p.toObject() : p));
+
+            const excluded = new Set(['_id', '__v', 'cargo']);
+            const fieldNames = [...new Set(rows.flatMap(r => Object.keys(r)))]
+                .filter(k => !excluded.has(k));
+            const headers = ['CARGO', ...fieldNames];
+
+            const GREEN = '#5FD991';
+            const c = (value, opts = {}) => ({
+                value,
+                align: 'center',
+                alignVertical: 'middle',
+                borderStyle: 'thin',
+                ...opts,
+            });
+
+            const formatValue = (value) => {
+                if (value === null || value === undefined) return '';
+                if (Array.isArray(value)) return value.join(', ');
+                if (typeof value === 'boolean') return value ? 'Si' : 'No';
+                if (value instanceof Date) return formatearFecha(value.toISOString(), true);
+                return value;
+            };
+
+            const headerRow = headers.map(h => c(h, { fontWeight: 'bold', backgroundColor: GREEN }));
+
+            const dataRows = rows.map(p => {
+                const values = [p.cargo?.nombre ?? 'N/A', ...fieldNames.map(f => formatValue(p[f]))];
+                return values.map(v => c(v, { wrap: true }));
+            });
+
+            const data = [headerRow, ...dataRows];
+            const columns = headers.map(() => ({ width: 20 }));
+
+            const buffer = await writeXlsxFile(data, {
+                columns,
+                sheet: 'Personal',
+                buffer: true,
+            });
+
+            return buffer;
+        } catch (error) {
+            console.error('Error en crear_tabla_personal:', error);
+            throw error;
+        }
+    }
 }

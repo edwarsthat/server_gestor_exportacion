@@ -23,6 +23,27 @@ export class PersonalControllerRepository {
     // eslint-disable-next-line no-secrets/no-secrets -- Hash falso intencional, no es un secreto real
     static DUMMY_HASH = "$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 
+    // Busca en nombre, apellido o cédula (identificacion), ignorando mayúsculas/minúsculas
+    // y diferencias de espaciado (dobles espacios, espacios al inicio/final, etc.)
+    static buildQueryConBusqueda(filtro) {
+        const query = { estado: filtro.activo }
+        if (filtro.buscar !== "") {
+            const terminoNormalizado = filtro.buscar
+                .trim()
+                .replace(/\s+/g, ' ')
+                .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                .replace(/ /g, '\\s+');
+
+            const regexBusqueda = { $regex: terminoNormalizado, $options: 'i' };
+            query.$or = [
+                { nombre: regexBusqueda },
+                { apellido: regexBusqueda },
+                { identificacion: regexBusqueda }
+            ];
+        }
+        return query
+    }
+
 
     static async post_talentoHumano_personal_ingresoPersonal(req) {
         const { user } = req
@@ -32,17 +53,8 @@ export class PersonalControllerRepository {
             throw new Error('Usuario no encontrado');
         }
         const dataValidada = TalentoHumanoValidations.post_talentoHumano_personal_ingresoPersonal().parse(req.data)
-        const { action, data, foto, cedula, cedulaFrente, cedulaTrasera } = dataValidada
+        const { action, data, foto } = dataValidada
 
-        if (!foto) {
-            throw new Error('La foto es obligatoria.');
-        }
-
-        const cedulaPath = await this.post_talentoHumano_personal_cargarCedula(cedula, cedulaFrente, cedulaTrasera)
-
-        if (!cedulaPath) {
-            throw new Error('El documento de identificación es obligatorio.');
-        }
 
         const urlPath = path.join(
             "personal",
@@ -50,24 +62,28 @@ export class PersonalControllerRepository {
         );
 
         try {
-            //se sube la foto
-            filePath = await FileService.saveBufferFile(
-                foto,
-                urlPath,
-                "STORAGE"
-            )
+            let response
+            if (foto) {
+                //se sube la foto
+                filePath = await FileService.saveBufferFile(
+                    foto,
+                    urlPath,
+                    "STORAGE"
+                )
 
-            const payload = {
-                data: JSON.stringify(cleanForRust(filePath)),
-                server: "python",
-                action: "talentoHumano_procesamiento_imagen"
-            };
+                const payload = {
+                    data: JSON.stringify(cleanForRust(filePath)),
+                    server: "python",
+                    action: "talentoHumano_procesamiento_imagen"
+                };
 
-            const responseStr = await rustRcpClient.sendData(payload);
-            const response = JSON.parse(responseStr);
+                const responseStr = await rustRcpClient.sendData(payload);
+                response = JSON.parse(responseStr);
 
-            if (!response.success) throw new Error(response.message || 'Error al procesar la imagen');
-            responsePath = response.path;
+                if (!response.success) throw new Error(response.message || 'Error al procesar la imagen');
+                responsePath = response.path;
+            }
+
 
             await executeTransactionalTask(req, async (session, log) => {
                 const redisCliente = await getRedisClient();
@@ -104,14 +120,14 @@ export class PersonalControllerRepository {
                 }
                 await registrarPasoLog(log._id, "Actualizar serial", "completado")
                 //se crea el empleado
+                console.log(encuesta)
                 const empleado = await PersonalRepository.post_data(
                     {
                         _id: nuevoEmpleadoId,
                         carnet: null,
                         ...data,
                         PE: peResult.serial,
-                        urlIdentificacion: cedulaPath,
-                        urlFotoCarnet: response.path,
+                        urlFotoCarnet: response?.path ?? null,
                         fecha_formulario_sociodemografico: new Date(),
                         ...encuesta
                     },
@@ -204,9 +220,9 @@ export class PersonalControllerRepository {
     }
     static async get_talentoHumano_personal_registros(req) {
         try {
-            const { page, filtro } = req.data
+            const { page, filtro } = TalentoHumanoValidations.get_talentoHumano_personal_registros().parse(req.data)
             const resultsPerPage = 25;
-            const query = { estado: filtro.activo }
+            const query = PersonalControllerRepository.buildQueryConBusqueda(filtro)
 
             const data = await PersonalRepository.get_data({
                 query: query,
@@ -293,8 +309,8 @@ export class PersonalControllerRepository {
     }
     static async get_talentoHumano_personal_numeroRegistros(req) {
         try {
-            const { filtro } = req.data
-            const query = { estado: filtro.activo }
+            const { filtro } = TalentoHumanoValidations.get_talentoHumano_personal_numeroRegistros().parse(req.data)
+            const query = PersonalControllerRepository.buildQueryConBusqueda(filtro)
 
             const data = await PersonalRepository.get_numero_registros(query)
             return data
@@ -520,50 +536,41 @@ export class PersonalControllerRepository {
             }
             await registrarPasoLog(log._id, "Obtener personal", "completado")
 
-            //se debe mirar que tipo de documento es elq ue se va a subir
-            let docToChange = ""
-            let campo = ""
-            let isEncrypted = false
+            const fotoAnterior = personalDoc.urlFotoCarnet ?? ""
 
-            let urlPath = ""
+            //se sube la foto
+            const urlPath = path.join("personal", "fotoCarnet")
+            const filePath = await FileService.saveBufferFile(
+                dataValidate.file,
+                urlPath,
+                "STORAGE"
+            )
 
-            if (dataValidate.typeDoc === "foto") {
-                docToChange = personalDoc.urlFotoCarnet
-                campo = "urlFotoCarnet"
+            const payload = {
+                data: JSON.stringify(cleanForRust(filePath)),
+                server: "python",
+                action: "talentoHumano_procesamiento_imagen"
+            };
 
-                urlPath = path.join(
-                    "personal",
-                    "fotoCarnetProcessed",
-                );
-            } else if (dataValidate.typeDoc === "cedula") {
-                docToChange = personalDoc.urlIdentificacion
-                campo = "urlIdentificacion"
-                isEncrypted = true
+            const responseStr = await rustRcpClient.sendData(payload);
+            const response = JSON.parse(responseStr);
 
-                urlPath = path.join(
-                    "personal",
-                    "identificacion",
-                );
-            }
-
-            //borrar el documento anterior si existe
-            if (docToChange) {
-                await FileService.deleteFile(docToChange, "STORAGE")
-                await registrarPasoLog(log._id, "Documento anterior eliminado", "completado")
-            }
-
-            //subir el nuevo documento
-            const fileUrl = await FileService.saveBufferFile(dataValidate.file, urlPath, "STORAGE", { encrypt: isEncrypted })
-
+            if (!response.success) throw new Error(response.message || 'Error al procesar la imagen');
             await registrarPasoLog(log._id, "Documento subido", "completado")
 
             //actualizar el documento en la base de datos
             await PersonalRepository.actualizar_data(
                 { _id: dataValidate._id },
-                { [campo]: fileUrl },
+                { urlFotoCarnet: response.path },
                 { session, user: user._id }
             )
             await registrarPasoLog(log._id, "Documento actualizado", "completado")
+
+            //borrar el documento anterior si existe, solo después de confirmar la actualización
+            if (fotoAnterior) {
+                await FileService.deleteFile(fotoAnterior, "STORAGE")
+                await registrarPasoLog(log._id, "Documento anterior eliminado", "completado")
+            }
 
         });
     }

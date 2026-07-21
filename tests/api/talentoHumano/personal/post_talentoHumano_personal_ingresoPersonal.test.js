@@ -8,17 +8,16 @@ import { ZodError } from 'zod';
  *
  * Flujo:
  * 1. Validación de usuario autenticado
- * 2. Validación Zod de datos de entrada (data, foto, cedulaPath, action)
- * 3. Validación manual de foto y cedulaPath
- * 4. Guardar archivo de foto (FileService.saveBufferFile)
- * 5. Procesar imagen con servicio Python (rustRcpClient.sendData)
- * 6. TRANSACCIÓN:
+ * 2. Validación Zod de datos de entrada (data, foto opcional, action)
+ * 3. Guardar archivo de foto si viene (FileService.saveBufferFile)
+ * 4. Procesar imagen con servicio Python (rustRcpClient.sendData)
+ * 5. TRANSACCIÓN:
  *    a. Generar ObjectId para el nuevo empleado
  *    b. Incrementar y obtener serial SKU (Seriales.modificar_seriales)
  *    c. Crear carnet (TalentoHumanoDotacionCarnetsRepository.post_data)
  *    d. Incrementar y obtener serial PE (Seriales.modificar_seriales)
  *    e. Crear empleado (PersonalRepository.post_data)
- * 7. Limpieza de archivos (filePath + responsePath) en caso de error
+ * 6. Limpieza de archivos (filePath + responsePath) en caso de error
  */
 
 // ============================================================
@@ -130,7 +129,6 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
     const VALID_OBJECT_ID = '507f1f77bcf86cd799439011';
     const MOCK_FILE_PATH = 'personal/fotoCarnet/foto-123.jpg';
     const MOCK_PROCESSED_PATH = 'personal/fotoCarnetProcessed/foto-123-processed.jpg';
-    const MOCK_CEDULA_PATH = 'personal/identificacion/cedula-123.pdf';
     const MOCK_SKU_SERIAL = 1001;
     const MOCK_PE_SERIAL = 5001;
     const MOCK_CARNET_ID = 'carnet-abc-123';
@@ -151,8 +149,7 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
                 cargo: VALID_OBJECT_ID,
                 vinilo: false
             },
-            foto: createValidBuffer(),
-            cedula: createValidBuffer()
+            foto: createValidBuffer()
         }
     });
 
@@ -177,10 +174,7 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
     const MOCK_ENCUESTA_DATA = { nombre: 'Juan Pérez', tipoDocumento: 'CC', tipoSangre: 'O+' };
 
     const setupHappyPathMocks = () => {
-        mockFileService.saveBufferFile.mockImplementation(async (_buffer, urlPath) => {
-            if (typeof urlPath === 'string' && urlPath.includes('identificacion')) return MOCK_CEDULA_PATH;
-            return MOCK_FILE_PATH;
-        });
+        mockFileService.saveBufferFile.mockResolvedValue(MOCK_FILE_PATH);
         mockFileService.deleteFile.mockResolvedValue(true);
         mockRustRpcClient.sendData.mockResolvedValue(createSuccessRpcResponse());
         mockSeriales.modificar_seriales
@@ -264,15 +258,6 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
 
             expect(mockPersonalRepository.post_data).toHaveBeenCalledWith(
                 expect.objectContaining({ carnet: null }),
-                expect.any(Object)
-            );
-        });
-
-        test('debería asignar urlIdentificacion correctamente', async () => {
-            await PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq);
-
-            expect(mockPersonalRepository.post_data).toHaveBeenCalledWith(
-                expect.objectContaining({ urlIdentificacion: MOCK_CEDULA_PATH }),
                 expect.any(Object)
             );
         });
@@ -377,16 +362,23 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
     });
 
     // ============================================================
-    // TEST GROUP 3: VALIDACIÓN MANUAL DE FOTO Y CEDULAPATH
+    // TEST GROUP 3: VALIDACIÓN MANUAL DE FOTO (opcional, ya no requiere cédula)
     // ============================================================
-    describe('Validación Manual de foto y cedulaPath', () => {
+    describe('Validación Manual de foto', () => {
 
-        test('debería lanzar error si foto es undefined', async () => {
+        test('no debería lanzar error si foto es undefined (foto es opcional)', async () => {
             delete mockReq.data.foto;
 
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow();
+            ).resolves.not.toThrow();
+
+            expect(mockFileService.saveBufferFile).not.toHaveBeenCalled();
+            expect(mockRustRpcClient.sendData).not.toHaveBeenCalled();
+            expect(mockPersonalRepository.post_data).toHaveBeenCalledWith(
+                expect.objectContaining({ urlFotoCarnet: null }),
+                expect.any(Object)
+            );
         });
 
         test('debería lanzar error si foto es null', async () => {
@@ -395,30 +387,6 @@ describe('PersonalControllerRepository.post_talentoHumano_personal_ingresoPerson
             await expect(
                 PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
             ).rejects.toThrow();
-        });
-
-        test('debería lanzar error si el guardado de cédula retorna null', async () => {
-            mockFileService.saveBufferFile.mockResolvedValueOnce(null);
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow('La cedula es obligatoria');
-        });
-
-        test('debería lanzar error si el guardado de cédula retorna undefined', async () => {
-            mockFileService.saveBufferFile.mockResolvedValueOnce(undefined);
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow('La cedula es obligatoria');
-        });
-
-        test('debería lanzar error si el guardado de cédula retorna ruta vacía', async () => {
-            mockFileService.saveBufferFile.mockResolvedValueOnce('');
-
-            await expect(
-                PersonalControllerRepository.post_talentoHumano_personal_ingresoPersonal(mockReq)
-            ).rejects.toThrow('La cedula es obligatoria');
         });
     });
 

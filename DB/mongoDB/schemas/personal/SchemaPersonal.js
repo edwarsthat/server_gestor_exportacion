@@ -15,8 +15,7 @@ export const defineSchemaPersonal = async (conn, auditLog) => {
         tipoDocumento: { type: String },
         foto: { type: String },
         tipoSangre: { type: String },
-        urlIdentificacion: { type: String, required: true },
-        urlFotoCarnet: { type: String, required: true },
+        urlFotoCarnet: { type: String },
         estado: { type: Boolean, required: true, default: true },
         carnet: { type: Schema.Types.ObjectId, ref: 'carnet', default: null },
 
@@ -47,6 +46,20 @@ export const defineSchemaPersonal = async (conn, auditLog) => {
         tieneVehiculo: { type: Boolean },
         estadoCivil: { type: String },
         fecha_formulario_sociodemografico: { type: Date },
+
+        // Informacion familiar
+        nombre_conyugue: { type: String },
+        apellido_conyugue: { type: String },
+        telefono_conyugue: { type: String },
+        tiempo_conviviendo: { type: Number },
+        tiene_hijos: { type: Boolean },
+        cuantos_hijos: { type: Number },
+        edad_hijos: { type: [Number] },
+
+        // Dotacion
+        camisa: { type: String },
+        pantalon: { type: String },
+        calzado: { type: String },
     })
 
     personalSchema.index(
