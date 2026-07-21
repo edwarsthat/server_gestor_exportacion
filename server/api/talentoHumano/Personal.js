@@ -120,6 +120,7 @@ export class PersonalControllerRepository {
                 }
                 await registrarPasoLog(log._id, "Actualizar serial", "completado")
                 //se crea el empleado
+                console.log(encuesta)
                 const empleado = await PersonalRepository.post_data(
                     {
                         _id: nuevoEmpleadoId,

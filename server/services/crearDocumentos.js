@@ -860,9 +860,8 @@ Fecha: 17 Oct 2020`
             const rows = personal.map(p => (p.toObject ? p.toObject() : p));
 
             const excluded = new Set(['_id', '__v', 'cargo']);
-            const fieldNames = rows.length > 0
-                ? Object.keys(rows[0]).filter(k => !excluded.has(k))
-                : [];
+            const fieldNames = [...new Set(rows.flatMap(r => Object.keys(r)))]
+                .filter(k => !excluded.has(k));
             const headers = ['CARGO', ...fieldNames];
 
             const GREEN = '#5FD991';
