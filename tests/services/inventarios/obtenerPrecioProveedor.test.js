@@ -373,31 +373,32 @@ describe('InventariosService.obtenerPrecioProveedor', () => {
     describe('tipos de datos inválidos', () => {
 
         /**
-         * NOTA: mongoose.Types.ObjectId.isValid() acepta números e Infinity.
-         * Esto no es una vulnerabilidad crítica porque la query simplemente
-         * no encontrará el documento y lanzará "Proveedor no encontrado".
-         * Se documenta este comportamiento en los siguientes tests.
+         * NOTA: en mongoose 9.x, mongoose.Types.ObjectId.isValid() ya NO acepta
+         * números ni Infinity (a diferencia de versiones anteriores). Ambos son
+         * rechazados por la validación de predioId/tipoFruta antes de tocar la BD.
          */
-        test('números pasan validación de ObjectId pero fallan en BD (comportamiento de mongoose)', async () => {
-            // mongoose acepta números como ObjectId válido
-            expect(mongoose.Types.ObjectId.isValid(123456)).toBe(true);
+        test('debería rechazar un número como predioId (comportamiento de mongoose 9.x)', async () => {
+            expect(mongoose.Types.ObjectId.isValid(123456)).toBe(false);
 
-            // Pero la query no encontrará nada, así que falla con "Proveedor no encontrado"
-            jest.spyOn(ProveedoresRepository, 'get_data').mockResolvedValue([]);
+            const getDataSpy = jest.spyOn(ProveedoresRepository, 'get_data');
 
             await expect(InventariosService.obtenerPrecioProveedor(123456, VALID_TIPO_FRUTA_ID))
                 .rejects
-                .toThrow('Proveedor no encontrado');
+                .toThrow('PredioId es inválido en obtenerPrecioProveedor');
+
+            expect(getDataSpy).not.toHaveBeenCalled();
         });
 
-        test('Infinity pasa validación de ObjectId pero falla en BD (comportamiento de mongoose)', async () => {
-            expect(mongoose.Types.ObjectId.isValid(Infinity)).toBe(true);
+        test('debería rechazar Infinity como predioId (comportamiento de mongoose 9.x)', async () => {
+            expect(mongoose.Types.ObjectId.isValid(Infinity)).toBe(false);
 
-            jest.spyOn(ProveedoresRepository, 'get_data').mockResolvedValue([]);
+            const getDataSpy = jest.spyOn(ProveedoresRepository, 'get_data');
 
             await expect(InventariosService.obtenerPrecioProveedor(Infinity, VALID_TIPO_FRUTA_ID))
                 .rejects
-                .toThrow('Proveedor no encontrado');
+                .toThrow('PredioId es inválido en obtenerPrecioProveedor');
+
+            expect(getDataSpy).not.toHaveBeenCalled();
         });
 
         test('debería rechazar NaN como predioId', async () => {

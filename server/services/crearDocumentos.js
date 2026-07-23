@@ -859,11 +859,6 @@ Fecha: 17 Oct 2020`
         try {
             const rows = personal.map(p => (p.toObject ? p.toObject() : p));
 
-            const excluded = new Set(['_id', '__v', 'cargo']);
-            const fieldNames = [...new Set(rows.flatMap(r => Object.keys(r)))]
-                .filter(k => !excluded.has(k));
-            const headers = ['CARGO', ...fieldNames];
-
             const GREEN = '#5FD991';
             const c = (value, opts = {}) => ({
                 value,
@@ -881,12 +876,105 @@ Fecha: 17 Oct 2020`
                 return value;
             };
 
+            const nombreCompleto = p => [p.nombre, p.apellido].filter(Boolean).join(' ');
+            const nombreCompletoConyugue = p => [p.nombre_conyugue, p.apellido_conyugue].filter(Boolean).join(' ');
+
+            // Orden y nombre de columna tomados del formulario socioeconomico de referencia.
+            // 'Edad' no existe en el schema: se deja vacia en esa posicion.
+            const COLUMNS = [
+                { label: 'Dependencia', get: () => '' },
+                { label: 'CARGO', get: p => p.cargo?.nombre ?? 'N/A' },
+                { label: 'Salario', get: () => '' },
+                { label: 'Fecha de ingreso (mes/dia/año)', get: () => '' },
+                { label: 'Nombre y Apellidos Completos', get: nombreCompleto },
+                { label: '¿En cuál genero usted se identifica?', get: p => formatValue(p.genero) },
+                { label: 'Nacionalidad', get: p => formatValue(p.nacionalidad) },
+                { label: 'Tipo de Documento', get: p => formatValue(p.tipoDocumento) },
+                { label: 'Nro. de Documento (Sin puntos ni comas)', get: p => formatValue(p.identificacion) },
+                { label: 'Fecha de Nacimiento (dia/mes/año)', get: p => formatValue(p.fechaNacimiento) },
+                { label: 'Edad', get: () => '' },
+                { label: 'Tipo de Sangre o RH', get: p => formatValue(p.tipoSangre) },
+                { label: '¿En cual raza se identifica?', get: p => formatValue(p.raza) },
+                { label: 'EPS a la que pertenece', get: p => formatValue(p.eps) },
+                { label: 'Fondo de Pensiones al que pertenece', get: p => formatValue(p.pension) },
+                { label: 'Fondo de Cesantías al que pertenece', get: p => formatValue(p.cesantias) },
+                { label: 'Confirme su número de celular', get: p => formatValue(p.celular) },
+                { label: 'Escriba su correo electrónico actual', get: p => formatValue(p.correo) },
+                { label: 'Grado de escolaridad (ultimo cursado)', get: p => formatValue(p.escolaridad) },
+                { label: 'Titulo Obtenido', get: p => formatValue(p.tituloObtenido) },
+                { label: 'Departamento de Residencia', get: p => formatValue(p.departamento) },
+                { label: 'Ciudad de Residencia', get: p => formatValue(p.municipio) },
+                { label: 'Tipo de Vivienda', get: p => formatValue(p.tipoVivienda) },
+                { label: 'Barrio y Dirección de Residencia', get: p => formatValue(p.direccion) },
+                { label: 'Sector', get: () => '' },
+                { label: 'Estrato', get: p => formatValue(p.estrato) },
+                { label: 'Número de Personas a Cargo', get: p => formatValue(p.personasACargo) },
+                { label: 'Factor de Vulnerabilidad', get: p => formatValue(p.vulnerabilidad) },
+                { label: 'Pertenencia Étnica', get: p => formatValue(p.pertenenciaEtnica) },
+                { label: 'Orientación sexual', get: p => formatValue(p.orientacionSexual) },
+                { label: 'Estado Civil', get: p => formatValue(p.estadoCivil) },
+                { label: '¿Desea agregar a su conyugue a la caja de compensación familiar?', get: () => '' },
+                { label: 'Nombres y Apellidos Completos del Conyugue', get: nombreCompletoConyugue },
+                { label: 'Número de Teléfono del Conyugue', get: p => formatValue(p.telefono_conyugue) },
+                { label: '¿Hace cuanto tiempo convive con su conyugue?', get: p => formatValue(p.tiempo_conviviendo) },
+                { label: 'Ocupación', get: () => '' },
+                { label: 'Si su conyugue trabaja formalmente, indique el nombre de la empresa en la que trabaja', get: () => '' },
+                { label: 'Si su conyugue trabaja formalmente indique el Salario', get: () => '' },
+                { label: '¿Tiene hijos?', get: p => formatValue(p.tiene_hijos) },
+                { label: '¿Cuántos hijos tiene?', get: p => formatValue(p.cuantos_hijos) },
+                { label: 'Edades de los hijos', get: p => formatValue(p.edad_hijos) },
+                { label: '¿Tiene hijos menores de 19 años que dependan económicamente de usted?', get: () => '' },
+                { label: 'Si su respuesta es afirmativa por favor indique edades de su(s) hijo (s)', get: () => '' },
+                { label: '¿Tiene hijastros que dependan económicamente de usted?', get: () => '' },
+                { label: '¿Cuántos hijastros tiene?', get: () => '' },
+                { label: '¿Tiene hijastros menores de 19 años que dependan económicamente de usted?', get: () => '' },
+                { label: 'Edades', get: () => '' },
+                { label: '¿Si su respuesta es afirmativa, usted tiene la custodia legal de los menores de 19 años?', get: () => '' },
+                { label: '¿Tiene madre o padre que dependan económicamente de usted?', get: () => '' },
+                { label: 'Nombre Completo de la Madre', get: () => '' },
+                { label: 'Indique edad de su madre', get: () => '' },
+                { label: '¿Su madre recibe pensión o algún subsidio por parte del gobierno (ejemplo: adulto mayor)?', get: () => '' },
+                { label: 'Nombre completo del Padre', get: () => '' },
+                { label: 'Indique edad de su padre', get: () => '' },
+                { label: '¿Su padre recibe pensión o algún subsidio por parte del gobierno (ejemplo: adulto mayor)?', get: () => '' },
+                { label: 'Nombre de una persona que podamos contactar en caso de emergencias', get: p => formatValue(p.contactoEmergenciaNombre) },
+                { label: 'Parentesco del contacto de emergencia', get: p => formatValue(p.contactoEmergenciaParentesco) },
+                { label: 'Número de teléfono del contacto de emergencia', get: p => formatValue(p.contactoEmergenciaTelefono) },
+                { label: '¿Usted tiene vehículo?', get: p => formatValue(p.tieneVehiculo) },
+                { label: 'mes de cumpleaños', get: () => '' },
+                { label: 'dia', get: () => '' },
+                { label: 'TIPO DE CONTRATO', get: () => '' },
+                { label: 'PERIODO DE PRUEBA', get: () => '' },
+                { label: 'PRÓXIMA RENOVACIÓN', get: () => '' },
+                { label: 'Estado Actual', get: p => formatValue(p.estado) },
+            ];
+
+            // Llaves ya cubiertas arriba (directas o fusionadas en un solo campo).
+            const USED_KEYS = new Set([
+                '_id', '__v', 'cargo', 'nombre', 'apellido',
+                'genero', 'nacionalidad', 'tipoDocumento', 'identificacion', 'fechaNacimiento',
+                'tipoSangre', 'raza', 'eps', 'pension', 'cesantias', 'celular', 'correo',
+                'escolaridad', 'tituloObtenido', 'departamento', 'municipio', 'tipoVivienda',
+                'direccion', 'estrato', 'personasACargo', 'vulnerabilidad', 'orientacionSexual',
+                'pertenenciaEtnica', 'estadoCivil', 'nombre_conyugue', 'apellido_conyugue',
+                'telefono_conyugue', 'tiempo_conviviendo', 'tiene_hijos', 'cuantos_hijos', 'edad_hijos',
+                'contactoEmergenciaNombre', 'contactoEmergenciaParentesco', 'contactoEmergenciaTelefono',
+                'tieneVehiculo', 'estado',
+            ]);
+
+            // Llaves del schema que no estan en la lista de referencia: se agregan al final tal cual.
+            const restoFieldNames = [...new Set(rows.flatMap(r => Object.keys(r)))]
+                .filter(k => !USED_KEYS.has(k));
+
+            const columnDefs = [
+                ...COLUMNS,
+                ...restoFieldNames.map(f => ({ label: f, get: p => formatValue(p[f]) })),
+            ];
+
+            const headers = columnDefs.map(col => col.label);
             const headerRow = headers.map(h => c(h, { fontWeight: 'bold', backgroundColor: GREEN }));
 
-            const dataRows = rows.map(p => {
-                const values = [p.cargo?.nombre ?? 'N/A', ...fieldNames.map(f => formatValue(p[f]))];
-                return values.map(v => c(v, { wrap: true }));
-            });
+            const dataRows = rows.map(p => columnDefs.map(col => c(col.get(p), { wrap: true })));
 
             const data = [headerRow, ...dataRows];
             const columns = headers.map(() => ({ width: 20 }));

@@ -25,11 +25,8 @@ export class crearExcelController {
 
     static async documento_personal(req) {
         return await executeQueryTask(async () => {
-            const { filtro } = DataValidations.documento_personal().parse(req.data)
-            const query = crearExcelController.buildQueryConBusqueda(filtro)
 
             const personal = await PersonalRepository.get_data({
-                query: query,
                 populate: [
                     { path: "cargo", select: "nombre" }
                 ],

@@ -75,6 +75,10 @@ const mockLotesRepository = {
     addLote: jest.fn()
 };
 
+const mockLoteMaquilaRepository = {
+    post_data: jest.fn()
+};
+
 const mockInventariosHistorialRepository = {
     put_inventarioSimple: jest.fn()
 };
@@ -106,7 +110,8 @@ jest.unstable_mockModule('../../../../server/api/data.js', () => ({
 }));
 
 jest.unstable_mockModule('../../../../server/Class/Lotes.js', () => ({
-    LotesRepository: mockLotesRepository
+    LotesRepository: mockLotesRepository,
+    LoteMaquilaRepository: mockLoteMaquilaRepository
 }));
 
 jest.unstable_mockModule('../../../../server/Class/Inventarios.js', () => ({

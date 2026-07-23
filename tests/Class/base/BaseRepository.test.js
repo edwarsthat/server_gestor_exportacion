@@ -22,6 +22,10 @@ describe('BaseRepository', () => {
         jest.clearAllMocks();
 
         // Mock de la cadena de metodos de Mongoose (find().select().limit()...)
+        // El codigo real hace `return await mongooseQuery` SIN llamar a `.exec()`:
+        // una Query de mongoose es "thenable" por si misma. Para poder seguir
+        // controlando el resultado con `mockQuery.exec.mockResolvedValue(...)` en
+        // cada test, delegamos `.then()` del mock a `.exec()`.
         mockQuery = {
             select: jest.fn().mockReturnThis(),
             limit: jest.fn().mockReturnThis(),
@@ -30,6 +34,7 @@ describe('BaseRepository', () => {
             session: jest.fn().mockReturnThis(),
             exec: jest.fn()
         };
+        mockQuery.then = (resolve, reject) => mockQuery.exec().then(resolve, reject);
 
         // Mock del modelo de Mongoose
         mockModel = {
@@ -400,7 +405,7 @@ describe('BaseRepository', () => {
                 expect(mockModel.findOneAndUpdate).toHaveBeenCalledWith(
                     filter,
                     update,
-                    expect.objectContaining({ new: true })
+                    expect.objectContaining({ returnDocument: 'after' })
                 );
                 expect(result).toEqual(updatedDoc);
             });
@@ -413,7 +418,7 @@ describe('BaseRepository', () => {
 
                 expect(mockModel.findOneAndUpdate).toHaveBeenCalledWith(
                     {},
-                    {},
+                    { $set: {} },
                     expect.objectContaining({ session: mockSession })
                 );
             });
@@ -426,7 +431,7 @@ describe('BaseRepository', () => {
 
                 expect(mockModel.findOneAndUpdate).toHaveBeenCalledWith(
                     {},
-                    {},
+                    { $set: {} },
                     expect.objectContaining({ arrayFilters })
                 );
             });
@@ -441,7 +446,7 @@ describe('BaseRepository', () => {
 
                 expect(mockModel.findOneAndUpdate).toHaveBeenCalledWith(
                     {},
-                    {},
+                    { $set: {} },
                     expect.objectContaining({
                         upsert: true,
                         runValidators: true
@@ -464,7 +469,7 @@ describe('BaseRepository', () => {
                     { _id: '1' },
                     { $set: { valor: 100 } },
                     {
-                        new: true,
+                        returnDocument: 'after',
                         runValidators: true,
                         context: 'query',
                         upsert: false,

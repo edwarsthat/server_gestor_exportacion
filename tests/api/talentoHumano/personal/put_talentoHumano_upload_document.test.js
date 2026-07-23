@@ -4,17 +4,17 @@ import { ZodError } from 'zod';
 /**
  * Tests para PersonalControllerRepository.put_talentoHumano_upload_document
  *
- * Este endpoint permite subir documentos (foto o cédula) para actualizar
- * los registros de personal en talento humano.
+ * Este endpoint permite subir la foto de carnet para actualizar los
+ * registros de personal en talento humano.
  *
  * Flujo:
- * 1. Validación Zod de datos de entrada (_id, action, typeDoc, file)
+ * 1. Validación Zod de datos de entrada (_id, action, file como Buffer)
  * 2. Verificación de existencia del personal
  * 3. Verificación de estado activo del personal
- * 4. Determinación del tipo de documento (foto/cedula)
- * 5. Eliminación del documento anterior si existe
- * 6. Subida del nuevo documento
- * 7. Actualización del registro en base de datos
+ * 4. Subida del archivo crudo a STORAGE
+ * 5. Envío del archivo a rustRcpClient para procesamiento de imagen (servidor Python)
+ * 6. Actualización de urlFotoCarnet con la ruta devuelta por el procesamiento
+ * 7. Eliminación del documento anterior si existía, una vez confirmada la actualización
  */
 
 // ============================================================
@@ -49,6 +49,9 @@ const mockFileService = {
     readFileAsBase64: jest.fn()
 };
 
+const mockCleanForRust = jest.fn(data => data);
+const mockSendData = jest.fn();
+
 jest.unstable_mockModule('../../../../server/Class/talentoHumano/Personal.js', () => ({
     PersonalRepository: mockPersonalRepository
 }));
@@ -75,11 +78,11 @@ jest.unstable_mockModule('../../../../server/api/utils/errorsHandlers.js', () =>
 }));
 
 jest.unstable_mockModule('../../../../server/routes/sockets/utils/cleanData.js', () => ({
-    cleanForRust: jest.fn(data => data)
+    cleanForRust: mockCleanForRust
 }));
 
 jest.unstable_mockModule('../../../../config/grpcRust.js', () => ({
-    rustRcpClient: { sendData: jest.fn() }
+    rustRcpClient: { sendData: mockSendData }
 }));
 
 jest.unstable_mockModule('../../../../server/services/talentoHumano/carnets.js', () => ({
@@ -100,18 +103,18 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
     // CONSTANTES Y DATOS DE PRUEBA
     // ============================================================
     const VALID_OBJECT_ID = '507f1f77bcf86cd799439011';
-    const VALID_BASE64_FILE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-    const VALID_PDF_BASE64 = 'data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PgplbmRvYmoKMiAwIG9iago8PC9UeXBlL1BhZ2VzL0NvdW50IDEvS2lkc1szIDAgUl0+PgplbmRvYmoKdHJhaWxlcgo8PC9Sb290IDEgMCBSPj4KJSVFT0Y=';
+    const VALID_FILE_BUFFER = Buffer.from('fake-image-data');
+    const RAW_UPLOAD_PATH = 'personal/fotoCarnet/raw-photo.jpg';
+    const PROCESSED_PHOTO_PATH = 'personal/fotoCarnet/processed-photo.jpg';
 
     let mockReq;
 
-    const createValidRequest = (typeDoc = 'foto') => ({
+    const createValidRequest = () => ({
         user: { _id: 'user-123', nombre: 'Test User' },
         data: {
             _id: VALID_OBJECT_ID,
             action: 'put_talentoHumano_upload_document',
-            typeDoc: typeDoc,
-            file: typeDoc === 'foto' ? VALID_BASE64_FILE : VALID_PDF_BASE64
+            file: VALID_FILE_BUFFER
         }
     });
 
@@ -120,8 +123,7 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
         nombre: 'Juan',
         apellido: 'Pérez',
         estado: true,
-        urlFotoCarnet: 'personal/fotoCarnetProcessed/existing-photo.jpg',
-        urlIdentificacion: 'personal/identificacion/existing-cedula.pdf',
+        urlFotoCarnet: 'personal/fotoCarnet/existing-photo.jpg',
         ...overrides
     });
 
@@ -133,7 +135,9 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
         mockPersonalRepository.get_data.mockResolvedValue([createMockPersonal()]);
         mockPersonalRepository.actualizar_data.mockResolvedValue({ _id: VALID_OBJECT_ID });
         mockFileService.deleteFile.mockResolvedValue(true);
-        mockFileService.saveBufferFile.mockResolvedValue('personal/fotoCarnetProcessed/new-photo.jpg');
+        mockFileService.saveBufferFile.mockResolvedValue(RAW_UPLOAD_PATH);
+        mockCleanForRust.mockImplementation(data => data);
+        mockSendData.mockResolvedValue(JSON.stringify({ success: true, path: PROCESSED_PHOTO_PATH }));
     });
 
     afterEach(() => {
@@ -152,67 +156,48 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
                 { ids: [VALID_OBJECT_ID] },
                 { session: 'mock-session' }
             );
-            expect(mockFileService.deleteFile).toHaveBeenCalled();
             expect(mockFileService.saveBufferFile).toHaveBeenCalled();
+            expect(mockSendData).toHaveBeenCalled();
             expect(mockPersonalRepository.actualizar_data).toHaveBeenCalled();
+            expect(mockFileService.deleteFile).toHaveBeenCalled();
         });
 
-        test('debería subir cédula exitosamente', async () => {
-            mockReq = createValidRequest('cedula');
-            mockFileService.saveBufferFile.mockResolvedValue('personal/identificacion/new-cedula.pdf');
-
+        test('debería subir el archivo crudo a STORAGE en la ruta personal/fotoCarnet', async () => {
             await PersonalControllerRepository.put_talentoHumano_upload_document(mockReq);
 
             expect(mockFileService.saveBufferFile).toHaveBeenCalledWith(
                 mockReq.data.file,
-                expect.stringContaining('identificacion'),
-                'STORAGE',
-                { encrypt: true }
+                expect.stringContaining('fotoCarnet'),
+                'STORAGE'
             );
         });
 
-        test('debería subir foto sin encriptación', async () => {
-            mockReq = createValidRequest('foto');
+        test('debería enviar el archivo procesado a rustRcpClient con el payload correcto', async () => {
+            mockFileService.saveBufferFile.mockResolvedValue(RAW_UPLOAD_PATH);
 
             await PersonalControllerRepository.put_talentoHumano_upload_document(mockReq);
 
-            expect(mockFileService.saveBufferFile).toHaveBeenCalledWith(
-                mockReq.data.file,
-                expect.stringContaining('fotoCarnetProcessed'),
-                'STORAGE',
-                { encrypt: false }
-            );
+            expect(mockSendData).toHaveBeenCalledWith({
+                data: JSON.stringify(RAW_UPLOAD_PATH),
+                server: 'python',
+                action: 'talentoHumano_procesamiento_imagen'
+            });
         });
 
-        test('debería actualizar urlFotoCarnet cuando typeDoc es foto', async () => {
-            const newPhotoPath = 'personal/fotoCarnetProcessed/new-photo-123.jpg';
-            mockFileService.saveBufferFile.mockResolvedValue(newPhotoPath);
+        test('debería actualizar urlFotoCarnet con la ruta devuelta por rustRcpClient', async () => {
+            mockSendData.mockResolvedValue(JSON.stringify({ success: true, path: PROCESSED_PHOTO_PATH }));
 
             await PersonalControllerRepository.put_talentoHumano_upload_document(mockReq);
 
             expect(mockPersonalRepository.actualizar_data).toHaveBeenCalledWith(
                 { _id: VALID_OBJECT_ID },
-                { urlFotoCarnet: newPhotoPath },
-                expect.objectContaining({ session: 'mock-session' })
-            );
-        });
-
-        test('debería actualizar urlIdentificacion cuando typeDoc es cedula', async () => {
-            mockReq = createValidRequest('cedula');
-            const newCedulaPath = 'personal/identificacion/new-cedula-123.pdf';
-            mockFileService.saveBufferFile.mockResolvedValue(newCedulaPath);
-
-            await PersonalControllerRepository.put_talentoHumano_upload_document(mockReq);
-
-            expect(mockPersonalRepository.actualizar_data).toHaveBeenCalledWith(
-                { _id: VALID_OBJECT_ID },
-                { urlIdentificacion: newCedulaPath },
+                { urlFotoCarnet: PROCESSED_PHOTO_PATH },
                 expect.objectContaining({ session: 'mock-session' })
             );
         });
 
         test('debería eliminar documento anterior si existe', async () => {
-            const existingPath = 'personal/fotoCarnetProcessed/old-photo.jpg';
+            const existingPath = 'personal/fotoCarnet/old-photo.jpg';
             mockPersonalRepository.get_data.mockResolvedValue([
                 createMockPersonal({ urlFotoCarnet: existingPath })
             ]);
@@ -222,20 +207,9 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
             expect(mockFileService.deleteFile).toHaveBeenCalledWith(existingPath, 'STORAGE');
         });
 
-        test('no debería llamar deleteFile si no existe documento anterior (foto)', async () => {
+        test('no debería llamar deleteFile si no existe documento anterior', async () => {
             mockPersonalRepository.get_data.mockResolvedValue([
                 createMockPersonal({ urlFotoCarnet: null })
-            ]);
-
-            await PersonalControllerRepository.put_talentoHumano_upload_document(mockReq);
-
-            expect(mockFileService.deleteFile).not.toHaveBeenCalled();
-        });
-
-        test('no debería llamar deleteFile si no existe documento anterior (cedula)', async () => {
-            mockReq = createValidRequest('cedula');
-            mockPersonalRepository.get_data.mockResolvedValue([
-                createMockPersonal({ urlIdentificacion: null })
             ]);
 
             await PersonalControllerRepository.put_talentoHumano_upload_document(mockReq);
@@ -295,7 +269,7 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
             ).rejects.toThrow('Error al eliminar archivo');
         });
 
-        test('debería propagar error si saveBase64File falla', async () => {
+        test('debería propagar error si saveBufferFile falla', async () => {
             mockFileService.saveBufferFile.mockRejectedValue(
                 new Error('Error al guardar archivo')
             );
@@ -303,6 +277,30 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
             await expect(
                 PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
             ).rejects.toThrow('Error al guardar archivo');
+        });
+
+        test('debería propagar error si rustRcpClient.sendData falla', async () => {
+            mockSendData.mockRejectedValue(new Error('Error de conexión con servicio de procesamiento'));
+
+            await expect(
+                PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
+            ).rejects.toThrow('Error de conexión con servicio de procesamiento');
+        });
+
+        test('debería lanzar error si el procesamiento de imagen no tiene éxito', async () => {
+            mockSendData.mockResolvedValue(JSON.stringify({ success: false, message: 'Imagen corrupta' }));
+
+            await expect(
+                PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
+            ).rejects.toThrow('Imagen corrupta');
+        });
+
+        test('debería lanzar error genérico si el procesamiento falla sin mensaje', async () => {
+            mockSendData.mockResolvedValue(JSON.stringify({ success: false }));
+
+            await expect(
+                PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
+            ).rejects.toThrow('Error al procesar la imagen');
         });
 
         test('debería propagar error si actualizar_data falla', async () => {
@@ -443,73 +441,11 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
     });
 
     // ============================================================
-    // TEST GROUP 5: VALIDACIÓN ZOD - CAMPO typeDoc
+    // TEST GROUP 5: VALIDACIÓN ZOD - CAMPO file (Buffer)
     // ============================================================
-    describe('Validación Zod - Campo typeDoc', () => {
+    describe('Validación Zod - Campo file (Buffer)', () => {
 
-        test('debería rechazar si typeDoc está vacío', async () => {
-            mockReq.data.typeDoc = '';
-
-            await expect(
-                PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar si typeDoc es null', async () => {
-            mockReq.data.typeDoc = null;
-
-            await expect(
-                PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar si typeDoc es undefined', async () => {
-            delete mockReq.data.typeDoc;
-
-            await expect(
-                PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar si typeDoc es un número', async () => {
-            mockReq.data.typeDoc = 12345;
-
-            await expect(
-                PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería rechazar si typeDoc es un array', async () => {
-            mockReq.data.typeDoc = ['foto'];
-
-            await expect(
-                PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
-        test('debería aceptar typeDoc "foto"', async () => {
-            mockReq.data.typeDoc = 'foto';
-
-            await expect(
-                PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
-            ).resolves.not.toThrow(ZodError);
-        });
-
-        test('debería aceptar typeDoc "cedula"', async () => {
-            mockReq.data.typeDoc = 'cedula';
-
-            await expect(
-                PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
-            ).resolves.not.toThrow(ZodError);
-        });
-    });
-
-    // ============================================================
-    // TEST GROUP 6: VALIDACIÓN ZOD - CAMPO file (base64)
-    // ============================================================
-    describe('Validación Zod - Campo file (base64)', () => {
-
-        test('debería rechazar si file está vacío', async () => {
+        test('debería rechazar si file es un string vacío', async () => {
             mockReq.data.file = '';
 
             await expect(
@@ -533,8 +469,8 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
             ).rejects.toThrow(ZodError);
         });
 
-        test('debería rechazar si file no tiene formato base64 válido', async () => {
-            mockReq.data.file = 'esto-no-es-base64-valido';
+        test('debería rechazar si file es un string base64 (ya no se acepta base64)', async () => {
+            mockReq.data.file = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
             await expect(
                 PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
@@ -549,8 +485,8 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
             ).rejects.toThrow(ZodError);
         });
 
-        test('debería rechazar si file es un objeto', async () => {
-            mockReq.data.file = { url: VALID_BASE64_FILE };
+        test('debería rechazar si file es un objeto plano', async () => {
+            mockReq.data.file = { data: VALID_FILE_BUFFER };
 
             await expect(
                 PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
@@ -558,31 +494,31 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
         });
 
         test('debería rechazar si file es un array', async () => {
-            mockReq.data.file = [VALID_BASE64_FILE];
+            mockReq.data.file = [1, 2, 3];
 
             await expect(
                 PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
             ).rejects.toThrow(ZodError);
         });
 
-        test('debería aceptar file con formato data:image/png;base64', async () => {
-            mockReq.data.file = VALID_BASE64_FILE;
+        test('debería aceptar file como Buffer válido', async () => {
+            mockReq.data.file = Buffer.from('contenido-de-prueba');
 
             await expect(
                 PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
             ).resolves.not.toThrow(ZodError);
         });
 
-        test('debería aceptar file con formato data:application/pdf;base64', async () => {
-            mockReq.data.file = VALID_PDF_BASE64;
+        test('debería aceptar file como Uint8Array', async () => {
+            mockReq.data.file = new Uint8Array([1, 2, 3, 4]);
 
             await expect(
                 PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
             ).resolves.not.toThrow(ZodError);
         });
 
-        test('debería aceptar file con formato data:image/jpeg;base64', async () => {
-            mockReq.data.file = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAA==';
+        test('debería aceptar file como ArrayBuffer', async () => {
+            mockReq.data.file = new ArrayBuffer(8);
 
             await expect(
                 PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
@@ -591,7 +527,7 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
     });
 
     // ============================================================
-    // TEST GROUP 7: SEGURIDAD - NoSQL INJECTION
+    // TEST GROUP 6: SEGURIDAD - NoSQL INJECTION
     // ============================================================
     describe('Seguridad - Intentos de NoSQL Injection', () => {
 
@@ -619,8 +555,8 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
             ).rejects.toThrow(ZodError);
         });
 
-        test('debería rechazar operador $where en typeDoc', async () => {
-            mockReq.data.typeDoc = { $where: 'return true' };
+        test('debería rechazar operador $where en file', async () => {
+            mockReq.data.file = { $where: 'return true' };
 
             await expect(
                 PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
@@ -661,7 +597,7 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
     });
 
     // ============================================================
-    // TEST GROUP 8: SEGURIDAD - PROTOTYPE POLLUTION
+    // TEST GROUP 7: SEGURIDAD - PROTOTYPE POLLUTION
     // ============================================================
     describe('Seguridad - Prototype Pollution', () => {
 
@@ -705,7 +641,7 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
     });
 
     // ============================================================
-    // TEST GROUP 9: DATOS MALFORMADOS
+    // TEST GROUP 8: DATOS MALFORMADOS
     // ============================================================
     describe('Datos Malformados', () => {
 
@@ -768,7 +704,7 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
     });
 
     // ============================================================
-    // TEST GROUP 10: TIPOS DE DATOS INCORRECTOS
+    // TEST GROUP 9: TIPOS DE DATOS INCORRECTOS
     // ============================================================
     describe('Tipos de Datos Incorrectos', () => {
 
@@ -788,14 +724,6 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
             ).rejects.toThrow(ZodError);
         });
 
-        test('debería rechazar si typeDoc es boolean', async () => {
-            mockReq.data.typeDoc = false;
-
-            await expect(
-                PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
-            ).rejects.toThrow(ZodError);
-        });
-
         test('debería rechazar si file es boolean', async () => {
             mockReq.data.file = true;
 
@@ -806,7 +734,7 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
     });
 
     // ============================================================
-    // TEST GROUP 11: CARACTERES ESPECIALES Y XSS
+    // TEST GROUP 10: CARACTERES ESPECIALES Y XSS
     // ============================================================
     describe('Seguridad - XSS y Caracteres Especiales', () => {
 
@@ -818,16 +746,6 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
                 await PersonalControllerRepository.put_talentoHumano_upload_document(mockReq);
             } catch (e) {
                 // Puede fallar por otras razones, no por XSS
-            }
-        });
-
-        test('debería manejar event handlers en typeDoc', async () => {
-            mockReq.data.typeDoc = '<img src=x onerror=alert(1)>';
-
-            try {
-                await PersonalControllerRepository.put_talentoHumano_upload_document(mockReq);
-            } catch (e) {
-                // Puede fallar por lógica, no por XSS
             }
         });
 
@@ -863,13 +781,13 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
     });
 
     // ============================================================
-    // TEST GROUP 12: CASOS EDGE
+    // TEST GROUP 11: CASOS EDGE
     // ============================================================
     describe('Casos Edge', () => {
 
-        test('debería manejar personal con todos los campos de documento vacíos', async () => {
+        test('debería manejar personal sin foto de carnet previa', async () => {
             mockPersonalRepository.get_data.mockResolvedValue([
-                createMockPersonal({ urlFotoCarnet: '', urlIdentificacion: '' })
+                createMockPersonal({ urlFotoCarnet: '' })
             ]);
 
             await expect(
@@ -879,9 +797,9 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
             expect(mockFileService.deleteFile).not.toHaveBeenCalled();
         });
 
-        test('debería manejar personal con campos undefined', async () => {
+        test('debería manejar personal con urlFotoCarnet undefined', async () => {
             mockPersonalRepository.get_data.mockResolvedValue([
-                createMockPersonal({ urlFotoCarnet: undefined, urlIdentificacion: undefined })
+                createMockPersonal({ urlFotoCarnet: undefined })
             ]);
 
             await expect(
@@ -889,23 +807,12 @@ describe('PersonalControllerRepository.put_talentoHumano_upload_document', () =>
             ).resolves.not.toThrow();
         });
 
-        test('debería manejar file base64 muy grande', async () => {
-            // Simular un archivo grande (1MB en base64)
-            const largeBase64 = 'data:image/png;base64,' + 'A'.repeat(1024 * 1024);
-            mockReq.data.file = largeBase64;
+        test('debería manejar un archivo (Buffer) grande', async () => {
+            mockReq.data.file = Buffer.alloc(1024 * 1024, 'A');
 
             await expect(
                 PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
             ).resolves.not.toThrow(ZodError);
-        });
-
-        test('debería rechazar typeDoc desconocido (no foto ni cedula)', async () => {
-            mockReq.data.typeDoc = 'otro_tipo';
-
-            // Con la validación enum, solo se aceptan "foto" y "cedula"
-            await expect(
-                PersonalControllerRepository.put_talentoHumano_upload_document(mockReq)
-            ).rejects.toThrow(ZodError);
         });
     });
 });

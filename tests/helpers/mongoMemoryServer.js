@@ -115,6 +115,14 @@ export async function defineTestSchemas(conn) {
     //2 relaciones
     testDb.Clientes = await defineClientes(conn);
 
+    // Mongoose construye los índices (incluidos los `unique: true`) en segundo
+    // plano tras `conn.model(...)`, sin que `define*` los espere. Si un test
+    // escribe en la colección antes de que termine ese build, compite por el
+    // lock IX con la transacción y falla con "Unable to acquire IX lock ...
+    // within 5ms" (el timeout de lock de MongoDB para transacciones es de solo
+    // 5ms por diseño). Esperamos explícitamente a que todos los índices estén
+    // listos antes de que empiecen a correr los tests.
+    await Promise.all(Object.values(testDb).map(model => model.init()));
 
     return testDb;
 }

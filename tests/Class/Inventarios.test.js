@@ -1,8 +1,9 @@
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 
 // Mock de db y config antes de importar la clase
-const mockExec = jest.fn();
-const mockLean = jest.fn(() => ({ exec: mockExec }));
+// El código real hace `await db.InventariosSimples.findOne(...).lean()`
+// sin llamar a `.exec()`, así que `.lean()` debe resolver directamente el documento.
+const mockLean = jest.fn();
 const mockFindOne = jest.fn(() => ({ lean: mockLean }));
 
 jest.unstable_mockModule('../../DB/mongoDB/config/init.js', () => ({
@@ -66,7 +67,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
         };
 
         // Default: documento existe con ambos inventarios
-        mockExec.mockResolvedValue(mockDocumento);
+        mockLean.mockResolvedValue(mockDocumento);
     });
 
     afterEach(() => {
@@ -127,7 +128,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
     describe('validación de documento', () => {
 
         test('debería lanzar ConnectionDBError cuando documento no existe', async () => {
-            mockExec.mockResolvedValue(null);
+            mockLean.mockResolvedValue(null);
 
             await expect(InventariosHistorialRepository.get_item_frutaSinProcesar('123'))
                 .rejects
@@ -146,7 +147,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
 
         test('debería manejar inventario null', async () => {
             mockDocumento.inventario = null;
-            mockExec.mockResolvedValue(mockDocumento);
+            mockLean.mockResolvedValue(mockDocumento);
 
             const result = await InventariosHistorialRepository.get_item_frutaSinProcesar('507f1f77bcf86cd799439012');
 
@@ -155,7 +156,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
 
         test('debería manejar inventarioMaquila undefined', async () => {
             mockDocumento.inventarioMaquila = undefined;
-            mockExec.mockResolvedValue(mockDocumento);
+            mockLean.mockResolvedValue(mockDocumento);
 
             const result = await InventariosHistorialRepository.get_item_frutaSinProcesar('507f1f77bcf86cd799439011');
 
@@ -164,7 +165,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
 
         test('debería manejar inventario como objeto {}', async () => {
             mockDocumento.inventario = {};
-            mockExec.mockResolvedValue(mockDocumento);
+            mockLean.mockResolvedValue(mockDocumento);
 
             const result = await InventariosHistorialRepository.get_item_frutaSinProcesar('507f1f77bcf86cd799439012');
 
@@ -173,7 +174,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
 
         test('debería manejar inventario como string', async () => {
             mockDocumento.inventario = 'invalid';
-            mockExec.mockResolvedValue(mockDocumento);
+            mockLean.mockResolvedValue(mockDocumento);
 
             const result = await InventariosHistorialRepository.get_item_frutaSinProcesar('507f1f77bcf86cd799439012');
 
@@ -183,7 +184,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
         test('debería lanzar error cuando ambos inventarios son inválidos y lote no existe', async () => {
             mockDocumento.inventario = null;
             mockDocumento.inventarioMaquila = {};
-            mockExec.mockResolvedValue(mockDocumento);
+            mockLean.mockResolvedValue(mockDocumento);
 
             await expect(InventariosHistorialRepository.get_item_frutaSinProcesar('123'))
                 .rejects
@@ -201,7 +202,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
             const loteCompartido = '507f1f77bcf86cd799439099';
             mockDocumento.inventario = [{ lote: loteCompartido, kilos: 100 }];
             mockDocumento.inventarioMaquila = [{ lote: loteCompartido, kilos: 200 }];
-            mockExec.mockResolvedValue(mockDocumento);
+            mockLean.mockResolvedValue(mockDocumento);
 
             await expect(InventariosHistorialRepository.get_item_frutaSinProcesar(loteCompartido))
                 .rejects
@@ -212,7 +213,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
             const loteCompartido = '507f1f77bcf86cd799439099';
             mockDocumento.inventario = [{ lote: loteCompartido, kilos: 100 }];
             mockDocumento.inventarioMaquila = [{ lote: loteCompartido, kilos: 200 }];
-            mockExec.mockResolvedValue(mockDocumento);
+            mockLean.mockResolvedValue(mockDocumento);
 
             try {
                 await InventariosHistorialRepository.get_item_frutaSinProcesar(loteCompartido);
@@ -234,7 +235,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
                 { lote: null, kilos: 50 },
                 mockItemPropio
             ];
-            mockExec.mockResolvedValue(mockDocumento);
+            mockLean.mockResolvedValue(mockDocumento);
 
             const result = await InventariosHistorialRepository.get_item_frutaSinProcesar('507f1f77bcf86cd799439011');
 
@@ -246,7 +247,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
                 { kilos: 50 }, // lote undefined
                 mockItemPropio
             ];
-            mockExec.mockResolvedValue(mockDocumento);
+            mockLean.mockResolvedValue(mockDocumento);
 
             const result = await InventariosHistorialRepository.get_item_frutaSinProcesar('507f1f77bcf86cd799439011');
 
@@ -272,7 +273,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
 
         test('debería funcionar con número como id', async () => {
             mockDocumento.inventario = [{ lote: 12345, kilos: 100 }];
-            mockExec.mockResolvedValue(mockDocumento);
+            mockLean.mockResolvedValue(mockDocumento);
 
             const result = await InventariosHistorialRepository.get_item_frutaSinProcesar(12345);
 
@@ -296,7 +297,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
     describe('manejo de errores de BD', () => {
 
         test('debería envolver errores de BD en ConnectionDBError', async () => {
-            mockExec.mockRejectedValue(new Error('MongoDB connection failed'));
+            mockLean.mockRejectedValue(new Error('MongoDB connection failed'));
 
             await expect(InventariosHistorialRepository.get_item_frutaSinProcesar('123'))
                 .rejects
@@ -308,7 +309,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
         });
 
         test('debería manejar error de BD sin mensaje', async () => {
-            mockExec.mockRejectedValue({ code: 'ECONNREFUSED' });
+            mockLean.mockRejectedValue({ code: 'ECONNREFUSED' });
 
             await expect(InventariosHistorialRepository.get_item_frutaSinProcesar('123'))
                 .rejects
@@ -316,7 +317,7 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
         });
 
         test('debería manejar error de BD null', async () => {
-            mockExec.mockRejectedValue(null);
+            mockLean.mockRejectedValue(null);
 
             await expect(InventariosHistorialRepository.get_item_frutaSinProcesar('123'))
                 .rejects
@@ -341,10 +342,10 @@ describe('InventariosHistorialRepository.get_item_frutaSinProcesar', () => {
             expect(mockLean).toHaveBeenCalled();
         });
 
-        test('debería usar exec() para ejecutar la query', async () => {
+        test('debería llamar lean() sin argumentos para obtener un objeto plano', async () => {
             await InventariosHistorialRepository.get_item_frutaSinProcesar('507f1f77bcf86cd799439011');
 
-            expect(mockExec).toHaveBeenCalled();
+            expect(mockLean).toHaveBeenCalledWith();
         });
     });
 });

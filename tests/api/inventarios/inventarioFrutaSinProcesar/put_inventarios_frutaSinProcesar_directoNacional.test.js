@@ -55,6 +55,10 @@ const mockLotesRepository = {
     actualizar_lote: jest.fn()
 };
 
+const mockLoteMaquilaRepository = {
+    post_data: jest.fn()
+};
+
 const mockEventEmitter = { emit: jest.fn() };
 
 jest.unstable_mockModule('../../../../server/services/inventarios.js', () => ({
@@ -62,7 +66,8 @@ jest.unstable_mockModule('../../../../server/services/inventarios.js', () => ({
 }));
 
 jest.unstable_mockModule('../../../../server/Class/Lotes.js', () => ({
-    LotesRepository: mockLotesRepository
+    LotesRepository: mockLotesRepository,
+    LoteMaquilaRepository: mockLoteMaquilaRepository
 }));
 
 jest.unstable_mockModule('../../../../events/eventos.js', () => ({
