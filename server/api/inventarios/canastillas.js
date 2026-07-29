@@ -200,7 +200,7 @@ export class CanastillasController {
         await executeTransactionalTask(req, async (session, log) => {
             const { canastillas, observaciones } = InventariosValidations.put_inventarios_darBaja_canastillas().parse(req.data.data)
 
-            const total_canastillas = await CanastillasService.get_totales_canastillas()
+            const total_canastillas = await CanastillasService.get_totales_canastillas(session)
             const canastillas_vacias =
                 total_canastillas.canastillas_propias +
                 total_canastillas.total_prestadas -

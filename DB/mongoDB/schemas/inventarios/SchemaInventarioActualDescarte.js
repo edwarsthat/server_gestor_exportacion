@@ -56,7 +56,14 @@ export const defineInventarioActualDescarte = async (conn) => {
             min: [0, 'Los kilos iniciales no pueden ser negativos'],
             validate: {
                 validator: function (v) {
-                    return v > 0;
+                    if (v > 0) return true;
+                    // Se permite 0 únicamente al anular el registro por error
+                    if (this && typeof this.getUpdate === 'function') {
+                        const update = this.getUpdate();
+                        const nuevoEstado = update?.$set?.estado ?? update?.estado;
+                        return nuevoEstado === 'ANULADO';
+                    }
+                    return this.estado === 'ANULADO';
                 },
                 message: 'Los kilos iniciales deben ser mayores a 0'
             }
@@ -78,41 +85,13 @@ export const defineInventarioActualDescarte = async (conn) => {
                 message: 'Los kilos actuales no pueden exceder los kilos iniciales'
             }
         },
-        canastillasIniciales: {
-            type: Number,
-            required: true,
-            min: [0, 'Las canastillas iniciales no pueden ser negativas'],
-            validate: {
-                validator: function (v) {
-                    return v >= 0;
-                },
-                message: 'Las canastillas iniciales deben ser mayores o iguales a 0'
-            }
-        },
-        canastillasActuales: {
-            type: Number,
-            required: true,
-            min: [0, 'Las canastillas actuales no pueden ser negativas'],
-            validate: {
-                validator: function (v) {
-                    if (this && typeof this.getUpdate === 'function') {
-                        const update = this.getUpdate();
-                        const newCanastillasIniciales = update?.$set?.canastillasIniciales ?? update?.canastillasIniciales;
-                        if (newCanastillasIniciales !== undefined) return v <= newCanastillasIniciales;
-                        return true;
-                    }
-                    return v <= this.canastillasIniciales;
-                },
-                message: 'Las canastillas actuales no pueden exceder las canastillas iniciales'
-            }
-        },
         estado: {
             type: String,
             required: true,
             uppercase: true,
             trim: true,
             enum: {
-                values: ['ACTIVO', 'AGOTADO', 'TRANSFERIDO'],
+                values: ['ACTIVO', 'AGOTADO', 'TRANSFERIDO', 'ANULADO'],
                 message: '{VALUE} no es un estado válido'
             },
             default: 'ACTIVO',

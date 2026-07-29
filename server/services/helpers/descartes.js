@@ -12,13 +12,6 @@ export const crear_arreglo_modificar_descartes = (newData) => {
             }
             out[`${area}:${descarteId}:kilos`] = value.kilos.value;
         }
-
-        if (value.canastillas !== undefined) {
-            if (out[`${area}:${descarteId}:canastillas`] === undefined) {
-                out[`${area}:${descarteId}:canastillas`] = {};
-            }
-            out[`${area}:${descarteId}:canastillas`] = value.canastillas.value;
-        }
     }
     return out;
 }
@@ -35,13 +28,6 @@ export const crear_arreglo_modificar_descartes_sumar = (newData) => {
                 out[`${area}:${descarteId}:kilos`] = {};
             }
             out[`${area}:${descarteId}:kilos`] = value.kilos.valueOriginal;
-        }
-
-        if (value.canastillas !== undefined) {
-            if (out[`${area}:${descarteId}:canastillas`] === undefined) {
-                out[`${area}:${descarteId}:canastillas`] = {};
-            }
-            out[`${area}:${descarteId}:canastillas`] = value.canastillas.valueOriginal;
         }
     }
     return out;

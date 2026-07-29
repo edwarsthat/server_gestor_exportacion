@@ -52,7 +52,7 @@ export class HistorialInventariosService {
                     throw new ServiceError(400, `El valor para '${key}' debe ser numérico`);
                 }
 
-                if ((valorNuevo !== valorOriginal) || (cambioFruta && cambioFruta.old !== registro.new)) {
+                if ((valorNuevo !== valorOriginal) || (cambioFruta.old !== cambioFruta.new)) {
                     const existente = changesDescartes.get(`${area}:${descarteId}`) || {};
 
                     changesDescartes.set(`${area}:${descarteId}`, {
@@ -75,13 +75,9 @@ export class HistorialInventariosService {
 
     }
     static async verificar_modificacion_del_inventario_descartes(changesDescartes, cambioFruta, user, session) {
-        console.log("changesDescartes",changesDescartes)
-        console.log("cambioFruta",cambioFruta)
 
         const outOBjSumar = crear_arreglo_modificar_descartes_sumar(changesDescartes);
-        console.log("outOBjSumar",outOBjSumar)
         await InventariosService.procesar_formulario_inventario_descarte_sumar(outOBjSumar, cambioFruta.old, session, user);
-        console.log("InventariosService", InventariosService)
 
         // se obtienen los totales del inventario DESPUES del sumar para validar con datos actualizados
         const result = await InventarioDescartesRepository.get_totales_inventario_descarte({
@@ -99,9 +95,6 @@ export class HistorialInventariosService {
             //se revisa si el inventario es mayor al que se desea restar
             const inventario = inventarioMap.get(`${area}:${tipoDescarte}:${cambioFruta.new}`);
             if (!inventario) {
-                throw new ServiceError(400, `No se puede restar más inventario de descarte que el disponible`);
-            }
-            if (inventario.totalCanastillasActuales < (value.canastillas?.value ?? 0)) {
                 throw new ServiceError(400, `No se puede restar más inventario de descarte que el disponible`);
             }
             if (inventario.totalKilosActuales < (value.kilos?.value ?? 0)) {
@@ -130,9 +123,6 @@ export class HistorialInventariosService {
                 if (value.kilos !== undefined) {
                     update.$set[`descartes.${key}:kilos`] = value.kilos.value;
                     kilosDelta += value.kilos.value - value.kilos.valueOriginal;
-                }
-                if (value.canastillas !== undefined) {
-                    update.$set[`descartes.${key}:canastillas`] = value.canastillas.value;
                 }
             }
 

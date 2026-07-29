@@ -14,7 +14,6 @@ export const defineHistorialDespachoDescarte = async (conn) => {
         remision: String,
         tipoFruta: { type: Schema.Types.ObjectId, ref: 'tipoFrutas' },
         kilos: Number,
-        canastillas: Number,
         descartes: { type: Map, of: Number, default: {} },
     });
 

@@ -86,11 +86,6 @@ export class ProcesoValidations {
             tipo: requiredSafeString("tipo"),
             data: z.object({
                 descarte: z.string().min(1, "Seleccione un descarte"),
-                canastillas: z.string().refine((val) => {
-                    if (val === "") return true;
-                    const num = Number(val);
-                    return !isNaN(num) && num >= 0;
-                }, "Las canastillas deben ser un número mayor o igual a 0").optional().or(z.literal("")),
                 kilos: z.string().refine((val) => {
                     if (val === "") return true;
                     const num = Number(val);

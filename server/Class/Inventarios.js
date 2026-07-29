@@ -6,6 +6,7 @@ import { InventariosService } from "../services/inventarios.js";
 import { ClassError, MongoDBError } from "../models/ErrorModels.js";
 import { BaseRepository } from "./base/BaseRepository.js";
 import { descarteCache } from "../cache/descartes.js";
+import { tipoFrutaCache } from "../cache/tipoFruta.js";
 
 
 export class InventariosHistorialRepository extends BaseRepository {
@@ -121,7 +122,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
-                
+
 
             return registros
 
@@ -144,7 +145,7 @@ export class InventariosHistorialRepository extends BaseRepository {
         try {
             const documento = await db.InventariosSimples.findOne({ _id: id })
                 .lean()
-                
+
             return documento;
         } catch (err) {
             throw new ConnectionDBError(522, `Error obteniendo el inventario simple ${err.message}`);
@@ -347,7 +348,7 @@ export class InventariosHistorialRepository extends BaseRepository {
         try {
             const documento = await db.InventariosSimples.findOne({ _id: config.INVENTARIO_FRUTA_SIN_PROCESAR })
                 .lean()
-                
+
 
             if (!documento) {
                 throw new ConnectionDBError(522, 'No se encontró el documento de inventario de fruta sin procesar');
@@ -419,7 +420,7 @@ export class InventariosHistorialRepository extends BaseRepository {
             const data = await db.InventariosSimples.find({ _id: config.INVENTARIO_ORDEN_VACEO })
                 .select({ ordenVaceo: 1, _id: 0, __v: 1 })
                 .lean()
-                
+
             return { data: data?.[0]?.ordenVaceo || [], __v: data?.[0]?.__v || 0 };
         } catch (err) {
             console.error(err);
@@ -451,7 +452,7 @@ export class InventariosHistorialRepository extends BaseRepository {
     // #endregion
     // #region Inventario descartes
     static async add_elemento_inventarioDescartes(data, user, opts = {}) {
-        console.log(data);
+
         const { session } = opts;
         const { lote, tipoFruta, area, tipoDescarte, kilos, canastillas, loteType } = data;
         try {
@@ -486,8 +487,6 @@ export class InventariosHistorialRepository extends BaseRepository {
                         $inc: {
                             kilosActuales: Number(kilos),
                             kilosIniciales: Number(kilos),
-                            canastillasActuales: Number(canastillas || 0),
-                            canastillasIniciales: Number(canastillas || 0)
                         },
                         $set: { fechaActualizacion: new Date() }
                     },
@@ -515,8 +514,6 @@ export class InventariosHistorialRepository extends BaseRepository {
                     user: user,
                     kilosIniciales: Number(kilos),
                     kilosActuales: Number(kilos),
-                    canastillasIniciales: Number(canastillas || 0),
-                    canastillasActuales: Number(canastillas || 0),
                     tipoRegistro: area,
                 });
 
@@ -529,7 +526,6 @@ export class InventariosHistorialRepository extends BaseRepository {
                     tipoRegistro: loteType,
                     kilos: kilos,
                     kilosRestantes: kilos,
-                    canastillas: (canastillas ? canastillas : 0),
                     fechaMovimiento: saved.fechaIngreso,
                     user: user,
                     destino: `INVENTARIO_${area}`
@@ -564,7 +560,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
-                
+
 
             console.log('Registros encontrados:', registros.length);
             const result = await InventariosService.respuesta_invetario_descartes_maquila(registros);
@@ -597,7 +593,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                 .limit(limit)
                 .skip(skip)
                 .populate(populate)
-                
+
 
             return registros;
 
@@ -629,7 +625,7 @@ export class InventariosHistorialRepository extends BaseRepository {
                 .skip(skip)
                 .populate(populate)
                 .session(session)
-                
+
 
             const t1 = performance.now();
             console.log(`DB InventarioActualDescarte.find ${(t1 - t0).toFixed(2)} `)
@@ -717,9 +713,6 @@ export class InventarioDescartesRepository extends BaseRepository {
                     'totalKilosActuales': {
                         '$sum': '$kilosActuales'
                     },
-                    'totalCanastillasActuales': {
-                        '$sum': '$canastillasActuales'
-                    },
                     'conteoDocumentos': {
                         '$sum': 1
                     }
@@ -731,7 +724,6 @@ export class InventarioDescartesRepository extends BaseRepository {
                     'area': '$_id.area',
                     'tipoDescarte': '$_id.tipoDescarte',
                     'totalKilosActuales': 1,
-                    'totalCanastillasActuales': 1
                 }
             }
 
@@ -743,32 +735,58 @@ export class InventarioDescartesRepository extends BaseRepository {
     static async get_total_canastillas_inventario_descarte(options = {}) {
         const { session } = options;
         const idsSinInventario = descarteCache.getDescartesSinInventario().map(d => d._id.toString());
-        console.log(idsSinInventario)
+        const idsTipoFruta = Object.keys(tipoFrutaCache.getTiposFruta());
+
+        const resultadosArr = await Promise.all(
+            idsTipoFruta.map(id =>
+                this.total_canastillas_por_fruta(
+                    tipoFrutaCache.getTipoFruta(id), idsSinInventario, session)
+            )
+        );
+
+        const resultado = resultadosArr.reduce((acu, item) => acu + item, 0)
+
+        return resultado;
+    }
+
+
+    static async total_canastillas_por_fruta(fruta, idsSinInventario, session) {
         const resultado = await db.InventarioActualDescarte.aggregate([
             {
                 '$match': {
                     estado: 'ACTIVO',
+                    tipoFruta: new mongoose.Types.ObjectId(fruta._id),
                     ...(idsSinInventario.length > 0 && { tipoDescarte: { $nin: idsSinInventario.map(id => new mongoose.Types.ObjectId(id)) } }),
                 }
             },
             {
                 '$group': {
                     '_id': null,
-                    'totalCanastillasActuales': {
-                        '$sum': '$canastillasActuales'
+                    'totalKilosActuales': {
+                        '$sum': '$kilosActuales'
                     }
                 }
             },
             {
                 '$project': {
                     '_id': 0,
-                    'totalCanastillasActuales': 1
+                    'totalKilosActuales': 1
                 }
             }
         ], { session });
-        return resultado;
+
+        if (resultado.length === 0) return 0
+
+        const total_descarte = resultado[0]?.totalKilosActuales
+
+        if (total_descarte === 0) return 0
+
+        const total_cajas = Math.ceil(total_descarte / fruta.valorPromedio)
+
+        return total_cajas;
     }
 }
+
 
 export class CuartosFriosRepository extends BaseRepository {
     static get model() { return db.CuartosFrios; }

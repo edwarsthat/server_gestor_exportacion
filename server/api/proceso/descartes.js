@@ -53,8 +53,8 @@ export class DescartesControllers {
                 }
             };
 
-            //se verifica que existan canastillas vacias 
-            const total_canastillas = await CanastillasService.get_totales_canastillas()
+            //se verifica que existan canastillas vacias
+            const total_canastillas = await CanastillasService.get_totales_canastillas(session)
             const canastillas_vacias =
                 total_canastillas.canastillas_propias +
                 total_canastillas.total_prestadas -

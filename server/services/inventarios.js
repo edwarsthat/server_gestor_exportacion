@@ -311,7 +311,7 @@ export class InventariosService {
     static async procesar_formulario_inventario_descarte_sumar(data, tipoFruta, session, user) {
 
         const dataMap = new Map();
-        //se estrucutra los datos de entrada, kilos y acnastillas por item
+        //se estructura los datos de entrada, kilos por item
         for (const [key, value] of Object.entries(data)) {
             const [area, descarteId, tipo] = key.split(':');
             const campoDestino = tipo || 'kilos';
@@ -319,16 +319,15 @@ export class InventariosService {
             if (isNaN(valorNumerico)) throw new Error("El valor no es un numero");
 
             const llaveUnica = area + ":" + descarteId;
-            const registroExistente = dataMap.get(llaveUnica) || { kilos: 0, canastillas: 0 };
+            const registroExistente = dataMap.get(llaveUnica) || { kilos: 0 };
             registroExistente[campoDestino] = valorNumerico;
             dataMap.set(llaveUnica, registroExistente);
         }
-        //se recorre el mapa para descontar los kilos y canastillas
+        //se recorre el mapa para descontar los kilos
         for (const [key, value] of dataMap) {
             const [area, descarteId] = key.split(":");
 
             let kilos = value.kilos;
-            let canastillas = value.canastillas;
 
             const registros = await InventarioDescartesRepository.get_data({
                 query: {
@@ -345,30 +344,21 @@ export class InventariosService {
 
             for (const registro of registros) {
 
-                if (kilos <= 0 && canastillas <= 0) break; // Ya se descontaron todos los kilos necesarios
+                if (kilos <= 0) break; 
 
                 let update = {
                     $inc: {},
                     $set: {}
                 }
                 let kilosASumar = 0;
-                let canastillasASumar = 0;
 
                 if (kilos > 0) {
                     // Calcular cuántos kilos se van a sumar de ESTE registro específico
                     kilosASumar = Math.min(kilos, registro.kilosIniciales);
                 }
-                if (canastillas > 0) {
-                    // Calcular cuántas canastillas se van a sumar de ESTE registro específico
-                    canastillasASumar = Math.min(canastillas, registro.canastillasIniciales);
-                }
-
                 //se crea el update para el registro
                 if (kilosASumar > 0) {
                     update.$inc.kilosActuales = kilosASumar;
-                }
-                if (canastillasASumar > 0) {
-                    update.$inc.canastillasActuales = canastillasASumar;
                 }
 
                 update.$set.estado = "ACTIVO";
@@ -389,15 +379,11 @@ export class InventariosService {
 
                 // Reducir los kilos pendientes por descontar
                 kilos -= kilosASumar;
-                canastillas -= canastillasASumar;
             }
 
             // Verificar que se pudieron descontar todos los kilos
             if (kilos > 0) {
                 throw new InventariosLogicError(470, `No hay inventario suficiente. Faltan ${kilos} kilos para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
-            }
-            if (canastillas > 0) {
-                throw new InventariosLogicError(470, `No hay inventario suficiente. Faltan ${canastillas} canastillas para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
             }
 
         }
@@ -406,7 +392,6 @@ export class InventariosService {
     static async procesar_formulario_inventario_descarte(data, tipoFruta, session, user, opts = {}) {
         const { descompuesta = false } = opts;
         let totalKilos = 0;
-        let totalCanastillas = 0;
         const dataMap = new Map();
         //se estrucutra los datos de entrada, kilos y acnastillas por item
         for (const [key, value] of Object.entries(data)) {
@@ -416,7 +401,7 @@ export class InventariosService {
             if (isNaN(valorNumerico)) throw new Error("El valor no es un numero");
 
             const llaveUnica = area + ":" + descarteId;
-            const registroExistente = dataMap.get(llaveUnica) || { kilos: 0, canastillas: 0 };
+            const registroExistente = dataMap.get(llaveUnica) || { kilos: 0 };
             registroExistente[campoDestino] = valorNumerico;
             dataMap.set(llaveUnica, registroExistente);
 
@@ -427,25 +412,21 @@ export class InventariosService {
         for (const [key, value] of dataMap) {
             const [area, descarteId] = key.split(":");
             totalKilos += value.kilos;
-            totalCanastillas += value.canastillas;
             const kilosEliminar = value.kilos;
-            const canastillasEliminar = value.canastillas;
 
 
-            // 1. Si NO es descompuesta: Validación estricta de pareja (XOR)
-            if (!descompuesta && (kilosEliminar === 0) !== (canastillasEliminar === 0)) {
-                throw new Error("Inconsistencia: Debes reportar tanto kilos como canastillas.");
+            // 1. Si NO es descompuesta: debe reportar kilos
+            if (!descompuesta && (kilosEliminar === 0)) {
+                throw new Error("Inconsistencia: Debes reportar los kilos a descontar.");
             }
 
-            // 2. Si ES descompuesta: Solo error si hay canastillas pero no hay kilos
-            if (descompuesta && canastillasEliminar > 0 && kilosEliminar <= 0) {
-                throw new Error("Inconsistencia: No puedes enviar canastillas de descompuesta con 0 kilos.");
+            // 2. Si ES descompuesta: no se permite 0 kilos
+            if (descompuesta && kilosEliminar <= 0) {
+                throw new Error("Inconsistencia: No puedes reportar descompuesta con 0 kilos.");
             }
 
             let kilos = value.kilos;
-            let canastillas = value.canastillas;
             let kilosTotalTipo = 0;
-            let canastillasTotalTipo = 0;
 
             const registros = await InventarioDescartesRepository.get_data({
                 query: {
@@ -457,34 +438,25 @@ export class InventariosService {
                 },
                 sort: { fechaIngreso: 1 },
             }, { session })
-            console.log("registros", registros)
 
             if (registros.length === 0) throw new Error("No hay inventario suficiente")
 
             for (const registro of registros) {
                 //se suma el valor total del tipo de descarte
                 kilosTotalTipo += registro.kilosActuales;
-                canastillasTotalTipo += registro.canastillasActuales;
-
-                if (kilos <= 0 && canastillas <= 0) break; // Ya se descontaron todos los kilos necesarios
+                if (kilos <= 0) break; // Ya se descontaron todos los kilos necesarios
 
                 let update = {
                     $set: {}
                 }
                 let kilosRestantes = registro.kilosActuales;
                 let kilosADescontar = 0;
-                let canastillasRestantes = registro.canastillasActuales;
-                let canastillasADescontar = 0;
+
 
                 if (kilos > 0) {
                     // Calcular cuántos kilos se van a descontar de ESTE registro específico
                     kilosADescontar = Math.min(kilos, registro.kilosActuales);
                     kilosRestantes = registro.kilosActuales - kilosADescontar;
-                }
-                if (canastillas > 0) {
-                    // Calcular cuántas canastillas se van a descontar de ESTE registro específico
-                    canastillasADescontar = Math.min(canastillas, registro.canastillasActuales);
-                    canastillasRestantes = registro.canastillasActuales - canastillasADescontar;
                 }
 
                 //se crea el update para el registro
@@ -493,13 +465,8 @@ export class InventariosService {
                 } else {
                     update.$set.kilosActuales = 0;
                 }
-                if (canastillasRestantes > 0) {
-                    update.$set.canastillasActuales = canastillasRestantes;
-                } else {
-                    update.$set.canastillasActuales = 0;
-                }
 
-                if (kilosRestantes <= 0 && canastillasRestantes <= 0) {
+                if (kilosRestantes <= 0) {
                     update.$set.estado = "AGOTADO";
                 }
                 //se modifica el registro 
@@ -518,43 +485,39 @@ export class InventariosService {
 
                 // Reducir los kilos pendientes por descontar
                 kilos -= kilosADescontar;
-                canastillas -= canastillasADescontar;
 
             }
             const restanteKilos = kilosTotalTipo - kilosEliminar;
-            const restanteCanastillas = canastillasTotalTipo - canastillasEliminar;
 
-            if (restanteKilos < 0 || restanteCanastillas < 0) {
+            if (restanteKilos < 0 ) {
                 throw new Error("El descuento supera el inventario disponible.");
             }
 
-            if (!descompuesta && (restanteKilos === 0) !== (restanteCanastillas === 0)) {
-                throw new Error("Inconsistencia: El inventario quedaría con kilos o canastillas desbalanceados.");
+            if (!descompuesta && (restanteKilos === 0)) {
+                throw new Error("Inconsistencia: El inventario quedaría en 0 kilos.");
             }
 
             // Verificar que se pudieron descontar todos los kilos
             if (kilos > 0) {
                 throw new InventariosLogicError(470, `No hay inventario suficiente. Faltan ${kilos} kilos para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
             }
-            if (canastillas > 0) {
-                throw new InventariosLogicError(470, `No hay inventario suficiente. Faltan ${canastillas} canastillas para el tipo de fruta ${tipoFruta} en el área ${area} y tipo de descarte ${descarteId}`);
-            }
 
         }
 
-        return { totalKilos, totalCanastillas };
+        return { totalKilos };
 
     }
-    static async crear_lote_celifrut(tipoFruta, kilos, canastillas, user, session) {
+    static async crear_lote_celifrut(tipoFruta, kilos, user, session) {
         try {
             const numKilos = Number(kilos);
-            const numCanastillas = Number(canastillas);
 
             if (!Number.isFinite(numKilos) || numKilos <= 0) throw new Error('Lote Celifrut: Kilos debe ser un número positivo');
-            if (!Number.isFinite(numCanastillas) || numCanastillas <= 0) throw new Error('Lote Celifrut: Canastillas debe ser un número positivo');
             if (!tipoFruta?._id || !tipoFruta?.valorPromedio || tipoFruta.valorPromedio === 0) {
                 throw new Error('Lote Celifrut: Datos de fruta inválidos o valor promedio en cero');
             }
+
+            const numCanastillas = Math.ceil(numKilos / Number(tipoFruta.valorPromedio));
+
             const fecha = new Date()
             const codigo = await dataService.get_Celifrut_serial(session)
             const lote = {
@@ -1325,6 +1288,7 @@ export class InventariosService {
             if (!registro?.tipoDescarte?.inventario) continue;
 
             const frutaId = registro.tipoFruta?._id;
+            const promedio = registro.tipoFruta?.valorPromedio || 1;
             const areaId = registro.area;
             const descarteId = registro.tipoDescarte?._id;
 
@@ -1332,13 +1296,17 @@ export class InventariosService {
 
             const key = `${frutaId}//${areaId}//${descarteId}`;
             const kilos = Number(registro.kilosActuales) || 0;
-            const canastillas = Number(registro.canastillasActuales) || 0;
+            const canastillas = kilos ? Number(kilos / promedio) : 0;
             const actual = out.get(key) || { kilos: 0, canastillas: 0 };
 
             out.set(key, {
                 kilos: actual.kilos + kilos,
                 canastillas: actual.canastillas + canastillas
             });
+        }
+
+        for (const [key, value] of out) {
+            out.set(key, { ...value, canastillas: Math.ceil(value.canastillas) });
         }
 
         return Object.fromEntries(out);

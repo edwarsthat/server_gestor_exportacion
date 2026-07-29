@@ -76,9 +76,9 @@ export class InventarioDescarteController {
                     estado: 'ACTIVO',
                     loteType: { $in: ["Lote", "Loteef8"] },
                 },
-                sort: { fecha: -1 },
+                sort: { fechaIngreso: -1 },
                 populate: [
-                    { path: 'tipoFruta', select: "tipoFruta" },
+                    { path: 'tipoFruta', select: "tipoFruta valorPromedio" },
                     { path: 'lote', select: "enf" },
                     { path: 'tipoDescarte', select: "nombre inventario" },
                 ]
@@ -98,8 +98,8 @@ export class InventarioDescarteController {
 
             const oldValueDocs = await InventarioDescartesRepository.get_data({
                 query: { _id: _id },
-                select: "kilosIniciales kilosActuales tipoFruta"
-            })
+                select: "kilosIniciales kilosActuales tipoFruta estado"
+            }, { session })
             if (oldValueDocs.length === 0) throw new Error(`No se encontró el registro`)
             const oldValue = oldValueDocs[0]
 
@@ -108,11 +108,15 @@ export class InventarioDescarteController {
             if (!tipoFruta.valorPromedio || tipoFruta.valorPromedio <= 0) throw new Error(`El valor promedio del tipo de fruta no es válido`)
 
             const diffKilosIniciales = kilosIniciales - oldValue.kilosIniciales
-            const newCanastillas = Math.ceil(kilosIniciales / tipoFruta.valorPromedio)
 
             const newKilosActuales = oldValue.kilosActuales + diffKilosIniciales
             if (newKilosActuales < 0) throw new Error(`Los kilos actuales no pueden ser negativos después de la modificación`)
-            const newCanastillasActuales = Math.ceil(newKilosActuales / tipoFruta.valorPromedio)
+
+            const newEstado = kilosIniciales === 0
+                ? 'ANULADO'
+                : (oldValue.estado === 'TRANSFERIDO'
+                    ? oldValue.estado
+                    : (newKilosActuales === 0 ? 'AGOTADO' : 'ACTIVO'))
 
             const itemModificado = await InventarioDescartesRepository.actualizar_data(
                 { _id: _id },
@@ -121,13 +125,12 @@ export class InventarioDescarteController {
                     {
                         kilosIniciales: kilosIniciales,
                         kilosActuales: newKilosActuales,
-                        canastillasIniciales: newCanastillas,
-                        canastillasActuales: newCanastillasActuales
+                        estado: newEstado,
                     }
                 },
                 { session }
             )
-            await registrarPasoLog(log?._id, "InventariosHistorialRepository.actualizar_ingreso_descarte", `completado`);
+            await registrarPasoLog(log?._id, "InventarioDescartesRepository.actualizar_data", `completado`);
             // Crear movimiento de MODIFICACION adicional
             await db.InventarioMovimientoDescarte.create([{
                 registroDescarte: itemModificado._id,
@@ -153,8 +156,6 @@ export class InventarioDescarteController {
             )
             await registrarPasoLog(log?._id, "LotesHelper.actualizar_lotes_helper", `completado`);
         })
-
-
     }
     static async put_inventarios_frutaDescarte_despachoDescarte(req) {
         const { user } = req;
@@ -167,19 +168,15 @@ export class InventarioDescarteController {
             const tipoFruta = inventario.tipoFruta;
             delete inventario.tipoFruta;
 
-            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
+            const { totalKilos } = await InventariosService.procesar_formulario_inventario_descarte(inventario, tipoFruta, session, user)
             await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
             const newDespacho = {
                 ...data,
                 tipoFruta: tipoFruta,
                 descartes: inventario,
-                canastillas: totalCanastillas,
                 kilos: totalKilos
             }
             if (data.enCanastillas) {
-                if((data.canastillasPropias + data.canastillasPrestadas )> totalCanastillas){
-                    throw new Error("La cantidad de canastillas vacías no puede ser mayor a la cantidad total de canastillas")
-                }
                 if (data.canastillasPropias > 0) {
                     await InventariosService
                         .ajustarCanastillasProveedorCliente(config.ID_CELIFRUT, Number(-data.canastillasPropias || 0), user, session);
@@ -228,7 +225,7 @@ export class InventarioDescarteController {
             const tipoFrutaId = parsedData.tipoFruta;
             delete data.tipoFruta;
             //se borra del inventario
-            const { totalKilos, totalCanastillas } = await InventariosService.procesar_formulario_inventario_descarte(
+            const { totalKilos } = await InventariosService.procesar_formulario_inventario_descarte(
                 data, tipoFrutaId, session, user
             )
             await registrarPasoLog(log._id, "InventariosService.procesar_formulario_inventario_descarte", "Completado");
@@ -236,7 +233,7 @@ export class InventarioDescarteController {
             const tipoFruta = tipoFrutaCache.getTipoFruta(tipoFrutaId);
             if (!tipoFruta) throw new Error("No se encontro el tipo de fruta");
             //se crea el lote celifrut
-            await InventariosService.crear_lote_celifrut(tipoFruta, totalKilos, totalCanastillas, user, session);
+            await InventariosService.crear_lote_celifrut(tipoFruta, totalKilos, user, session);
             await registrarPasoLog(log._id, "InventariosService.crear_lote_celifrut", "Completado");
             await IndicadoresService.put_indicadores_actualizar_indicador(
                 { $inc: { [`kilos_vaciados.${tipoFruta._id}`]: Number(totalKilos) } }, session

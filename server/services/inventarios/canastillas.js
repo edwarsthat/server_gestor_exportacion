@@ -3,11 +3,11 @@ import config from "../../../src/config/index.js";
 import { ProveedoresRepository } from "../../Class/Proveedores.js";
 
 export class CanastillasService {
-    static async get_totales_canastillas() {
+    static async get_totales_canastillas(session = null) {
         const inventarioID = config.INVENTARIO_CANASTILLAS;
         const inventario = await InventariosHistorialRepository.get_data({
             ids: [inventarioID],
-        });
+        }, { session });
         if (inventario.length === 0) throw new Error("No se encontro el inventario de canastillas")
 
         if (inventario[0].canastillasPrestadas == null) throw new Error("No se encontro el inventario de canastillas prestadas")
@@ -17,23 +17,20 @@ export class CanastillasService {
         const inventarioIDfrutaSinProcesar = config.INVENTARIO_FRUTA_SIN_PROCESAR;
         const resultado = await InventariosHistorialRepository.get_data({
             ids: [inventarioIDfrutaSinProcesar]
-        });
+        }, { session });
         if (resultado.length === 0) throw new Error("No se encontro el inventario de fruta sin procesar")
 
         const concatResult = [...resultado[0].inventario, ...resultado[0].inventarioMaquila];
         const total_frutaSinProcesar = concatResult.reduce((acc, item) => acc + item.canastillas, 0);
 
         //se obtiene las canastillas llenas de descarte
-        
-        const inventarioDescarte = await InventarioDescartesRepository.get_total_canastillas_inventario_descarte({})
-        if (inventarioDescarte === null) throw new Error("No se encontro el inventario de descarte")
 
-        const total_descarte = inventarioDescarte[0]?.totalCanastillasActuales || 0
+        const total_descarte = await InventarioDescartesRepository.get_total_canastillas_inventario_descarte({ session })
 
         const celifrut = await ProveedoresRepository.get_data({
             ids: [config.ID_CELIFRUT],
             select: { canastillas: 1 }
-        })
+        }, { session })
         const total_prestadas = [...inventario[0].canastillasPrestadas.values()].reduce((acu, item) => acu + item, 0)
 
         return {

@@ -777,7 +777,7 @@ export class InventariosValidations {
             _id: objectIdString("_id"),
             kilosIniciales: z.coerce.number()
                 .int("Los kilos deben ser un número entero")
-                .gt(0, "Los kilos deben ser mayor a cero"),
+                .gte(0, "Los kilos deben ser mayor a cero"),
         });
     }
     static put_inventarios_cuartosFrios_salida_item() {
