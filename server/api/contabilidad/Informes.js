@@ -129,27 +129,37 @@ export class InformesContabilidadController {
                         const kilos = decimalToComma(valueCalidad);
                         const cod = calidadesExport.find(c => String(c._id) === String(key))?.codContabilidad || 'N/A';
                         if (valueCalidad === 0) continue;
-                        out += `10\t${cod}\tKg\t${kilos}\t\t\t\t\t\t\t\t\t\t${cont?.infoContenedor?.maquila ? "PCONT" + cont.numeroContenedor : ""}\n`
+                        //se cambia la bodega destino del resumen contable por la 50. Jp
+                        // out += `10\t${cod}\tKg\t${kilos}\t\t\t\t\t\t\t\t\t\t${cont?.infoContenedor?.maquila ? "PCONT" + cont.numeroContenedor : ""}\n`
+                        out += `50\t${cod}\tKg\t${kilos}\t\t\t\t\t\t\t\t\t\t${cont?.infoContenedor?.maquila ? "PCONT" + cont.numeroContenedor : ""}\n`
                     }
                 }
             }
 
             const { pago: pagoDevuelto, noPago: noPagoDevuelto } = descarte_nopago_pago(lote, tiposDescartes)
 
-            out += `10\tMPL1\tKilos\t${decimalToComma(noPagoDevuelto)}\t\t\t\n`;
-            out += `10\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(pagoDevuelto)}\t\t\t\t\t\t\t\t\tDEVUELTOS A PROVEEDOR\n`;
+            //se cambia la bodega destino del resumen contable por la 50. Jp
+            // out += `10\tMPL1\tKilos\t${decimalToComma(noPagoDevuelto)}\t\t\t\n`;
+            // out += `10\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(pagoDevuelto)}\t\t\t\t\t\t\t\t\tDEVUELTOS A PROVEEDOR\n`;
+            out += `50\tMPL1\tKilos\t${decimalToComma(noPagoDevuelto)}\t\t\t\n`;
+            out += `50\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(pagoDevuelto)}\t\t\t\t\t\t\t\t\tDEVUELTOS A PROVEEDOR\n`;
 
 
             const { pagoComprado, noPagoComprado } = descarte_nopago_pago_comprado(lote, tiposDescartes)
 
-            out += `10\tMPL1\tKilos\t${decimalToComma(noPagoComprado)}\t\t\t\n`;
-            out += `10\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(pagoComprado)}\t\t\t\n`;
+            //se cambia la bodega destino del resumen contable por la 50. Jp
+            // out += `10\tMPL1\tKilos\t${decimalToComma(noPagoComprado)}\t\t\t\n`;
+            // out += `10\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(pagoComprado)}\t\t\t\n`;
+            out += `50\tMPL1\tKilos\t${decimalToComma(noPagoComprado)}\t\t\t\n`;
+            out += `50\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(pagoComprado)}\t\t\t\n`;
 
             const directoNacional = lote.directoNacional
 
             if (directoNacional) {
                 out +=
-                    `10\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(directoNacional)}\t\t\t\n`;
+                //se cambia la bodega destino del resumen contable por la 50. Jp
+                    // `10\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(directoNacional)}\t\t\t\n`;
+                    `50\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(directoNacional)}\t\t\t\n`;
             }
 
             if (lote.salidaExportacion) {
@@ -166,15 +176,21 @@ export class InformesContabilidadController {
                             precioBase * (valueCalidad)
                         );
                         if (valueCalidad === 0) continue;
-                        out += `2\t${cod}\tKg\t${kilos}\t${precioKey}\t\t${subTotal}\t\t\t\t\t\t\tPCONT${cont.numeroContenedor}\n`
+                        //se cambia la bodega destino del resumen contable por la 50. Jp
+                        // out += `2\t${cod}\tKg\t${kilos}\t${precioKey}\t\t${subTotal}\t\t\t\t\t\t\tPCONT${cont.numeroContenedor}\n`
+                        out += `50\t${cod}\tKg\t${kilos}\t${precioKey}\t\t${subTotal}\t\t\t\t\t\t\tPCONT${cont.numeroContenedor}\n`
 
                     }
                 }
             }
 
-            out += `1\tMPL1\tKilos\t${decimalToComma(noPagoComprado)}\t${decimalToComma(0)}\t\t${decimalToComma(0)}\t\t\t\t\t\tNo se paga debido (balin, descompuesta)\n`;
+            //se cambia la bodega destino del resumen contable por la 50. Jp
+            // out += `1\tMPL1\tKilos\t${decimalToComma(noPagoComprado)}\t${decimalToComma(0)}\t\t${decimalToComma(0)}\t\t\t\t\t\tNo se paga debido (balin, descompuesta)\n`;
 
-            out += `1\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(pagoComprado)}\t${decimalToComma((lote?.precio?.descarte || 0))}\t\t${decimalToComma(pagoComprado * (lote?.precio?.descarte || 0))}\n`;
+            // out += `1\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(pagoComprado)}\t${decimalToComma((lote?.precio?.descarte || 0))}\t\t${decimalToComma(pagoComprado * (lote?.precio?.descarte || 0))}\n`;
+            out += `50\tMPL1\tKilos\t${decimalToComma(noPagoComprado)}\t${decimalToComma(0)}\t\t${decimalToComma(0)}\t\t\t\t\t\tNo se paga debido (balin, descompuesta)\n`;
+
+            out += `50\t${lote.tipoFruta.codNacional}\tKilos\t${decimalToComma(pagoComprado)}\t${decimalToComma((lote?.precio?.descarte || 0))}\t\t${decimalToComma(pagoComprado * (lote?.precio?.descarte || 0))}\n`;
 
             return out
         });

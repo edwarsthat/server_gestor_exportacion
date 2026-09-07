@@ -15,7 +15,9 @@ export class TransporteService {
 
         const savedPaths = [];
 
-        if (!Array.isArray(fotos) || fotos.length < 1 || fotos.length > 3) {
+        //se amplia el ingresos de fotos a 6 por requerimieto tecnicos. Jp
+        // if (!Array.isArray(fotos) || fotos.length < 1 || fotos.length > 3) {
+        if (!Array.isArray(fotos) || fotos.length < 1 || fotos.length > 6) {
             throw new Error("Debes enviar entre 1 y 3 fotos.");
         }
 
