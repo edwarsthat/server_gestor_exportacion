@@ -7,6 +7,12 @@
 import { MongoClient } from 'mongodb';
 import writeXlsxFile from 'write-excel-file/node';
 import 'dotenv/config';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const MONGODB_PROCESO = process.env.MONGODB_PROCESO;
 
@@ -66,8 +72,8 @@ async function main() {
         const [lotes, calidades, descartes] = await Promise.all([
             lotesCollection.find({
                 fecha_creacion: {
-                    $gte: new Date('2026-01-01T00:00:00.000Z'),
-                    $lte: new Date('2026-03-31T23:59:59.999Z')
+                    $gte: new Date('2026-01-01T05:00:00.000Z'),
+                    $lte: new Date('2026-08-01T05:00:00.000Z')
                 }
             }).toArray(),
             calidadesCollection.find({}).toArray(),
@@ -177,7 +183,9 @@ async function main() {
             };
         });
 
-        const filePath = '/home/analista/server/server_gestor_exportacion/scripts/out/lotes_con_precios.xlsx';
+        const outDir = path.join(__dirname, '..', 'out');
+        fs.mkdirSync(outDir, { recursive: true });
+        const filePath = path.join(outDir, 'lotes_con_precios.xlsx');
         await writeXlsxFile(out, { schema, filePath, dateFormat: 'dd/mm/yyyy' });
         console.log(`Archivo generado: ${filePath}`);
 
