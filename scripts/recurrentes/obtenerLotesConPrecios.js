@@ -72,8 +72,8 @@ async function main() {
         const [lotes, calidades, descartes] = await Promise.all([
             lotesCollection.find({
                 fecha_creacion: {
-                    $gte: new Date('2026-01-01T05:00:00.000Z'),
-                    $lte: new Date('2026-08-01T05:00:00.000Z')
+                    $gte: new Date('2026-08-01T05:00:00.000Z'),
+                    $lte: new Date('2026-09-01T05:00:00.000Z')
                 }
             }).toArray(),
             calidadesCollection.find({}).toArray(),

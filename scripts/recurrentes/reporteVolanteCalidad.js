@@ -19,8 +19,8 @@ const __dirname = path.dirname(__filename);
 const { MONGODB_PROCESO } = config;
 
 // Rango de fechas a reportar (sobre volantecalidads.fecha)
-const FECHA_INICIO = new Date('2026-07-01T05:00:00.000Z'); //se cambia la fecha en cuestion
-const FECHA_FIN = new Date('2026-08-01T05:00:00.000Z');
+const FECHA_INICIO = new Date('2026-08-01T05:00:00.000Z'); //se cambia la fecha en cuestion
+const FECHA_FIN = new Date('2026-09-01T05:00:00.000Z');
 
 let client = null;
 let db = null;
