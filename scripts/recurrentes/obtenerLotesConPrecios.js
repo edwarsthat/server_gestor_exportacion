@@ -68,16 +68,18 @@ async function main() {
         const precios = database.collection('precios');
         const calidadesCollection = database.collection('calidades');
         const descartesCollection = database.collection('descartes');
+        const tipoFrutasCollection = database.collection('tipofrutas');
 
-        const [lotes, calidades, descartes] = await Promise.all([
+        const [lotes, calidades, descartes, tiposFruta] = await Promise.all([
             lotesCollection.find({
                 fecha_creacion: {
-                    $gte: new Date('2026-08-01T05:00:00.000Z'),
-                    $lte: new Date('2026-09-01T05:00:00.000Z')
+                    $gte: new Date('2026-01-01T05:00:00.000Z'),
+                    $lte: new Date('2026-10-27T05:00:00.000Z')
                 }
             }).toArray(),
             calidadesCollection.find({}).toArray(),
-            descartesCollection.find({}).toArray()
+            descartesCollection.find({}).toArray(),
+            tipoFrutasCollection.find({}).toArray()
         ])
 
         const proveedoresSetIds = new Set();
@@ -101,14 +103,17 @@ async function main() {
         const preciosMap = new Map(preciosArray.map(d => [d._id.toString(), d]));
         const descartesMap = new Map(descartes.map(d => [d._id.toString(), d]));
         const calidadesMap = new Map(calidades.map(d => [d._id.toString(), d]));
+        const tiposFrutaMap = new Map(tiposFruta.map(d => [d._id.toString(), d]));
 
         const out = [];
 
         for (const lote of lotes) {
             const proveedor = proveedoresMap.get(lote.predio.toString());
+            const tipoFruta = tiposFrutaMap.get(lote?.tipoFruta?.toString() || '');
             const objOut = {
                 fechaIngreso: lote.fecha_creacion,
                 enf: lote.enf,
+                tipoFruta: tipoFruta ? tipoFruta.tipoFruta : 'Desconocido',
                 predio: proveedor ? proveedor.PREDIO : 'Desconocido',
                 kilos: lote.kilos,
             };
@@ -134,12 +139,13 @@ async function main() {
                     if (calidad) {
                         objOut[`kilos_${calidad.nombre}`] = value.kilos;
                     } else {
-                        console.warn(`Calidad no encontrada para precio ${precio._id}: calidad=${key}`);
+                        console.warn(`Calidad no encontrada para lote ${lote._id}: calidad=${key}`);
                     }
                 })
             }
 
             if(lote.directoNacional){
+                objOut.kilos_directoNacional = lote.directoNacional;
                 objOut.precio_directoNacional = precio?.directoNacional || 0;
             }
 
