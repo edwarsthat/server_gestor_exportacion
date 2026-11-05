@@ -35,6 +35,7 @@ export class ContabilidadRepository {
                     aprobacionProduccion: 1,
                     fecha_finalizado_proceso: 1,
                     fecha_aprobacion_comercial: 1,
+                    comentario_contabilidad: 1, //para visulalizar los comentarios de contabilidad en la tabla. Jp
 
                 },
                 limit: resultsPerPage,

@@ -25,8 +25,8 @@ const { MONGODB_PROCESO } = config;
 
 // Rango de fechas a reportar (itempallets.fecha para exportacion, fecha_creacion para nacional),
 // en hora Colombia (UTC-5)
-const FECHA_INICIO = new Date('2026-07-15T05:00:00.000Z'); //se pone la fecha a combenir
-const FECHA_FIN = new Date('2026-09-07T05:00:00.000Z');
+const FECHA_INICIO = new Date('2026-08-25T05:00:00.000Z'); //se pone la fecha a combenir
+const FECHA_FIN = new Date('2026-10-07T05:00:00.000Z');
 
 let client = null;
 let db = null;

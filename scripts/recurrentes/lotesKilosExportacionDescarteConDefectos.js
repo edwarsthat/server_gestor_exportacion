@@ -69,8 +69,8 @@ async function main() {
         const lotesCollection = database.collection('lotes');
         const lotes = await lotesCollection.find({
             fecha_creacion: {
-                $gte: new Date('2026-07-01'),
-                // $lte: new Date('2026-03-31T23:59:59.999Z'),
+                $gte: new Date('2025-01-01'),
+                //$lte: new Date('2025-12-31T05:00:00.000Z'),
             },
         }).toArray();
 
