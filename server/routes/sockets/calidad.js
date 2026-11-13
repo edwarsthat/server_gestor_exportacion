@@ -181,6 +181,11 @@ export const apiSocketCalidad = {
         return successResponseRoutes();
     },
 
+    put_calidad_formulario_historialConcentraciones_verificar: async (data) => {
+        await CalidadRepository.put_calidad_formulario_historialConcentraciones_verificar(data);
+        return successResponseRoutes();
+    },
+    
     //#endregion
 
     //#region Control Limpieza EPP
