@@ -142,7 +142,8 @@ export class InventarioFrutaSinProcesarController {
                 populate: [
                     { path: 'predio', select: 'PREDIO' },
                     { path: 'tipoFruta' },
-                    { path: "infoSalidaDirectoNacional.user", select: "usuario nombre apellido" }
+                    { path: "infoSalidaDirectoNacional.user", select: "usuario nombre apellido" },
+                    { path: "infoSalidaDirectoNacional.cliente", select: "cliente" }
                 ]
             });
 
