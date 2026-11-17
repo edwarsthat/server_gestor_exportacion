@@ -129,10 +129,12 @@ export class CalidadRepository {
     //#region historial concentraciones
     static async get_calidad_formulario_historialConcentraciones(req) {
         try {
-            const { fechaInicio, fechaFin } = req.data;
+            const { fechaInicio, fechaFin, tipo } = req.data;
 
             // Construir query con filtros
             let query = { activo: true };
+
+            if (tipo) query.tipo = tipo;
 
             // Si hay filtros de fecha, agregarlos
             if (fechaInicio || fechaFin) {
@@ -157,7 +159,8 @@ export class CalidadRepository {
                 populate: [
                     { path: 'tipoFruta', select: 'tipoFruta' },
                     { path: 'responsable', select: 'nombre apellido' },
-                    { path: 'usuario', select: 'nombre apellido' }
+                    { path: 'usuario', select: 'nombre apellido' },
+                    { path: 'verificadoPor', select: 'nombre apellido' }
                 ]
             });
 
@@ -194,7 +197,9 @@ export class CalidadRepository {
                 fecha: fechaAjustada,
                 kilosProcesados: Number(data.kilosProcesados),
                 tipoFruta: data.tipoFruta,
-                concentracionPPM: data.concentracionPPM.trim(),
+                tipo: data.tipo,
+                concentracionPPM: data.concentracionPPM?.trim(),
+                cantidadProductoML: data.cantidadProductoML,
                 observaciones: data.observaciones?.trim() || '',
                 responsable: data.responsable,
                 usuario: usuarioId,
@@ -283,6 +288,26 @@ export class CalidadRepository {
             throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`);
         }
     }
+
+        static async put_calidad_formulario_historialConcentraciones_verificar(req) {
+        try {
+            CalidadValidationsRepository.put_calidad_formulario_historialConcentraciones_verificar().parse(req.data);
+
+            const { _id } = req.data;
+            const { user } = req;
+
+            // La fecha y el usuario los pone el back, nunca el front
+            await FormulariosCalidadRepository.verificar_historial_concentracion(_id, user._id);
+
+        } catch (err) {
+            if (err instanceof z.ZodError) {
+                const errores = err.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(" | ");
+                throw new CalidadLogicError(480, `Error de validación: ${errores}`);
+            }
+            throw new CalidadLogicError(471, `Error ${err.type}: ${err.message}`);
+        }
+    }
+
     //#endregion
 
     static async post_calidad_formulario_controlLimpiezaEPP(req) {

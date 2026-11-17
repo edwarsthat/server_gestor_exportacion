@@ -332,6 +332,30 @@ export class FormulariosCalidadRepository {
         }
     }
 
+    static async verificar_historial_concentracion(_id, usuarioId) {
+        try {
+            const HistorialConcentraciones = db.HistorialConcentraciones;
+
+            // Solo verifica si está activo y AÚN no verificado
+            const registro = await HistorialConcentraciones.findOneAndUpdate(
+                { _id, activo: true, fechaVerificacion: null },
+                { $set: { fechaVerificacion: new Date(), verificadoPor: usuarioId } },
+                { returnDocument: 'after' }
+            ).lean();
+
+            if (!registro) {
+                throw new Error('Registro no encontrado o ya fue verificado');
+            }
+
+            return registro;
+
+        } catch (err) {
+            console.error('Error en verificar_historial_concentracion:', err);
+            throw new Error(`Error al verificar registro de concentración: ${err.message}`);
+        }
+    }
+
+
     static async get_calidad_formularios_historialConcentraciones_numeroElementos(filtro = {}) {
         try {
             const HistorialConcentraciones = db.HistorialConcentraciones;

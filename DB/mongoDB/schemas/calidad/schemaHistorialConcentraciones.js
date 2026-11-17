@@ -24,8 +24,21 @@ export const defineHistorialConcentraciones = async (conn) => {
         // Concentración en PPM (string para permitir letras y números)
         concentracionPPM: {
             type: String,
-            required: true,
+            required: false,
             trim: true
+        },
+        //tipo de formulario: FOR-18 (ácido) o FOR-20(fungicida)
+        tipo: {
+            type: String,
+            enum: ["acido_peracetico", "fungicida"],
+            required: true,
+            default: "acido_peracetico"
+        },
+        //solo fungicida: cantidadde producto en ml
+        cantidadProductoML: {
+            type: Number,
+            required: false,
+            min: 0
         },
         // Observaciones opcionales
         observaciones: {
@@ -46,6 +59,16 @@ export const defineHistorialConcentraciones = async (conn) => {
             ref: "usuario",
             required: true
         },
+        //verificacion (solo perfiles con permiso), null = pendeinte
+        fechaVerificacion: {
+            type: Date,
+            default: null
+        },
+        verificadoPor: {
+            type: Schema.Types.ObjectId,
+            ref: "usuario",
+            default: null
+        },
         // Estado del registro
         activo: {
             type: Boolean,
@@ -58,6 +81,7 @@ export const defineHistorialConcentraciones = async (conn) => {
     // Índices para mejorar las búsquedas
     HistorialConcentracionesSchema.index({ fecha: -1 });
     HistorialConcentracionesSchema.index({ tipoFruta: 1 });
+    HistorialConcentracionesSchema.index({ tipo: 1, fecha: -1 });
 
     const HistorialConcentraciones = conn.model("HistorialConcentraciones", HistorialConcentracionesSchema);
     return HistorialConcentraciones;

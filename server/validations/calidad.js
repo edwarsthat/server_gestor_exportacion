@@ -161,7 +161,14 @@ export class CalidadValidationsRepository {
 
                 concentracionPPM: z.string()
                     .trim()
-                    .min(1, "Concentración PPM es obligatoria"),
+                    // 
+                    .optional(),
+
+                tipo: z.enum(["acido_peracetico", "fungicida"]),
+
+                cantidadProductoML: z.number()
+                    .min(0, "La cantidad de producto debe ser mayor o igual a 0")
+                    .optional(),
 
                 observaciones: z.string()
                     .trim()
@@ -171,7 +178,12 @@ export class CalidadValidationsRepository {
                 responsable: z.string()
                     .trim()
                     .min(1, "Responsable es obligatorio")
-            })
+            }).refine(
+                (d) => d.tipo === "acido_peracetico"
+                ? !!d.concentracionPPM
+                : d.cantidadProductoML !== undefined,
+                {message: "Falta la medicion: concentracion (PPM) para ácido o cantidad (ml) para fungicida"}
+            )
         });
     }
 
@@ -233,6 +245,12 @@ export class CalidadValidationsRepository {
         return z.object({
             _id: z.string()
                 .refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId válido de MongoDB")
+        });
+    }
+    static put_calidad_formulario_historialConcentraciones_verificar() {
+        return z.object({
+            _id: z.string()
+                .refine((val) => /^[0-9a-fA-F]{24}$/.test(val), "El _id debe ser un ObjectId Válido de MongoDB")
         });
     }
     //-----------------------------------------------------------------------------------------------------------------------------------
